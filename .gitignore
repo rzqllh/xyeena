@@ -34,3 +34,9 @@ pnpm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+# Local Xyeena install outputs
+.agents/skills/
+.agents/agents/
+.agents/rules/
+.claude/
+.xyeena/
