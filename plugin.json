@@ -1,0 +1,6 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "xyeena",
+  "version": "0.1.0",
+  "description": "Xyeena modular agent capability system"
+}

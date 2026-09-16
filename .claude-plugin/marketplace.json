@@ -1,0 +1,22 @@
+{
+  "name": "xyeena",
+  "owner": {
+    "name": "Xyeena contributors"
+  },
+  "metadata": {
+    "description": "Xyeena agent capability system."
+  },
+  "plugins": [
+    {
+      "name": "xyeena",
+      "displayName": "Xyeena",
+      "description": "Modular context-activated agent capabilities.",
+      "author": {
+        "name": "Xyeena contributors"
+      },
+      "homepage": "https://github.com/Rzqllh/xyeena",
+      "repository": "https://github.com/Rzqllh/xyeena",
+      "source": "."
+    }
+  ]
+}

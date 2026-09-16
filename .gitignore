@@ -1,0 +1,36 @@
+# Dependencies / build
+node_modules/
+coverage/
+.tmp/
+*.tgz
+
+# Xyeena runtime state
+.xyeena/runs/
+
+# Local/internal development material
+.internal/
+.dev/
+notes/
+research/
+scratch/
+private-evals/
+artifacts/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

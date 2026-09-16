@@ -1,0 +1,88 @@
+[
+  {
+    "name": "full grill",
+    "input": {
+      "prompt": "grill gua soal auth architecture",
+      "state": "DISCOVER"
+    },
+    "expectedPrimary": "xyeena-grill"
+  },
+  {
+    "name": "bug",
+    "input": {
+      "prompt": "login 500 after dependency upgrade, debug this",
+      "state": "TRIAGE"
+    },
+    "expectedPrimary": "xyeena-debug"
+  },
+  {
+    "name": "ui",
+    "input": {
+      "prompt": "redesign this dashboard UI and make it responsive",
+      "state": "TRIAGE",
+      "paths": [
+        "src/Dashboard.tsx"
+      ]
+    },
+    "expectedPrimary": "xyeena-interface"
+  },
+  {
+    "name": "research",
+    "input": {
+      "prompt": "research official API behavior and current docs",
+      "state": "DISCOVER"
+    },
+    "expectedPrimary": "xyeena-research"
+  },
+  {
+    "name": "review",
+    "input": {
+      "prompt": "review this pull request diff",
+      "state": "VERIFY"
+    },
+    "expectedPrimary": "xyeena-review"
+  },
+  {
+    "name": "security",
+    "input": {
+      "prompt": "audit auth authorization and RLS policy security",
+      "state": "REVIEW"
+    },
+    "expectedPrimary": "xyeena-security"
+  },
+  {
+    "name": "skillcraft",
+    "input": {
+      "prompt": "create an Agent Skill SKILL.md and test its triggers",
+      "state": "DEFINE"
+    },
+    "expectedPrimary": "xyeena-skillcraft"
+  },
+  {
+    "name": "prototype technical unknown",
+    "input": {
+      "prompt": "build a small prototype experiment to prove this virtualizer behavior",
+      "state": "DISCOVER"
+    },
+    "expectedPrimary": "xyeena-prototype"
+  },
+  {
+    "name": "execute locked plan",
+    "input": {
+      "prompt": "implement this plan now",
+      "state": "PLAN"
+    },
+    "expectedPrimary": "xyeena-execute"
+  },
+  {
+    "name": "writing craft",
+    "input": {
+      "prompt": "rewrite this README copy and remove generic AI wording",
+      "state": "EXECUTE",
+      "paths": [
+        "README.md"
+      ]
+    },
+    "expectedPrimary": "xyeena-writing"
+  }
+]

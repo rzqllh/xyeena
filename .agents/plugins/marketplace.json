@@ -1,0 +1,19 @@
+{
+  "name": "xyeena",
+  "interface": {
+    "displayName": "Xyeena"
+  },
+  "plugins": [
+    {
+      "name": "xyeena",
+      "source": {
+        "source": "local",
+        "path": "."
+      },
+      "policy": {
+        "installation": "AVAILABLE"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

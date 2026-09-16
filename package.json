@@ -1,0 +1,65 @@
+{
+  "name": "xyeena-agent",
+  "version": "0.1.0",
+  "description": "Modular, context-activated agent capability system for Antigravity, Claude Code, Codex, and Agent Skills-compatible runtimes.",
+  "type": "module",
+  "bin": {
+    "xyeena-agent": "./bin/xyeena.mjs",
+    "xyeena": "./bin/xyeena.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs",
+    "./core": "./src/index.mjs"
+  },
+  "files": [
+  "bin/",
+  "src/",
+  "skills/",
+  "agents/",
+  "schemas/",
+  "evals/",
+  "plugin.json",
+  ".claude-plugin/",
+  ".codex-plugin/",
+  ".agents/plugins/",
+  "rules/",
+  "docs/",
+  "README.md",
+  "LICENSE",
+  "NOTICE.md",
+  "SECURITY.md",
+  "CHANGELOG.md"
+],
+  "scripts": {
+    "test": "node --test",
+    "check": "node ./bin/xyeena.mjs check --source .",
+    "eval": "node ./bin/xyeena.mjs eval",
+    "doctor": "node ./bin/xyeena.mjs doctor --dir .",
+    "configure:repo": "node ./scripts/configure-repo.mjs",
+    "pack:check": "npm pack --dry-run"
+  },
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "keywords": [
+    "agent-skills",
+    "antigravity",
+    "claude-code",
+    "codex",
+    "ai-agents",
+    "orchestration",
+    "agent-workflow"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rzqllh/xyeena.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Rzqllh/xyeena/issues"
+  },
+  "homepage": "https://github.com/Rzqllh/xyeena#readme",
+  "publishConfig": {
+    "access": "public"
+  }
+}

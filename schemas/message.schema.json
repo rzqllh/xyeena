@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "message_id",
+    "run_id",
+    "task_id",
+    "from",
+    "to",
+    "type",
+    "payload"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "type",
+    "activation",
+    "dependencies"
+  ],
+  "properties": {
+    "apiVersion": {
+      "const": "xyeena.dev/v1alpha1"
+    },
+    "kind": {
+      "const": "Capability"
+    },
+    "metadata": {
+      "type": "object",
+      "required": [
+        "name",
+        "version",
+        "category",
+        "description"
+      ]
+    },
+    "type": {
+      "type": "array",
+      "minItems": 1
+    },
+    "activation": {
+      "type": "object",
+      "required": [
+        "class"
+      ]
+    },
+    "dependencies": {
+      "type": "object",
+      "required": [
+        "required"
+      ]
+    }
+  }
+}

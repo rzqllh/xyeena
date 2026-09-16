@@ -1,0 +1,35 @@
+{
+  "name": "xyeena",
+  "version": "0.1.0",
+  "description": "Context-activated engineering, research, UI, review and orchestration capabilities.",
+  "author": {
+    "name": "Xyeena contributors"
+  },
+  "repository": "https://github.com/Rzqllh/xyeena",
+  "license": "MIT",
+  "keywords": [
+    "agent-skills",
+    "engineering",
+    "orchestration",
+    "ui",
+    "debugging",
+    "review"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Xyeena",
+    "shortDescription": "Modular engineering and decision capabilities for coding agents",
+    "longDescription": "Xyeena routes work through focused capabilities for requirements, research, debugging, UI craft, security, verification and review without loading the whole system at once.",
+    "developerName": "Xyeena contributors",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/Rzqllh/xyeena",
+    "defaultPrompt": [
+      "Review this task, choose the smallest adequate workflow, and carry it through with fresh verification evidence."
+    ]
+  }
+}
