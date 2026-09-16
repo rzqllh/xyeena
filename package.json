@@ -4,9 +4,9 @@
   "description": "Modular, context-activated agent capability system for Antigravity, Claude Code, Codex, and Agent Skills-compatible runtimes.",
   "type": "module",
   "bin": {
-    "xyeena-agent": "./bin/xyeena.mjs",
-    "xyeena": "./bin/xyeena.mjs"
-  },
+  "xyeena-agent": "bin/xyeena.mjs",
+  "xyeena": "bin/xyeena.mjs"
+},
   "exports": {
     ".": "./src/index.mjs",
     "./core": "./src/index.mjs"
