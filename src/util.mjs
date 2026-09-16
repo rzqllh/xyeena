@@ -42,16 +42,40 @@ export function copyDir(src, dst, { force = false, dryRun = false } = {}) {
   }
   return actions;
 }
+
+function assignFlag(out, key, value) {
+  if (out[key] === undefined) { out[key] = value; return; }
+  if (Array.isArray(out[key])) { out[key].push(value); return; }
+  out[key] = [out[key], value];
+}
+
 export function parseFlags(args) {
   const out = { _: [] };
+  const aliases = { a: 'agent', s: 'skill', y: 'yes', g: 'global', h: 'help' };
+  const booleanFlags = new Set(['yes', 'global', 'copy', 'force', 'dryRun', 'all', 'help']);
+
   for (let i = 0; i < args.length; i++) {
-    const a = args[i];
-    if (!a.startsWith('--')) { out._.push(a); continue; }
-    const [raw, inline] = a.slice(2).split('=', 2);
-    const key = raw.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    if (inline !== undefined) { out[key] = inline; continue; }
-    if (i + 1 < args.length && !args[i + 1].startsWith('--')) out[key] = args[++i];
-    else out[key] = true;
+    const token = args[i];
+    if (!token.startsWith('-') || token === '-') { out._.push(token); continue; }
+
+    let raw;
+    let inline;
+    if (token.startsWith('--')) {
+      [raw, inline] = token.slice(2).split('=', 2);
+    } else {
+      raw = aliases[token.slice(1)] || token.slice(1);
+    }
+    const key = (aliases[raw] || raw).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    if (inline !== undefined) { assignFlag(out, key, inline); continue; }
+    if (booleanFlags.has(key)) { assignFlag(out, key, true); continue; }
+    if (i + 1 < args.length && !args[i + 1].startsWith('-')) assignFlag(out, key, args[++i]);
+    else assignFlag(out, key, true);
   }
   return out;
+}
+
+export function flagList(value) {
+  if (value === undefined || value === null || value === false) return [];
+  const values = Array.isArray(value) ? value : [value];
+  return values.flatMap((v) => String(v).split(',')).map((v) => v.trim()).filter(Boolean);
 }
