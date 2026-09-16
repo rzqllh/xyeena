@@ -11,9 +11,6 @@ It is not a monolithic prompt. The system separates:
 - role contracts for manager/executor/auditor-style orchestration,
 - runtime metadata for Antigravity, Claude Code and Codex.
 
-## Status
-
-`0.1.0` is an npm-ready public alpha. Deterministic registry, resolver, governor, consent, ledger, task-graph, broker and installer tests are included. Do **not** describe this version as enterprise-proven until behavioral model evals and real cross-runtime dogfooding have been run on the models/harnesses you intend to support. See `docs/STATUS.md`.
 
 ## Install with npx
 
@@ -133,11 +130,6 @@ npm run configure:repo -- --owner YOUR_GITHUB_USERNAME --repo xyeena
 
 Then inspect `package.json`, `.claude-plugin/`, `.codex-plugin/`, and marketplace metadata before publishing.
 
-## Publishing to npm
-
-The first release of a brand-new npm package cannot use npm staged publishing. Verify the name and package contents, then publish the first version with your npm account's required 2FA/publishing controls. After the package exists, configure npm Trusted Publishing for `.github/workflows/publish.yml` so GitHub Actions can publish with OIDC and provenance instead of a long-lived npm token.
-
-See `docs/PUBLISHING.md` for the exact sequence.
 
 ## License
 
