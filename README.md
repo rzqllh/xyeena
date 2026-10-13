@@ -14,35 +14,39 @@ It is not a monolithic prompt. The system separates:
 
 ## Install with npx
 
-From the root of the project where you want Xyeena available:
+From the project directory:
 
 ```bash
 npx xyeena-agent init
 ```
 
-This installs portable skills to both:
+Interactive setup asks what to install: **Skills**, **Harness**, or **All**, then asks for the selected agent runtimes and skills. No components are preselected; installation needs explicit confirmation. Mandatory dependencies of selected skills are added and shown in the result.
 
-```text
-.agents/skills/   # Antigravity + Codex-compatible project skills
-.claude/skills/   # Claude Code project skills
-```
-
-Install one runtime only:
+For CI / automation, use explicit flags:
 
 ```bash
-npx xyeena-agent init --runtime antigravity
-npx xyeena-agent init --runtime claude
-npx xyeena-agent init --runtime codex
+npx xyeena-agent init --components skills --runtime codex --skills xyeena-core,xyeena-interface --yes
+npx xyeena-agent init --components harness --yes
+npx xyeena-agent init --components all --runtime all --skills all --yes
+npx xyeena-agent init --components all --runtime all --skills all --dry-run
 ```
 
-Inspect without writing:
+**`all` is opt-in, never the default.** Without an interactive terminal, missing selections stop with an error and no writes. The installer checks existing files before writing and refuses to overwrite modified files unless `--force` is supplied. Dry-run creates nothing.
+
+Skills are installed only into the selected runtimes (`.agents/skills/` or `.claude/skills/`). Harness setup writes `.xyeena/config.json`, `.xyeena/profile.md`, and `.xyeena/harness/guides/`. No Git hooks or root `AGENTS.md` are silently replaced.
+
+The existing Agentic `xyeena doctor` remains unchanged. Harness commands use a separate namespace:
 
 ```bash
-npx xyeena-agent init --dry-run
-npx xyeena-agent doctor
+npx xyeena-agent harness doctor
+npx xyeena-agent audit
+npx xyeena-agent scan
+npx xyeena-agent verify
 ```
 
-Xyeena does not silently overwrite modified skill files. Use `--force` only after reviewing local changes.
+`audit` and `scan` are read-only. `verify` executes available project-native npm scripts on explicit request, returns `INCOMPLETE` rather than a false PASS when none are present, and creates evidence only if `--evidence` is supplied. Put `.harness/evidence/` in your project's `.gitignore` when enabling evidence.
+
+**Current status:** this feature branch includes the initial integration and installer controls. It is not yet the complete transplant of all v3.1 harness guardrails/runtime modules. The original artifact, full licensing review, and integrated verification remain tracked separately.
 
 ## Native plugin repository layouts
 
