@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — Skills + Harness upgrade
+## Unreleased (0.2.0 candidate) — Skills + Harness upgrade
 
 Xyeena remains **one npm package** (`xyeena-agent`) with two independently selectable components. These changes are in the feature branch and are **not yet published** on npm.
 
