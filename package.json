@@ -37,7 +37,8 @@
     "eval": "node ./bin/xyeena.mjs eval",
     "doctor": "node ./bin/xyeena.mjs doctor --dir .",
     "configure:repo": "node ./scripts/configure-repo.mjs",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "npm pack --dry-run",
+    "test:consumer": "node scripts/consumer-smoke.mjs"
   },
   "engines": {
     "node": ">=22.14.0"
