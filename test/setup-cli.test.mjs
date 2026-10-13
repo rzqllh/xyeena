@@ -25,9 +25,9 @@ test('non-interactive npx-style init refuses implicit install-all',()=>{
 test('explicit all requires confirmation; dry-run leaves no files',()=>{
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'xyeena-preview-'));
   try{
-    const noYes=run(dir,['--components','all','--runtime','all','--skills','all']);
+    const noYes=run(dir,['--components','all','--runtime','all','--skills','all','--guards','all']);
     assert.notEqual(noYes.status,0);
-    const preview=run(dir,['--components','all','--runtime','all','--skills','all','--dry-run']);
+    const preview=run(dir,['--components','all','--runtime','all','--skills','all','--guards','all','--dry-run']);
     assert.equal(preview.status,0,preview.stderr);
     assert.deepEqual(fs.readdirSync(dir),[]);
   }finally{fs.rmSync(dir,{recursive:true,force:true})}
