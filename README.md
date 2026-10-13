@@ -20,15 +20,15 @@ From the project directory:
 npx xyeena-agent init
 ```
 
-Interactive setup asks what to install: **Skills**, **Harness**, or **All**, then asks for the selected agent runtimes and skills. No components are preselected; installation needs explicit confirmation. Mandatory dependencies of selected skills are added and shown in the result.
+Interactive setup asks what to install: **Skills**, **Harness**, or **All**, then asks for the selected agent runtimes and skills. No components or guardrail groups are preselected; installation needs explicit confirmation. Mandatory dependencies of selected skills are added and shown in the result.
 
 For CI / automation, use explicit flags:
 
 ```bash
 npx xyeena-agent init --components skills --runtime codex --skills xyeena-core,xyeena-interface --yes
-npx xyeena-agent init --components harness --yes
-npx xyeena-agent init --components all --runtime all --skills all --yes
-npx xyeena-agent init --components all --runtime all --skills all --dry-run
+npx xyeena-agent init --components harness --guards 00-core,60-security --yes
+npx xyeena-agent init --components all --runtime all --skills all --guards all --yes
+npx xyeena-agent init --components all --runtime all --skills all --guards all --dry-run
 ```
 
 **`all` is opt-in, never the default.** Without an interactive terminal, missing selections stop with an error and no writes. The installer checks existing files before writing and refuses to overwrite modified files unless `--force` is supplied. Dry-run creates nothing.
