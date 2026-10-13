@@ -1,6 +1,7 @@
 import path from 'node:path'; import fs from 'node:fs';
 import { parseFlags } from './util.mjs'; import { VERSION, PACKAGE_ROOT } from './paths.mjs'; import { install, installSelective } from './install.mjs';
-import { explicitSelection, interactiveSelection } from './selection.mjs'; import { doctor } from './doctor.mjs'; import { validateSource } from './validate.mjs'; import { loadRegistry } from './registry.mjs'; import { resolveCapabilities } from './resolver.mjs'; import { runEvals } from './eval.mjs'; import { RunLedger } from './ledger.mjs';
+import { explicitSelection, interactiveSelection } from './selection.mjs';
+import { runHarness } from './harness.mjs'; import { doctor } from './doctor.mjs'; import { validateSource } from './validate.mjs'; import { loadRegistry } from './registry.mjs'; import { resolveCapabilities } from './resolver.mjs'; import { runEvals } from './eval.mjs'; import { RunLedger } from './ledger.mjs';
 const help=`Xyeena ${VERSION}
 
 Usage:
@@ -9,7 +10,9 @@ Usage:
   xyeena init --components harness --yes
   xyeena init --components all --runtime all --skills all --yes
   xyeena init --components ... --dry-run         # preview, no files written
-  xyeena doctor [--dir PATH]
+  xyeena doctor [--dir PATH]                      # existing installation doctor
+  xyeena harness doctor|audit|scan|verify [--dir PATH] [--base REF]
+  xyeena audit|scan|verify [--dir PATH] [--base REF]
   xyeena check [--source PATH]
   xyeena list
   xyeena resolve --prompt TEXT [--state TRIAGE] [--path FILE]
@@ -41,6 +44,12 @@ export async function main(args){
     if(result.autoDependencies.length) console.log('Required dependencies: '+result.autoDependencies.join(', '));
     console.log('Files to write: '+result.actions.length);
     console.log('Inspect: xyeena doctor');
+    return;
+  }
+ if(cmd==='harness'||['audit','scan','verify','risk','changed','adapters'].includes(cmd)){
+    const subcmd=cmd==='harness'?(f._[0]||'doctor'):cmd;
+    const status=runHarness(subcmd,{cwd:path.resolve(f.dir||process.cwd()),base:f.base||null,explicitBase:!!f.base,evidence:!!f.evidence});
+    if(status!==0) process.exitCode=status;
     return;
   }
  if(cmd==='doctor'){console.log(JSON.stringify(doctor(path.resolve(f.dir||process.cwd())),null,2));return}
