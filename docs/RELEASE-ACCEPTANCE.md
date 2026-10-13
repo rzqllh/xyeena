@@ -11,6 +11,16 @@
 
 ## Manual Windows PowerShell acceptance (required)
 
+Run the guided real-terminal acceptance once, after updating your local branch:
+
+```powershell
+git pull --ff-only origin feat/selective-skills-harness-installer
+node .\scripts\manual-acceptance.mjs
+```
+
+This script creates disposable fixtures in the Windows temp directory, walks through the actual terminal wizard (you choose the listed answers), checks selected file outputs, validates cancellation/repeat/overwrite guards, and prints a PASS/FAIL summary. **It cannot certify human acceptance until someone runs it in a real Windows PowerShell terminal.** No Git commit, push, project reset, npm publication or automatic cleanup occurs.
+
+
 Run these commands in a **real interactive PowerShell terminal**, from a clean checkout of this branch. Do not run against a production project. Use temporary folders as illustrated:
 
 ```powershell
