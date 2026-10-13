@@ -67,7 +67,7 @@ export function install({ cwd = process.cwd(), runtime = 'all', force = false, d
 // Explicit, non-destructive installer used by the new CLI. The original install()
 // remains available for existing library callers until the next major release.
 export function installSelective({
-  cwd = process.cwd(), components = [], runtimes = [], skills = [], force = false, dryRun = false
+  cwd = process.cwd(), components = [], runtimes = [], skills = [], guards = [], force = false, dryRun = false
 } = {}) {
   cwd = path.resolve(cwd);
   if (!Array.isArray(components) || !components.length ||
@@ -130,8 +130,14 @@ export function installSelective({
     actions.push(...addFile(src,cfg));
     actions.push(...addFile(path.join(PACKAGE_ROOT,'harness','project-profile.template.md'),
       path.join(cwd,'.xyeena','profile.md')));
-    actions.push(...addDir(path.join(PACKAGE_ROOT,'harness','guides'),
-      path.join(cwd,'.xyeena','harness','guides')));
+    if(!Array.isArray(guards)||!guards.length) throw new Error('Choose Harness guardrail group(s) or all explicitly.');
+    const groups=new Set(fs.readdirSync(path.join(PACKAGE_ROOT,'harness','guides'),{withFileTypes:true})
+      .filter(x=>x.isDirectory()).map(x=>x.name));
+    for(const group of guards) {
+      if(!groups.has(group)) throw new Error('Unknown Harness guardrail group: '+group);
+      actions.push(...addDir(path.join(PACKAGE_ROOT,'harness','guides',group),
+        path.join(cwd,'.xyeena','harness','guides',group)));
+    }
   }
   const manifestPath=path.join(cwd,'.xyeena','install.json');
   const prior=fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath,'utf8')) : {};
@@ -140,6 +146,7 @@ export function installSelective({
     components:[...new Set([...(prior.components||[]),...components])],
     runtimes:[...new Set([...(prior.runtimes||[]),...runtimes])],
     skills:[...new Set([...(prior.skills||[]),...selected])].sort(),
+    guards:[...new Set([...(prior.guards||[]),...guards])].sort(),
     installed_at:new Date().toISOString(),
     skill_targets: targets.map(x=>({path:path.relative(cwd,x.target),runtimes:x.runtimes})),
     agent_targets: prior.agent_targets||[]
@@ -154,7 +161,7 @@ export function installSelective({
     }
     writeJson(manifestPath,manifest);
   }
-  return { components,runtimes,skills:[...selected].sort(),
+  return { components,runtimes,guards,skills:[...selected].sort(),
     autoDependencies:[...selected].filter(x=>!skills.includes(x)),
     actions,manifest,dryRun };
 }
