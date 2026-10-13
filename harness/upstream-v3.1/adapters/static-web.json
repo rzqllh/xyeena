@@ -1,0 +1,23 @@
+{
+  "id": "static-web",
+  "kind": "stack",
+  "detect": {
+    "any": [
+      "index.html"
+    ],
+    "none": [
+      "package.json",
+      "pyproject.toml"
+    ]
+  },
+  "activate": [
+    "design-system",
+    "layout",
+    "ui",
+    "ux",
+    "mobile",
+    "responsive",
+    "accessibility",
+    "copy"
+  ]
+}

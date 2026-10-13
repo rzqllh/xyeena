@@ -1,10 +1,18 @@
 import path from 'node:path'; import fs from 'node:fs';
-import { parseFlags } from './util.mjs'; import { VERSION, PACKAGE_ROOT } from './paths.mjs'; import { install } from './install.mjs'; import { doctor } from './doctor.mjs'; import { validateSource } from './validate.mjs'; import { loadRegistry } from './registry.mjs'; import { resolveCapabilities } from './resolver.mjs'; import { runEvals } from './eval.mjs'; import { RunLedger } from './ledger.mjs';
+import { parseFlags } from './util.mjs'; import { VERSION, PACKAGE_ROOT } from './paths.mjs'; import { install, installSelective } from './install.mjs';
+import { explicitSelection, interactiveSelection } from './selection.mjs';
+import { runHarness } from './harness.mjs'; import { doctor } from './doctor.mjs'; import { validateSource } from './validate.mjs'; import { loadRegistry } from './registry.mjs'; import { resolveCapabilities } from './resolver.mjs'; import { runEvals } from './eval.mjs'; import { RunLedger } from './ledger.mjs';
 const help=`Xyeena ${VERSION}
 
 Usage:
-  xyeena init [--runtime all|antigravity|claude|codex] [--dir PATH] [--force] [--dry-run]
-  xyeena doctor [--dir PATH]
+  xyeena init                                   # interactive: Skills / Harness / All
+  xyeena init --components skills --runtime codex --skills xyeena-core --yes
+  xyeena init --components harness --guards 00-core,60-security --yes
+  xyeena init --components all --runtime all --skills all --guards all --yes
+  xyeena init --components ... --dry-run         # preview, no files written
+  xyeena doctor [--dir PATH]                      # existing installation doctor
+  xyeena harness doctor|audit|scan|verify [--dir PATH] [--base REF]
+  xyeena audit|scan|verify [--dir PATH] [--base REF]
   xyeena check [--source PATH]
   xyeena list
   xyeena resolve --prompt TEXT [--state TRIAGE] [--path FILE]
@@ -15,7 +23,36 @@ Usage:
 export async function main(args){
  const cmd=args[0]||'help', f=parseFlags(args.slice(1));
  if(['help','--help','-h'].includes(cmd)){console.log(help);return} if(['version','--version','-v'].includes(cmd)){console.log(VERSION);return}
- if(cmd==='init'){const cwd=path.resolve(f.dir||process.cwd()); const r=install({cwd,runtime:f.runtime||'all',force:!!f.force,dryRun:!!f.dryRun}); console.log(`${r.dryRun?'Would install':'Installed'} Xyeena ${VERSION} for ${r.runtimes.join(', ')}`); console.log(`Files: ${r.actions.length}`); console.log('Run: npx xyeena-agent doctor');return}
+ if(cmd==='init'){
+    const cwd=path.resolve(f.dir||process.cwd());
+    let choice;
+    if (f.components || f.component) {
+      choice=explicitSelection(f);
+      if (!f.yes && !f.dryRun) throw new Error('Pass --yes for non-interactive installation, or run "xyeena init" to choose interactively. Nothing was written.');
+    } else if (f.dryRun && !process.stdin.isTTY) {
+      console.log('No components selected; nothing to preview. Supply --components skills|harness|all.');
+      return;
+    } else {
+      choice=await interactiveSelection();
+    }
+    if(!choice){console.log('Cancelled. No files changed.');return}
+    const result=installSelective({cwd,...choice,force:!!f.force,dryRun:!!f.dryRun});
+    console.log((result.dryRun?'Would install':'Installed')+' Xyeena '+VERSION);
+    console.log('Components: '+result.components.join(', '));
+    if(result.runtimes.length) console.log('Runtimes: '+result.runtimes.join(', '));
+    if(result.skills.length) console.log('Skills: '+result.skills.join(', '));
+    if(result.guards.length) console.log('Guardrails: '+result.guards.join(', '));
+    if(result.autoDependencies.length) console.log('Required dependencies: '+result.autoDependencies.join(', '));
+    console.log('Files to write: '+result.actions.length);
+    console.log('Inspect: xyeena doctor');
+    return;
+  }
+ if(cmd==='harness'||['audit','scan','verify','risk','changed','adapters'].includes(cmd)){
+    const subcmd=cmd==='harness'?(f._[0]||'doctor'):cmd;
+    const status=runHarness(subcmd,{cwd:path.resolve(f.dir||process.cwd()),base:f.base||null,explicitBase:!!f.base,evidence:!!f.evidence});
+    if(status!==0) process.exitCode=status;
+    return;
+  }
  if(cmd==='doctor'){console.log(JSON.stringify(doctor(path.resolve(f.dir||process.cwd())),null,2));return}
  if(cmd==='check'){const r=validateSource(path.resolve(f.source||PACKAGE_ROOT)); if(!r.ok){for(const e of r.errors)console.error(`FAIL ${e}`);process.exitCode=1}else console.log(`PASS ${r.capabilities.length} capabilities + runtime manifests`);return}
  if(cmd==='list'){for(const c of loadRegistry())console.log(`${c.metadata.name}	${c.activation.class}	${c.metadata.category}`);return}

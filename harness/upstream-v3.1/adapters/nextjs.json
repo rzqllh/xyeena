@@ -1,0 +1,33 @@
+{
+  "id": "nextjs",
+  "kind": "framework",
+  "detect": {
+    "packageJsonDependenciesAny": [
+      "next"
+    ]
+  },
+  "activate": [
+    "layout",
+    "ui",
+    "ux",
+    "mobile",
+    "responsive",
+    "api-runtime",
+    "performance"
+  ],
+  "risk": {
+    "high": [
+      "middleware.*",
+      "next.config.*",
+      "app/api/**",
+      "pages/api/**",
+      "src/app/api/**"
+    ],
+    "medium": [
+      "app/**",
+      "pages/**",
+      "src/app/**",
+      "src/components/**"
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "harness:doctor": "node runtime/xyeena-harness.mjs doctor",
+    "harness:risk": "node runtime/xyeena-harness.mjs risk",
+    "harness:scan": "node runtime/xyeena-harness.mjs scan",
+    "harness:verify": "node runtime/xyeena-harness.mjs verify",
+    "harness:prepush": "node runtime/xyeena-harness.mjs prepush",
+    "harness:test": "node --test runtime/test/*.test.mjs"
+  }
+}

@@ -1,0 +1,35 @@
+name: Harness Gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  harness:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Replace with the project's actual install command.
+      - run: npm ci
+
+      - name: Harness self-test
+        run: node --test runtime/test/*.test.mjs
+
+      - name: Repository policy scan
+        run: node runtime/xyeena-harness.mjs scan
+
+      - name: Risk-based verification
+        run: node runtime/xyeena-harness.mjs verify --base origin/main

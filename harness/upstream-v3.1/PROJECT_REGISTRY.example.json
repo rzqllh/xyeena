@@ -1,0 +1,14 @@
+{
+  "projects": [
+    {
+      "id": "project-a",
+      "path": "/path/to/project-a",
+      "profile": "profiles/project-a.json"
+    },
+    {
+      "id": "project-b",
+      "path": "/path/to/project-b",
+      "profile": "profiles/project-b.json"
+    }
+  ]
+}

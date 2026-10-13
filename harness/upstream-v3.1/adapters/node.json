@@ -1,0 +1,45 @@
+{
+  "id": "node",
+  "kind": "stack",
+  "detect": {
+    "any": [
+      "package.json",
+      "pnpm-lock.yaml",
+      "package-lock.json",
+      "yarn.lock",
+      "bun.lock",
+      "bun.lockb"
+    ]
+  },
+  "scripts": {
+    "lint": [
+      "lint"
+    ],
+    "typecheck": [
+      "typecheck",
+      "type-check",
+      "check:types"
+    ],
+    "test": [
+      "test",
+      "test:unit"
+    ],
+    "build": [
+      "build"
+    ]
+  },
+  "risk": {
+    "high": [
+      "**/auth/**",
+      "**/server/**",
+      "**/migrations/**"
+    ],
+    "medium": [
+      "package.json",
+      "*lock*",
+      "src/**",
+      "app/**",
+      "pages/**"
+    ]
+  }
+}

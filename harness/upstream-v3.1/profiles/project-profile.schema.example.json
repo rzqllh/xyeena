@@ -1,0 +1,26 @@
+{
+  "id": "project-slug",
+  "name": "Project Name",
+  "description": "Short project purpose",
+  "adapters": ["generic-git"],
+  "protectedBranches": ["main"],
+  "targetBranch": "main",
+  "criticalPaths": [],
+  "sharedSurfaces": {},
+  "invariants": [],
+  "publicDocumentation": {
+    "forbiddenTerms": [],
+    "requiredFiles": []
+  },
+  "verification": {
+    "LOW": [],
+    "MEDIUM": [],
+    "HIGH": [],
+    "CRITICAL": []
+  },
+  "deployment": {
+    "provider": null,
+    "mode": "project-defined"
+  },
+  "notes": []
+}

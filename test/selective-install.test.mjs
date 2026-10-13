@@ -1,0 +1,133 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { parseChoice, explicitSelection, skillDependencyClosure } from '../src/selection.mjs';
+import { installSelective } from '../src/install.mjs';
+
+const temp = () => fs.mkdtempSync(path.join(os.tmpdir(),'xyeena-choice-'));
+const done = p => fs.rmSync(p,{recursive:true,force:true});
+
+test('selection never implicitly chooses all',()=>{
+  assert.throws(()=>parseChoice('', ['skills','harness']),/Select at least one/);
+  assert.throws(()=>explicitSelection({}),/requires --components/);
+  assert.throws(()=>explicitSelection({components:'skills',runtime:'codex'}),/Select at least one/);
+  assert.throws(()=>explicitSelection({components:'harness'}),/Select at least one/);
+  assert.deepEqual(explicitSelection({components:'harness',guards:'00-core'}),{components:['harness'],guards:['00-core'],runtimes:[],skills:[],guards:['00-core']});
+  assert.deepEqual(parseChoice('all',['skills','harness']),['skills','harness']);
+});
+
+test('dependency preview includes mandatory skills before confirmation',()=>{
+  const deps=skillDependencyClosure(['xyeena-interface']);
+  assert.ok(deps.includes('xyeena-interface'));
+  assert.ok(deps.includes('xyeena-core'));
+  assert.throws(()=>skillDependencyClosure(['not-a-skill']),/Unknown skill/);
+});
+
+test('selective skills pull only required capability dependencies',()=>{
+  const root=temp();
+  try {
+    const result=installSelective({cwd:root,components:['skills'],runtimes:['codex'],skills:['xyeena-interface']});
+    assert.ok(result.skills.includes('xyeena-interface'));
+    assert.ok(result.skills.includes('xyeena-core'));
+    assert.ok(result.autoDependencies.includes('xyeena-core'));
+    assert.ok(fs.existsSync(path.join(root,'.agents','skills','xyeena-interface','SKILL.md')));
+    assert.ok(fs.existsSync(path.join(root,'.agents','skills','xyeena-core','SKILL.md')));
+    assert.equal(fs.existsSync(path.join(root,'.claude')),false);
+    assert.equal(fs.existsSync(path.join(root,'.xyeena','harness')),false);
+  } finally {done(root)}
+});
+
+test('harness-only installs no skills, no agents and no AGENTS.md',()=>{
+  const root=temp();
+  try {
+    const result=installSelective({cwd:root,components:['harness'],guards:['00-core']});
+    assert.deepEqual(result.skills,[]);
+    assert.ok(fs.existsSync(path.join(root,'.xyeena','config.json')));
+    assert.ok(fs.existsSync(path.join(root,'.xyeena','harness','guides','00-core','README.md')));
+    assert.equal(fs.existsSync(path.join(root,'.agents')),false);
+    assert.equal(fs.existsSync(path.join(root,'AGENTS.md')),false);
+    installSelective({cwd:root,components:['harness'],guards:['00-core']});
+  } finally {done(root)}
+});
+
+test('dry-run never writes and conflicts fail before partial installation',()=>{
+  const root=temp();
+  try {
+    installSelective({cwd:root,components:['skills','harness'],runtimes:['claude'],skills:['xyeena-core'],guards:['00-core'],dryRun:true});
+    assert.deepEqual(fs.readdirSync(root),[]);
+    fs.mkdirSync(path.join(root,'.xyeena'),{recursive:true});
+    fs.writeFileSync(path.join(root,'.xyeena','config.json'),'{"custom":true}\n');
+    assert.throws(()=>installSelective({cwd:root,components:['skills','harness'],runtimes:['claude'],skills:['xyeena-core'],guards:['00-core']}),/Refusing to overwrite/);
+    assert.equal(fs.existsSync(path.join(root,'.claude')),false);
+    assert.equal(fs.readFileSync(path.join(root,'.xyeena','config.json'),'utf8'),'{"custom":true}\n');
+  } finally {done(root)}
+});
+
+
+test('incremental installations retain previous runtime and guide inventory',()=>{
+  const root=temp();
+  try {
+    installSelective({cwd:root,components:['skills'],runtimes:['codex'],skills:['xyeena-core']});
+    installSelective({cwd:root,components:['harness'],guards:['00-core']});
+    installSelective({cwd:root,components:['skills'],runtimes:['claude'],skills:['xyeena-interface']});
+    const manifest=JSON.parse(fs.readFileSync(path.join(root,'.xyeena','install.json'),'utf8'));
+    assert.ok(manifest.components.includes('skills'));
+    assert.ok(manifest.components.includes('harness'));
+    assert.ok(manifest.runtimes.includes('codex'));
+    assert.ok(manifest.runtimes.includes('claude'));
+    assert.ok(manifest.guards.includes('00-core'));
+    assert.ok(manifest.skill_targets.some(e=>e.path===path.join('.agents','skills')));
+    assert.ok(manifest.skill_targets.some(e=>e.path===path.join('.claude','skills')));
+    assert.ok(fs.existsSync(path.join(root,'.agents','skills','xyeena-core','SKILL.md')));
+  } finally {done(root)}
+});
+
+
+test('selective installer refuses symlink or junction destinations, even with force', t => {
+  const root=temp();
+  const outside=temp();
+  try {
+    const linked=path.join(root,'.xyeena');
+    try {
+      fs.symlinkSync(outside,linked,process.platform==='win32'?'junction':'dir');
+    } catch (error) {
+      if(['EPERM','EACCES','ENOTSUP'].includes(error.code)){
+        t.skip('The test platform does not permit creating directory links');
+        return;
+      }
+      throw error;
+    }
+    for(const force of [false,true]){
+      assert.throws(
+        ()=>installSelective({cwd:root,components:['harness'],guards:['00-core'],force}),
+        /symbolic link or junction/
+      );
+    }
+    assert.equal(fs.existsSync(path.join(outside,'config.json')),false);
+    assert.equal(fs.existsSync(path.join(outside,'install.json')),false);
+  } finally {done(root);done(outside)}
+});
+
+test('selective installer rejects linked skill directories before modifying files', t => {
+  const root=temp();
+  const outside=temp();
+  try {
+    fs.mkdirSync(path.join(root,'.agents'),{recursive:true});
+    try {
+      fs.symlinkSync(outside,path.join(root,'.agents','skills'),process.platform==='win32'?'junction':'dir');
+    } catch (error) {
+      if(['EPERM','EACCES','ENOTSUP'].includes(error.code)){
+        t.skip('The test platform does not permit creating directory links');
+        return;
+      }
+      throw error;
+    }
+    assert.throws(()=>installSelective({
+      cwd:root,components:['skills'],runtimes:['codex'],skills:['xyeena-core'],force:true
+    }),/symbolic link or junction/);
+    assert.deepEqual(fs.readdirSync(outside),[]);
+    assert.equal(fs.existsSync(path.join(root,'.xyeena')),false);
+  } finally {done(root);done(outside)}
+});

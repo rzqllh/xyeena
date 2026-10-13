@@ -1,42 +1,45 @@
 {
   "name": "xyeena-agent",
-  "version": "0.1.0",
-  "description": "Modular, context-activated agent capability system for Antigravity, Claude Code, Codex, and Agent Skills-compatible runtimes.",
+  "version": "0.2.0",
+  "description": "Modular Agent Skills and opt-in project Harness with interactive setup, audits, security guardrails, and verification.",
   "type": "module",
   "bin": {
-  "xyeena-agent": "bin/xyeena.mjs",
-  "xyeena": "bin/xyeena.mjs"
-},
+    "xyeena-agent": "bin/xyeena.mjs",
+    "xyeena": "bin/xyeena.mjs"
+  },
   "exports": {
     ".": "./src/index.mjs",
     "./core": "./src/index.mjs"
   },
   "files": [
-  "bin/",
-  "src/",
-  "skills/",
-  "agents/",
-  "schemas/",
-  "evals/",
-  "plugin.json",
-  ".claude-plugin/",
-  ".codex-plugin/",
-  ".agents/plugins/",
-  "rules/",
-  "docs/",
-  "README.md",
-  "LICENSE",
-  "NOTICE.md",
-  "SECURITY.md",
-  "CHANGELOG.md"
-],
+    "bin/",
+    "src/",
+    "skills/",
+    "harness/",
+    "agents/",
+    "schemas/",
+    "evals/",
+    "plugin.json",
+    ".claude-plugin/",
+    ".codex-plugin/",
+    ".agents/plugins/",
+    "rules/",
+    "docs/",
+    "README.md",
+    "LICENSE",
+    "NOTICE.md",
+    "SECURITY.md",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "test": "node --test",
     "check": "node ./bin/xyeena.mjs check --source .",
     "eval": "node ./bin/xyeena.mjs eval",
     "doctor": "node ./bin/xyeena.mjs doctor --dir .",
     "configure:repo": "node ./scripts/configure-repo.mjs",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "npm pack --dry-run",
+    "test:consumer": "node scripts/consumer-smoke.mjs",
+    "test:harness": "node scripts/run-vendored-tests.mjs"
   },
   "engines": {
     "node": ">=22.14.0"
@@ -48,7 +51,13 @@
     "codex",
     "ai-agents",
     "orchestration",
-    "agent-workflow"
+    "agent-workflow",
+    "agent-harness",
+    "guardrails",
+    "code-quality",
+    "verification",
+    "developer-tools",
+    "security-audit"
   ],
   "license": "MIT",
   "repository": {

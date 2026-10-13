@@ -1,0 +1,15 @@
+{
+  "id": "vercel",
+  "kind": "provider",
+  "detect": {
+    "any": [
+      "vercel.json",
+      ".vercel/project.json"
+    ]
+  },
+  "activate": [
+    "deployment-budget",
+    "release-rollback",
+    "resource-budget"
+  ]
+}

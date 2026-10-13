@@ -1,0 +1,57 @@
+{
+  "id": "python",
+  "kind": "stack",
+  "detect": {
+    "any": [
+      "pyproject.toml",
+      "requirements.txt",
+      "Pipfile",
+      "poetry.lock",
+      "uv.lock"
+    ]
+  },
+  "commands": {
+    "lint": [
+      [
+        "ruff",
+        "check",
+        "."
+      ],
+      [
+        "flake8",
+        "."
+      ]
+    ],
+    "typecheck": [
+      [
+        "mypy",
+        "."
+      ]
+    ],
+    "test": [
+      [
+        "pytest",
+        "-q"
+      ]
+    ],
+    "build": [
+      [
+        "python",
+        "-m",
+        "build"
+      ]
+    ]
+  },
+  "risk": {
+    "high": [
+      "**/migrations/**",
+      "**/auth/**",
+      "**/security/**"
+    ],
+    "medium": [
+      "**/*.py",
+      "pyproject.toml",
+      "requirements.txt"
+    ]
+  }
+}

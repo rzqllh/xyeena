@@ -1,48 +1,92 @@
 # Xyeena
 
-Xyeena is a modular, context-activated capability system for coding agents. It is designed to work as a portable Agent Skills repository and as runtime-native plugin metadata for Antigravity, Claude Code, and Codex.
+**Selectable Agent Skills and project guardrails in one npm package.**
 
-It is not a monolithic prompt. The system separates:
+Xyeena helps coding agents work with clearer scope, safer operations, stronger evidence, and repeatable project checks. It combines modular **Skills** for agent behavior with an optional **Harness** for project-level guardrails and verification. Use either component or both; installation does not silently select everything.
 
-- a small behavioral kernel (`xyeena-core`),
-- machine-readable capability contracts (`capability.json`),
-- a deterministic resolver/governor/consent/ledger library,
-- focused skills that load only when relevant,
-- role contracts for manager/executor/auditor-style orchestration,
-- runtime metadata for Antigravity, Claude Code and Codex.
+| Component | What it adds | Optional? |
+| --- | --- | --- |
+| **Skills** | 19 portable capabilities for planning, implementation, review, debugging, UI/UX, security, release and orchestration | Yes |
+| **Harness** | 41 focused guardrail documents across 11 groups, project profile/configuration, and runnable audit/scan/verification commands | Yes |
+| **All** | Skills + Harness together | Explicit selection only |
 
+Supported skill targets: **Antigravity**, **Claude Code**, and **Codex**. Project detection in the Harness covers common Node/Next.js, Python, static, monorepo, and Git-based workflows. Xyeena uses no mandatory runtime npm dependencies.
 
-## Install with npx
+> **Version compatibility:** These instructions apply to **`xyeena-agent@0.2.0` and later**. Version `0.1.0` used a legacy installer that could install all skills by default. Before running installation, verify the package version with `npx xyeena-agent version`; use `npx xyeena-agent@0.2.0 init` to select the documented 0.2.0 behavior explicitly.
 
-From the root of the project where you want Xyeena available:
+## Getting started
+
+Run from the directory of the project where Xyeena should be installed:
 
 ```bash
 npx xyeena-agent init
 ```
 
-This installs portable skills to both:
+The interactive setup asks you to choose:
 
-```text
-.agents/skills/   # Antigravity + Codex-compatible project skills
-.claude/skills/   # Claude Code project skills
-```
+1. **Components:** Skills, Harness, or All.
+2. **For Skills:** supported agent runtime(s) and the exact skills you need.
+3. **For Harness:** guardrail group(s), such as Design, Engineering, Quality, or Security.
+4. **Review and confirm:** see the selected items and mandatory skill dependencies before any project files are written.
 
-Install one runtime only:
+Nothing is preselected. You can cancel without changing project files. **All** is available but never the implicit default.
 
-```bash
-npx xyeena-agent init --runtime antigravity
-npx xyeena-agent init --runtime claude
-npx xyeena-agent init --runtime codex
-```
+### Explicit commands for automation
 
-Inspect without writing:
+CI or non-interactive terminals must specify their selections. An installation requires `--yes`; dry-run does not.
 
 ```bash
-npx xyeena-agent init --dry-run
-npx xyeena-agent doctor
+# Selected Skills for Codex (xyeena-core is a required dependency)
+npx xyeena-agent init --components skills --runtime codex --skills xyeena-interface --yes
+
+# Harness only, limited to Core and Security guardrails
+npx xyeena-agent init --components harness --guards 00-core,60-security --yes
+
+# All components, agent targets, skills and guardrail groups (explicit opt-in)
+npx xyeena-agent init --components all --runtime all --skills all --guards all --yes
+
+# Preview without writing files
+npx xyeena-agent init --components all --runtime all --skills all --guards all --dry-run
 ```
 
-Xyeena does not silently overwrite modified skill files. Use `--force` only after reviewing local changes.
+The installer automatically includes only **required** skill dependencies, reports them, and refuses to overwrite modified destination files unless you explicitly choose `--force`. Existing selections can be extended without erasing previous installation inventory.
+
+### Files created
+
+| Selection | Project-level installation |
+| --- | --- |
+| Skills for Codex / Antigravity | `.agents/skills/` |
+| Skills for Claude Code | `.claude/skills/` |
+| Selected Harness groups | `.xyeena/config.json`, `.xyeena/profile.md`, `.xyeena/harness/guides/` |
+| Installation inventory | `.xyeena/install.json` |
+
+Selected orchestration capabilities may install native agent roles; Xyeena does **not** silently replace root `AGENTS.md` or existing Git hooks. Harness diagnostic commands do not require installing project configuration first.
+
+## Harness commands
+
+Run from a Git repository to inspect project state or check risks without configuring the Harness first:
+
+```bash
+npx xyeena-agent harness doctor  # Harness diagnostics
+npx xyeena-agent audit           # Read-only findings
+npx xyeena-agent scan            # Read-only scan; nonzero on blockers
+npx xyeena-agent risk            # Explain change risk
+npx xyeena-agent verify          # Explicitly run supported project-native checks
+```
+
+`xyeena doctor` still provides the original **Agentic installation diagnostics**. The Harness variant is `xyeena harness doctor`.
+
+**Verification is not passive:** `verify` can run available project scripts. When no meaningful check ran, it reports **INCOMPLETE**, not a false PASS. Evidence files are generated only when requested via `--evidence` and live under the Git-ignored `.harness/evidence/` directory. Audit and scan do not modify project files. Harness `init` and Git-hook installation are not exposed through the unified CLI; installation remains opt-in through Xyeena's selection workflow.
+
+## Upgrade from Xyeena 0.1.0
+
+- `xyeena init` changes from its legacy all-skills installer to a **selection-first wizard**; scripts that depended on the old default must be updated.
+- Non-interactive installation must pass `--components` and the appropriate `--runtime` / `--skills` / `--guards` with `--yes`.
+- Existing Agentic commands, skill registry and governance concepts remain available. Harness functionality adds commands without replacing `xyeena doctor`.
+- The Harness source is bundled inside the same `xyeena-agent` npm package. There is **no separate Harness npm install**.
+- Check changed files and run `npm run test:consumer` before publishing or automating the new package.
+
+See `CHANGELOG.md` for version history and `docs/HARNESS-V3.1-IMPORT-PLAN.md` for the source-provenance and verification record.
 
 ## Native plugin repository layouts
 
@@ -94,7 +138,7 @@ npx xyeena-agent resolve --prompt "redesign dashboard UI" --path src/Dashboard.t
 
 Xyeena uses a manager-controlled DAG rather than an agent mesh. Only the governor owns topology. Workers do not recursively spawn arbitrary workers. Tasks are immutable units with dependencies; messages are small and typed; large outputs are artifacts; contradictory results are reconciled through evidence.
 
-Native agent role definitions live under `agents/` and are installed to documented Antigravity/Claude project-agent locations. The runtime-neutral broker and task-DAG implementation live in `src/broker.mjs` and `src/task-graph.mjs`; runtime-native agent definitions can evolve without changing the capability domain model.
+Native agent role definitions live under `agents/` and are installed to documented Antigravity/Claude project-agent locations **when the relevant orchestration capability is selected**. The runtime-neutral broker and task-DAG implementation live in `src/broker.mjs` and `src/task-graph.mjs`; runtime-native agent definitions can evolve without changing the capability domain model.
 
 ## Persistent state
 
@@ -113,23 +157,14 @@ Requires Node.js 22.14+.
 ```bash
 npm ci
 npm test
+npm run test:harness
+npm run test:consumer
 npm run check
 npm run eval
 npm pack --dry-run
 ```
 
 CI also runs `skills-ref validate` against each skill.
-
-## Before publishing this fork/repository
-
-Configure the repository owner first:
-
-```bash
-npm run configure:repo -- --owner YOUR_GITHUB_USERNAME --repo xyeena
-```
-
-Then inspect `package.json`, `.claude-plugin/`, `.codex-plugin/`, and marketplace metadata before publishing.
-
 
 ## License
 

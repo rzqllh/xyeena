@@ -1,0 +1,50 @@
+{
+  "name": "@xyeena/harness",
+  "version": "3.1.0",
+  "description": "Universal, modular operating system and executable guardrails for coding/design agents.",
+  "type": "module",
+  "bin": {
+    "xyeena-harness": "./bin/xyeena-harness.mjs",
+    "xyeena": "./bin/xyeena-harness.mjs"
+  },
+  "files": [
+    "bin",
+    "runtime",
+    "harness",
+    "adapters",
+    "profiles",
+    "templates",
+    "integration",
+    "HARNESS.md",
+    "ACTIVATION_MATRIX.md",
+    "CATALOG.md",
+    "UNIVERSAL_ARCHITECTURE.md",
+    "EXECUTABLE_ENFORCEMENT.md",
+    "PROJECT_TYPES.md",
+    "README.md",
+    "CHANGELOG.md",
+    "manifest.yaml",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test runtime/test/*.test.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "check": "npm test && npm run smoke",
+    "pack:dry": "npm pack --dry-run"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "agent",
+    "harness",
+    "ai",
+    "coding-agent",
+    "guardrails",
+    "audit",
+    "verification",
+    "developer-tools"
+  ],
+  "license": "MIT",
+  "private": true
+}

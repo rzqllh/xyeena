@@ -62,3 +62,156 @@ export function install({ cwd = process.cwd(), runtime = 'all', force = false, d
   if (!dryRun) writeJson(path.join(cwd, '.xyeena', 'install.json'), manifest);
   return { runtimes, actions, manifest, dryRun };
 }
+
+
+// Explicit, non-destructive installer used by the new CLI. The original install()
+// remains available for existing library callers until the next major release.
+export function installSelective({
+  cwd = process.cwd(), components = [], runtimes = [], skills = [], guards = [], force = false, dryRun = false
+} = {}) {
+  cwd = path.resolve(cwd);
+  if (!Array.isArray(components) || !components.length ||
+      components.some(c => !['skills','harness'].includes(c))) {
+    throw new Error('Choose skills, harness, or all explicitly.');
+  }
+  const selected = new Set();
+  const available = new Set(fs.readdirSync(SKILLS_DIR,{withFileTypes:true})
+    .filter(x=>x.isDirectory() && fs.existsSync(path.join(SKILLS_DIR,x.name,'SKILL.md')))
+    .map(x=>x.name));
+  const visit = name => {
+    if (!available.has(name)) throw new Error('Unknown skill: ' + name);
+    if (selected.has(name)) return;
+    selected.add(name);
+    const meta=path.join(SKILLS_DIR,name,'capability.json');
+    if (fs.existsSync(meta)) {
+      const deps=JSON.parse(fs.readFileSync(meta,'utf8')).dependencies?.required || [];
+      for(const d of deps) visit(d);
+    }
+  };
+  if (components.includes('skills')) {
+    if (!runtimes.length || !skills.length) throw new Error('Choose at least one runtime and skill.');
+    for (const name of runtimes) runtimeDescriptor(name);
+    for (const name of skills) visit(name);
+  }
+  const targets = components.includes('skills') ? runtimeTargets(cwd,runtimes) : [];
+  const steps=[];
+  // Never follow a user-controlled symlink / Windows junction below the
+  // project root. Without this check an explicitly chosen target can escape
+  // the worktree, especially when --force is present.
+  const assertSafeDestination=destination=>{
+    const rel=path.relative(cwd,path.resolve(destination));
+    if(rel==='..'||rel.startsWith('..'+path.sep)||path.isAbsolute(rel)){
+      throw new Error('Install target escapes project directory: '+destination);
+    }
+    let segment=cwd;
+    for(const part of rel.split(path.sep).filter(Boolean)){
+      segment=path.join(segment,part);
+      try{
+        if(fs.lstatSync(segment).isSymbolicLink()){
+          throw new Error('Refusing to install through symbolic link or junction: '+segment);
+        }
+      }catch(error){
+        if(error.code!=='ENOENT') throw error;
+      }
+    }
+  };
+  const assertSafeDirectoryTree=(src,dst)=>{
+    assertSafeDestination(dst);
+    for(const item of fs.readdirSync(src,{withFileTypes:true})){
+      const from=path.join(src,item.name),to=path.join(dst,item.name);
+      if(item.isDirectory()) assertSafeDirectoryTree(from,to);
+      else if(item.isFile()) assertSafeDestination(to);
+      else throw new Error('Unsupported packaged entry type: '+from);
+    }
+  };
+  const addDir=(src,dst)=>{ // Dry-run checks all selected paths before writing.
+    assertSafeDirectoryTree(src,dst);
+    steps.push({src,dst,kind:'dir'});
+    return copyDir(src,dst,{force,dryRun:true});
+  };
+  const addFile=(src,dst)=>{
+    assertSafeDestination(dst);
+    if (fs.existsSync(dst) && !force &&
+        !fs.readFileSync(src).equals(fs.readFileSync(dst))) {
+      throw new Error('Refusing to overwrite modified file: ' + dst + ' (use --force)');
+    }
+    steps.push({src,dst,kind:'file'});
+    return fs.existsSync(dst) && fs.readFileSync(src).equals(fs.readFileSync(dst)) ? [] : [dst];
+  };
+  const actions=[];
+  for (const {target} of targets) {
+    for (const name of selected) {
+      actions.push(...addDir(path.join(SKILLS_DIR,name),path.join(target,name)));
+    }
+  }
+  // Native role definitions are only installed when the orchestration capability is selected.
+  if (selected.has('xyeena-orchestrate')) {
+    for (const agentDir of new Set(runtimes.map(r=>runtimeDescriptor(r).agentDir).filter(Boolean))) {
+      actions.push(...addDir(path.join(PACKAGE_ROOT,'agents'),path.join(cwd,agentDir)));
+    }
+  }
+  if (selected.has('xyeena-core') && runtimes.includes('antigravity')) {
+    actions.push(...addFile(path.join(PACKAGE_ROOT,'rules','xyeena-core.md'),
+      path.join(cwd,'.agents','rules','xyeena-core.md')));
+  }
+  if (components.includes('harness')) {
+    // Harness is explicit: no hook installation, no automatic commands, no changes to AGENTS.md.
+    const cfg=path.join(cwd,'.xyeena','config.json');
+    const src=path.join(PACKAGE_ROOT,'harness','default-config.json');
+    actions.push(...addFile(src,cfg));
+    actions.push(...addFile(path.join(PACKAGE_ROOT,'harness','project-profile.template.md'),
+      path.join(cwd,'.xyeena','profile.md')));
+    if(!Array.isArray(guards)||!guards.length) throw new Error('Choose Harness guardrail group(s) or all explicitly.');
+    const groups=new Set(fs.readdirSync(path.join(PACKAGE_ROOT,'harness','guides'),{withFileTypes:true})
+      .filter(x=>x.isDirectory()).map(x=>x.name));
+    for(const group of guards) {
+      if(!groups.has(group)) throw new Error('Unknown Harness guardrail group: '+group);
+      actions.push(...addDir(path.join(PACKAGE_ROOT,'harness','guides',group),
+        path.join(cwd,'.xyeena','harness','guides',group)));
+    }
+  }
+  const manifestPath=path.join(cwd,'.xyeena','install.json');
+  assertSafeDestination(manifestPath);
+  const prior=fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath,'utf8')) : {};
+  // Preserve installation inventory from earlier selective runs and legacy
+  // Xyeena versions when new components/runtimes are added incrementally.
+  const mergeTargetInventory=(oldTargets,newTargets)=>{
+    const result=new Map();
+    for(const entry of [...(oldTargets||[]),...newTargets]){
+      if(!entry?.path) continue;
+      const previous=result.get(entry.path)||[];
+      result.set(entry.path,[...new Set([...previous,...(entry.runtimes||[])])]);
+    }
+    return [...result].map(([filePath,owners])=>({path:filePath,runtimes:owners}));
+  };
+  const skillTargets=targets.map(x=>({path:path.relative(cwd,x.target),runtimes:x.runtimes}));
+  const agentTargets=selected.has('xyeena-orchestrate')
+    ? [...new Set(runtimes.map(r=>runtimeDescriptor(r).agentDir).filter(Boolean))].map(dir=>({
+        path:dir,runtimes:runtimes.filter(r=>runtimeDescriptor(r).agentDir===dir)
+      }))
+    : [];
+  const hasLegacySkills=Array.isArray(prior.skill_targets)&&prior.skill_targets.length>0;
+  const manifest={
+    version:VERSION,
+    components:[...new Set([...(prior.components||[]),...(hasLegacySkills?['skills']:[]),...components])],
+    runtimes:[...new Set([...(prior.runtimes||[]),...runtimes])],
+    skills:[...new Set([...(prior.skills||[]),...selected])].sort(),
+    guards:[...new Set([...(prior.guards||[]),...guards])].sort(),
+    installed_at:new Date().toISOString(),
+    skill_targets:mergeTargetInventory(prior.skill_targets,skillTargets),
+    agent_targets:mergeTargetInventory(prior.agent_targets,agentTargets)
+  };
+  if (!dryRun) {
+    for(const s of steps) {
+      if(s.kind==='dir') copyDir(s.src,s.dst,{force,dryRun:false});
+      else {
+        if (fs.existsSync(s.dst) && fs.readFileSync(s.src).equals(fs.readFileSync(s.dst))) continue;
+        ensureDir(path.dirname(s.dst)); fs.copyFileSync(s.src,s.dst);
+      }
+    }
+    writeJson(manifestPath,manifest);
+  }
+  return { components,runtimes,guards,skills:[...selected].sort(),
+    autoDependencies:[...selected].filter(x=>!skills.includes(x)),
+    actions,manifest,dryRun };
+}
