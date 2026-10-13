@@ -1,6 +1,6 @@
-# Xyeena 0.2.0 candidate — release acceptance
+# Xyeena 0.2.0 — installer acceptance and release record
 
-**Status: candidate only.** No merge into `main` and no npm publication until automated and manual gates pass.
+**Repository status (13 October 2026):** [PR #2](https://github.com/rzqllh/xyeena/pull/2) was squash-merged into `main` at `9fa245fe67f2bb70255568cd5431783f`. The final feature-branch CI matrix passed 7/7 jobs. The owner reported that Windows manual acceptance was satisfactory; the complete 8/8 terminal summary was not attached. **npm publication remains pending separate approval**; see [issue #3](https://github.com/rzqllh/xyeena/issues/3).
 
 ## Verified automated gates
 
@@ -11,21 +11,21 @@
 
 ## Manual Windows PowerShell acceptance (required)
 
-Run the guided real-terminal acceptance once, after updating your local branch:
+For a repeat acceptance run, use a clean checkout of `main`:
 
 ```powershell
-git pull --ff-only origin feat/selective-skills-harness-installer
+git pull --ff-only origin main
 node .\scripts\manual-acceptance.mjs
 ```
 
 This script creates disposable fixtures in the Windows temp directory, walks through the actual terminal wizard (you choose the listed answers), checks selected file outputs, validates cancellation/repeat/overwrite guards, and prints a PASS/FAIL summary. **It cannot certify human acceptance until someone runs it in a real Windows PowerShell terminal.** No Git commit, push, project reset, npm publication or automatic cleanup occurs.
 
 
-Run these commands in a **real interactive PowerShell terminal**, from a clean checkout of this branch. Do not run against a production project. Use temporary folders as illustrated:
+Run these commands in a **real interactive PowerShell terminal**, from a clean checkout of `main`. Do not run against a production project. Use temporary folders as illustrated:
 
 ```powershell
-git switch feat/selective-skills-harness-installer
-git pull --ff-only origin feat/selective-skills-harness-installer
+git switch main
+git pull --ff-only origin main
 node .\bin\xyeena.mjs version
 $TestRoot = Join-Path $env:TEMP ('xyeena-accept-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $TestRoot | Out-Null
@@ -57,4 +57,4 @@ Do not clean up acceptance evidence before recording results. When done, you may
 - All GitHub Actions jobs green for the final release-candidate commit.
 - All seven manual scenarios above recorded PASS; no unexplained installer writes or overwrites.
 - npm package archive audited for secret files, unexpected artifacts, source notices and LICENSE.
-- Merge and npm publish only with explicit maintainer approval; update the release changelog and README warning at publication time.
+- The integration merge is complete. npm publication remains a separate step requiring explicit maintainer approval and registry verification; see issue #3.
