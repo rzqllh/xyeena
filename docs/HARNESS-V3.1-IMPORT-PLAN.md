@@ -2,10 +2,10 @@
 
 ## Integration status
 
-- **Source imported:** complete local overlay integrated and pushed to Draft PR #2 on branch `feat/selective-skills-harness-installer` in commit `441dcf4616e751fe4a13e069c7978f3f30c4906e`.
+- **Source integrated into `main`:** original Harness v3.1 imported via feature-branch commit `441dcf4616e751fe4a13e069c7978f3f30c4906e` and squash-merged in [PR #2](https://github.com/rzqllh/xyeena/pull/2) at `9fa245fe67f2bb70255568cd5431783f`.
 - **Base:** Xyeena Agentic remains the single distributable npm package `xyeena-agent` with executable aliases `xyeena` and `xyeena-agent`.
 - **Licensing:** original Xyeena author authorized MIT for Agentic, Skills and Harness; `harness/upstream-v3.1/LICENSE` is included in the npm package, and `LICENSE-NOT-SET.md` has been removed.
-- **Release:** npm publish and merge to `main` have NOT occurred. Public npm `0.1.0` still uses the previous all-skills install behavior.
+- **Release:** source in `main` is version `0.2.0`. Publication to npm is **not yet confirmed** and must be approved separately via [issue #3](https://github.com/rzqllh/xyeena/issues/3); do not assume the public `npx` command resolves the new version until verified.
 
 ## Source provenance
 
@@ -36,15 +36,17 @@
 | `git diff --cached --check` | Clean before commit |
 | PR integration commit CI | 7/7 jobs passed: Windows/macOS/Linux Node.js 22/24 + skills-ref |
 
-## Still required before publish/merge
+## Post-merge status and outstanding npm release
 
-1. Windows PowerShell **interactive** wizard acceptance, including Cancel, Skills-only, Harness-only, All, repeated installs, conflicts and `--force` protection. Automated non-TTY and packaged-consumer checks do not replace this gate.
-2. Evaluate package contents and provenance once more after README and metadata changes; run the full CI suite for the final candidate commit.
-3. Choose and synchronize the next npm version in `package.json` and `src/paths.mjs`, verify published artifact and changelog, then publish only with explicit owner approval.
-4. Keep PR #2 draft and `main` unchanged until the gates above are complete.
+1. The source integration is complete; the merged PR #2 feature-branch CI passed all 7 jobs on Windows, macOS, Linux, and the Agent Skills validator.
+2. Windows PowerShell manual installer acceptance was reported satisfactory by the project owner. The full final 8/8 script output was not included, so this is **owner-reported evidence**, not a separately archived terminal log.
+3. The public source package versions (`package.json`, `package-lock.json`, `src/paths.mjs`) were synchronized to `0.2.0`. The Harness snapshot stays private, under MIT.
+4. Pending: validate main-branch post-merge CI independently, confirm npm registry version, inspect the final tarball and obtain explicit publish approval; tracked at [release issue #3](https://github.com/rzqllh/xyeena/issues/3).
+5. The separate Xyeena Island/Desktop implementation must not be mixed into this package's publishing workflow.
 
 ## References
 
-- [Draft PR #2](https://github.com/rzqllh/xyeena/pull/2)
-- [Current README](../README.md)
-- [Unreleased changes](../CHANGELOG.md)
+- [Merged PR #2](https://github.com/rzqllh/xyeena/pull/2)
+- [Release issue #3](https://github.com/rzqllh/xyeena/issues/3)
+- [README](../README.md)
+- [CHANGELOG](../CHANGELOG.md)
