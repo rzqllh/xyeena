@@ -1,0 +1,15 @@
+{
+  "id": "github",
+  "kind": "provider",
+  "detect": {
+    "any": [
+      ".github/workflows",
+      ".github/copilot-instructions.md",
+      "AGENTS.md"
+    ]
+  },
+  "activate": [
+    "git",
+    "repo-ai-docs"
+  ]
+}

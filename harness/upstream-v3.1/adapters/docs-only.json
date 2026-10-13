@@ -1,0 +1,19 @@
+{
+  "id": "docs-only",
+  "kind": "project",
+  "detect": {
+    "allChangedMatch": [
+      "**/*.md",
+      "**/*.mdx",
+      "docs/**",
+      "README*",
+      "CHANGELOG*"
+    ]
+  },
+  "activate": [
+    "copy",
+    "docs-truth",
+    "repo-ai-docs"
+  ],
+  "riskOverride": "LOW"
+}

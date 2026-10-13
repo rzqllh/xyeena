@@ -1,0 +1,19 @@
+{
+  "id": "monorepo",
+  "kind": "topology",
+  "detect": {
+    "any": [
+      "pnpm-workspace.yaml",
+      "turbo.json",
+      "nx.json",
+      "lerna.json"
+    ]
+  },
+  "activate": [
+    "impact-regression",
+    "dependency"
+  ],
+  "notes": [
+    "Prefer affected-package verification instead of rebuilding every workspace when tooling supports it."
+  ]
+}

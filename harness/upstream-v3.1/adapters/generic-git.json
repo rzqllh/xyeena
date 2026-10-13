@@ -1,0 +1,15 @@
+{
+  "id": "generic-git",
+  "kind": "universal",
+  "detect": {
+    "required": [
+      ".git"
+    ]
+  },
+  "activate": [
+    "git",
+    "repo-ai-docs",
+    "evidence-before-claim",
+    "risk"
+  ]
+}

@@ -46,7 +46,7 @@ npx xyeena-agent verify
 
 `audit` and `scan` are read-only. `verify` executes available project-native npm scripts on explicit request, returns `INCOMPLETE` rather than a false PASS when none are present, and creates evidence only if `--evidence` is supplied. Put `.harness/evidence/` in your project's `.gitignore` when enabling evidence.
 
-**Current status:** this feature branch includes the initial integration and installer controls. It is not yet the complete transplant of all v3.1 harness guardrails/runtime modules. The original artifact, full licensing review, and integrated verification remain tracked separately.
+**Integration status:** the vendored Harness v3.1 runtime and guardrail source are included in this feature branch. This is still a release candidate: do not publish or merge without validating the combined commit in CI, the npm package, and the interactive Windows setup. The bundled source is MIT-licensed; the standalone vendored package is private.
 
 ## Native plugin repository layouts
 

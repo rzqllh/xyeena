@@ -34,3 +34,6 @@ pnpm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Xyeena harness local verification evidence
+.harness/evidence/

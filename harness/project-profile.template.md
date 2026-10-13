@@ -1,17 +1,43 @@
-# Xyeena Project Profile
+# Project Profile Template
 
-Keep durable, project-specific facts here. Do not invent constraints.
+Keep this short and factual.
 
 ## Identity
 - Project:
-- Main stack:
-- Target deployment:
+- Purpose:
+- Repository type:
+- Primary stack:
+- Deployment provider:
 
-## Product invariants
-- 
+## Protected branches
+- `main`
 
-## Critical paths and verification
-- 
+## Domain invariants
+Write only rules that must remain true across refactors.
 
-## Release and rollback notes
-- 
+## Shared surfaces
+Map shared primitives to affected routes/screens when useful.
+
+Example:
+
+```text
+PageShell
+→ /
+→ /search
+→ /settings
+```
+
+## Critical paths
+List directories/files that automatically increase verification risk.
+
+## Public documentation constraints
+List terminology or implementation details that must never appear publicly.
+
+## Verification
+Define project-native commands when universal auto-detection is insufficient.
+
+## Deployment mode
+Describe whether pushes create previews/production deployments and any budget constraints.
+
+## Notes
+Only durable project facts belong here.
