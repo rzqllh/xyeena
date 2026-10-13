@@ -15,6 +15,34 @@ function run(file,args,cwd=root) {
 }
 try {
   const packed=JSON.parse(run(npm,['pack','--json','--pack-destination',scratch]));
+  const metadata=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+  if(packed[0]?.name!==metadata.name || packed[0]?.version!==metadata.version) {
+    throw new Error('Packed artifact metadata differs from package.json');
+  }
+  const files=new Set((packed[0].files||[]).map(f=>f.path.replace(/\\/g,'/')));
+  for(const required of [
+    'bin/xyeena.mjs','README.md','LICENSE','NOTICE.md',
+    'harness/upstream-v3.1/LICENSE',
+    'harness/upstream-v3.1/runtime/xyeena-harness.mjs',
+    'harness/guides/00-core/anti-slop.md',
+    'skills/xyeena-core/SKILL.md'
+  ]) {
+    if(!files.has(required))throw new Error('Missing required npm package file: '+required);
+  }
+  const originalGuards=[...files].filter(p=>/^harness\/guides\/[^/]+\/(?!README\.md$)[^/]+\.md$/.test(p));
+  if(originalGuards.length!==41) {
+    throw new Error('Expected 41 original guardrail docs; found '+originalGuards.length);
+  }
+  const prohibited=[...files].filter(p=>
+    /(^|\/)(node_modules|\.git|\.harness|\.superpowers|\.gemini|prompt-dump|session-dump)(\/|$)/i.test(p) ||
+    /(^|\/)\.env(?:\.|$)/i.test(p) ||
+    /(^|\/)(LICENSE-NOT-SET\.md|\.DS_Store|Thumbs\.db)$/i.test(p) ||
+    /\.(?:pem|p12|pfx|key|log)$/i.test(p)
+  );
+  if(prohibited.length)throw new Error('Forbidden npm package paths: '+prohibited.join(', '));
+  if(metadata.dependencies && Object.keys(metadata.dependencies).length) {
+    throw new Error('Unexpected runtime dependencies in zero-dependency release');
+  }
   const tar=path.join(scratch,packed[0].filename);
   const consumer=path.join(scratch,'consumer');
   fs.mkdirSync(consumer);
