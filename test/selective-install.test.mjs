@@ -64,3 +64,22 @@ test('dry-run never writes and conflicts fail before partial installation',()=>{
     assert.equal(fs.readFileSync(path.join(root,'.xyeena','config.json'),'utf8'),'{"custom":true}\n');
   } finally {done(root)}
 });
+
+
+test('incremental installations retain previous runtime and guide inventory',()=>{
+  const root=temp();
+  try {
+    installSelective({cwd:root,components:['skills'],runtimes:['codex'],skills:['xyeena-core']});
+    installSelective({cwd:root,components:['harness'],guards:['00-core']});
+    installSelective({cwd:root,components:['skills'],runtimes:['claude'],skills:['xyeena-interface']});
+    const manifest=JSON.parse(fs.readFileSync(path.join(root,'.xyeena','install.json'),'utf8'));
+    assert.ok(manifest.components.includes('skills'));
+    assert.ok(manifest.components.includes('harness'));
+    assert.ok(manifest.runtimes.includes('codex'));
+    assert.ok(manifest.runtimes.includes('claude'));
+    assert.ok(manifest.guards.includes('00-core'));
+    assert.ok(manifest.skill_targets.some(e=>e.path===path.join('.agents','skills')));
+    assert.ok(manifest.skill_targets.some(e=>e.path===path.join('.claude','skills')));
+    assert.ok(fs.existsSync(path.join(root,'.agents','skills','xyeena-core','SKILL.md')));
+  } finally {done(root)}
+});
