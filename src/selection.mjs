@@ -32,6 +32,31 @@ export function skillDependencyClosure(requested) {
   return [...selected];
 }
 
+export function skillDescription(name) {
+  const contract=path.join(SKILLS_DIR,name,'capability.json');
+  try {
+    const meta=JSON.parse(fs.readFileSync(contract,'utf8')).metadata;
+    return String(meta?.description||'').replace(/\s+/g,' ').trim();
+  } catch { return ''; }
+}
+
+export function guardrailDescription(name) {
+  const labels = {
+    '00-core':'Core process and evidence rules',
+    '10-profile':'Project-specific context',
+    '20-product':'Product hierarchy and invariants',
+    '30-design':'UI, UX, accessibility and motion',
+    '40-engineering':'Architecture and runtime contracts',
+    '50-quality':'Verification, tests and review',
+    '60-security':'Security, privacy and authorization',
+    '70-performance':'Responsiveness and resource budgets',
+    '80-operations':'Git, deployments and rollback',
+    '90-hygiene':'Repository and documentation hygiene',
+    '95-agent-safety':'Tool use and external-content safety'
+  };
+  return labels[name]||name;
+}
+
 export function availableHarnessGroups() {
   return fs.readdirSync(path.join(PACKAGE_ROOT,'harness','guides'), {withFileTypes:true})
     .filter(x=>x.isDirectory()).map(x=>x.name).sort();
@@ -81,13 +106,13 @@ export async function interactiveSelection({ input = process.stdin, output = pro
       runtimes = parseChoice(await rl.question('Runtime(s): '),runtimesAvailable);
       const names = availableSkills();
       output.write('\nSkills — comma-separated numbers/names or "all":\n');
-      names.forEach((v,i) => output.write('  ' + (i+1) + '. ' + v + '\n'));
+      names.forEach((v,i) => output.write('  ' + (i+1) + '. ' + v + (skillDescription(v)?' — '+skillDescription(v):'') + '\n'));
       skills = parseChoice(await rl.question('Skill(s): '), names);
     }
     if(components.includes('harness')) {
       const groups=availableHarnessGroups();
       output.write('\nHarness guardrails — comma-separated numbers or "all":\n');
-      groups.forEach((v,i)=>output.write('  ' + (i+1) + '. ' + v + '\n'));
+      groups.forEach((v,i)=>output.write('  ' + (i+1) + '. ' + v + ' — ' + guardrailDescription(v) + '\n'));
       guards=parseChoice(await rl.question('Guardrail group(s): '),groups);
     }
     output.write('\nSelection: ' + components.join(' + ') + '\n');
