@@ -12,9 +12,9 @@ Xyeena helps coding agents work with clearer scope, safer operations, stronger e
 
 Supported skill targets: **Antigravity**, **Claude Code**, and **Codex**. Project detection in the Harness covers common Node/Next.js, Python, static, monorepo, and Git-based workflows. Xyeena uses no mandatory runtime npm dependencies.
 
-> **Release status:** This README describes the **unreleased Skills + Harness upgrade** on the feature branch. The currently published npm package `xyeena-agent@0.1.0` still contains the older skills-only installer, whose `init` behavior differs. To try this branch before publication, use `node ./bin/xyeena.mjs init` from a checkout. The `npx` commands below are for the **next published version**, not npm `0.1.0`.
+> **Version compatibility:** These instructions apply to **`xyeena-agent@0.2.0` and later**. Version `0.1.0` used a legacy installer that could install all skills by default. Before running installation, verify the package version with `npx xyeena-agent version`; use `npx xyeena-agent@0.2.0 init` to select the documented 0.2.0 behavior explicitly.
 
-## Getting started (after the next npm release)
+## Getting started
 
 Run from the directory of the project where Xyeena should be installed:
 
@@ -86,7 +86,7 @@ npx xyeena-agent verify          # Explicitly run supported project-native check
 - The Harness source is bundled inside the same `xyeena-agent` npm package. There is **no separate Harness npm install**.
 - Check changed files and run `npm run test:consumer` before publishing or automating the new package.
 
-See `CHANGELOG.md` for the pending release notes and `docs/HARNESS-V3.1-IMPORT-PLAN.md` for the source-provenance and verification record.
+See `CHANGELOG.md` for version history and `docs/HARNESS-V3.1-IMPORT-PLAN.md` for the source-provenance and verification record.
 
 ## Native plugin repository layouts
 
