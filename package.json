@@ -1,7 +1,7 @@
 {
   "name": "xyeena-agent",
   "version": "0.1.0",
-  "description": "Selectable Agent Skills and optional project harness for Antigravity, Claude Code, Codex, and Agent Skills runtimes.",
+  "description": "Modular Agent Skills and opt-in project Harness with interactive setup, audits, security guardrails, and verification.",
   "type": "module",
   "bin": {
     "xyeena-agent": "bin/xyeena.mjs",
@@ -51,7 +51,13 @@
     "codex",
     "ai-agents",
     "orchestration",
-    "agent-workflow"
+    "agent-workflow",
+    "agent-harness",
+    "guardrails",
+    "code-quality",
+    "verification",
+    "developer-tools",
+    "security-audit"
   ],
   "license": "MIT",
   "repository": {
