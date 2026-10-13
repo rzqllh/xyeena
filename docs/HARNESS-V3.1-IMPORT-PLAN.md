@@ -1,45 +1,50 @@
-# Harness v3.1 source adoption
+# Harness v3.1 adoption and acceptance record
 
-Status: **source package prepared and tested locally, not yet committed to this GitHub branch**.
+## Integration status
 
-## Pinned upstream and provenance
+- **Source imported:** complete local overlay integrated and pushed to Draft PR #2 on branch `feat/selective-skills-harness-installer` in commit `441dcf4616e751fe4a13e069c7978f3f30c4906e`.
+- **Base:** Xyeena Agentic remains the single distributable npm package `xyeena-agent` with executable aliases `xyeena` and `xyeena-agent`.
+- **Licensing:** original Xyeena author authorized MIT for Agentic, Skills and Harness; `harness/upstream-v3.1/LICENSE` is included in the npm package, and `LICENSE-NOT-SET.md` has been removed.
+- **Release:** npm publish and merge to `main` have NOT occurred. Public npm `0.1.0` still uses the previous all-skills install behavior.
 
-- Existing Xyeena Agentic baseline: `8ba54598f4da89662474625732095aab847d5d9d`.
-- Reviewed v3.1 ZIP SHA-256: `b65f826cabd69d6357fcf84c4fa1d874aeb4f383a7a35db9b5eee573f30fe888`.
-- Source: user-supplied `xyeena-harness-v3.1-repo-ready(1).zip`.
-- Hardening-candidate runtime safety tests: **15/15 passed** in the isolated source tree.
+## Source provenance
 
-## Target architecture
+- Reviewed owner-supplied archive: `xyeena-harness-v3.1-repo-ready(1).zip`.
+- Source archive SHA-256: `b65f826cabd69d6357fcf84c4fa1d874aeb4f383a7a35db9b5eee573f30fe888`.
+- Original 41 Markdown guardrails are represented in `harness/guides/` and grouped by category. Vendored source including adapters, runtime and integration examples is in `harness/upstream-v3.1/`.
+- No separate Harness npm install is intended; the original nested package is marked private.
 
-- Keep `xyeena-agent` as the **single published npm package** and both public binaries.
-- Interactive `xyeena init`: no preselection; choose Skills, Harness, or explicit All; then runtimes, individual skills and Harness guardrail groups.
-- Leave the original `xyeena doctor` unchanged; route `xyeena harness doctor|audit|scan|verify` and standalone `xyeena audit|scan|verify` through the reviewed v3.1 runtime.
-- Keep `src/harness.mjs` as a small wrapper invoking the pinned vendored runtime. No second public CLI, no second npm install.
-- Imported sources belong under `harness/upstream-v3.1/` with per-category original Markdown documents under `harness/guides/`. The packed consumer and manual users can review each file.
-- The original 41 guardrail Markdown documents, runtime modules, adapters, integration examples and license placeholder must be preserved where relevant, rather than replaced by abbreviated placeholders.
+## Compatibility and safety
 
-## Local staging validation
+- `xyeena init` presents selectable Skills, Harness or All with granular runtime/skills/guardrail choices. No implicit install-all.
+- Non-interactive setup requires explicit flags and confirmation; dry-run writes nothing.
+- Mandatory skill dependencies are included; existing user-modified targets refuse overwrite unless `--force` is selected.
+- Legacy Agentic `xyeena doctor` remains available, while the new `xyeena harness doctor` uses the vendored runtime.
+- Vendored upstream `init` (would create `AGENTS.md`) and `install-hook` are blocked by the public Harness bridge; no hidden Git hook mutations.
+- Missing verification scripts return INCOMPLETE rather than a false PASS; evidence is opt-in.
 
-The source overlay was constructed from the original uploaded archive and the previously tested hardening candidate. A simulated feature-branch repository successfully completed:
-- Preview: no file writes, 41 guardrail Markdown files included.
-- Explicit apply: file manifest checksum verification, branch/remote/clean-worktree checks; no automatic Git commit or push.
-- Harness `doctor` invoked through the wrapper and reported the Git branch and risk.
-- Original 15 Harness unit tests passed. The first packaging attempt exposed a missing upstream `bin/` entrypoint and recursive Node test discovery; both were corrected before the final fixture rerun.
-- Final simulated integration: `npm test` **15/15 PASS**, `npm run test:harness` **15/15 PASS** and `npm pack --dry-run` **PASS** (102 packed files, 41 original guardrail documents, 11 runtime helper modules, 10 integration assets, upstream CLI present).
-- A project with no project-native scripts returned verification status `INCOMPLETE` (exit code 3), and `verify` did not create evidence without `--evidence`.
-- Invalid explicit `--base` failed with exit code 2.
+## Verified evidence
 
-These are **isolated fixture results, not final acceptance of the integrated GitHub tree**.
+| Gate | Result / scope |
+| --- | --- |
+| Windows local Agentic tests | 45/45 passed |
+| Windows local Harness tests | 15/15 passed |
+| Packed npm consumer | Passed with Windows executable-path fix |
+| Capability validation | 19 capabilities passed |
+| Agentic evaluations | 16/16 passed |
+| npm package license inventory | MIT LICENSE present; placeholder absent |
+| `git diff --cached --check` | Clean before commit |
+| PR integration commit CI | 7/7 jobs passed: Windows/macOS/Linux Node.js 22/24 + skills-ref |
 
-## Integration work still required
+## Still required before publish/merge
 
-1. Apply the reviewed overlay on the actual PR #2 feature branch, inspect the full diff and update the package changelog.
-2. Run all original Xyeena Agentic tests, original 15 Harness tests, evaluation checks, packed npm consumer tests and the Windows/Linux/macOS CI matrix against that exact head.
-3. Verify installer selections on Windows PowerShell: Skills-only, Harness-only, selected guards, explicit All, Cancel, dry-run, rerun and overwrite refusal.
-4. Resolve the original Harness archive's `LICENSE-NOT-SET.md` publication-rights question and review third-party attribution.
-5. Review npm package allowlist, release notes, semver, and evidence/privacy cleanup.
-6. Keep PR #2 **draft** and `main` unchanged until all checks, including manual gates, pass.
+1. Windows PowerShell **interactive** wizard acceptance, including Cancel, Skills-only, Harness-only, All, repeated installs, conflicts and `--force` protection. Automated non-TTY and packaged-consumer checks do not replace this gate.
+2. Evaluate package contents and provenance once more after README and metadata changes; run the full CI suite for the final candidate commit.
+3. Choose and synchronize the next npm version in `package.json` and `src/paths.mjs`, verify published artifact and changelog, then publish only with explicit owner approval.
+4. Keep PR #2 draft and `main` unchanged until the gates above are complete.
 
-## Distribution
+## References
 
-The full-source overlay is supplied as a downloadable conversation artifact, not committed to this branch. A developer can extract it outside the repository, inspect it, preview its installer, then apply it only after checking out `feat/selective-skills-harness-installer` in a clean local clone. The importer never pushes automatically.
+- [Draft PR #2](https://github.com/rzqllh/xyeena/pull/2)
+- [Current README](../README.md)
+- [Unreleased changes](../CHANGELOG.md)
