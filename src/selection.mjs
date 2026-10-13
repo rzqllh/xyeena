@@ -9,6 +9,29 @@ export function availableSkills() {
     .map(e => e.name).sort();
 }
 
+
+/** Resolve mandatory skill dependencies for preview and installation. */
+export function skillDependencyClosure(requested) {
+  const available = new Set(availableSkills());
+  const selected = new Set();
+  const visiting = new Set();
+  const visit = name => {
+    if (!available.has(name)) throw new Error('Unknown skill: ' + name);
+    if (visiting.has(name)) throw new Error('Cyclic skill dependency: ' + name);
+    if (selected.has(name)) return;
+    visiting.add(name);
+    const contract = path.join(SKILLS_DIR, name, 'capability.json');
+    if (fs.existsSync(contract)) {
+      const dependencies = JSON.parse(fs.readFileSync(contract,'utf8')).dependencies?.required || [];
+      for (const dependency of dependencies) visit(dependency);
+    }
+    visiting.delete(name);
+    selected.add(name);
+  };
+  for (const skill of requested) visit(skill);
+  return [...selected];
+}
+
 export function availableHarnessGroups() {
   return fs.readdirSync(path.join(PACKAGE_ROOT,'harness','guides'), {withFileTypes:true})
     .filter(x=>x.isDirectory()).map(x=>x.name).sort();
@@ -69,6 +92,10 @@ export async function interactiveSelection({ input = process.stdin, output = pro
     }
     output.write('\nSelection: ' + components.join(' + ') + '\n');
     if (runtimes.length) output.write('Runtimes: ' + runtimes.join(', ') + '\nSkills: ' + skills.join(', ') + '\n');
+    if (skills.length) {
+      const required=skillDependencyClosure(skills).filter(name=>!skills.includes(name));
+      if (required.length) output.write('Also required: ' + required.join(', ') + ' (mandatory skill dependencies)\n');
+    }
     if (components.includes('harness')) output.write('Harness guardrails: '+guards.join(', ')+'\n');
     const ok = (await rl.question('\nProceed? [y/N]: ')).trim().toLowerCase();
     return ok === 'y' || ok === 'yes' ? { components, runtimes, skills, guards } : null;
