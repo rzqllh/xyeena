@@ -141,15 +141,33 @@ export function installSelective({
   }
   const manifestPath=path.join(cwd,'.xyeena','install.json');
   const prior=fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath,'utf8')) : {};
+  // Preserve installation inventory from earlier selective runs and legacy
+  // Xyeena versions when new components/runtimes are added incrementally.
+  const mergeTargetInventory=(oldTargets,newTargets)=>{
+    const result=new Map();
+    for(const entry of [...(oldTargets||[]),...newTargets]){
+      if(!entry?.path) continue;
+      const previous=result.get(entry.path)||[];
+      result.set(entry.path,[...new Set([...previous,...(entry.runtimes||[])])]);
+    }
+    return [...result].map(([filePath,owners])=>({path:filePath,runtimes:owners}));
+  };
+  const skillTargets=targets.map(x=>({path:path.relative(cwd,x.target),runtimes:x.runtimes}));
+  const agentTargets=selected.has('xyeena-orchestrate')
+    ? [...new Set(runtimes.map(r=>runtimeDescriptor(r).agentDir).filter(Boolean))].map(dir=>({
+        path:dir,runtimes:runtimes.filter(r=>runtimeDescriptor(r).agentDir===dir)
+      }))
+    : [];
+  const hasLegacySkills=Array.isArray(prior.skill_targets)&&prior.skill_targets.length>0;
   const manifest={
     version:VERSION,
-    components:[...new Set([...(prior.components||[]),...components])],
+    components:[...new Set([...(prior.components||[]),...(hasLegacySkills?['skills']:[]),...components])],
     runtimes:[...new Set([...(prior.runtimes||[]),...runtimes])],
     skills:[...new Set([...(prior.skills||[]),...selected])].sort(),
     guards:[...new Set([...(prior.guards||[]),...guards])].sort(),
     installed_at:new Date().toISOString(),
-    skill_targets: targets.map(x=>({path:path.relative(cwd,x.target),runtimes:x.runtimes})),
-    agent_targets: prior.agent_targets||[]
+    skill_targets:mergeTargetInventory(prior.skill_targets,skillTargets),
+    agent_targets:mergeTargetInventory(prior.agent_targets,agentTargets)
   };
   if (!dryRun) {
     for(const s of steps) {
