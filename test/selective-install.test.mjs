@@ -83,3 +83,51 @@ test('incremental installations retain previous runtime and guide inventory',()=
     assert.ok(fs.existsSync(path.join(root,'.agents','skills','xyeena-core','SKILL.md')));
   } finally {done(root)}
 });
+
+
+test('selective installer refuses symlink or junction destinations, even with force', t => {
+  const root=temp();
+  const outside=temp();
+  try {
+    const linked=path.join(root,'.xyeena');
+    try {
+      fs.symlinkSync(outside,linked,process.platform==='win32'?'junction':'dir');
+    } catch (error) {
+      if(['EPERM','EACCES','ENOTSUP'].includes(error.code)){
+        t.skip('The test platform does not permit creating directory links');
+        return;
+      }
+      throw error;
+    }
+    for(const force of [false,true]){
+      assert.throws(
+        ()=>installSelective({cwd:root,components:['harness'],guards:['00-core'],force}),
+        /symbolic link or junction/
+      );
+    }
+    assert.equal(fs.existsSync(path.join(outside,'config.json')),false);
+    assert.equal(fs.existsSync(path.join(outside,'install.json')),false);
+  } finally {done(root);done(outside)}
+});
+
+test('selective installer rejects linked skill directories before modifying files', t => {
+  const root=temp();
+  const outside=temp();
+  try {
+    fs.mkdirSync(path.join(root,'.agents'),{recursive:true});
+    try {
+      fs.symlinkSync(outside,path.join(root,'.agents','skills'),process.platform==='win32'?'junction':'dir');
+    } catch (error) {
+      if(['EPERM','EACCES','ENOTSUP'].includes(error.code)){
+        t.skip('The test platform does not permit creating directory links');
+        return;
+      }
+      throw error;
+    }
+    assert.throws(()=>installSelective({
+      cwd:root,components:['skills'],runtimes:['codex'],skills:['xyeena-core'],force:true
+    }),/symbolic link or junction/);
+    assert.deepEqual(fs.readdirSync(outside),[]);
+    assert.equal(fs.existsSync(path.join(root,'.xyeena')),false);
+  } finally {done(root);done(outside)}
+});
