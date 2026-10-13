@@ -7,8 +7,8 @@ const help=`Xyeena ${VERSION}
 Usage:
   xyeena init                                   # interactive: Skills / Harness / All
   xyeena init --components skills --runtime codex --skills xyeena-core --yes
-  xyeena init --components harness --yes
-  xyeena init --components all --runtime all --skills all --yes
+  xyeena init --components harness --guards 00-core,60-security --yes
+  xyeena init --components all --runtime all --skills all --guards all --yes
   xyeena init --components ... --dry-run         # preview, no files written
   xyeena doctor [--dir PATH]                      # existing installation doctor
   xyeena harness doctor|audit|scan|verify [--dir PATH] [--base REF]
@@ -41,6 +41,7 @@ export async function main(args){
     console.log('Components: '+result.components.join(', '));
     if(result.runtimes.length) console.log('Runtimes: '+result.runtimes.join(', '));
     if(result.skills.length) console.log('Skills: '+result.skills.join(', '));
+    if(result.guards.length) console.log('Guardrails: '+result.guards.join(', '));
     if(result.autoDependencies.length) console.log('Required dependencies: '+result.autoDependencies.join(', '));
     console.log('Files to write: '+result.actions.length);
     console.log('Inspect: xyeena doctor');
