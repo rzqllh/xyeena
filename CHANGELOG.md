@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased (0.2.0 candidate) — Skills + Harness upgrade
+## 0.2.0 — Skills + Harness upgrade
 
-Xyeena remains **one npm package** (`xyeena-agent`) with two independently selectable components. These changes are in the feature branch and are **not yet published** on npm.
+Xyeena remains **one npm package** (`xyeena-agent`) with two independently selectable components. This release makes Skills and Harness independently selectable through the same package.
 
 ### Added
 
@@ -22,15 +22,14 @@ Xyeena remains **one npm package** (`xyeena-agent`) with two independently selec
 ### Upgrade notes
 
 - Automation invoking `npx xyeena-agent init --runtime ...` must use the new explicit flags after the upgrade is published.
-- `npx` currently resolves npm `0.1.0`, which still uses the legacy installer. Until a new version is published, test the new wizard with `node ./bin/xyeena.mjs init` from the feature branch.
+- For the selection-first wizard, use `xyeena-agent@0.2.0` or later. The older `0.1.0` package continues to use the legacy installer.
 - No Git hooks, root `AGENTS.md`, or unselected skills/guards are silently installed by the new flow.
 
-### Verification evidence (pre-release)
+### Release validation
 
-- Windows local: Agentic 45/45, Harness v3.1 15/15, packed consumer PASS, 19 capability manifests PASS, 16/16 evaluation cases PASS.
-- Full source integration commit `441dcf4616e751fe4a13e069c7978f3f30c4906e` passed all 7 CI jobs (Windows, Linux, macOS; Node.js 22/24 and skills-ref).
-- npm package includes the MIT LICENSE and excludes the former license placeholder.
-- Remaining release gates: interactive Windows wizard acceptance, package/version publication workflow, and final post-documentation CI.
+- Windows local: Agentic 45/45, Harness v3.1 15/15, packed consumer PASS, 19 capability manifests PASS, and 16/16 evaluation cases PASS.
+- Cross-platform CI: Windows, macOS, and Linux with Node.js 22/24 and Agent Skills reference validation.
+- Published package inventory checks verify 41 guardrails, bundled MIT LICENSE, and exclusion of unexpected private build artifacts.
 
 ---
 
