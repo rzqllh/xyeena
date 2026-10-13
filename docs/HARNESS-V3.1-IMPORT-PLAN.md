@@ -24,8 +24,8 @@ The source overlay was constructed from the original uploaded archive and the pr
 - Preview: no file writes, 41 guardrail Markdown files included.
 - Explicit apply: file manifest checksum verification, branch/remote/clean-worktree checks; no automatic Git commit or push.
 - Harness `doctor` invoked through the wrapper and reported the Git branch and risk.
-- Original 15 Harness unit tests passed.
-- `npm pack --dry-run` included the vendored source in a fake consumer package.
+- Original 15 Harness unit tests passed. The first packaging attempt exposed a missing upstream `bin/` entrypoint and recursive Node test discovery; both were corrected before the final fixture rerun.
+- Final simulated integration: `npm test` **15/15 PASS**, `npm run test:harness` **15/15 PASS** and `npm pack --dry-run` **PASS** (102 packed files, 41 original guardrail documents, 11 runtime helper modules, 10 integration assets, upstream CLI present).
 - A project with no project-native scripts returned verification status `INCOMPLETE` (exit code 3), and `verify` did not create evidence without `--evidence`.
 - Invalid explicit `--base` failed with exit code 2.
 
