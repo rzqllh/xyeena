@@ -1,12 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createInterface } from 'node:readline/promises';
-import { SKILLS_DIR } from './paths.mjs';
+import { SKILLS_DIR, PACKAGE_ROOT } from './paths.mjs';
 
 export function availableSkills() {
   return fs.readdirSync(SKILLS_DIR, { withFileTypes: true })
     .filter(e => e.isDirectory() && fs.existsSync(path.join(SKILLS_DIR, e.name, 'SKILL.md')))
     .map(e => e.name).sort();
+}
+
+export function availableHarnessGroups() {
+  return fs.readdirSync(path.join(PACKAGE_ROOT,'harness','guides'), {withFileTypes:true})
+    .filter(x=>x.isDirectory()).map(x=>x.name).sort();
 }
 
 export function parseChoice(raw, options, { allowAll = true } = {}) {
@@ -30,7 +35,8 @@ export function explicitSelection(flags) {
   const wantsSkills = selected.includes('skills');
   const runtimes = wantsSkills ? parseChoice(flags.runtime || '', ['antigravity', 'claude', 'codex']) : [];
   const skills = wantsSkills ? parseChoice(flags.skills || '', availableSkills()) : [];
-  return { components: selected, runtimes, skills };
+  const guards = selected.includes('harness') ? parseChoice(flags.guards || '', availableHarnessGroups()) : [];
+  return { components: selected, runtimes, skills, guards };
 }
 
 export async function interactiveSelection({ input = process.stdin, output = process.stdout } = {}) {
@@ -44,7 +50,7 @@ export async function interactiveSelection({ input = process.stdin, output = pro
     if (first === '0' || !first) return null;
     const components = first === '1' ? ['skills'] : first === '2' ? ['harness'] : first === '3' ? ['skills','harness'] : null;
     if (!components) throw new Error('Invalid component selection. Nothing was installed.');
-    let runtimes = [], skills = [];
+    let runtimes = [], skills = [], guards = [];
     if (components.includes('skills')) {
       const runtimesAvailable = ['antigravity','claude','codex'];
       output.write('\nAgent runtimes — comma-separated numbers or "all":\n');
@@ -55,10 +61,16 @@ export async function interactiveSelection({ input = process.stdin, output = pro
       names.forEach((v,i) => output.write('  ' + (i+1) + '. ' + v + '\n'));
       skills = parseChoice(await rl.question('Skill(s): '), names);
     }
+    if(components.includes('harness')) {
+      const groups=availableHarnessGroups();
+      output.write('\nHarness guardrails — comma-separated numbers or "all":\n');
+      groups.forEach((v,i)=>output.write('  ' + (i+1) + '. ' + v + '\n'));
+      guards=parseChoice(await rl.question('Guardrail group(s): '),groups);
+    }
     output.write('\nSelection: ' + components.join(' + ') + '\n');
     if (runtimes.length) output.write('Runtimes: ' + runtimes.join(', ') + '\nSkills: ' + skills.join(', ') + '\n');
-    if (components.includes('harness')) output.write('Harness: project configuration and guardrails (non-destructive)\n');
+    if (components.includes('harness')) output.write('Harness guardrails: '+guards.join(', ')+'\n');
     const ok = (await rl.question('\nProceed? [y/N]: ')).trim().toLowerCase();
-    return ok === 'y' || ok === 'yes' ? { components, runtimes, skills } : null;
+    return ok === 'y' || ok === 'yes' ? { components, runtimes, skills, guards } : null;
   } finally { rl.close(); }
 }
