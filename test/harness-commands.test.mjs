@@ -26,3 +26,15 @@ test('harness reports incomplete rather than success when no checks run',()=>{
     assert.equal(runHarness('changed',{cwd:root,base:'not-a-branch',explicitBase:true}),2);
   } finally {process.chdir(prior);fs.rmSync(root,{recursive:true,force:true})}
 });
+
+
+test('unified harness bridge cannot bypass selective installer',()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'xyeena-bypass-'));
+  try {
+    assert.equal(runHarness('init',{cwd:root}),2);
+    assert.equal(runHarness('install-hook',{cwd:root}),2);
+    assert.equal(fs.existsSync(path.join(root,'AGENTS.md')),false);
+    assert.equal(fs.existsSync(path.join(root,'.xyeena')),false);
+    assert.equal(fs.existsSync(path.join(root,'.git')),false);
+  } finally {fs.rmSync(root,{recursive:true,force:true})}
+});
