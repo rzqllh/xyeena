@@ -8,7 +8,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const scratch=fs.mkdtempSync(path.join(os.tmpdir(),'xyeena-package-'));
 const npm=process.platform==='win32'?'npm.cmd':'npm';
 function run(file,args,cwd=root) {
-  const r=spawnSync(file,args,{cwd,encoding:'utf8',timeout:120000,windowsHide:true,
+  const r=spawnSync(file,args,{cwd,encoding:'utf8',timeout:120000,windowsHide:true,shell:process.platform==='win32',
     env:{...process.env,npm_config_audit:'false',npm_config_fund:'false'}});
   if(r.error||r.status!==0)throw new Error(file+' '+args.join(' ')+'\n'+(r.error?.message||r.stderr||r.stdout));
   return r.stdout;
