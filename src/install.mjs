@@ -95,11 +95,42 @@ export function installSelective({
   }
   const targets = components.includes('skills') ? runtimeTargets(cwd,runtimes) : [];
   const steps=[];
-  const addDir=(src,dst)=>{ // Dry-run preflight checks every selected path before writing.
+  // Never follow a user-controlled symlink / Windows junction below the
+  // project root. Without this check an explicitly chosen target can escape
+  // the worktree, especially when --force is present.
+  const assertSafeDestination=destination=>{
+    const rel=path.relative(cwd,path.resolve(destination));
+    if(rel==='..'||rel.startsWith('..'+path.sep)||path.isAbsolute(rel)){
+      throw new Error('Install target escapes project directory: '+destination);
+    }
+    let segment=cwd;
+    for(const part of rel.split(path.sep).filter(Boolean)){
+      segment=path.join(segment,part);
+      try{
+        if(fs.lstatSync(segment).isSymbolicLink()){
+          throw new Error('Refusing to install through symbolic link or junction: '+segment);
+        }
+      }catch(error){
+        if(error.code!=='ENOENT') throw error;
+      }
+    }
+  };
+  const assertSafeDirectoryTree=(src,dst)=>{
+    assertSafeDestination(dst);
+    for(const item of fs.readdirSync(src,{withFileTypes:true})){
+      const from=path.join(src,item.name),to=path.join(dst,item.name);
+      if(item.isDirectory()) assertSafeDirectoryTree(from,to);
+      else if(item.isFile()) assertSafeDestination(to);
+      else throw new Error('Unsupported packaged entry type: '+from);
+    }
+  };
+  const addDir=(src,dst)=>{ // Dry-run checks all selected paths before writing.
+    assertSafeDirectoryTree(src,dst);
     steps.push({src,dst,kind:'dir'});
     return copyDir(src,dst,{force,dryRun:true});
   };
   const addFile=(src,dst)=>{
+    assertSafeDestination(dst);
     if (fs.existsSync(dst) && !force &&
         !fs.readFileSync(src).equals(fs.readFileSync(dst))) {
       throw new Error('Refusing to overwrite modified file: ' + dst + ' (use --force)');
@@ -140,6 +171,7 @@ export function installSelective({
     }
   }
   const manifestPath=path.join(cwd,'.xyeena','install.json');
+  assertSafeDestination(manifestPath);
   const prior=fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath,'utf8')) : {};
   // Preserve installation inventory from earlier selective runs and legacy
   // Xyeena versions when new components/runtimes are added incrementally.
