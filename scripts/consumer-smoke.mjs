@@ -24,7 +24,7 @@ try {
   const missing=spawnSync(process.execPath,[bin,'init'],{cwd:consumer,encoding:'utf8'});
   if(missing.status===0)throw new Error('Missing selections unexpectedly installed.');
   if(fs.existsSync(path.join(consumer,'.xyeena')))throw new Error('Non-interactive no-selection modified project.');
-  run(process.execPath,[bin,'init','--components','harness','--yes'],consumer);
+  run(process.execPath,[bin,'init','--components','harness','--guards','00-core','--yes'],consumer);
   if(!fs.existsSync(path.join(consumer,'.xyeena','config.json')))throw new Error('Packaged harness config was not installed.');
   if(fs.existsSync(path.join(consumer,'.agents')))throw new Error('Harness-only unexpectedly installed skills.');
   run(process.execPath,[bin,'init','--components','skills','--runtime','codex','--skills','xyeena-interface','--yes'],consumer);
