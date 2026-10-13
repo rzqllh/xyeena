@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { parseChoice, explicitSelection } from '../src/selection.mjs';
+import { parseChoice, explicitSelection, skillDependencyClosure } from '../src/selection.mjs';
 import { installSelective } from '../src/install.mjs';
 
 const temp = () => fs.mkdtempSync(path.join(os.tmpdir(),'xyeena-choice-'));
@@ -16,6 +16,13 @@ test('selection never implicitly chooses all',()=>{
   assert.throws(()=>explicitSelection({components:'harness'}),/Select at least one/);
   assert.deepEqual(explicitSelection({components:'harness',guards:'00-core'}),{components:['harness'],guards:['00-core'],runtimes:[],skills:[],guards:['00-core']});
   assert.deepEqual(parseChoice('all',['skills','harness']),['skills','harness']);
+});
+
+test('dependency preview includes mandatory skills before confirmation',()=>{
+  const deps=skillDependencyClosure(['xyeena-interface']);
+  assert.ok(deps.includes('xyeena-interface'));
+  assert.ok(deps.includes('xyeena-core'));
+  assert.throws(()=>skillDependencyClosure(['not-a-skill']),/Unknown skill/);
 });
 
 test('selective skills pull only required capability dependencies',()=>{
