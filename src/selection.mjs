@@ -91,7 +91,7 @@ export async function interactiveSelection({ input = process.stdin, output = pro
   if (!input.isTTY || !output.isTTY) throw new Error('Interactive setup needs a terminal. Supply --components, --runtime and --skills for CI.');
   const rl = createInterface({ input, output });
   try {
-    output.write('\nXyeena Setup — choose what to install\n');
+    output.write('\nXyeena Rig Setup — choose what to install\n');
     output.write('Nothing is installed until you confirm.\n\n');
     output.write('  1. Skills\n  2. Harness\n  3. All (Skills + Harness)\n  0. Cancel\n');
     const first = (await rl.question('\nComponent [1/2/3/0]: ')).trim();
