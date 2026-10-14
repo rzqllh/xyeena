@@ -19,6 +19,6 @@ its upstream license and attribution separately.
 
 ## Source and license ownership
 
-Xyeena Agentic, Xyeena Skills, and Xyeena Harness v3.1 in this repository are original Xyeena project source and are distributed under the MIT License in the repository root LICENSE. The internal source snapshot at `harness/upstream-v3.1/` carries the same MIT License. It is not a separately published npm package.
+Xyeena Rig (previously branded Xyeena Agentic), including its Skills and Harness v3.1 components, in this repository are original Xyeena project source and are distributed under the MIT License in the repository root LICENSE. The internal source snapshot at `harness/upstream-v3.1/` carries the same MIT License. It is not a separately published npm package.
 
 This statement does not override licenses of any third-party code included in future projects. Xyeena Island will have separate source and asset provenance and attribution requirements if third-party code is reused.

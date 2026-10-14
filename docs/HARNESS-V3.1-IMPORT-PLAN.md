@@ -3,9 +3,9 @@
 ## Integration status
 
 - **Source integrated into `main`:** original Harness v3.1 imported via feature-branch commit `441dcf4616e751fe4a13e069c7978f3f30c4906e` and squash-merged in [PR #2](https://github.com/rzqllh/xyeena/pull/2) at `9fa245fe67f2bb70255568cd5431783f`.
-- **Base:** Xyeena Agentic remains the single distributable npm package `xyeena-agent` with executable aliases `xyeena` and `xyeena-agent`.
+- **Base:** Xyeena Rig (formerly Xyeena Agentic) remains the single distributable npm package `xyeena-agent` with executable aliases `xyeena` and `xyeena-agent`.
 - **Licensing:** original Xyeena author authorized MIT for Agentic, Skills and Harness; `harness/upstream-v3.1/LICENSE` is included in the npm package, and `LICENSE-NOT-SET.md` has been removed.
-- **Release:** source in `main` is version `0.2.0`. Publication to npm is **not yet confirmed** and must be approved separately via [issue #3](https://github.com/rzqllh/xyeena/issues/3); do not assume the public `npx` command resolves the new version until verified.
+- **Release:** `xyeena-agent@0.2.0` was [published on npm](https://www.npmjs.com/package/xyeena-agent/v/0.2.0) on 14 October 2026, alongside the [GitHub release](https://github.com/rzqllh/xyeena/releases/tag/v0.2.0), with a [successful publish run](https://github.com/rzqllh/xyeena/actions/runs/38536465520). [Issue #3](https://github.com/rzqllh/xyeena/issues/3) was closed. The later Rig branding is source-only relative to this immutable release.
 
 ## Source provenance
 
@@ -36,13 +36,14 @@
 | `git diff --cached --check` | Clean before commit |
 | PR integration commit CI | 7/7 jobs passed: Windows/macOS/Linux Node.js 22/24 + skills-ref |
 
-## Post-merge status and outstanding npm release
+## Post-merge and publication outcome (14 October 2026)
 
-1. The source integration is complete; the merged PR #2 feature-branch CI passed all 7 jobs on Windows, macOS, Linux, and the Agent Skills validator.
-2. Windows PowerShell manual installer acceptance was reported satisfactory by the project owner. The full final 8/8 script output was not included, so this is **owner-reported evidence**, not a separately archived terminal log.
-3. The public source package versions (`package.json`, `package-lock.json`, `src/paths.mjs`) were synchronized to `0.2.0`. The Harness snapshot stays private, under MIT.
-4. Pending: validate main-branch post-merge CI independently, confirm npm registry version, inspect the final tarball and obtain explicit publish approval; tracked at [release issue #3](https://github.com/rzqllh/xyeena/issues/3).
-5. The separate Xyeena Island/Desktop implementation must not be mixed into this package's publishing workflow.
+1. Harness v3.1 source was integrated via PR #2. The release candidate's cross-platform CI passed 7/7 jobs.
+2. Windows manual acceptance was owner-reported satisfactory; the full final terminal transcript was not archived in this record.
+3. The published 0.2.0 package and lockfile are synchronized. The vendored Harness source remains private and MIT licensed.
+4. GitHub Release `v0.2.0`, registry publication, and successful Actions execution are now confirmed; see [closed issue #3](https://github.com/rzqllh/xyeena/issues/3).
+5. [Rig branding PR #4](https://github.com/rzqllh/xyeena/pull/4) updated current source presentation after publication without rewriting 0.2.0.
+6. Xyeena Notch/Island and Xyn assets remain separate from this npm package and its licensing scope.
 
 ## References
 
