@@ -20,7 +20,7 @@ test('Rig branding preserves published technical package and plugin identifiers'
   assert.equal(load('.claude-plugin/marketplace.json').plugins[0].name, 'xyeena');
   assert.equal(load('.agents/plugins/marketplace.json').plugins[0].name, 'xyeena');
   assert.equal(load('.codex-plugin/plugin.json').interface.displayName, 'Xyeena Rig');
-  assert.match(fs.readFileSync(path.join(PACKAGE_ROOT, 'README.md'), 'utf8'), /^# Xyeena Rig\n/);
+  assert.match(fs.readFileSync(path.join(PACKAGE_ROOT, 'README.md'), 'utf8'), /^# Xyeena Rig\r?\n/);
 });
 
 test('Rig CLI help is branded while the version-only output remains stable', () => {
