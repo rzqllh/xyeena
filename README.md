@@ -1,8 +1,8 @@
-# Xyeena
+# Xyeena Rig
 
-**Selectable Agent Skills and project guardrails in one npm package.**
+**Equip your agent. Guard your project.**
 
-Xyeena helps coding agents work with clearer scope, safer operations, stronger evidence, and repeatable project checks. It combines modular **Skills** for agent behavior with an optional **Harness** for project-level guardrails and verification. Use either component or both; installation does not silently select everything.
+Xyeena Rig helps coding agents work with clearer scope, safer operations, stronger evidence, and repeatable project checks. It combines modular **Skills** for agent behavior with an optional **Harness** for project-level guardrails and verification. Use either component or both; installation does not silently select everything.
 
 | Component | What it adds | Optional? |
 | --- | --- | --- |
@@ -10,7 +10,17 @@ Xyeena helps coding agents work with clearer scope, safer operations, stronger e
 | **Harness** | 41 focused guardrail documents across 11 groups, project profile/configuration, and runnable audit/scan/verification commands | Yes |
 | **All** | Skills + Harness together | Explicit selection only |
 
-Supported skill targets: **Antigravity**, **Claude Code**, and **Codex**. Project detection in the Harness covers common Node/Next.js, Python, static, monorepo, and Git-based workflows. Xyeena uses no mandatory runtime npm dependencies.
+Supported skill targets: **Antigravity**, **Claude Code**, and **Codex**. Project detection in the Harness covers common Node/Next.js, Python, static, monorepo, and Git-based workflows. Rig uses no mandatory runtime npm dependencies.
+
+## Product identity
+
+**Xyeena Rig** is the developer-tooling product under the broader **Xyeena** brand. Rig is the same, single npm package as before: `xyeena-agent`. It is **not** a new or separate package.
+
+- **Xyeena Rig:** portable Agent Skills + optional project Harness, distributed through npm.
+- **Xyeena Notch:** a separate Windows desktop companion application, maintained in its own repository.
+- **Xyn — The Lion Guardian:** the Xyeena mascot identity; not shipped in the Rig npm package.
+
+**Compatibility:** the npm package `xyeena-agent`, executable names `xyeena` / `xyeena-agent`, skill IDs, plugin IDs, `.xyeena/` data paths, and existing configuration contracts remain unchanged. This branding update to source does not retroactively change the already-published `0.2.0` npm tarball; package metadata and CLI wording will appear publicly when a subsequent version is published. See [Branding and naming](docs/BRANDING.md).
 
 > **Version compatibility:** These instructions apply to **`xyeena-agent@0.2.0` and later**. Version `0.1.0` used a legacy installer that could install all skills by default. Before running installation, verify the package version with `npx xyeena-agent version`; use `npx xyeena-agent@0.2.0 init` to select the documented 0.2.0 behavior explicitly.
 
@@ -78,7 +88,7 @@ npx xyeena-agent verify          # Explicitly run supported project-native check
 
 **Verification is not passive:** `verify` can run available project scripts. When no meaningful check ran, it reports **INCOMPLETE**, not a false PASS. Evidence files are generated only when requested via `--evidence` and live under the Git-ignored `.harness/evidence/` directory. Audit and scan do not modify project files. Harness `init` and Git-hook installation are not exposed through the unified CLI; installation remains opt-in through Xyeena's selection workflow.
 
-## Upgrade from Xyeena 0.1.0
+## Upgrade from xyeena-agent 0.1.0
 
 - `xyeena init` changes from its legacy all-skills installer to a **selection-first wizard**; scripts that depended on the old default must be updated.
 - Non-interactive installation must pass `--components` and the appropriate `--runtime` / `--skills` / `--guards` with `--yes`.

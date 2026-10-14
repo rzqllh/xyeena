@@ -1,7 +1,7 @@
 {
   "name": "xyeena",
   "version": "0.1.0",
-  "description": "Context-activated engineering, research, UI, review and orchestration capabilities.",
+  "description": "Xyeena Rig: selectable Agent Skills and project Harness.",
   "author": {
     "name": "Xyeena contributors"
   },
@@ -17,9 +17,9 @@
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "Xyeena",
-    "shortDescription": "Modular engineering and decision capabilities for coding agents",
-    "longDescription": "Xyeena routes work through focused capabilities for requirements, research, debugging, UI craft, security, verification and review without loading the whole system at once.",
+    "displayName": "Xyeena Rig",
+    "shortDescription": "Agent Skills and opt-in Harness guardrails",
+    "longDescription": "Xyeena Rig equips coding agents with focused skills, bounded workflows, explicit consent and optional project-level guardrails and verification.",
     "developerName": "Xyeena contributors",
     "category": "Developer Tools",
     "capabilities": [

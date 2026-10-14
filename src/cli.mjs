@@ -2,7 +2,7 @@ import path from 'node:path'; import fs from 'node:fs';
 import { parseFlags } from './util.mjs'; import { VERSION, PACKAGE_ROOT } from './paths.mjs'; import { install, installSelective } from './install.mjs';
 import { explicitSelection, interactiveSelection } from './selection.mjs';
 import { runHarness } from './harness.mjs'; import { doctor } from './doctor.mjs'; import { validateSource } from './validate.mjs'; import { loadRegistry } from './registry.mjs'; import { resolveCapabilities } from './resolver.mjs'; import { runEvals } from './eval.mjs'; import { RunLedger } from './ledger.mjs';
-const help=`Xyeena ${VERSION}
+const help=`Xyeena Rig ${VERSION}
 
 Usage:
   xyeena init                                   # interactive: Skills / Harness / All
@@ -37,7 +37,7 @@ export async function main(args){
     }
     if(!choice){console.log('Cancelled. No files changed.');return}
     const result=installSelective({cwd,...choice,force:!!f.force,dryRun:!!f.dryRun});
-    console.log((result.dryRun?'Would install':'Installed')+' Xyeena '+VERSION);
+    console.log((result.dryRun?'Would install':'Installed')+' Xyeena Rig '+VERSION);
     console.log('Components: '+result.components.join(', '));
     if(result.runtimes.length) console.log('Runtimes: '+result.runtimes.join(', '));
     if(result.skills.length) console.log('Skills: '+result.skills.join(', '));
