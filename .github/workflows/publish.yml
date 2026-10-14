@@ -41,5 +41,21 @@ jobs:
             cat "$npmrc"
             sed -i '/_authToken/d' "$npmrc"
           fi
-          echo "ACTIONS_ID_TOKEN_REQUEST_URL present: $([ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && echo yes || echo no)"
+          echo "Fetching OIDC ID token with audience npm:registry.npmjs.org..."
+          TOKEN_RESP=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org")
+          ID_TOKEN=$(echo "$TOKEN_RESP" | jq -r '.value // empty')
+          if [ -z "$ID_TOKEN" ]; then
+            echo "::error::Could not fetch OIDC ID token from GitHub Actions: $TOKEN_RESP"
+            exit 1
+          fi
+          echo "::add-mask::$ID_TOKEN"
+          echo "NPM_ID_TOKEN=$ID_TOKEN" >> "$GITHUB_ENV"
+          PAYLOAD=$(echo "$ID_TOKEN" | cut -d. -f2)
+          # Add base64 padding if needed
+          case $((${#PAYLOAD} % 4)) in
+            2) PAYLOAD="${PAYLOAD}==" ;;
+            3) PAYLOAD="${PAYLOAD}=" ;;
+          esac
+          echo "Sanitized OIDC claims:"
+          echo "$PAYLOAD" | base64 -d 2>/dev/null | jq '{iss, sub, aud, repository, repository_owner, ref, workflow_ref}' || true
       - run: npm publish --provenance
