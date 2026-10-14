@@ -32,15 +32,8 @@ jobs:
       - run: npm run check
       - run: npm run eval
       - run: npm pack --dry-run
-      - name: Prepare npm OIDC environment
+      - name: Exchange OIDC token for npm session token
         run: |
-          npmrc="${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"
-          echo "NPM_CONFIG_USERCONFIG: $NPM_CONFIG_USERCONFIG"
-          if [ -f "$npmrc" ]; then
-            echo "Current npmrc content:"
-            cat "$npmrc"
-            sed -i '/_authToken/d' "$npmrc"
-          fi
           echo "Fetching OIDC ID token with audience npm:registry.npmjs.org..."
           TOKEN_RESP=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org")
           ID_TOKEN=$(echo "$TOKEN_RESP" | jq -r '.value // empty')
@@ -49,13 +42,28 @@ jobs:
             exit 1
           fi
           echo "::add-mask::$ID_TOKEN"
-          echo "NPM_ID_TOKEN=$ID_TOKEN" >> "$GITHUB_ENV"
           PAYLOAD=$(echo "$ID_TOKEN" | cut -d. -f2)
-          # Add base64 padding if needed
           case $((${#PAYLOAD} % 4)) in
             2) PAYLOAD="${PAYLOAD}==" ;;
             3) PAYLOAD="${PAYLOAD}=" ;;
           esac
           echo "Sanitized OIDC claims:"
           echo "$PAYLOAD" | base64 -d 2>/dev/null | jq '{iss, sub, aud, repository, repository_owner, ref, workflow_ref}' || true
+
+          echo "Exchanging OIDC token with npm registry..."
+          EXCHANGE_RESP=$(curl -s -w "\n%{http_code}" -X POST "https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/xyeena-agent" \
+            -H "Authorization: Bearer $ID_TOKEN" \
+            -H "Content-Type: application/json")
+          HTTP_CODE=$(echo "$EXCHANGE_RESP" | tail -n1)
+          BODY=$(echo "$EXCHANGE_RESP" | sed '$d')
+          echo "npm exchange HTTP code: $HTTP_CODE"
+          echo "npm exchange response: $BODY"
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
+            echo "::error::npm OIDC exchange failed with HTTP $HTTP_CODE: $BODY"
+            exit 1
+          fi
+          NPM_SESSION_TOKEN=$(echo "$BODY" | jq -r '.token')
+          echo "::add-mask::$NPM_SESSION_TOKEN"
+          echo "//registry.npmjs.org/:_authToken=$NPM_SESSION_TOKEN" > "$HOME/.npmrc"
+          echo "Successfully authenticated to npm via OIDC session token!"
       - run: npm publish --provenance
