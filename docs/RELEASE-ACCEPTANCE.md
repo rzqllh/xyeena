@@ -1,12 +1,14 @@
-# Xyeena 0.2.0 — installer acceptance and release record
+# Xyeena Rig / xyeena-agent 0.2.0 — acceptance and release record
 
-**Repository status (13 October 2026):** [PR #2](https://github.com/rzqllh/xyeena/pull/2) was squash-merged into `main` at `9fa245fe67f2bb70255568cd5431783f`. The final feature-branch CI matrix passed 7/7 jobs. The owner reported that Windows manual acceptance was satisfactory; the complete 8/8 terminal summary was not attached. **npm publication remains pending separate approval**; see [issue #3](https://github.com/rzqllh/xyeena/issues/3).
+**Status (14 October 2026): PUBLISHED.** The [GitHub release v0.2.0](https://github.com/rzqllh/xyeena/releases/tag/v0.2.0) and [npm package `xyeena-agent@0.2.0`](https://www.npmjs.com/package/xyeena-agent/v/0.2.0) are public. The [release workflow](https://github.com/rzqllh/xyeena/actions/runs/38536465520) completed successfully for commit `db5f2bf71eccef601efc08e58840c299e273312c`; [issue #3](https://github.com/rzqllh/xyeena/issues/3) is closed. Skills + Harness was integrated by [PR #2](https://github.com/rzqllh/xyeena/pull/2).
+
+**Evidence limitation:** The maintainer reported Windows interactive acceptance was satisfactory, but a complete final manual console transcript was not attached to this document. No independent witnessed 8/8 manual claim is made. GitHub source branding changed later in [PR #4](https://github.com/rzqllh/xyeena/pull/4); it does not change the published `0.2.0` artifact.
 
 ## Verified automated gates
 
 - `npm ci`, `npm test`, `npm run test:harness`, `npm run test:consumer`, `npm run check`, `npm run eval`, and `npm pack --dry-run` must pass on the candidate commit.
 - CI matrix: Windows, macOS and Linux on Node.js 22.14 and 24, plus Agent Skills reference validation.
-- The CLI banner, package.json, and package-lock.json must all report `0.2.0`; vendored `@xyeena/harness` is private and remains on v3.1.
+- Version-only CLI output, package.json, and package-lock.json must report `0.2.0` for the published release. The vendored `@xyeena/harness` remains private on v3.1; later source branding may change help/banner text.
 - The package must include `harness/upstream-v3.1/LICENSE` and exclude `LICENSE-NOT-SET.md`.
 
 ## Manual Windows PowerShell acceptance (required)
@@ -52,9 +54,9 @@ Test-Path "$TestRoot\harness\AGENTS.md"
 
 Do not clean up acceptance evidence before recording results. When done, you may remove the temporary fixture manually after confirming the path.
 
-## Final decision gates
+## Release outcome
 
-- All GitHub Actions jobs green for the final release-candidate commit.
-- All seven manual scenarios above recorded PASS; no unexplained installer writes or overwrites.
-- npm package archive audited for secret files, unexpected artifacts, source notices and LICENSE.
-- The integration merge is complete. npm publication remains a separate step requiring explicit maintainer approval and registry verification; see issue #3.
+- [Release `v0.2.0`](https://github.com/rzqllh/xyeena/releases/tag/v0.2.0) and [npm package](https://www.npmjs.com/package/xyeena-agent/v/0.2.0) were published on 14 October 2026.
+- [GitHub Actions publish run](https://github.com/rzqllh/xyeena/actions/runs/38536465520): success. Post-publish registry and disposable consumer installation evidence is recorded in [closed issue #3](https://github.com/rzqllh/xyeena/issues/3).
+- The final manual Windows transcript was not attached, so owner-reported acceptance remains distinct from independently documented manual results.
+- Keep this as a historical `0.2.0` acceptance record. The Rig rebrand applies to later repository source and future npm releases only.

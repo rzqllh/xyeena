@@ -1,6 +1,6 @@
-# Xyeena Architecture
+# Xyeena Rig architecture
 
-Xyeena is a manager-orchestrated capability system. It intentionally avoids peer-to-peer agent meshes.
+Xyeena Rig is a manager-orchestrated capability system. It intentionally avoids peer-to-peer agent meshes.
 
 ## Kernel
 

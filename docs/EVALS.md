@@ -1,6 +1,6 @@
-# Evaluation Strategy
+# Xyeena Rig evaluation strategy
 
-Xyeena requires more than syntax validation.
+Xyeena Rig requires more than syntax validation.
 
 1. Trigger evals — relevant capability should activate.
 2. Non-trigger evals — unrelated capabilities should remain quiet.

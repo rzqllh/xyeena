@@ -1,6 +1,6 @@
-# Runtime Adapters
+# Xyeena Rig runtime adapters
 
-Xyeena keeps portable capability semantics separate from host packaging.
+Rig keeps portable capability semantics separate from host packaging.
 
 ## Antigravity
 

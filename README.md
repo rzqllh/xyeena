@@ -24,13 +24,24 @@ Supported skill targets: **Antigravity**, **Claude Code**, and **Codex**. Projec
 
 > **Version compatibility:** These instructions apply to **`xyeena-agent@0.2.0` and later**. Version `0.1.0` used a legacy installer that could install all skills by default. Before running installation, verify the package version with `npx xyeena-agent version`; use `npx xyeena-agent@0.2.0 init` to select the documented 0.2.0 behavior explicitly.
 
+## Public documentation
+
+- [Getting started](docs/GETTING-STARTED.md) — requirements, interactive setup, and selective installation.
+- [CLI reference](docs/CLI-REFERENCE.md) — commands, flags, and safety.
+- [Brand naming](docs/BRANDING.md) — Xyeena Rig, Xyeena Notch, and Xyn.
+- [Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md).
+
+**Published package:** [`xyeena-agent@0.2.0` on npm](https://www.npmjs.com/package/xyeena-agent/v/0.2.0) · [GitHub release `v0.2.0`](https://github.com/rzqllh/xyeena/releases/tag/v0.2.0). The GitHub `main` branch has been rebranded as **Xyeena Rig**, but the immutable `0.2.0` npm artifact predates the branding changes. A subsequent package release is required to update the npm README, CLI messages, and package metadata.
+
 ## Getting started
 
 Run from the directory of the project where Xyeena should be installed:
 
 ```bash
-npx xyeena-agent init
+npx xyeena-agent@0.2.0 init
 ```
+
+Requires Node.js 22.14+ and an interactive terminal. For CI or non-interactive scripts, use the explicit flags below.
 
 The interactive setup asks you to choose:
 
@@ -96,7 +107,7 @@ npx xyeena-agent verify          # Explicitly run supported project-native check
 - The Harness source is bundled inside the same `xyeena-agent` npm package. There is **no separate Harness npm install**.
 - Check changed files and run `npm run test:consumer` before publishing or automating the new package.
 
-See `CHANGELOG.md` for version history and `docs/HARNESS-V3.1-IMPORT-PLAN.md` for the source-provenance and verification record.
+See the [changelog](CHANGELOG.md), [installation guide](docs/GETTING-STARTED.md), [CLI reference](docs/CLI-REFERENCE.md) and [Harness adoption record](docs/HARNESS-V3.1-IMPORT-PLAN.md).
 
 ## Native plugin repository layouts
 
