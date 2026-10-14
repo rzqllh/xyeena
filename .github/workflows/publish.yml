@@ -32,38 +32,36 @@ jobs:
       - run: npm run check
       - run: npm run eval
       - run: npm pack --dry-run
-      - name: Exchange OIDC token for npm session token
+      - name: Authenticate to npm registry
         run: |
-          echo "Fetching OIDC ID token with audience npm:registry.npmjs.org..."
-          TOKEN_RESP=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org")
-          ID_TOKEN=$(echo "$TOKEN_RESP" | jq -r '.value // empty')
-          if [ -z "$ID_TOKEN" ]; then
-            echo "::error::Could not fetch OIDC ID token from GitHub Actions: $TOKEN_RESP"
-            exit 1
+          if [ -n "${{ secrets.NPM_TOKEN }}" ]; then
+            echo "Using NPM_TOKEN secret from GitHub repository."
+            echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > "$HOME/.npmrc"
+            echo "Successfully configured ~/.npmrc with NPM_TOKEN."
+          else
+            echo "NPM_TOKEN secret not set; attempting OIDC token exchange..."
+            TOKEN_RESP=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org")
+            ID_TOKEN=$(echo "$TOKEN_RESP" | jq -r '.value // empty')
+            if [ -z "$ID_TOKEN" ]; then
+              echo "::error::Could not fetch OIDC ID token from GitHub Actions: $TOKEN_RESP"
+              exit 1
+            fi
+            echo "::add-mask::$ID_TOKEN"
+            EXCHANGE_RESP=$(curl -s -w "\n%{http_code}" -X POST "https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/xyeena-agent" \
+              -H "Authorization: Bearer $ID_TOKEN" \
+              -H "Content-Type: application/json")
+            HTTP_CODE=$(echo "$EXCHANGE_RESP" | tail -n1)
+            BODY=$(echo "$EXCHANGE_RESP" | sed '$d')
+            echo "npm exchange HTTP code: $HTTP_CODE"
+            if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
+              echo "::error::npm OIDC exchange failed with HTTP $HTTP_CODE: $BODY"
+              exit 1
+            fi
+            NPM_SESSION_TOKEN=$(echo "$BODY" | jq -r '.token')
+            echo "::add-mask::$NPM_SESSION_TOKEN"
+            echo "//registry.npmjs.org/:_authToken=$NPM_SESSION_TOKEN" > "$HOME/.npmrc"
+            echo "Successfully authenticated to npm via OIDC session token!"
           fi
-          echo "::add-mask::$ID_TOKEN"
-          PAYLOAD=$(echo "$ID_TOKEN" | cut -d. -f2)
-          case $((${#PAYLOAD} % 4)) in
-            2) PAYLOAD="${PAYLOAD}==" ;;
-            3) PAYLOAD="${PAYLOAD}=" ;;
-          esac
-          echo "Sanitized OIDC claims:"
-          echo "$PAYLOAD" | base64 -d 2>/dev/null | jq '{iss, sub, aud, repository, repository_owner, ref, workflow_ref}' || true
-
-          echo "Exchanging OIDC token with npm registry..."
-          EXCHANGE_RESP=$(curl -s -w "\n%{http_code}" -X POST "https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/xyeena-agent" \
-            -H "Authorization: Bearer $ID_TOKEN" \
-            -H "Content-Type: application/json")
-          HTTP_CODE=$(echo "$EXCHANGE_RESP" | tail -n1)
-          BODY=$(echo "$EXCHANGE_RESP" | sed '$d')
-          echo "npm exchange HTTP code: $HTTP_CODE"
-          echo "npm exchange response: $BODY"
-          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
-            echo "::error::npm OIDC exchange failed with HTTP $HTTP_CODE: $BODY"
-            exit 1
-          fi
-          NPM_SESSION_TOKEN=$(echo "$BODY" | jq -r '.token')
-          echo "::add-mask::$NPM_SESSION_TOKEN"
-          echo "//registry.npmjs.org/:_authToken=$NPM_SESSION_TOKEN" > "$HOME/.npmrc"
-          echo "Successfully authenticated to npm via OIDC session token!"
       - run: npm publish --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
