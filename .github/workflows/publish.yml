@@ -32,4 +32,14 @@ jobs:
       - run: npm run check
       - run: npm run eval
       - run: npm pack --dry-run
+      - name: Prepare npm OIDC environment
+        run: |
+          npmrc="${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"
+          echo "NPM_CONFIG_USERCONFIG: $NPM_CONFIG_USERCONFIG"
+          if [ -f "$npmrc" ]; then
+            echo "Current npmrc content:"
+            cat "$npmrc"
+            sed -i '/_authToken/d' "$npmrc"
+          fi
+          echo "ACTIONS_ID_TOKEN_REQUEST_URL present: $([ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && echo yes || echo no)"
       - run: npm publish --provenance
