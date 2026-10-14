@@ -5,7 +5,7 @@
   "author": {
     "name": "Xyeena contributors"
   },
-  "repository": "https://github.com/Rzqllh/xyeena",
+  "repository": "https://github.com/rzqllh/xyeena",
   "license": "MIT",
   "keywords": [
     "agent-skills",
@@ -27,7 +27,7 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/Rzqllh/xyeena",
+    "websiteURL": "https://github.com/rzqllh/xyeena",
     "defaultPrompt": [
       "Review this task, choose the smallest adequate workflow, and carry it through with fresh verification evidence."
     ]

@@ -62,12 +62,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Rzqllh/xyeena.git"
+    "url": "git+https://github.com/rzqllh/xyeena.git"
   },
   "bugs": {
-    "url": "https://github.com/Rzqllh/xyeena/issues"
+    "url": "https://github.com/rzqllh/xyeena/issues"
   },
-  "homepage": "https://github.com/Rzqllh/xyeena#readme",
+  "homepage": "https://github.com/rzqllh/xyeena#readme",
   "publishConfig": {
     "access": "public"
   }
