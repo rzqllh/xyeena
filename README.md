@@ -20,9 +20,9 @@ Supported skill targets: **Antigravity**, **Claude Code**, and **Codex**. Projec
 - **Xyeena Notch:** a separate Windows desktop companion application, maintained in its own repository.
 - **Xyn — The Lion Guardian:** the Xyeena mascot identity; not shipped in the Rig npm package.
 
-**Compatibility:** the npm package `xyeena-agent`, executable names `xyeena` / `xyeena-agent`, skill IDs, plugin IDs, `.xyeena/` data paths, and existing configuration contracts remain unchanged. This branding update to source does not retroactively change the already-published `0.2.0` npm tarball; package metadata and CLI wording will appear publicly when a subsequent version is published. See [Branding and naming](docs/BRANDING.md).
+**Compatibility:** the npm package `xyeena-agent`, executable names `xyeena` / `xyeena-agent`, skill IDs, plugin IDs, `.xyeena/` data paths, and existing configuration contracts remain unchanged. The historical `0.2.0` npm tarball retains its original presentation. The `0.2.1` release line includes Rig-branded package metadata, CLI help, and public documentation. See [Branding and naming](docs/BRANDING.md).
 
-> **Version compatibility:** These instructions apply to **`xyeena-agent@0.2.0` and later**. Version `0.1.0` used a legacy installer that could install all skills by default. Before running installation, verify the package version with `npx xyeena-agent version`; use `npx xyeena-agent@0.2.0 init` to select the documented 0.2.0 behavior explicitly.
+> **Version compatibility:** The selective installer is available in **`xyeena-agent@0.2.0` and later**; the **Rig** brand is included in version `0.2.1`. Version `0.1.0` used a legacy installer that could install all skills by default. Before running installation, verify the package version with `npx xyeena-agent version`; use `npx xyeena-agent@0.2.1 init` for a version-pinned Rig setup after `0.2.1` is published.
 
 ## Public documentation
 
@@ -31,14 +31,14 @@ Supported skill targets: **Antigravity**, **Claude Code**, and **Codex**. Projec
 - [Brand naming](docs/BRANDING.md) — Xyeena Rig, Xyeena Notch, and Xyn.
 - [Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md).
 
-**Published package:** [`xyeena-agent@0.2.0` on npm](https://www.npmjs.com/package/xyeena-agent/v/0.2.0) · [GitHub release `v0.2.0`](https://github.com/rzqllh/xyeena/releases/tag/v0.2.0). The GitHub `main` branch has been rebranded as **Xyeena Rig**, but the immutable `0.2.0` npm artifact predates the branding changes. A subsequent package release is required to update the npm README, CLI messages, and package metadata.
+**Release line:** `xyeena-agent@0.2.1` carries the **Xyeena Rig** brand in the npm README, CLI help and package metadata once published. [See versions on npm](https://www.npmjs.com/package/xyeena-agent?activeTab=versions). Previous [v0.2.0](https://github.com/rzqllh/xyeena/releases/tag/v0.2.0) remains unchanged; releasing `0.2.1` requires the separate GitHub Release/npm publishing workflow.
 
 ## Getting started
 
 Run from the directory of the project where Xyeena should be installed:
 
 ```bash
-npx xyeena-agent@0.2.0 init
+npx xyeena-agent@0.2.1 init
 ```
 
 Requires Node.js 22.14+ and an interactive terminal. For CI or non-interactive scripts, use the explicit flags below.

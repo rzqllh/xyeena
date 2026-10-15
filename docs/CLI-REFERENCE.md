@@ -1,13 +1,13 @@
 # Xyeena Rig CLI reference
 
-The npm package is named **`xyeena-agent`** and exposes both `xyeena` and `xyeena-agent` executables. For a reproducible published version, use:
+The npm package is named **`xyeena-agent`** and exposes both `xyeena` and `xyeena-agent` executables. The Rig-branded release line is `0.2.1`. Once that version is published, pin it with:
 
 ```bash
-npx xyeena-agent@0.2.0 help
-npx xyeena-agent@0.2.0 version
+npx xyeena-agent@0.2.1 help
+npx xyeena-agent@0.2.1 version
 ```
 
-Use `npx xyeena-agent@0.2.0 <command>` for the subcommands listed below. The **Rig** display name is newer than the published 0.2.0 tarball; command names have not been renamed.
+Use `npx xyeena-agent@0.2.1 <command>` for the subcommands listed below. The **Rig** display name is included from `0.2.1`; command names have not been renamed.
 
 ## Installation
 
@@ -48,11 +48,11 @@ The public bridge intentionally does not expose upstream Harness `init` or `inst
 | `run-init --goal TEXT` | Initialize a run journal in the selected project |
 
 ```bash
-npx xyeena-agent@0.2.0 resolve --prompt "review auth changes" --state TRIAGE
+npx xyeena-agent@0.2.1 resolve --prompt "review auth changes" --state TRIAGE
 ```
 
 ## Compatibility
 
-Do not rename the package to `xyeena-rig` or rename any `xyeena-*` Skill identifiers. There is one npm package, including Harness. Source branding changes appear in a future published version, not retroactively in 0.2.0.
+Do not rename the package to `xyeena-rig` or rename any `xyeena-*` Skill identifiers. There is one npm package, including Harness. Rig branding ships in the `0.2.1` release line; it does not change historical `0.2.0`.
 
 For setup walkthroughs, see [Getting started](GETTING-STARTED.md); for product naming, see [Branding](BRANDING.md).

@@ -15,8 +15,11 @@ test('Rig branding preserves published technical package and plugin identifiers'
   assert.equal(pkg.bin['xyeena-agent'], 'bin/xyeena.mjs');
   assert.match(pkg.description, /Xyeena Rig/);
   assert.equal(load('plugin.json').name, 'xyeena');
+  assert.equal(load('plugin.json').version, VERSION);
   assert.equal(load('.claude-plugin/plugin.json').name, 'xyeena');
+  assert.equal(load('.claude-plugin/plugin.json').version, VERSION);
   assert.equal(load('.codex-plugin/plugin.json').name, 'xyeena');
+  assert.equal(load('.codex-plugin/plugin.json').version, VERSION);
   assert.equal(load('.claude-plugin/marketplace.json').plugins[0].name, 'xyeena');
   assert.equal(load('.agents/plugins/marketplace.json').plugins[0].name, 'xyeena');
   assert.equal(load('.codex-plugin/plugin.json').interface.displayName, 'Xyeena Rig');
