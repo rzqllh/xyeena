@@ -25,10 +25,10 @@ Refer to the product as **Xyeena Rig** in marketing, README and human-facing UI.
 
 ## Published npm versus current source
 
-[`xyeena-agent@0.2.0`](https://www.npmjs.com/package/xyeena-agent/v/0.2.0) was published before [the Rig branding PR #4](https://github.com/rzqllh/xyeena/pull/4). GitHub `main` contains the updated product identity, but existing published tarballs are immutable: npm metadata, npm README, and CLI text will not reflect this branding until a subsequent version is released. The package identifier remains `xyeena-agent`.
+[`xyeena-agent@0.2.0`](https://www.npmjs.com/package/xyeena-agent/v/0.2.0) was published before [the Rig branding PR #4](https://github.com/rzqllh/xyeena/pull/4). GitHub source carries the updated product identity. Version `0.2.1` is the first release line intended to ship Rig branding in npm metadata, npm README and CLI help; it must be published and verified separately. The existing `0.2.0` tarball stays immutable, and the package identifier remains `xyeena-agent`.
 
 ## Release policy
 
-`xyeena-agent@0.2.0` and GitHub tag `v0.2.0` are published, immutable historical release artifacts. This naming change in the repository does **not** alter the published npm version. Publish branding-related runtime and npm metadata changes only in a future verified version; do not rewrite an existing release/tag or renumber the package for a documentation-only change.
+`xyeena-agent@0.2.0` and GitHub tag `v0.2.0` are published, immutable historical release artifacts. This naming change in the repository does **not** alter the published npm version. Publish the separate `0.2.1` patch only after verification; do not rewrite an existing release/tag. Pure documentation changes alone do not warrant further npm version bumps.
 
 Do not import Notch, Island, or Xyn binaries/assets into the Rig package. They have separate delivery and licensing concerns.

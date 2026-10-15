@@ -1,11 +1,11 @@
 # Changelog
 
-## Unreleased — Xyeena Rig branding and documentation
+## 0.2.1 — Xyeena Rig branding and documentation
 
 - Adopt **Xyeena Rig** as the developer-tooling product identity under the Xyeena parent brand ([PR #4](https://github.com/rzqllh/xyeena/pull/4)).
 - Rebrand human-facing CLI/setup text, source plugin display labels and npm package description while preserving the package name `xyeena-agent`, CLI aliases, Skill IDs and installed file paths.
 - Refresh public documentation with [Getting started](docs/GETTING-STARTED.md), [CLI reference](docs/CLI-REFERENCE.md) and reconciled release records.
-- **Not yet an npm release:** `0.2.0` is an immutable historical artifact; new branding metadata is source-only until a future version is published.
+- First Rig-branded npm release candidate: version `0.2.1` aligns npm, CLI, lockfile and native plugin manifest versions; historical `0.2.0` remains unchanged.
 
 ## 0.2.0 — Skills + Harness upgrade
 
