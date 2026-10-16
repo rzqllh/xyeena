@@ -112,7 +112,8 @@ test('installer describes valid PostToolUse matcher and includes both handlers',
     assert.equal(result.changed, true);
     const config = read(path.join(dir, '.agents', 'hooks.json'));
     const hooks = config['xyeena-rig-guided'];
-    assert.equal(hooks.PostToolUse[0].matcher, '*');
+    assert.equal(hooks.PostToolUse[0].matcher,
+      'run_command|write_to_file|replace_file_content|multi_replace_file_content');
     assert.equal(hooks.PostToolUse[0].hooks[0].type, 'command');
     assert.ok(hooks.PreInvocation[0].command.includes('PreInvocation'));
     assert.deepEqual(call(dir, 'PostToolUse', { workspacePaths: [], toolCall: { name: 'run_command' } }), {});
