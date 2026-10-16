@@ -148,3 +148,19 @@ test('CLI preview does not modify a fresh workspace',()=>{
     assert.equal(fs.existsSync(path.join(d,'.xyeena')),false);
   }finally{clean(d)}
 });
+
+test('installer never overwrites an unrelated launcher or a modified owned launcher',()=>{
+  const d=make();
+  try{
+    const launcher=path.join(d,'.xyeena','rig','antigravity-hook.mjs');
+    fs.mkdirSync(path.dirname(launcher),{recursive:true});
+    fs.writeFileSync(launcher,'// pre-existing local file\n');
+    assert.throws(()=>installGuidedHooks({cwd:d,approved:true}),/not owned/);
+    assert.equal(fs.readFileSync(launcher,'utf8'),'// pre-existing local file\n');
+    assert.equal(fs.existsSync(config(d)),false);
+    fs.unlinkSync(launcher);
+    installGuidedHooks({cwd:d,approved:true});
+    fs.appendFileSync(launcher,'// modified\n');
+    assert.throws(()=>installGuidedHooks({cwd:d,approved:true}),/modified/);
+  }finally{clean(d)}
+});
