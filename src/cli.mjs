@@ -19,6 +19,8 @@ Usage:
   xyeena resolve --prompt TEXT [--state TRIAGE] [--path FILE]
   xyeena eval
   xyeena run-init --goal TEXT [--dir PATH]
+  xyeena guided preview|install|status|uninstall [--dir PATH] [--yes]
+  xyeena guided list|resume [--id RUN_ID] [--dir PATH]
   xyeena version
 `;
 export async function main(args){
