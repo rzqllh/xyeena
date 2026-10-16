@@ -43,3 +43,29 @@ test('existing ignore configuration is preserved instead of overwritten', () => 
     assert.equal(fs.existsSync(path.join(root, '.xyeena', 'guided', 'sessions', uuid + '.json')), false);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
+
+test('hook backups are locally ignored and incompatible ignore files are not overwritten', () => {
+  const root = fixture();
+  try {
+    const config = path.join(root, '.agents', 'hooks.json');
+    fs.mkdirSync(path.dirname(config), { recursive: true });
+    fs.writeFileSync(config, JSON.stringify({ 'other-hook': { SessionStart: [{ command: 'echo private' }] } }));
+    guidedCommand('install', { cwd: root, yes: true });
+    const ignore = path.join(root, '.xyeena', 'backups', '.gitignore');
+    assert.equal(fs.readFileSync(ignore, 'utf8'), 'antigravity/\\n'.replace('\\n', '\n'));
+    assert.equal(fs.readdirSync(path.join(root, '.xyeena', 'backups', 'antigravity')).length, 1);
+    guidedCommand('uninstall', { cwd: root, yes: true });
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  const other = fixture();
+  try {
+    const config = path.join(other, '.agents', 'hooks.json');
+    fs.mkdirSync(path.dirname(config), { recursive: true });
+    fs.writeFileSync(config, '{}');
+    const ignore = path.join(other, '.xyeena', 'backups', '.gitignore');
+    fs.mkdirSync(path.dirname(ignore), { recursive: true });
+    fs.writeFileSync(ignore, 'unrelated/\n');
+    assert.throws(() => guidedCommand('install', { cwd: other, yes: true }), /must be ignored by Git/);
+    assert.equal(fs.readFileSync(ignore, 'utf8'), 'unrelated/\n');
+    assert.equal(fs.existsSync(path.join(other, '.agents', 'hooks.json')), true);
+  } finally { fs.rmSync(other, { recursive: true, force: true }); }
+});
