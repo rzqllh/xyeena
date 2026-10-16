@@ -8,11 +8,14 @@ Rig does not create a daemon, contact an AI model or bypass Antigravity permissi
 
 The preview requires no local checkout of the Xyeena Rig repository.
 Run these commands in a PowerShell terminal opened at the project to test.
-The GitHub package uses the PR branch; it is **not** the published npm
-release, and Git is required to fetch the branch.
+Use the GitHub source tarball for the PR commit. This is **not** the
+published npm release. Direct npm GitHub specs may fail on some npm versions
+with `GitFetcher requires an Arborist constructor`; the HTTPS tarball path
+was smoke-tested on Windows.
 
 ```powershell
-$rig = "github:rzqllh/xyeena#feat/antigravity-guided-hooks-recovery"
+$sha = "e77ad4ab73d7c6077438ce83b3dfe01039793296"
+$rig = "https://codeload.github.com/rzqllh/xyeena/tar.gz/$sha"
 npx --yes --package $rig xyeena guided preview --dir .
 ```
 
@@ -37,8 +40,9 @@ upgrades remain a separate selective `xyeena init` operation with
 existing-file protection; do not use `--force` on a workspace without
 reviewing its modified files.
 
-For reproducible tests, pin the GitHub package to a commit SHA rather than
-the branch name. Review `git status --short` before and after the test.
+The SHA above is a verified development snapshot. Review
+`git status --short` before and after the test. For newer commits, update
+the SHA only after the matching GitHub Actions smoke test passes.
 Do not use this unmerged package as a production release.
 
 ## Commands
