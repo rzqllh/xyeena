@@ -8,6 +8,11 @@ const GROUP = 'xyeena-rig-guided';
 const SOURCE = fileURLToPath(new URL('./antigravity-guided-hook.mjs', import.meta.url));
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+const withoutToggle = entry => {
+  if (!object(entry)) return entry;
+  const { enabled, ...rest } = entry;
+  return rest;
+};
 
 function paths(cwd) {
   const root = fs.realpathSync(path.resolve(cwd));
@@ -67,7 +72,8 @@ export function hookPlan({ cwd = process.cwd(), action = 'install' } = {}) {
   const current = config.value[GROUP];
   if (current !== undefined && !manifest) throw new Error('Conflicting unowned hook group');
   if (manifest && current === undefined) throw new Error('Managed hook group is missing; review before repair');
-  if (manifest && hash(JSON.stringify(current)) !== manifest.groupHash)
+  // The IDE may toggle enabled without changing the managed hook commands.
+  if (manifest && hash(JSON.stringify(withoutToggle(current))) !== manifest.groupHash)
     throw new Error('Managed hook group was changed; refusing overwrite');
   const script = fs.readFileSync(SOURCE, 'utf8');
   const installedScript = fs.existsSync(f.script) ? fs.readFileSync(f.script, 'utf8') : null;
@@ -80,6 +86,7 @@ export function hookPlan({ cwd = process.cwd(), action = 'install' } = {}) {
     PostToolUse: [{ matcher: '*', hooks: [{ type: 'command', command: command + ' PostToolUse', timeout: 3 }] }],
     Stop: [{ type: 'command', command: command + ' Stop', timeout: 3 }],
   };
+  if (current?.enabled === false) proposed.enabled = false;
   const next = action === 'install' ? { ...config.value, [GROUP]: proposed } :
     Object.fromEntries(Object.entries(config.value).filter(([key]) => key !== GROUP));
   const changed = action === 'install'
@@ -106,7 +113,7 @@ export function applyHookPlan(plan, { yes = false } = {}) {
     atomic(plan.f.script, plan.script);
     atomic(plan.f.config, JSON.stringify(plan.next, null, 2) + '\n');
     atomic(plan.f.manifest, JSON.stringify({ schema: 1, group: GROUP,
-      groupHash: hash(JSON.stringify(plan.next[GROUP])), scriptHash: hash(plan.script),
+      groupHash: hash(JSON.stringify(withoutToggle(plan.next[GROUP]))), scriptHash: hash(plan.script),
       configCreated: !plan.config.exists }, null, 2) + '\n');
   } else {
     if (plan.manifest.configCreated && Object.keys(plan.next).length === 0) fs.rmSync(plan.f.config);
@@ -126,7 +133,7 @@ export function guidedCommand(command, { cwd = process.cwd(), yes = false, id = 
     throw new Error('Expected guided preview|install|uninstall|status|list|resume|bind');
   const action = command === 'uninstall' ? 'uninstall' : 'install';
   const plan = hookPlan({ cwd, action });
-  if (command === 'status') return { installed: !!plan.manifest, config: plan.f.config };
+  if (command === 'status') return { installed: !!plan.manifest, enabled: plan.config.value[GROUP]?.enabled !== false, config: plan.f.config };
   if (command === 'preview') return plan.preview;
   return { ...plan.preview, result: applyHookPlan(plan, { yes }) };
 }
