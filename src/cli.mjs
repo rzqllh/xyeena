@@ -22,6 +22,7 @@ Usage:
   xyeena guided preview|install|status|uninstall [--dir PATH] [--yes]
   xyeena guided list|resume [--id RUN_ID] [--dir PATH]
   xyeena guided bind --id RUN_ID --conversation UUID --yes
+  xyeena guided unbind --conversation UUID --yes
   xyeena version
 `;
 export async function main(args){
