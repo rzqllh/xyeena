@@ -2,6 +2,7 @@ import path from 'node:path'; import fs from 'node:fs';
 import { parseFlags } from './util.mjs'; import { VERSION, PACKAGE_ROOT } from './paths.mjs'; import { install, installSelective } from './install.mjs';
 import { explicitSelection, interactiveSelection } from './selection.mjs';
 import { runHarness } from './harness.mjs'; import { doctor } from './doctor.mjs'; import { validateSource } from './validate.mjs'; import { loadRegistry } from './registry.mjs'; import { resolveCapabilities } from './resolver.mjs'; import { runEvals } from './eval.mjs'; import { RunLedger } from './ledger.mjs';
+import { guidedCommand } from './antigravity-guided.mjs';
 const help=`Xyeena Rig ${VERSION}
 
 Usage:
@@ -59,6 +60,11 @@ export async function main(args){
  if(cmd==='resolve'){if(!f.prompt)throw new Error('--prompt is required'); const r=resolveCapabilities(loadRegistry(),{prompt:f.prompt,state:f.state||'TRIAGE',paths:f.path?[f.path]:[]}); console.log(JSON.stringify(r,null,2));return}
  if(cmd==='eval'){const r=runEvals(); for(const d of r.details)console.log(`${d.ok?'PASS':'FAIL'} ${d.name}: ${d.actual}`); console.log(`
 ${r.pass} passed, ${r.fail} failed`); if(r.fail)process.exitCode=1;return}
+ if(cmd==='guided'){
+    const result=guidedCommand(f._[0]||'preview',{cwd:path.resolve(f.dir||process.cwd()),yes:!!f.yes,id:f.id||null});
+    console.log(JSON.stringify(result,null,2));
+    return;
+  }
  if(cmd==='run-init'){const cwd=path.resolve(f.dir||process.cwd()); const l=RunLedger.create(cwd,{goal:f.goal||'',cwd}); console.log(l.runDir);return}
  throw new Error(`unknown command ${cmd}
 
