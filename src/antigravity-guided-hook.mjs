@@ -119,6 +119,18 @@ export function bindConversation(root, runId, conversationId, { yes = false } = 
     return { conversationId, runId, bound: true, changed: false };
   }
   const file = statePath(root, conversationId);
+  // Store the session fingerprint key in a directory ignored by Git.
+  // Keep the project's root .gitignore untouched.
+  const ignore = path.join(fs.realpathSync(root), '.xyeena', 'guided', '.gitignore');
+  if (fs.existsSync(ignore)) {
+    if (fs.lstatSync(ignore).isSymbolicLink() ||
+        !/(^|\n)sessions\/(\r?\n|$)/.test(fs.readFileSync(ignore, 'utf8'))) {
+      throw new Error('Guided session storage must be ignored by Git');
+    }
+  } else {
+    fs.mkdirSync(path.dirname(ignore), { recursive: true });
+    fs.writeFileSync(ignore, 'sessions/\n', { flag: 'wx', mode: 0o600 });
+  }
   atomicJson(file, {
     schema: 1, conversationId, runId, key: crypto.randomBytes(32).toString('hex'),
     boundAt: new Date().toISOString(), capsuleDelivered: false,
