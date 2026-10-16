@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { bindConversation } from '../src/antigravity-guided-hook.mjs';
+import { guidedCommand } from '../src/antigravity-guided.mjs';
 
 const uuid = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 function fixture() {
@@ -25,6 +26,10 @@ test('conversation state receives a project-local Git ignore rule', () => {
     assert.equal(fs.readFileSync(ignore, 'utf8'), 'sessions/\n');
     assert.ok(fs.existsSync(path.join(root, '.xyeena', 'guided', 'sessions', uuid + '.json')));
     assert.equal(bindConversation(root, 'run-one', uuid, { yes: true }).changed, false);
+    assert.throws(() => guidedCommand('unbind', { cwd: root, conversationId: uuid }), /--yes/);
+    const unbound = guidedCommand('unbind', { cwd: root, conversationId: uuid, yes: true });
+    assert.equal(unbound.changed, true);
+    assert.equal(fs.existsSync(path.join(root, '.xyeena', 'guided', 'sessions', uuid + '.json')), false);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 test('existing ignore configuration is preserved instead of overwritten', () => {
