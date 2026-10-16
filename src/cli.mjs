@@ -2,6 +2,8 @@ import path from 'node:path'; import fs from 'node:fs';
 import { parseFlags } from './util.mjs'; import { VERSION, PACKAGE_ROOT } from './paths.mjs'; import { install, installSelective } from './install.mjs';
 import { explicitSelection, interactiveSelection } from './selection.mjs';
 import { runHarness } from './harness.mjs'; import { doctor } from './doctor.mjs'; import { validateSource } from './validate.mjs'; import { loadRegistry } from './registry.mjs'; import { resolveCapabilities } from './resolver.mjs'; import { runEvals } from './eval.mjs'; import { RunLedger } from './ledger.mjs';
+import { inspectGuidedHooks, installGuidedHooks, removeGuidedHooks } from './antigravity-guided.mjs';
+import { bindConversation, checkpoint } from './antigravity-hook.mjs';
 const help=`Xyeena Rig ${VERSION}
 
 Usage:
@@ -18,6 +20,9 @@ Usage:
   xyeena resolve --prompt TEXT [--state TRIAGE] [--path FILE]
   xyeena eval
   xyeena run-init --goal TEXT [--dir PATH]
+  xyeena antigravity hooks preview|install|status|remove [--scope workspace|global]
+  xyeena antigravity resume --run ID --conversation ID [--dir PATH]
+  xyeena antigravity checkpoint --run ID [--dir PATH]
   xyeena version
 `;
 export async function main(args){
@@ -59,6 +64,42 @@ export async function main(args){
  if(cmd==='resolve'){if(!f.prompt)throw new Error('--prompt is required'); const r=resolveCapabilities(loadRegistry(),{prompt:f.prompt,state:f.state||'TRIAGE',paths:f.path?[f.path]:[]}); console.log(JSON.stringify(r,null,2));return}
  if(cmd==='eval'){const r=runEvals(); for(const d of r.details)console.log(`${d.ok?'PASS':'FAIL'} ${d.name}: ${d.actual}`); console.log(`
 ${r.pass} passed, ${r.fail} failed`); if(r.fail)process.exitCode=1;return}
+ if(cmd==='antigravity'){
+   const [area, action]=f._;
+   const cwd=path.resolve(f.dir||process.cwd());
+   if(area==='hooks'){
+     const opts={cwd,scope:f.scope||'workspace'};
+     if(action==='preview'||action==='status'){
+       const p=inspectGuidedHooks(opts);
+       console.log(JSON.stringify(action==='status'?
+         {scope:p.scope,installed:p.installed,managed:p.managed,config:p.files.config,changesPending:p.changed}:
+         p.preview,null,2));
+       return;
+     }
+     if(action==='install'){
+       if(!f.yes||!f.approveHooks)
+         throw new Error('Native hook installation requires --yes --approve-hooks after reviewing antigravity hooks preview.');
+       console.log(JSON.stringify(installGuidedHooks({...opts,approved:true}),null,2));
+       return;
+     }
+     if(action==='remove'){
+       if(!f.yes||!f.approveHooks)
+         throw new Error('Hook removal requires --yes --approve-hooks.');
+       console.log(JSON.stringify(removeGuidedHooks({...opts,approved:true}),null,2));
+       return;
+     }
+   }
+   if(area==='resume'){
+     if(!f.run||!f.conversation)
+       throw new Error('Resume requires --run ID --conversation ID; no automatic binding.');
+     console.log(JSON.stringify(bindConversation(cwd,f.conversation,f.run),null,2));return;
+   }
+   if(area==='checkpoint'){
+     if(!f.run)throw new Error('Checkpoint requires --run ID.');
+     console.log(JSON.stringify(checkpoint(cwd,f.run),null,2));return;
+   }
+   throw new Error('Use: antigravity hooks preview|status|install|remove, resume, or checkpoint.');
+ }
  if(cmd==='run-init'){const cwd=path.resolve(f.dir||process.cwd()); const l=RunLedger.create(cwd,{goal:f.goal||'',cwd}); console.log(l.runDir);return}
  throw new Error(`unknown command ${cmd}
 

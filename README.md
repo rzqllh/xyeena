@@ -99,6 +99,20 @@ npx xyeena-agent verify          # Explicitly run supported project-native check
 
 **Verification is not passive:** `verify` can run available project scripts. When no meaningful check ran, it reports **INCOMPLETE**, not a false PASS. Evidence files are generated only when requested via `--evidence` and live under the Git-ignored `.harness/evidence/` directory. Audit and scan do not modify project files. Harness `init` and Git-hook installation are not exposed through the unified CLI; installation remains opt-in through Xyeena's selection workflow.
 
+## Antigravity native hooks (opt-in)
+
+Rig includes a workspace-first Guided integration for Antigravity IDE. It adds local task resume suggestions and bounded retry guidance without changing Antigravity's normal approval policy.
+
+Review the changes before installing:
+
+```sh
+xyeena antigravity hooks preview
+xyeena antigravity hooks install --yes --approve-hooks
+xyeena antigravity hooks status
+```
+
+This does not run during `xyeena init`. Global hooks require `--scope global` explicitly. For task binding, uninstall, limitations, and test requirements, see [Antigravity Guided](docs/ANTIGRAVITY-GUIDED.md).
+
 ## Upgrade from xyeena-agent 0.1.0
 
 - `xyeena init` changes from its legacy all-skills installer to a **selection-first wizard**; scripts that depended on the old default must be updated.

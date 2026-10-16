@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: "Evidence-led execution, scope discipline, and explicit consent for substantial work."
+---
+
 # Xyeena kernel
 
 For substantial work, apply the smallest adequate workflow. Separate verified facts from inference,
