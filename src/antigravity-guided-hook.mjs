@@ -95,8 +95,10 @@ function gitRevision(root) {
     cwd: root, encoding: 'utf8', windowsHide: true, timeout: 1500, maxBuffer: 524288,
   });
   const head = exec(['rev-parse', '--verify', 'HEAD']);
+  if (head.status !== 0 || !head.stdout?.trim())
+    return { head: null, clean: null, statusHash: null, evidence: 'UNKNOWN' };
   const status = exec(['status', '--porcelain=v1', '--untracked-files=normal']);
-  if (head.status !== 0 || status.status !== 0 || !head.stdout?.trim()) {
+  if (status.status !== 0) {
     return { head: null, clean: null, statusHash: null, evidence: 'UNKNOWN' };
   }
   const clean = status.stdout.length === 0;

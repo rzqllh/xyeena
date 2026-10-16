@@ -47,7 +47,7 @@ test('conflicting or manually changed managed groups are not overwritten', () =>
     fs.writeFileSync(config(cwd), '{}');
     guidedCommand('install', { cwd, yes: true });
     const modified = read(config(cwd));
-    modified['xyeena-rig-guided'].enabled = false;
+    modified['xyeena-rig-guided'].Stop[0].command = 'echo modified';
     fs.writeFileSync(config(cwd), JSON.stringify(modified));
     assert.throws(() => guidedCommand('uninstall', { cwd, yes: true }), /changed/);
   } finally { cleanup(cwd); }
@@ -82,5 +82,21 @@ test('installed runner emits stop, not force-continue or auto-approve', () => {
       input: '{"fullyIdle":true}', encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(JSON.parse(result.stdout), { decision: 'stop' });
+  } finally { cleanup(cwd); }
+});
+
+test('native IDE enabled toggle is honored and does not block safe uninstall', () => {
+  const cwd = fixture();
+  try {
+    guidedCommand('install', { cwd, yes: true });
+    const changed = read(config(cwd));
+    changed['xyeena-rig-guided'].enabled = false;
+    fs.writeFileSync(config(cwd), JSON.stringify(changed));
+    assert.equal(guidedCommand('status', { cwd }).enabled, false);
+    assert.equal(hookPlan({ cwd }).changed, false);
+    assert.equal(guidedCommand('install', { cwd, yes: true }).result.changed, false);
+    assert.equal(read(config(cwd))['xyeena-rig-guided'].enabled, false);
+    guidedCommand('uninstall', { cwd, yes: true });
+    assert.equal(fs.existsSync(config(cwd)), false);
   } finally { cleanup(cwd); }
 });
