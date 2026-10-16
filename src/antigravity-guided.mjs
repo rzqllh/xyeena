@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { pendingRuns, resumeCapsule } from './antigravity-guided-hook.mjs';
+import { pendingRuns, resumeCapsule, bindConversation } from './antigravity-guided-hook.mjs';
 
 const GROUP = 'xyeena-rig-guided';
 const SOURCE = fileURLToPath(new URL('./antigravity-guided-hook.mjs', import.meta.url));
@@ -76,6 +76,8 @@ export function hookPlan({ cwd = process.cwd(), action = 'install' } = {}) {
   const command = quote(process.execPath) + ' ' + quote(f.script);
   const proposed = {
     SessionStart: [{ type: 'command', command: command + ' SessionStart', timeout: 3 }],
+    PreInvocation: [{ type: 'command', command: command + ' PreInvocation', timeout: 3 }],
+    PostToolUse: [{ matcher: '*', hooks: [{ type: 'command', command: command + ' PostToolUse', timeout: 3 }] }],
     Stop: [{ type: 'command', command: command + ' Stop', timeout: 3 }],
   };
   const next = action === 'install' ? { ...config.value, [GROUP]: proposed } :
@@ -115,12 +117,13 @@ export function applyHookPlan(plan, { yes = false } = {}) {
   }
   return { changed: true, file: plan.f.config };
 }
-export function guidedCommand(command, { cwd = process.cwd(), yes = false, id = null } = {}) {
+export function guidedCommand(command, { cwd = process.cwd(), yes = false, id = null, conversationId = null } = {}) {
   if (command === 'list') return pendingRuns(cwd).map(r => ({
     id: r.id, goal: String(r.snapshot.goal).slice(0, 120), state: r.snapshot.workflow_state }));
   if (command === 'resume') return resumeCapsule(cwd, id);
+  if (command === 'bind') return bindConversation(cwd, id, conversationId, { yes });
   if (!['preview', 'install', 'uninstall', 'status'].includes(command))
-    throw new Error('Expected guided preview|install|uninstall|status|list|resume');
+    throw new Error('Expected guided preview|install|uninstall|status|list|resume|bind');
   const action = command === 'uninstall' ? 'uninstall' : 'install';
   const plan = hookPlan({ cwd, action });
   if (command === 'status') return { installed: !!plan.manifest, config: plan.f.config };
