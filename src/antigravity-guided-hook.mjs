@@ -124,8 +124,16 @@ export function bindConversation(root, runId, conversationId, { yes = false } = 
   });
   return { conversationId, runId, bound: true, changed: true };
 }
+function matchesWorkspace(root, payload) {
+  if (!object(payload) || !Array.isArray(payload.workspacePaths)) return false;
+  const resolved = fs.realpathSync(path.resolve(root));
+  return payload.workspacePaths.some(p => {
+    if (typeof p !== 'string') return false;
+    try { return same(fs.realpathSync(p), resolved); } catch { return false; }
+  });
+}
 export function beforeInvocation(root, payload) {
-  if (!object(payload) || !conversationIdOK(payload.conversationId)) return {};
+  if (!matchesWorkspace(root, payload) || !conversationIdOK(payload.conversationId)) return {};
   const state = readState(root, payload.conversationId);
   if (!state) return {};
   let notice = null;
@@ -144,7 +152,7 @@ export function beforeInvocation(root, payload) {
   return { injectSteps: [{ ephemeralMessage: notice }] };
 }
 export function afterTool(root, payload) {
-  if (!object(payload) || !conversationIdOK(payload.conversationId)) return {};
+  if (!matchesWorkspace(root, payload) || !conversationIdOK(payload.conversationId)) return {};
   const state = readState(root, payload.conversationId);
   if (!state || !object(payload.toolCall)) return {};
   const name = clean(payload.toolCall.name);
@@ -163,7 +171,7 @@ export function afterTool(root, payload) {
   return {};
 }
 export function stopCheckpoint(root, payload) {
-  if (!object(payload) || !conversationIdOK(payload.conversationId)) return { decision: 'stop' };
+  if (!matchesWorkspace(root, payload) || !conversationIdOK(payload.conversationId)) return { decision: 'stop' };
   const state = readState(root, payload.conversationId);
   if (!state) return { decision: 'stop' };
   const found = pendingRuns(root, 64).find(r => r.id === state.runId);
@@ -196,7 +204,7 @@ async function run() {
       event === 'PreInvocation' ? beforeInvocation(root, payload) :
       event === 'PostToolUse' ? afterTool(root, payload) : stopCheckpoint(root, payload);
     process.stdout.write(JSON.stringify(response) + '\n');
-  } catch { process.stdout.write('{}\n'); }
+  } catch { process.stdout.write(event === 'Stop' ? '{"decision":"stop"}\n' : '{}\n'); }
 }
 if (process.argv[1] && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))) {
   run().catch(() => process.stdout.write('{}\n'));
