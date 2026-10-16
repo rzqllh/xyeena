@@ -185,6 +185,10 @@ async function runMain() {
       event === 'Stop' ? {decision:'stop'} : {}) + '\n');
   }
 }
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  await runMain();
-}
+// macOS temp paths may use /var -> /private/var aliases. Compare actual files.
+let isDirectEntry = false;
+try {
+  isDirectEntry = Boolean(process.argv[1]) &&
+    fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
+} catch { /* Imported module or missing entry path. */ }
+if (isDirectEntry) await runMain();
