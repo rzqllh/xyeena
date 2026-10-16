@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { pendingRuns, resumeCapsule, bindConversation } from './antigravity-guided-hook.mjs';
+import { pendingRuns, resumeCapsule, bindConversation, unbindConversation } from './antigravity-guided-hook.mjs';
 
 const GROUP = 'xyeena-rig-guided';
 const SOURCE = fileURLToPath(new URL('./antigravity-guided-hook.mjs', import.meta.url));
@@ -83,7 +83,7 @@ export function hookPlan({ cwd = process.cwd(), action = 'install' } = {}) {
   const proposed = {
     SessionStart: [{ type: 'command', command: command + ' SessionStart', timeout: 3 }],
     PreInvocation: [{ type: 'command', command: command + ' PreInvocation', timeout: 3 }],
-    PostToolUse: [{ matcher: '*', hooks: [{ type: 'command', command: command + ' PostToolUse', timeout: 3 }] }],
+    PostToolUse: [{ matcher: 'run_command|write_to_file|replace_file_content|multi_replace_file_content', hooks: [{ type: 'command', command: command + ' PostToolUse', timeout: 3 }] }],
     Stop: [{ type: 'command', command: command + ' Stop', timeout: 3 }],
   };
   if (current?.enabled === false) proposed.enabled = false;
@@ -129,8 +129,9 @@ export function guidedCommand(command, { cwd = process.cwd(), yes = false, id = 
     id: r.id, goal: String(r.snapshot.goal).slice(0, 120), state: r.snapshot.workflow_state }));
   if (command === 'resume') return resumeCapsule(cwd, id);
   if (command === 'bind') return bindConversation(cwd, id, conversationId, { yes });
+  if (command === 'unbind') return unbindConversation(cwd, conversationId, { yes });
   if (!['preview', 'install', 'uninstall', 'status'].includes(command))
-    throw new Error('Expected guided preview|install|uninstall|status|list|resume|bind');
+    throw new Error('Expected guided preview|install|uninstall|status|list|resume|bind|unbind');
   const action = command === 'uninstall' ? 'uninstall' : 'install';
   const plan = hookPlan({ cwd, action });
   if (command === 'status') return { installed: !!plan.manifest, enabled: plan.config.value[GROUP]?.enabled !== false, config: plan.f.config };
