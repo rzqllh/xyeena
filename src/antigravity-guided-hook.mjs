@@ -146,6 +146,14 @@ function matchesWorkspace(root, payload) {
     try { return same(fs.realpathSync(p), resolved); } catch { return false; }
   });
 }
+export function unbindConversation(root, conversationId, { yes = false } = {}) {
+  if (!yes) throw new Error('Explicit --yes required before unbinding a conversation');
+  const state = readState(root, conversationId);
+  if (!state) return { conversationId, changed: false };
+  fs.rmSync(statePath(root, conversationId));
+  return { conversationId, changed: true };
+}
+
 export function beforeInvocation(root, payload) {
   if (!matchesWorkspace(root, payload) || !conversationIdOK(payload.conversationId)) return {};
   const state = readState(root, payload.conversationId);
