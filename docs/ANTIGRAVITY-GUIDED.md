@@ -1,7 +1,7 @@
 # Antigravity Guided hooks
 
 Workspace-level installation is optional and requires a separate confirmation.
-Only the documented SessionStart and Stop events are installed in this first slice.
+Guided installs SessionStart, PreInvocation, PostToolUse and Stop hooks.
 Rig does not create a daemon, contact an AI model or bypass Antigravity permissions.
 
 ## Commands
@@ -11,6 +11,7 @@ Rig does not create a daemon, contact an AI model or bypass Antigravity permissi
     xyeena guided status
     xyeena guided list
     xyeena guided resume --id RUN_ID
+    xyeena guided bind --id RUN_ID --conversation UUID --yes
     xyeena guided uninstall --yes
 
 Preview shows the managed hook group, file paths and preserved group names.
@@ -32,15 +33,16 @@ whether to resume. It does not load the task into a new conversation, execute
 tools, or access transcript files. The resume command prints a small capsule
 for manual review. Other workspaces and ambiguous matches are ignored.
 
-Stop returns a non-continuation decision. No auto-continue or auto-approval.
+Binding requires explicit approval and an actual Antigravity conversation UUID. PreInvocation sends a bounded task capsule once to that conversation. PostToolUse keeps keyed hashes of consecutive failures rather than full command inputs or errors, and offers one diagnosis nudge after repeated identical failures.
+
+Stop writes an INCOMPLETE checkpoint with the Git revision and a digest of current worktree status for bound tasks. It neither restores files nor declares completion. Stop always allows Antigravity to stop; Rig does not auto-approve tools.
 
 ## Acceptance and current limits
 
 Run project tests and inspect Antigravity > Customizations > Hooks.
 Native IDE activation and portability must be verified manually. Tests of
 these functions alone do not prove that Antigravity invokes them.
-Context re-injection, scope enforcement, automatic checkpoint scheduling,
-and behavioral efficiency claims are not implemented in this slice.
+Automatic task selection, strict tool enforcement, timer-based checkpoint scheduling and behavioral efficiency claims remain out of scope. Verify the native hook invocation from Antigravity IDE; fixture tests alone are insufficient.
 
 Upstream contracts: https://www.antigravity.google/docs/hooks
 Rules: https://www.antigravity.google/docs/rules-workflows?tab=ide

@@ -85,7 +85,7 @@ Selected orchestration capabilities may install native agent roles; Xyeena does 
 
 ## Antigravity Guided hooks
 
-Workspace-level hooks are an optional, separately approved install. They suggest a possible unfinished task at session start, without resuming it or bypassing Antigravity permissions. See [Guided hooks](docs/ANTIGRAVITY-GUIDED.md).
+Workspace-level hooks are an optional, separately approved install. They suggest possible unfinished work, and explicitly bound conversations receive a bounded capsule and checkpoint support without automatic execution or permission changes. See [Guided hooks](docs/ANTIGRAVITY-GUIDED.md).
 
     xyeena guided preview
     xyeena guided install --yes
