@@ -19,6 +19,8 @@ Preview shows the managed hook group, file paths and preserved group names.
 It does not print the contents of third-party hooks or change files.
 Install saves an existing hooks.json to .xyeena/backups/antigravity,
 then adds only the xyeena-rig-guided entry to .agents/hooks.json.
+The backup directory has a local .gitignore; backup copies may contain
+third-party command arguments and must not be committed.
 A dependency-free runner is copied into .xyeena/hooks, so hooks do not
 call npx or download code for each event. Reinstall if the Node path changes.
 
