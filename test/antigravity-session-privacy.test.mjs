@@ -52,7 +52,7 @@ test('hook backups are locally ignored and incompatible ignore files are not ove
     fs.writeFileSync(config, JSON.stringify({ 'other-hook': { SessionStart: [{ command: 'echo private' }] } }));
     guidedCommand('install', { cwd: root, yes: true });
     const ignore = path.join(root, '.xyeena', 'backups', '.gitignore');
-    assert.equal(fs.readFileSync(ignore, 'utf8'), 'antigravity/\\n'.replace('\\n', '\n'));
+    assert.equal(fs.readFileSync(ignore, 'utf8'), 'antigravity/\n');
     assert.equal(fs.readdirSync(path.join(root, '.xyeena', 'backups', 'antigravity')).length, 1);
     guidedCommand('uninstall', { cwd: root, yes: true });
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
