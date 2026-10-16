@@ -106,6 +106,16 @@ export function applyHookPlan(plan, { yes = false } = {}) {
     throw new Error('Config changed since preview; no changes made');
   if (plan.action === 'install') {
     if (plan.config.exists) {
+      const ignore = path.join(path.dirname(plan.f.backup), '.gitignore');
+      if (fs.existsSync(ignore)) {
+        if (fs.lstatSync(ignore).isSymbolicLink() ||
+            !/(^|\n)antigravity\/(\r?\n|$)/.test(fs.readFileSync(ignore, 'utf8'))) {
+          throw new Error('Antigravity hook backups must be ignored by Git');
+        }
+      } else {
+        fs.mkdirSync(path.dirname(ignore), { recursive: true });
+        fs.writeFileSync(ignore, 'antigravity/\n', { flag: 'wx', mode: 0o600 });
+      }
       fs.mkdirSync(plan.f.backup, { recursive: true });
       const backup = new Date().toISOString().replace(/[:.]/g, '-') + '-' + crypto.randomUUID() + '.json';
       fs.writeFileSync(path.join(plan.f.backup, backup), plan.config.raw, { flag: 'wx', mode: 0o600 });
