@@ -91,9 +91,12 @@ export function installGuidedHooks(opts = {}) {
   const plan = inspectGuidedHooks(opts);
   const { files, current, planned, groupHash } = plan;
   const runtimeContent = fs.readFileSync(SOURCE, 'utf8');
-  if (fs.existsSync(files.runtime) && plan.installed &&
-      fs.readFileSync(files.runtime, 'utf8') !== runtimeContent)
-    throw new Error('Installed hook launcher has changed; repair requires manual review');
+  if (fs.existsSync(files.runtime) && fs.readFileSync(files.runtime, 'utf8') !== runtimeContent) {
+    const owned = fs.existsSync(files.manifest) ? loadJson(files.manifest) : null;
+    const currentHash = crypto.createHash('sha256').update(fs.readFileSync(files.runtime)).digest('hex');
+    if (!owned || owned.launcherHash !== currentHash)
+      throw new Error('Hook launcher is not owned by this installation or was modified; refusing overwrite');
+  }
   if (plan.installed && !plan.changed && fs.existsSync(files.runtime)) return { changed: false, config: files.config };
   fs.mkdirSync(files.backups, { recursive: true });
   let backup = null;
