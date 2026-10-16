@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: "Xyeena Rig core: scope and evidence discipline"
+---
+
 # Xyeena kernel
 
 For substantial work, apply the smallest adequate workflow. Separate verified facts from inference,

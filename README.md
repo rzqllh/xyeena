@@ -83,6 +83,13 @@ The installer automatically includes only **required** skill dependencies, repor
 
 Selected orchestration capabilities may install native agent roles; Xyeena does **not** silently replace root `AGENTS.md` or existing Git hooks. Harness diagnostic commands do not require installing project configuration first.
 
+## Antigravity Guided hooks
+
+Workspace-level hooks are an optional, separately approved install. They suggest possible unfinished work, and explicitly bound conversations receive a bounded capsule and checkpoint support without automatic execution or permission changes. See [Guided hooks](docs/ANTIGRAVITY-GUIDED.md).
+
+    xyeena guided preview
+    xyeena guided install --yes
+
 ## Harness commands
 
 Run from a Git repository to inspect project state or check risks without configuring the Harness first:
