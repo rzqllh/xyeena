@@ -19,7 +19,7 @@ export function pendingRuns(root, max = 16) {
         const snapshot = JSON.parse(fs.readFileSync(filename, 'utf8'));
         if (!object(snapshot) || snapshot.run_id !== entry.name || !clean(snapshot.goal) ||
             snapshot.workflow_state === 'CLOSE' ||
-            typeof snapshot.cwd !== 'string' || !same(path.resolve(snapshot.cwd), root)) return null;
+            typeof snapshot.cwd !== 'string' || !same(fs.realpathSync(snapshot.cwd), root)) return null;
         return { id: entry.name, snapshot, changed: fs.statSync(filename).mtimeMs };
       } catch { return null; }
     }).filter(Boolean).sort((a, b) => b.changed - a.changed).slice(0, max);
@@ -69,6 +69,6 @@ async function run() {
     process.stdout.write(JSON.stringify(sessionStart(root, payload)) + '\n');
   } catch { process.stdout.write('{}\n'); }
 }
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))) {
   run().catch(() => process.stdout.write('{}\n'));
 }
