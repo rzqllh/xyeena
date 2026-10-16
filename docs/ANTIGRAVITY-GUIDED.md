@@ -4,6 +4,43 @@ Workspace-level installation is optional and requires a separate confirmation.
 Guided installs SessionStart, PreInvocation, PostToolUse and Stop hooks.
 Rig does not create a daemon, contact an AI model or bypass Antigravity permissions.
 
+## Test a draft PR from any project
+
+The preview requires no local checkout of the Xyeena Rig repository.
+Run these commands in a PowerShell terminal opened at the project to test.
+The GitHub package uses the PR branch; it is **not** the published npm
+release, and Git is required to fetch the branch.
+
+```powershell
+$rig = "github:rzqllh/xyeena#feat/antigravity-guided-hooks-recovery"
+npx --yes --package $rig xyeena guided preview --dir .
+```
+
+Inspect the proposed `.agents/hooks.json` change before proceeding.
+Installation requires a second, explicit command:
+
+```powershell
+npx --yes --package $rig xyeena guided install --dir . --yes
+npx --yes --package $rig xyeena guided status --dir .
+```
+
+After reopening the workspace in Antigravity IDE, check **Customizations >
+Hooks** and verify the hook group is recognized. To undo the hook install:
+
+```powershell
+npx --yes --package $rig xyeena guided uninstall --dir . --yes
+```
+
+These commands install and remove **Guided hooks only**. They do not
+replace previously installed Skills or Harness configurations. Skill
+upgrades remain a separate selective `xyeena init` operation with
+existing-file protection; do not use `--force` on a workspace without
+reviewing its modified files.
+
+For reproducible tests, pin the GitHub package to a commit SHA rather than
+the branch name. Review `git status --short` before and after the test.
+Do not use this unmerged package as a production release.
+
 ## Commands
 
     xyeena guided preview
