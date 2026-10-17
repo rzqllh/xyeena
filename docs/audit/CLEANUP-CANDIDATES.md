@@ -44,11 +44,28 @@ Format: path atau symbol | cara deteksi | bukti (command + hasil) | ikut tarball
 - `.github/workflows/ci.yml, publish.yml` | scan .github/ | CI multi-OS (Ubuntu, Windows, macOS) Node 22/24 + skills-ref | tidak | KEEP
 
 ## 7. Status Eksekusi (Phase 4C)
-- `src/util.mjs:18: within`: DIHAPUS (commit 9ac44f4).
-- `src/paths.mjs:3: SRC_DIR`: UNEXPORTED menjadi private module helper (commit c4d453c).
-- `src/registry.mjs:6: validateCapability`: UNEXPORTED menjadi private module helper (commit c4d453c).
-- `src/selection.mjs:35: skillDescription`: UNEXPORTED menjadi private module helper (commit c4d453c).
-- `src/selection.mjs:43: guardrailDescription`: UNEXPORTED menjadi private module helper (commit c4d453c).
-- Banner help CLI: subcmd `changed`, `adapters`, dan flag `--evidence` ditambahkan ke `src/cli.mjs`, dikunci di `test/cli-help.test.mjs`, dan didokumentasikan di `docs/CLI-REFERENCE.md` serta `README.md` (commit 8eba665).
-- Tarball exclusions: `!docs/HARNESS-V3.1-IMPORT-PLAN.md`, `!docs/RELEASE-ACCEPTANCE.md`, dan `!docs/XYEENA_TO_ISLAND_HANDOFF.md` ditambahkan ke `package.json` `files` (commit bda84ae).
+- `src/util.mjs:18: within`: DIHAPUS (commit chore(cleanup): remove unused within helper).
+- `src/paths.mjs:3: SRC_DIR`: UNEXPORTED menjadi private module helper (commit chore(cleanup): unexport module-private helpers).
+- `src/registry.mjs:6: validateCapability`: UNEXPORTED menjadi private module helper (commit chore(cleanup): unexport module-private helpers).
+- `src/selection.mjs:35: skillDescription`: UNEXPORTED menjadi private module helper (commit chore(cleanup): unexport module-private helpers).
+- `src/selection.mjs:43: guardrailDescription`: UNEXPORTED menjadi private module helper (commit chore(cleanup): unexport module-private helpers).
+- Banner help CLI: subcmd `changed`, `adapters`, dan flag `--evidence` ditambahkan ke `src/cli.mjs`, dikunci di `test/cli-help.test.mjs`, dan didokumentasikan di `docs/CLI-REFERENCE.md` serta `README.md` (commit docs(cli): list changed, adapters, --evidence in help banner).
+- Tarball exclusions: `!docs/HARNESS-V3.1-IMPORT-PLAN.md`, `!docs/RELEASE-ACCEPTANCE.md`, dan `!docs/XYEENA_TO_ISLAND_HANDOFF.md` ditambahkan ke `package.json` `files` (commit fix(pkg): exclude internal docs from npm tarball).
 - `docs/XYEENA_TO_ISLAND_HANDOFF.md`: tetap dibiarkan untracked lokal (tidak dihapus, dipindah, diedit, atau dicommit).
+
+## 8. Keputusan Owner yang Terbuka (OPEN/ASK)
+
+### Dokumen Orphan Publik di dalam Tarball
+Tiga dokumen spesifikasi teknis berikut ikut didistribusikan di dalam tarball npm, namun tidak memiliki tautan masuk (inbound link) dari dokumen publik mana pun (README maupun docs/):
+- `docs/CAPABILITY-CONTRACT.md` (spesifikasi kontrak format kapabilitas)
+- `docs/ORCHESTRATION.md` (protokol perpesanan Governor-Worker)
+- `docs/RUNTIME-ADAPTERS.md` (rincian adapter runtime Antigravity, Claude Code, Codex)
+
+**Usulan tindakan (Keputusan Owner):**
+Pertahankan ketiga file tersebut di dalam tarball dan tautkan dari `docs/ARCHITECTURE.md` pada section referensi arsitektur:
+```markdown
+- [Capability Contract](CAPABILITY-CONTRACT.md): capability manifest schema, lifecycle declarations, and validation rules.
+- [Orchestration Protocol](ORCHESTRATION.md): message flow and envelope contracts between Governor and workers.
+- [Runtime Adapters](RUNTIME-ADAPTERS.md): integration details for Antigravity, Claude Code, and Codex runtime manifests.
+```
+*Catatan: `docs/ARCHITECTURE.md` sengaja tidak disentuh pada pass ini dan menunggu keputusan owner.*

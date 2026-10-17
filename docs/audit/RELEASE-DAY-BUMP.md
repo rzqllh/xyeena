@@ -143,7 +143,7 @@ Saat commit rilis dibuat:
 
 ### Langkah B: Publish ke npm Registry via GitHub Release
 
-Publikasi paket ke npm registry dikelola sepenuhnya oleh workflow automated GitHub Actions [`.github/workflows/publish.yml`](file:///.github/workflows/publish.yml).
+Publikasi paket ke npm registry dikelola sepenuhnya oleh workflow automated GitHub Actions [`.github/workflows/publish.yml`](../../.github/workflows/publish.yml).
 
 #### 1. Mekanisme Trigger Workflow
 Workflow hanya terpicu saat GitHub Release resmi diterbitkan dengan status published:
@@ -161,7 +161,7 @@ Draft release tidak memicu workflow ini.
 Tag release harus persis diawali huruf `v` diikuti versi pada `package.json` (`v0.2.1`). Jika tag tidak memiliki prefiks `v` (misalnya `0.2.1`), langkah validasi akan gagal dan membatalkan publish:
 
 ```yaml
-# .github/workflows/publish.yml:18-24
+# .github/workflows/publish.yml:21-27 (step: Validate release tag and package version)
       - name: Validate release tag and package version
         run: |
           PACKAGE_VERSION="$(node -p 'require("./package.json").version')"
@@ -174,8 +174,29 @@ Tag release harus persis diawali huruf `v` diikuti versi pada `package.json` (`v
 #### 3. Target Commit Release
 GitHub Release wajib menargetkan release commit di branch `main` (commit yang sudah memuat bump versi pada 3 file tarball, pembersihan prosa, dan pelipatan changelog).
 
-#### 4. Sifat Rilis: Permanen dan Tak Dapat Ditarik
-Menerbitkan release GitHub secara otomatis mempublikasikan tarball ke registry npm global melalui OIDC atau NPM_TOKEN rahasia dengan `--provenance`. Paket npm yang telah dipublikasikan bersifat permanen (immutable) dan tidak dapat ditarik kembali (unpublish) atau ditimpa (overwrite).
+#### 4. Sifat Rilis dan Mekanisme Autentikasi
+Menerbitkan release GitHub secara otomatis mengeksekusi workflow autentikasi dan publikasi ke registry npm:
+
+1. Step Authenticate to npm registry (.github/workflows/publish.yml:36-64):
+   - Jika secret NPM_TOKEN disetel di repository, workflow mengonfigurasi token ke ~/.npmrc:
+```bash
+# .github/workflows/publish.yml:37-40
+if [ -n "${{ secrets.NPM_TOKEN }}" ]; then
+  echo "Using NPM_TOKEN secret from GitHub repository."
+  echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > "$HOME/.npmrc"
+  echo "Successfully configured ~/.npmrc with NPM_TOKEN."
+```
+   - Jika secret NPM_TOKEN tidak disetel, workflow beralih ke OIDC token exchange via id-token: write (baris 7, 13, 42-63) untuk meminta session token dari endpoint registry npm dan menulisnya ke ~/.npmrc.
+
+2. Step Publikasi (.github/workflows/publish.yml:65-67):
+```yaml
+# .github/workflows/publish.yml:65-67
+      - run: npm publish --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+Paket dipublikasikan dengan flag `--provenance` dan environment variable `NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}`.
+Paket npm yang telah dipublikasikan bersifat permanen (immutable) dan tidak dapat ditarik kembali (unpublish) atau ditimpa (overwrite).
 
 #### 5. Checklist Verifikasi Sebelum Menekan "Publish release"
 Sebelum menekan tombol "Publish release" di antarmuka GitHub:
