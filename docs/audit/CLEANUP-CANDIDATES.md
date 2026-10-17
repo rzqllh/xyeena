@@ -42,3 +42,13 @@ Format: path atau symbol | cara deteksi | bukti (command + hasil) | ikut tarball
 - `remotes/origin/feat/antigravity-guided-*` | git branch -a | branch fitur WIP | tidak | KEEP (zona terlindungi: dilarang sentuh)
 - `remotes/origin/release/xyeena-rig-0.2.1` | git branch -a | branch staging rilis | tidak | KEEP (zona terlindungi: dilarang sentuh)
 - `.github/workflows/ci.yml, publish.yml` | scan .github/ | CI multi-OS (Ubuntu, Windows, macOS) Node 22/24 + skills-ref | tidak | KEEP
+
+## 7. Status Eksekusi (Phase 4C)
+- `src/util.mjs:18: within`: DIHAPUS (commit 9ac44f4).
+- `src/paths.mjs:3: SRC_DIR`: UNEXPORTED menjadi private module helper (commit c4d453c).
+- `src/registry.mjs:6: validateCapability`: UNEXPORTED menjadi private module helper (commit c4d453c).
+- `src/selection.mjs:35: skillDescription`: UNEXPORTED menjadi private module helper (commit c4d453c).
+- `src/selection.mjs:43: guardrailDescription`: UNEXPORTED menjadi private module helper (commit c4d453c).
+- Banner help CLI: subcmd `changed`, `adapters`, dan flag `--evidence` ditambahkan ke `src/cli.mjs`, dikunci di `test/cli-help.test.mjs`, dan didokumentasikan di `docs/CLI-REFERENCE.md` serta `README.md` (commit 8eba665).
+- Tarball exclusions: `!docs/HARNESS-V3.1-IMPORT-PLAN.md`, `!docs/RELEASE-ACCEPTANCE.md`, dan `!docs/XYEENA_TO_ISLAND_HANDOFF.md` ditambahkan ke `package.json` `files` (commit bda84ae).
+- `docs/XYEENA_TO_ISLAND_HANDOFF.md`: tetap dibiarkan untracked lokal (tidak dihapus, dipindah, diedit, atau dicommit).
