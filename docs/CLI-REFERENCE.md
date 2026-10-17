@@ -1,13 +1,13 @@
 # Xyeena Rig CLI reference
 
-The npm package is named **`xyeena-agent`** and exposes both `xyeena` and `xyeena-agent` executables. The Rig-branded release line is `0.2.1`. Once that version is published, pin it with:
+The npm package is named **`xyeena-agent`** and exposes both `xyeena` and `xyeena-agent` executables. The current active release on npm is `0.2.0`; the Rig-branded release line `0.2.1` is staged on main pending npm release.
 
 ```bash
-npx xyeena-agent@0.2.1 help
-npx xyeena-agent@0.2.1 version
+npx xyeena-agent@0.2.0 help
+npx xyeena-agent@0.2.0 version
 ```
 
-Use `npx xyeena-agent@0.2.1 <command>` for the subcommands listed below. The **Rig** display name is included from `0.2.1`; command names have not been renamed.
+Use `npx xyeena-agent@0.2.0 <command>` for the subcommands listed below. The **Rig** display name is included from `0.2.1`; command names remain compatible.
 
 ## Installation
 
@@ -20,7 +20,7 @@ Use `npx xyeena-agent@0.2.1 <command>` for the subcommands listed below. The **R
 | `doctor` | Check the existing Agent Skills installation |
 | `harness doctor` | Inspect Harness project state independently |
 
-**Non-interactive flags:** `--components skills|harness|all` is required; Skills require `--runtime` and `--skills`, Harness requires `--guards`. Select multiple values with commas or explicitly select `all`. Use `--yes` to approve writes, `--dry-run` to preview, `--dir PATH` to choose a project and `--force` only to deliberately overwrite modified destinations.
+**Non-interactive flags:** `--components skills|harness|all` is required; Skills require `--runtime` and `--skills`, Harness requires `--guards`. Select multiple values with commas or explicitly select `all`. Use `--yes` to approve writes, `--dry-run` to preview, `--dir PATH` to choose a project, and `--force` only to deliberately overwrite modified destinations.
 
 ## Harness and verification
 
@@ -48,7 +48,7 @@ The public bridge intentionally does not expose upstream Harness `init` or `inst
 | `run-init --goal TEXT` | Initialize a run journal in the selected project |
 
 ```bash
-npx xyeena-agent@0.2.1 resolve --prompt "review auth changes" --state TRIAGE
+npx xyeena-agent@0.2.0 resolve --prompt "review auth changes" --state TRIAGE
 ```
 
 ## Compatibility
