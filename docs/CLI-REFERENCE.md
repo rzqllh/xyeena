@@ -37,6 +37,12 @@ Use `npx xyeena-agent@0.2.0 <command>` for the subcommands listed below. The **R
 
 Harness commands support `--dir PATH` and `--base REF` for Git comparisons; `--evidence` opts in to persistent verification evidence. `audit` and `scan` are read-only. `verify` can execute arbitrary configured project scripts and should only be used on a project you trust. Missing native checks result in **INCOMPLETE**, not an invented PASS.
 
+```bash
+npx xyeena-agent@0.2.0 changed --base origin/main
+npx xyeena-agent@0.2.0 adapters
+npx xyeena-agent@0.2.0 verify --evidence
+```
+
 The public bridge intentionally does not expose upstream Harness `init` or `install-hook`.
 
 ## Agent capabilities

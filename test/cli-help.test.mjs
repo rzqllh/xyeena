@@ -21,6 +21,8 @@ for (const cmd of subcommands) {
       assert.equal(res.status, 0, `Command ${cmd} ${flag} failed with stderr: ${res.stderr}`);
       assert.ok(res.stdout.includes('Usage:'), `Expected Usage: in stdout for ${cmd} ${flag}`);
       assert.ok(res.stdout.includes('Xyeena Rig'), `Expected Xyeena Rig in stdout for ${cmd} ${flag}`);
+      assert.ok(res.stdout.includes('changed|adapters'), `Expected changed|adapters in stdout for ${cmd} ${flag}`);
+      assert.ok(res.stdout.includes('--evidence'), `Expected --evidence in stdout for ${cmd} ${flag}`);
       assert.equal(res.stderr, '', `Expected empty stderr for ${cmd} ${flag}`);
     });
   }

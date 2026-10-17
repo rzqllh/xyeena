@@ -106,6 +106,8 @@ npx xyeena-agent@0.2.0 harness doctor  # Harness diagnostics
 npx xyeena-agent@0.2.0 audit           # Read-only findings against active adapters
 npx xyeena-agent@0.2.0 scan            # Repository scan; exits nonzero on blockers
 npx xyeena-agent@0.2.0 risk            # Classify change risk against base branch
+npx xyeena-agent@0.2.0 changed         # Inspect changed files against base branch
+npx xyeena-agent@0.2.0 adapters        # Inspect active project adapters
 npx xyeena-agent@0.2.0 verify          # Execute native project check scripts
 ```
 

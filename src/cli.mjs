@@ -11,9 +11,8 @@ Usage:
   xyeena init --components all --runtime all --skills all --guards all --yes
   xyeena init --components ... --dry-run         # preview, no files written
   xyeena doctor [--dir PATH]                      # existing installation doctor
-  xyeena harness doctor|audit|scan|verify [--dir PATH] [--base REF]
-  xyeena audit|scan|verify [--dir PATH] [--base REF]
-  xyeena risk [--dir PATH] [--base REF]
+  xyeena harness doctor|audit|scan|verify|risk|changed|adapters [--dir PATH] [--base REF] [--evidence]
+  xyeena audit|scan|verify|risk|changed|adapters [--dir PATH] [--base REF] [--evidence]
   xyeena check [--source PATH]
   xyeena list
   xyeena resolve --prompt TEXT [--state TRIAGE] [--path FILE]
