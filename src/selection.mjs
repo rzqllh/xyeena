@@ -91,7 +91,7 @@ export async function interactiveSelection({ input = process.stdin, output = pro
   if (!input.isTTY || !output.isTTY) throw new Error('Interactive setup needs a terminal. Supply --components, --runtime and --skills for CI.');
   const rl = createInterface({ input, output });
   try {
-    output.write('\nXyeena Rig Setup — choose what to install\n');
+    output.write('\nXyeena Rig Setup: choose what to install\n');
     output.write('Nothing is installed until you confirm.\n\n');
     output.write('  1. Skills\n  2. Harness\n  3. All (Skills + Harness)\n  0. Cancel\n');
     const first = (await rl.question('\nComponent [1/2/3/0]: ')).trim();
@@ -101,18 +101,18 @@ export async function interactiveSelection({ input = process.stdin, output = pro
     let runtimes = [], skills = [], guards = [];
     if (components.includes('skills')) {
       const runtimesAvailable = ['antigravity','claude','codex'];
-      output.write('\nAgent runtimes — comma-separated numbers or "all":\n');
+      output.write('\nAgent runtimes (comma-separated numbers or "all"):\n');
       runtimesAvailable.forEach((v,i) => output.write('  ' + (i+1) + '. ' + v + '\n'));
       runtimes = parseChoice(await rl.question('Runtime(s): '),runtimesAvailable);
       const names = availableSkills();
-      output.write('\nSkills — comma-separated numbers/names or "all":\n');
-      names.forEach((v,i) => output.write('  ' + (i+1) + '. ' + v + (skillDescription(v)?' — '+skillDescription(v):'') + '\n'));
+      output.write('\nSkills (comma-separated numbers/names or "all"):\n');
+      names.forEach((v,i) => output.write('  ' + (i+1) + '. ' + v + (skillDescription(v)?': '+skillDescription(v):'') + '\n'));
       skills = parseChoice(await rl.question('Skill(s): '), names);
     }
     if(components.includes('harness')) {
       const groups=availableHarnessGroups();
-      output.write('\nHarness guardrails — comma-separated numbers or "all":\n');
-      groups.forEach((v,i)=>output.write('  ' + (i+1) + '. ' + v + ' — ' + guardrailDescription(v) + '\n'));
+      output.write('\nHarness guardrails (comma-separated numbers or "all"):\n');
+      groups.forEach((v,i)=>output.write('  ' + (i+1) + '. ' + v + ': ' + guardrailDescription(v) + '\n'));
       guards=parseChoice(await rl.question('Guardrail group(s): '),groups);
     }
     output.write('\nSelection: ' + components.join(' + ') + '\n');
