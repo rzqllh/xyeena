@@ -25,6 +25,7 @@
     ".agents/plugins/",
     "rules/",
     "docs/",
+    "!docs/audit",
     "README.md",
     "LICENSE",
     "NOTICE.md",
