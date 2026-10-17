@@ -37,3 +37,42 @@ Format: [SEVERITY] [LOKASI] — MASALAH -> FIX (1 baris per temuan)
 - P1 src/selection.mjs:91: `xyeena init` di lingkungan non-TTY langsung melempar raw exception -> cetak pesan instruksi bantuan CI yang ramah dan exit code 1 bersih.
 - P1 src/cli.mjs:57: Perintah `xyeena check` hanya mengeluarkan teks `PASS` atau `FAIL` polos tanpa indikator visual yang terstruktur -> gunakan prefix simbol standar yang terbaca screen-reader `[PASS]` / `[FAIL]`.
 - P2 src/selection.mjs:97,125: Prompt input interaktif tidak memiliki pemisah visual atau kontras yang jelas -> tambahkan format penanda prompt `>` yang konsisten.
+
+## Pass 2: Audit Surface Tambahan (Non-Landing)
+Format: lokasi | masalah | fix | severity
+
+### 1. Plugin Metadata
+- plugin.json:4 | versi 0.2.1 belum live di npm | biarkan sinkron package.json tapi tandai status rilis di dokumentasi | P2
+- .claude-plugin/plugin.json:4 | versi 0.2.1 belum live di npm | biarkan sinkron package.json | P2
+- .codex-plugin/plugin.json:30 | websiteURL mengarah ke root GitHub bukan landing site atau docs spesifik | perbarui ke URL landing resmi setelah domain live | P2
+- .agents/plugins/marketplace.json:3 | metadata minimal tanpa deskripsi panjang | tambahkan short description konsisten Rig | P2
+
+### 2. Body Prose Skills (19 skills/*/SKILL.md)
+- skills/*/SKILL.md (frontmatter) | name dan description terkait ke resolver serta evals | LOCKED: jangan diubah | P2
+- skills/*/SKILL.md (body prose) | nihil em dash, nol buzzwords marketing (seamless, elevate, dll), nol kebocoran Notch/Xyn | pertahankan | P2
+
+### 3. Harness Guides (41 docs — Report Only)
+- harness/guides/00-core/scope-control.md:5-8 | 4 em dash pada daftar definisi scope (REQUIRED, NECESSARY, RELATED, OUT-OF-SCOPE) | REPORT ONLY: jangan diedit karena terpasang ke repositori consumer dan dilindungi integritas instalasi | P2
+- harness/guides/*.md | nihil kebocoran identitas Notch, Island, Fold, atau Xyn | REPORT ONLY: pertahankan integritas panduan | P2
+
+### 4. Agent Role Definitions (8 roles)
+- agents/*.md | terminologi peran (Auditor, Debugger, Interface Designer, Executor, Governor, Researcher, Security Reviewer, Tester) konsisten 100% dengan domain skills dan contracts | pertahankan | P2
+
+### 5. Runtime CLI Output
+- src/selection.mjs:91 | pesan error non-TTY hanya menyebut --runtime dan --skills tanpa menyebut --guards untuk CI Harness | perbarui teks pesan error agar menyebut --guards | P1
+- src/*.mjs | grep ANSI escape codes menghasilkan 0 | tidak ada warna-only signaling, NO_COLOR didukung alami | P2
+
+### 6. Dokumentasi Sisa dan Batas Brand
+- CHANGELOG.md:3,10 | header versi memakai em dash "0.2.1 — Xyeena Rig" dan "0.2.0 — Skills" | ganti em dash dengan colon ":" | P1
+- CHANGELOG.md | belum memuat section Unreleased untuk mendokumentasikan pass 1 dan pass 2 | tambahkan section Unreleased tanpa tanggal dan tanpa bump version | P1
+- NOTICE.md:6-15 | 6 butir pengaruh riset memakai em dash pemisah | ganti dengan colon ":" | P1
+- docs/BRANDING.md:9 | tabel identitas memuat em dash pada nama Xyn | ganti dengan format colon "Xyn: The Lion Guardian" | P1
+- docs/ARCHITECTURE.md:9-17 | 9 baris modul kernel menggunakan em dash | ganti dengan colon ":" | P1
+- docs/EVALS.md:5-12 | 8 baris daftar tipe evaluasi menggunakan em dash | ganti dengan colon ":" | P1
+- docs/RELEASE-ACCEPTANCE.md:1 | judul dokumen memuat em dash | ganti dengan colon ":" | P1
+
+### 7. Usulan Metadata Publik (Non-Repo)
+- package.json description | saat ini: "Xyeena Rig: selectable Agent Skills and opt-in project Harness with guardrails, audits, and verification." | usulan: "Xyeena Rig: selectable Agent Skills and opt-in project Harness for Antigravity, Claude Code, and Codex." | P2
+- GitHub About | belum diseragamkan | usulan: "Developer tooling for coding agents: selectable Agent Skills + opt-in project Harness. Zero runtime dependencies." | P2
+- GitHub Topics | topik repositori di GitHub | usulan: agent-skills, coding-agents, antigravity, claude-code, codex, developer-tools, guardrails, code-quality, verification | P2
+
