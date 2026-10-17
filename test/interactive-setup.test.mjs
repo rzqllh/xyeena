@@ -67,3 +67,17 @@ test('interactive wizard allows explicit All only after selection and confirmati
   assert.deepEqual(result.guards, availableHarnessGroups());
   assert.match(text, /Proceed\? \[y\/N\]/);
 });
+
+test('interactiveSelection rejects non-TTY streams with detailed flag instructions', async () => {
+  const input = new PassThrough();
+  const output = new PassThrough();
+  input.isTTY = false;
+  output.isTTY = false;
+  await assert.rejects(
+    () => interactiveSelection({ input, output }),
+    /Non-interactive terminal requires flags: --components <skills\|harness\|all> and --yes\. Skills need --runtime and --skills\. Harness needs --guards\./
+  );
+  input.destroy();
+  output.destroy();
+});
+

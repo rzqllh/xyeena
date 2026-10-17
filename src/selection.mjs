@@ -88,7 +88,7 @@ export function explicitSelection(flags) {
 }
 
 export async function interactiveSelection({ input = process.stdin, output = process.stdout } = {}) {
-  if (!input.isTTY || !output.isTTY) throw new Error('Interactive setup needs a terminal. Supply --components, --runtime and --skills for CI.');
+  if (!input.isTTY || !output.isTTY) throw new Error('Non-interactive terminal requires flags: --components <skills|harness|all> and --yes. Skills need --runtime and --skills. Harness needs --guards.');
   const rl = createInterface({ input, output });
   try {
     output.write('\nXyeena Rig Setup: choose what to install\n');
