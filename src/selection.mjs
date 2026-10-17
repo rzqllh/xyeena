@@ -32,7 +32,7 @@ export function skillDependencyClosure(requested) {
   return [...selected];
 }
 
-export function skillDescription(name) {
+function skillDescription(name) {
   const contract=path.join(SKILLS_DIR,name,'capability.json');
   try {
     const meta=JSON.parse(fs.readFileSync(contract,'utf8')).metadata;
@@ -40,7 +40,7 @@ export function skillDescription(name) {
   } catch { return ''; }
 }
 
-export function guardrailDescription(name) {
+function guardrailDescription(name) {
   const labels = {
     '00-core':'Core process and evidence rules',
     '10-profile':'Project-specific context',

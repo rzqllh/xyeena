@@ -3,7 +3,7 @@ import path from 'node:path';
 import { readJson } from './util.mjs';
 import { SKILLS_DIR } from './paths.mjs';
 
-export function validateCapability(cap, folderName) {
+function validateCapability(cap, folderName) {
   const errors=[];
   if(cap.apiVersion!=='xyeena.dev/v1alpha1') errors.push('apiVersion must be xyeena.dev/v1alpha1');
   if(cap.kind!=='Capability') errors.push('kind must be Capability');
