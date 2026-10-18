@@ -2,18 +2,19 @@
 
 ## [Unreleased]
 
-### Added
+## 0.2.1 (2026-10-15): Xyeena Rig branding and documentation
+
+- Adopt **Xyeena Rig** as the developer-tooling product identity under the Xyeena parent brand ([PR #4](https://github.com/rzqllh/xyeena/pull/4)).
+- Rebrand human-facing CLI/setup text, source plugin display labels and npm package description while preserving the package name `xyeena-agent`, CLI aliases, Skill IDs and installed file paths.
+- Refresh public documentation with [Getting started](docs/GETTING-STARTED.md), [CLI reference](docs/CLI-REFERENCE.md) and reconciled release records.
+- First Rig-branded npm release candidate: version `0.2.1` aligns npm, CLI, lockfile and native plugin manifest versions; historical `0.2.0` remains unchanged.
 - Static landing page in `site/` with zero runtime dependencies, light/dark theme support, accessible contrast, and 1-click install command copy.
 - Comprehensive non-TTY `--help` and `-h` support for all CLI subcommands (`init`, `doctor`, `harness`, `audit`) returning exit code 0.
 - Public surface audit, redesign plans, and release-day bump ledger in `docs/audit/`.
-
-### Changed
-- Pinned active public installation instructions to published `npx xyeena-agent@0.2.0 init` across `README.md`, `site/index.html`, `docs/GETTING-STARTED.md`, and `docs/CLI-REFERENCE.md` with explicit release pending status for 0.2.1.
 - Isolated `site/` and `docs/audit` from the npm publication tarball via `package.json` files configuration.
 - Removed marketing buzzwords and unnecessary punctuation across public CLI wizard prompts and documentation.
 - Clarified non-TTY error diagnostics in CLI selection to explicitly guide users toward `--guards` for CI Harness workflows.
-
-## 0.2.1: Xyeena Rig branding and documentation
+- Linked capability-contract, orchestration, and runtime-adapters specifications in `docs/ARCHITECTURE.md`.
 
 - Adopt **Xyeena Rig** as the developer-tooling product identity under the Xyeena parent brand ([PR #4](https://github.com/rzqllh/xyeena/pull/4)).
 - Rebrand human-facing CLI/setup text, source plugin display labels and npm package description while preserving the package name `xyeena-agent`, CLI aliases, Skill IDs and installed file paths.

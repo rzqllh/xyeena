@@ -5,10 +5,8 @@
 Xyeena Rig combines modular **Agent Skills** with an opt-in project **Harness** for coding agents. It gives agents bounded scope, safer operations, verifiable evidence, and automated repository checks. Built for solo developers and engineering teams using **Antigravity**, **Claude Code**, and **Codex**. Zero runtime dependencies.
 
 ```bash
-npx xyeena-agent@0.2.0 init
+npx xyeena-agent@latest init
 ```
-
-> **Release status:** `0.2.0` is the active release on npm. Version `0.2.1` (carrying Rig display branding) is staged on `main` pending npm release. For local development or CI on this repository, run `node ./bin/xyeena.mjs init`.
 
 | Component | What it adds | Selection |
 | --- | --- | --- |
@@ -46,7 +44,7 @@ Supported agent runtimes: **Antigravity**, **Claude Code**, and **Codex**. Proje
 Run from the root directory of your target project:
 
 ```bash
-npx xyeena-agent@0.2.0 init
+npx xyeena-agent@latest init
 ```
 
 Requires Node.js 22.14 or newer and an interactive terminal.
@@ -66,16 +64,16 @@ CI and automation must pass explicit component flags and `--yes`:
 
 ```bash
 # Skills for Codex (xyeena-core is automatically included as a dependency)
-npx xyeena-agent@0.2.0 init --components skills --runtime codex --skills xyeena-interface --yes
+npx xyeena-agent@latest init --components skills --runtime codex --skills xyeena-interface --yes
 
 # Harness only: Core and Security guardrails
-npx xyeena-agent@0.2.0 init --components harness --guards 00-core,60-security --yes
+npx xyeena-agent@latest init --components harness --guards 00-core,60-security --yes
 
 # Explicit opt-in for all components
-npx xyeena-agent@0.2.0 init --components all --runtime all --skills all --guards all --yes
+npx xyeena-agent@latest init --components all --runtime all --skills all --guards all --yes
 
 # Dry-run preview without writing to disk
-npx xyeena-agent@0.2.0 init --components all --runtime all --skills all --guards all --dry-run
+npx xyeena-agent@latest init --components all --runtime all --skills all --guards all --dry-run
 ```
 
 ### Installer safeguards
@@ -102,13 +100,13 @@ npx xyeena-agent@0.2.0 init --components all --runtime all --skills all --guards
 Run from any Git repository to inspect project state or check risks without configuring the Harness first:
 
 ```bash
-npx xyeena-agent@0.2.0 harness doctor  # Harness diagnostics
-npx xyeena-agent@0.2.0 audit           # Read-only findings against active adapters
-npx xyeena-agent@0.2.0 scan            # Repository scan; exits nonzero on blockers
-npx xyeena-agent@0.2.0 risk            # Classify change risk against base branch
-npx xyeena-agent@0.2.0 changed         # Inspect changed files against base branch
-npx xyeena-agent@0.2.0 adapters        # Inspect active project adapters
-npx xyeena-agent@0.2.0 verify          # Execute native project check scripts
+npx xyeena-agent@latest harness doctor  # Harness diagnostics
+npx xyeena-agent@latest audit           # Read-only findings against active adapters
+npx xyeena-agent@latest scan            # Repository scan; exits nonzero on blockers
+npx xyeena-agent@latest risk            # Classify change risk against base branch
+npx xyeena-agent@latest changed         # Inspect changed files against base branch
+npx xyeena-agent@latest adapters        # Inspect active project adapters
+npx xyeena-agent@latest verify          # Execute native project check scripts
 ```
 
 `xyeena doctor` inspects Agent Skills installation. `xyeena harness doctor` inspects Harness configuration and Git status.
@@ -157,7 +155,7 @@ EXECUTE → VERIFY → REVIEW → RELEASE → CLOSE
 List all packaged capabilities:
 
 ```bash
-npx xyeena-agent@0.2.0 list
+npx xyeena-agent@latest list
 ```
 
 Capabilities include core context, frontier grilling, primary-source research, technical prototyping, planning, debugging, testing, verification, independent review, architecture, UI craft, security, release, handoff, skill authoring, and orchestration.
@@ -165,8 +163,8 @@ Capabilities include core context, frontier grilling, primary-source research, t
 Resolve capability activation against a prompt:
 
 ```bash
-npx xyeena-agent@0.2.0 resolve --prompt "grill me on auth architecture" --state DISCOVER
-npx xyeena-agent@0.2.0 resolve --prompt "redesign dashboard UI" --path src/Dashboard.tsx
+npx xyeena-agent@latest resolve --prompt "grill me on auth architecture" --state DISCOVER
+npx xyeena-agent@latest resolve --prompt "redesign dashboard UI" --path src/Dashboard.tsx
 ```
 
 ---
@@ -184,7 +182,7 @@ Xyeena uses a manager-controlled DAG rather than an unconstrained agent mesh. On
 Run journal initialization:
 
 ```bash
-npx xyeena-agent@0.2.0 run-init --goal "Ship reader anchor regression fix"
+npx xyeena-agent@latest run-init --goal "Ship reader anchor regression fix"
 ```
 
 ---
