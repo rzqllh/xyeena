@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## 0.2.2 (2026-10-18): Antigravity Intelligent Guided hooks and task recovery
+
+- **Antigravity Intelligent Guided hooks:** Workspace-scoped opt-in lifecycle hooks (`SessionStart`, `PreInvocation`, `PostToolUse`, `Stop`) for Antigravity IDE without daemons or background processes.
+- **Smart task suggestion and explicit binding:** Session start discovers unfinished runs in the current workspace; explicit binding delivers a bounded task capsule once to that conversation.
+- **Stop checkpoints:** Automatically records an INCOMPLETE checkpoint with Git revision and worktree digest when bound runs stop.
+- **Failure loop detection:** Tracks consecutive tool failures by hash and provides diagnostic hints without persisting command arguments or raw errors.
+- **Local privacy boundary:** All session binding and fingerprint state is isolated under `.xyeena/guided/` with a nested `.gitignore`.
+- **CLI management:** Added `xyeena guided preview|install|status|list|resume|bind|unbind|uninstall` commands with safety backups in `.xyeena/backups/antigravity`.
+
 ## 0.2.1 (2026-10-15): Xyeena Rig branding and documentation
 
 - Adopt **Xyeena Rig** as the developer-tooling product identity under the Xyeena parent brand ([PR #4](https://github.com/rzqllh/xyeena/pull/4)).

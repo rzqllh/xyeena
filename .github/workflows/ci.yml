@@ -37,3 +37,33 @@ jobs:
           for d in skills/*; do
             [ -d "$d" ] && skills-ref validate "$d"
           done
+
+  npx-github-smoke:
+    if: github.event_name == 'pull_request'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22.14.0'
+      - name: Create disposable workspace
+        shell: pwsh
+        run: New-Item -ItemType Directory -Path rig-smoke -Force | Out-Null
+      - name: Smoke test GitHub tarball via npx
+        shell: pwsh
+        working-directory: rig-smoke
+        run: |
+          $package = "https://codeload.github.com/rzqllh/xyeena/tar.gz/${{ github.event.pull_request.head.sha }}"
+          npx --yes --package $package xyeena version
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub npx execution failed' }
+          npx --yes --package $package xyeena guided preview --dir .
+          if ($LASTEXITCODE -ne 0) { throw 'Guided preview failed' }
+          if (Test-Path '.agents/hooks.json') { throw 'Preview modified the workspace' }
+          npx --yes --package $package xyeena guided install --dir . --yes
+          if ($LASTEXITCODE -ne 0) { throw 'Guided install failed' }
+          if (-not (Test-Path '.agents/hooks.json')) { throw 'Hooks were not installed' }
+          npx --yes --package $package xyeena guided status --dir .
+          if ($LASTEXITCODE -ne 0) { throw 'Guided status failed' }
+          npx --yes --package $package xyeena guided uninstall --dir . --yes
+          if ($LASTEXITCODE -ne 0) { throw 'Guided uninstall failed' }
+          if (Test-Path '.agents/hooks.json') { throw 'Uninstall left the managed config behind' }
