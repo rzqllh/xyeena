@@ -6,6 +6,7 @@
   "plugins": [
     {
       "name": "xyeena",
+      "description": "Xyeena Rig: selectable Agent Skills and opt-in project Harness for coding agents.",
       "source": {
         "source": "local",
         "path": "."

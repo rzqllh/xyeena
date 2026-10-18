@@ -37,3 +37,7 @@ Thumbs.db
 
 # Xyeena harness local verification evidence
 .harness/evidence/
+
+# Deployment artifacts
+site/.vercel/
+

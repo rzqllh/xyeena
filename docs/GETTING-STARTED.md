@@ -2,10 +2,10 @@
 
 **Xyeena Rig** combines portable Agent Skills and an optional project Harness in a single npm package. You choose **Skills**, **Harness**, or **both**; installation never silently selects every component.
 
-- **npm package:** [`xyeena-agent`](https://www.npmjs.com/package/xyeena-agent) — the Rig-branded release line starts at `0.2.1`; the older `0.2.0` version remains available.
+- **npm package:** [`xyeena-agent`](https://www.npmjs.com/package/xyeena-agent)
 - **Included:** 19 Agent Skills; 41 Harness guardrails across 11 groups.
 - **Targets:** Antigravity, Claude Code, Codex.
-- **Branding note:** Version `0.2.1` includes Xyeena Rig display names. Version `0.2.0` is a historical release with older presentation; technical package and CLI identifiers remain compatible.
+- **Branding note:** Version `0.2.1` introduces Xyeena Rig display names. Technical package and CLI identifiers remain compatible.
 
 ## Requirements
 
@@ -16,7 +16,7 @@ Node.js **22.14 or newer**, npm/npx, and write access to a project directory. Us
 From the target project directory:
 
 ```bash
-npx xyeena-agent@0.2.1 init
+npx xyeena-agent@latest init
 ```
 
 The wizard asks for components (Skills / Harness / All), selected runtimes and Skills, selected Harness guardrail groups, and final confirmation. It shows required skill dependencies before installation. Nothing is preselected; cancellation writes no files.
@@ -25,16 +25,16 @@ The wizard asks for components (Skills / Harness / All), selected runtimes and S
 
 ```bash
 # Skills only for Codex; xyeena-core is included if required.
-npx xyeena-agent@0.2.1 init --components skills --runtime codex --skills xyeena-interface --yes
+npx xyeena-agent@latest init --components skills --runtime codex --skills xyeena-interface --yes
 
 # Harness only: Core and Security.
-npx xyeena-agent@0.2.1 init --components harness --guards 00-core,60-security --yes
+npx xyeena-agent@latest init --components harness --guards 00-core,60-security --yes
 
 # Both components, expressly requested.
-npx xyeena-agent@0.2.1 init --components all --runtime all --skills all --guards all --yes
+npx xyeena-agent@latest init --components all --runtime all --skills all --guards all --yes
 
 # Preview all selections without writing files.
-npx xyeena-agent@0.2.1 init --components all --runtime all --skills all --guards all --dry-run
+npx xyeena-agent@latest init --components all --runtime all --skills all --guards all --dry-run
 ```
 
 To target another project directory, add `--dir PATH`. Non-interactive installation requires `--components`, the associated `--runtime` and `--skills` for Skills, `--guards` for Harness, and `--yes` for writes.
@@ -53,10 +53,10 @@ Only required skill dependencies are added. Native agent definitions and rules a
 ## Diagnostics without installation
 
 ```bash
-npx xyeena-agent@0.2.1 harness doctor
-npx xyeena-agent@0.2.1 audit
-npx xyeena-agent@0.2.1 scan
-npx xyeena-agent@0.2.1 risk
+npx xyeena-agent@latest harness doctor
+npx xyeena-agent@latest audit
+npx xyeena-agent@latest scan
+npx xyeena-agent@latest risk
 ```
 
 `audit` and `scan` do not modify the project. `verify` is different: it explicitly executes available project-native checks. If no meaningful check ran, the result is **INCOMPLETE**, not PASS.
@@ -65,4 +65,4 @@ npx xyeena-agent@0.2.1 risk
 
 Version 0.1.0 used a legacy installer that could select every Skill by default. Version 0.2.0 changes this to explicit selection. Update automation using `--runtime` alone to include `--components`, `--skills` and `--yes` as appropriate. Harness is not a separate npm package; the existing `xyeena` command, Skill IDs (`xyeena-*`) and `.xyeena/` paths are still supported.
 
-See the [CLI reference](CLI-REFERENCE.md), [brand guide](BRANDING.md), [architecture](ARCHITECTURE.md) and [security policy](../SECURITY.md).
+See the [CLI reference](CLI-REFERENCE.md), [brand guide](BRANDING.md), [architecture](ARCHITECTURE.md), and [security policy](../SECURITY.md).

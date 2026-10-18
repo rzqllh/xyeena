@@ -15,10 +15,6 @@ export function id(prefix = 'id') {
 export function normalizeText(v = '') {
   return String(v).toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
-export function within(parent, child) {
-  const rel = path.relative(path.resolve(parent), path.resolve(child));
-  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
-}
 export function copyDir(src, dst, { force = false, dryRun = false } = {}) {
   if (!fs.existsSync(src)) throw new Error(`source does not exist: ${src}`);
   const actions = [];

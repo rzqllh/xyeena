@@ -1,13 +1,13 @@
 # Xyeena Rig CLI reference
 
-The npm package is named **`xyeena-agent`** and exposes both `xyeena` and `xyeena-agent` executables. The Rig-branded release line is `0.2.1`. Once that version is published, pin it with:
+The npm package is named **`xyeena-agent`** and exposes both `xyeena` and `xyeena-agent` executables.
 
 ```bash
-npx xyeena-agent@0.2.1 help
-npx xyeena-agent@0.2.1 version
+npx xyeena-agent@latest help
+npx xyeena-agent@latest version
 ```
 
-Use `npx xyeena-agent@0.2.1 <command>` for the subcommands listed below. The **Rig** display name is included from `0.2.1`; command names have not been renamed.
+Use `npx xyeena-agent@latest <command>` for the subcommands listed below. Command names remain compatible.
 
 ## Installation
 
@@ -20,7 +20,7 @@ Use `npx xyeena-agent@0.2.1 <command>` for the subcommands listed below. The **R
 | `doctor` | Check the existing Agent Skills installation |
 | `harness doctor` | Inspect Harness project state independently |
 
-**Non-interactive flags:** `--components skills|harness|all` is required; Skills require `--runtime` and `--skills`, Harness requires `--guards`. Select multiple values with commas or explicitly select `all`. Use `--yes` to approve writes, `--dry-run` to preview, `--dir PATH` to choose a project and `--force` only to deliberately overwrite modified destinations.
+**Non-interactive flags:** `--components skills|harness|all` is required; Skills require `--runtime` and `--skills`, Harness requires `--guards`. Select multiple values with commas or explicitly select `all`. Use `--yes` to approve writes, `--dry-run` to preview, `--dir PATH` to choose a project, and `--force` only to deliberately overwrite modified destinations.
 
 ## Harness and verification
 
@@ -37,6 +37,12 @@ Use `npx xyeena-agent@0.2.1 <command>` for the subcommands listed below. The **R
 
 Harness commands support `--dir PATH` and `--base REF` for Git comparisons; `--evidence` opts in to persistent verification evidence. `audit` and `scan` are read-only. `verify` can execute arbitrary configured project scripts and should only be used on a project you trust. Missing native checks result in **INCOMPLETE**, not an invented PASS.
 
+```bash
+npx xyeena-agent@latest changed --base origin/main
+npx xyeena-agent@latest adapters
+npx xyeena-agent@latest verify --evidence
+```
+
 The public bridge intentionally does not expose upstream Harness `init` or `install-hook`.
 
 ## Agent capabilities
@@ -48,11 +54,11 @@ The public bridge intentionally does not expose upstream Harness `init` or `inst
 | `run-init --goal TEXT` | Initialize a run journal in the selected project |
 
 ```bash
-npx xyeena-agent@0.2.1 resolve --prompt "review auth changes" --state TRIAGE
+npx xyeena-agent@latest resolve --prompt "review auth changes" --state TRIAGE
 ```
 
 ## Compatibility
 
-Do not rename the package to `xyeena-rig` or rename any `xyeena-*` Skill identifiers. There is one npm package, including Harness. Rig branding ships in the `0.2.1` release line; it does not change historical `0.2.0`.
+Do not rename the package to `xyeena-rig` or rename any `xyeena-*` Skill identifiers. There is one npm package, including Harness. Rig branding shipped in the `0.2.1` release line; it does not change historical `0.2.0`.
 
 For setup walkthroughs, see [Getting started](GETTING-STARTED.md); for product naming, see [Branding](BRANDING.md).

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xyeena Rig: Developer Tooling for Coding Agents</title>
+  <meta name="description" content="Selectable Agent Skills and opt-in project Harness for Antigravity, Claude Code, and Codex. Zero runtime dependencies.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%232563eb%22/><text x=%2250%25%22 y=%2255%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22bold%22 font-size=%2218%22>X</text></svg>">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to content</a>
+
+  <header class="site-header" role="banner">
+    <div class="container header-inner">
+      <div class="brand">
+        <span class="brand-name">Xyeena Rig</span>
+        <span class="version-tag" aria-label="Version status">v0.2.0 live · v0.2.1 staging</span>
+      </div>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="#skills-vs-harness">Components</a>
+        <a href="#safeguards">Safeguards</a>
+        <a href="#runtimes">Runtimes</a>
+        <a href="#commands">Commands</a>
+        <a href="https://github.com/rzqllh/xyeena" class="nav-ext" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content" role="main">
+    <section class="hero-section" aria-labelledby="hero-title">
+      <div class="container hero-inner">
+        <p class="hero-kicker">Developer-tooling arm of Xyeena</p>
+        <h1 id="hero-title">Equip your agent. Guard your project.</h1>
+        <p class="hero-summary">
+          Modular Agent Skills and opt-in project Harness for coding agents. Built for solo developers and engineering teams using Antigravity, Claude Code, and Codex.
+        </p>
+
+        <div class="install-card">
+          <div class="install-header">
+            <span class="install-label">Quick Install (npm)</span>
+            <span class="status-indicator">v0.2.0 live on npm</span>
+          </div>
+          <div class="command-box">
+            <code id="install-cmd">npx xyeena-agent@latest init</code>
+            <button id="copy-btn" class="btn-copy" type="button" aria-label="Copy installation command">Copy</button>
+          </div>
+          <p id="copy-status" class="copy-feedback" aria-live="polite"></p>
+          <p class="install-footnote">
+            Zero runtime dependencies. Requires Node.js >= 22.14. Interactive selection wizard.
+          </p>
+        </div>
+
+        <div class="hero-actions">
+          <a href="#commands" class="btn btn-secondary">Explore Commands</a>
+          <a href="https://github.com/rzqllh/xyeena#readme" class="btn btn-tertiary" target="_blank" rel="noopener noreferrer">View Documentation</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="skills-vs-harness" class="content-section" aria-labelledby="components-title">
+      <div class="container">
+        <div class="section-intro">
+          <h2 id="components-title">Skills vs Harness</h2>
+          <p>Two opt-in components in one package. Install either or both. Nothing is preselected.</p>
+        </div>
+
+        <div class="comparison-grid">
+          <article class="component-card">
+            <div class="card-badge">Component 1</div>
+            <h3>Agent Skills</h3>
+            <p class="card-count">19 portable capabilities</p>
+            <p class="card-desc">
+              Behavioral capabilities for planning, implementation, review, debugging, security, UI craft, and orchestration.
+            </p>
+            <ul class="spec-list">
+              <li><strong>Target paths:</strong> <code>.agents/skills/</code> or <code>.claude/skills/</code></li>
+              <li><strong>Activation:</strong> Keyword and context resolver</li>
+              <li><strong>Execution:</strong> Progressive disclosure via SKILL.md</li>
+              <li><strong>Dependencies:</strong> Mandatory prerequisites declared in capability contracts</li>
+            </ul>
+          </article>
+
+          <article class="component-card">
+            <div class="card-badge">Component 2</div>
+            <h3>Project Harness</h3>
+            <p class="card-count">41 guardrail docs in 11 groups</p>
+            <p class="card-desc">
+              Project-level guardrails, risk classification, invariant scans, and native verification enforcement.
+            </p>
+            <ul class="spec-list">
+              <li><strong>Target paths:</strong> <code>.xyeena/harness/guides/</code> and <code>.xyeena/profile.md</code></li>
+              <li><strong>Groups:</strong> Core, Profile, Product, Design, Engineering, Quality, Security, Performance, Ops, Hygiene, Safety</li>
+              <li><strong>Verification:</strong> Runs real project scripts without false PASS claims</li>
+              <li><strong>Bootstrap mode:</strong> Diagnostics run before project configuration is saved</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="selection-notice">
+          <strong>Explicit selection:</strong> Passing <code>all</code> selects every item only when explicitly specified. The installer never defaults to full installation.
+        </div>
+      </div>
+    </section>
+
+    <section id="safeguards" class="content-section" aria-labelledby="safeguards-title">
+      <div class="container">
+        <div class="section-intro">
+          <h2 id="safeguards-title">Installer Safeguards</h2>
+          <p>Built for cautious integration into existing repositories.</p>
+        </div>
+
+        <div class="safeguards-list">
+          <div class="safeguard-row">
+            <div class="safeguard-num">01</div>
+            <div class="safeguard-content">
+              <h3>No Silent Install</h3>
+              <p>Nothing installs automatically. Interactive wizard prompts for components, runtimes, skills, and guardrails.</p>
+            </div>
+          </div>
+
+          <div class="safeguard-row">
+            <div class="safeguard-num">02</div>
+            <div class="safeguard-content">
+              <h3>Dependency Preview</h3>
+              <p>Mandatory skill dependencies are computed and reported before any file is written to disk.</p>
+            </div>
+          </div>
+
+          <div class="safeguard-row">
+            <div class="safeguard-num">03</div>
+            <div class="safeguard-content">
+              <h3>No Overwrites Without Consent</h3>
+              <p>Modified destination files are preserved. Overwriting existing project files requires the explicit <code>--force</code> flag.</p>
+            </div>
+          </div>
+
+          <div class="safeguard-row">
+            <div class="safeguard-num">04</div>
+            <div class="safeguard-content">
+              <h3>Cancel Equals Zero Writes</h3>
+              <p>Canceling at any confirmation step exits immediately with zero filesystem modifications.</p>
+            </div>
+          </div>
+
+          <div class="safeguard-row">
+            <div class="safeguard-num">05</div>
+            <div class="safeguard-content">
+              <h3>Root Integrity</h3>
+              <p>Does not silently rewrite root <code>AGENTS.md</code> or install Git hooks without explicit confirmation.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="runtimes" class="content-section" aria-labelledby="runtimes-title">
+      <div class="container">
+        <div class="section-intro">
+          <h2 id="runtimes-title">Supported Runtimes</h2>
+          <p>Standardized skills and configs mapped to native agent locations.</p>
+        </div>
+
+        <div class="runtime-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Runtime</th>
+                <th scope="col">Skill Directory</th>
+                <th scope="col">Plugin Metadata</th>
+                <th scope="col">Detection & Adapters</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Antigravity</th>
+                <td><code>.agents/skills/</code></td>
+                <td>Root <code>plugin.json</code> + <code>rules/</code></td>
+                <td>Universal git, node, python, nextjs</td>
+              </tr>
+              <tr>
+                <th scope="row">Claude Code</th>
+                <td><code>.claude/skills/</code></td>
+                <td><code>.claude-plugin/plugin.json</code></td>
+                <td>Universal git, node, python, nextjs</td>
+              </tr>
+              <tr>
+                <th scope="row">Codex</th>
+                <td><code>.agents/skills/</code></td>
+                <td><code>.codex-plugin/plugin.json</code></td>
+                <td>Universal git, node, python, nextjs</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="commands" class="content-section" aria-labelledby="commands-title">
+      <div class="container">
+        <div class="section-intro">
+          <h2 id="commands-title">Command Reference</h2>
+          <p>Unified CLI exposed via <code>xyeena</code> or <code>npx xyeena-agent</code>.</p>
+        </div>
+
+        <div class="command-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Command</th>
+                <th scope="col">Type</th>
+                <th scope="col">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>init</code></td>
+                <td><span class="badge badge-interactive">Interactive</span></td>
+                <td>Launch selection wizard for Skills, Harness, or All.</td>
+              </tr>
+              <tr>
+                <td><code>doctor</code></td>
+                <td><span class="badge badge-readonly">Read-only</span></td>
+                <td>Check existing Agent Skills installation and runtime paths.</td>
+              </tr>
+              <tr>
+                <td><code>harness doctor</code></td>
+                <td><span class="badge badge-readonly">Read-only</span></td>
+                <td>Inspect project Harness configuration and Git status.</td>
+              </tr>
+              <tr>
+                <td><code>audit</code></td>
+                <td><span class="badge badge-readonly">Read-only</span></td>
+                <td>Run read-only inspection against active project adapters.</td>
+              </tr>
+              <tr>
+                <td><code>scan</code></td>
+                <td><span class="badge badge-readonly">Read-only</span></td>
+                <td>Scan repository invariants; exits with code 1 on blockers.</td>
+              </tr>
+              <tr>
+                <td><code>risk</code></td>
+                <td><span class="badge badge-readonly">Read-only</span></td>
+                <td>Classify risk level of changed files against base branch.</td>
+              </tr>
+              <tr>
+                <td><code>verify</code></td>
+                <td><span class="badge badge-action">Execution</span></td>
+                <td>Execute native project test/check scripts; reports INCOMPLETE if no check ran.</td>
+              </tr>
+              <tr>
+                <td><code>run-init --goal TEXT</code></td>
+                <td><span class="badge badge-action">State</span></td>
+                <td>Initialize append-only run journal and task ledger in <code>.xyeena/runs/</code>.</td>
+              </tr>
+              <tr>
+                <td><code>list</code></td>
+                <td><span class="badge badge-readonly">Read-only</span></td>
+                <td>List all packaged skills, classes, and categories.</td>
+              </tr>
+              <tr>
+                <td><code>check</code></td>
+                <td><span class="badge badge-readonly">Read-only</span></td>
+                <td>Validate capability JSON schemas and runtime manifests.</td>
+              </tr>
+              <tr>
+                <td><code>eval</code></td>
+                <td><span class="badge badge-readonly">Read-only</span></td>
+                <td>Run deterministic evaluation suites for routing and governor.</td>
+              </tr>
+              <tr>
+                <td><code>version</code></td>
+                <td><span class="badge badge-readonly">Read-only</span></td>
+                <td>Print current CLI and package version.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="container footer-inner">
+      <div class="footer-left">
+        <p><strong>Xyeena Rig</strong> is the developer-tooling product under the Xyeena brand.</p>
+        <p class="license-note">Distributed under the MIT License. Zero runtime dependencies.</p>
+      </div>
+      <div class="footer-right">
+        <a href="https://github.com/rzqllh/xyeena" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+        <a href="https://github.com/rzqllh/xyeena/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">Security Policy</a>
+        <a href="https://github.com/rzqllh/xyeena/blob/main/NOTICE.md" target="_blank" rel="noopener noreferrer">Notices</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

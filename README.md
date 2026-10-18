@@ -2,86 +2,98 @@
 
 **Equip your agent. Guard your project.**
 
-Xyeena Rig helps coding agents work with clearer scope, safer operations, stronger evidence, and repeatable project checks. It combines modular **Skills** for agent behavior with an optional **Harness** for project-level guardrails and verification. Use either component or both; installation does not silently select everything.
+Xyeena Rig combines modular **Agent Skills** with an opt-in project **Harness** for coding agents. It gives agents bounded scope, safer operations, verifiable evidence, and automated repository checks. Built for solo developers and engineering teams using **Antigravity**, **Claude Code**, and **Codex**. Zero runtime dependencies.
 
-| Component | What it adds | Optional? |
+```bash
+npx xyeena-agent@latest init
+```
+
+| Component | What it adds | Selection |
 | --- | --- | --- |
-| **Skills** | 19 portable capabilities for planning, implementation, review, debugging, UI/UX, security, release and orchestration | Yes |
-| **Harness** | 41 focused guardrail documents across 11 groups, project profile/configuration, and runnable audit/scan/verification commands | Yes |
-| **All** | Skills + Harness together | Explicit selection only |
+| **Skills** | 19 portable capabilities for planning, execution, review, debugging, UI craft, security, and orchestration | Opt-in |
+| **Harness** | 41 guardrail documents across 11 groups, project profiling, and runnable audit/scan/verification commands | Opt-in |
+| **All** | Skills + Harness combined | Explicit selection only |
 
-Supported skill targets: **Antigravity**, **Claude Code**, and **Codex**. Project detection in the Harness covers common Node/Next.js, Python, static, monorepo, and Git-based workflows. Rig uses no mandatory runtime npm dependencies.
+Supported agent runtimes: **Antigravity**, **Claude Code**, and **Codex**. Project detection covers Node/Next.js, Python, static web, monorepos, and Git workflows.
+
+---
+
+## Quick links
+
+- [Getting started](docs/GETTING-STARTED.md): Requirements, interactive setup, and selective installation.
+- [CLI reference](docs/CLI-REFERENCE.md): Commands, flags, and safety contracts.
+- [Brand naming](docs/BRANDING.md): Relationship between Xyeena Rig, Xyeena Notch, and Xyn.
+- [Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md).
+
+---
 
 ## Product identity
 
-**Xyeena Rig** is the developer-tooling product under the broader **Xyeena** brand. Rig is the same, single npm package as before: `xyeena-agent`. It is **not** a new or separate package.
+**Xyeena Rig** is the developer-tooling arm under the **Xyeena** brand. Rig is distributed through the single npm package `xyeena-agent`.
 
-- **Xyeena Rig:** portable Agent Skills + optional project Harness, distributed through npm.
-- **Xyeena Notch:** a separate Windows desktop companion application, maintained in its own repository.
-- **Xyn — The Lion Guardian:** the Xyeena mascot identity; not shipped in the Rig npm package.
+- **Xyeena Rig:** Portable Agent Skills + optional project Harness, published on npm as `xyeena-agent`.
+- **Xyeena Notch:** A separate Windows desktop companion application, maintained in its own repository (`rzqllh/xyeena-notch`).
+- **Xyn (The Lion Guardian):** The Xyeena mascot identity; not shipped in the Rig npm package.
 
-**Compatibility:** the npm package `xyeena-agent`, executable names `xyeena` / `xyeena-agent`, skill IDs, plugin IDs, `.xyeena/` data paths, and existing configuration contracts remain unchanged. The historical `0.2.0` npm tarball retains its original presentation. The `0.2.1` release line includes Rig-branded package metadata, CLI help, and public documentation. See [Branding and naming](docs/BRANDING.md).
+**Compatibility:** The package name `xyeena-agent`, CLI commands `xyeena` and `xyeena-agent`, skill IDs (`xyeena-*`), plugin IDs, `.xyeena/` paths, and configuration contracts remain unchanged.
 
-> **Version compatibility:** The selective installer is available in **`xyeena-agent@0.2.0` and later**; the **Rig** brand is included in version `0.2.1`. Version `0.1.0` used a legacy installer that could install all skills by default. Before running installation, verify the package version with `npx xyeena-agent version`; use `npx xyeena-agent@0.2.1 init` for a version-pinned Rig setup after `0.2.1` is published.
+---
 
-## Public documentation
+## Installation and setup
 
-- [Getting started](docs/GETTING-STARTED.md) — requirements, interactive setup, and selective installation.
-- [CLI reference](docs/CLI-REFERENCE.md) — commands, flags, and safety.
-- [Brand naming](docs/BRANDING.md) — Xyeena Rig, Xyeena Notch, and Xyn.
-- [Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md).
-
-**Release line:** `xyeena-agent@0.2.1` carries the **Xyeena Rig** brand in the npm README, CLI help and package metadata once published. [See versions on npm](https://www.npmjs.com/package/xyeena-agent?activeTab=versions). Previous [v0.2.0](https://github.com/rzqllh/xyeena/releases/tag/v0.2.0) remains unchanged; releasing `0.2.1` requires the separate GitHub Release/npm publishing workflow.
-
-## Getting started
-
-Run from the directory of the project where Xyeena should be installed:
+Run from the root directory of your target project:
 
 ```bash
-npx xyeena-agent@0.2.1 init
+npx xyeena-agent@latest init
 ```
 
-Requires Node.js 22.14+ and an interactive terminal. For CI or non-interactive scripts, use the explicit flags below.
+Requires Node.js 22.14 or newer and an interactive terminal.
 
-The interactive setup asks you to choose:
+The interactive wizard asks you to select:
 
 1. **Components:** Skills, Harness, or All.
-2. **For Skills:** supported agent runtime(s) and the exact skills you need.
-3. **For Harness:** guardrail group(s), such as Design, Engineering, Quality, or Security.
-4. **Review and confirm:** see the selected items and mandatory skill dependencies before any project files are written.
+2. **For Skills:** Target runtime(s) and specific skills.
+3. **For Harness:** Guardrail group(s), such as Design, Engineering, Quality, or Security.
+4. **Confirmation:** Reviews selected items and mandatory skill dependencies before writing files.
 
-Nothing is preselected. You can cancel without changing project files. **All** is available but never the implicit default.
+Nothing is preselected. Canceling writes zero files. **All** is available only through explicit selection.
 
-### Explicit commands for automation
+### Non-interactive installation (CI)
 
-CI or non-interactive terminals must specify their selections. An installation requires `--yes`; dry-run does not.
+CI and automation must pass explicit component flags and `--yes`:
 
 ```bash
-# Selected Skills for Codex (xyeena-core is a required dependency)
-npx xyeena-agent init --components skills --runtime codex --skills xyeena-interface --yes
+# Skills for Codex (xyeena-core is automatically included as a dependency)
+npx xyeena-agent@latest init --components skills --runtime codex --skills xyeena-interface --yes
 
-# Harness only, limited to Core and Security guardrails
-npx xyeena-agent init --components harness --guards 00-core,60-security --yes
+# Harness only: Core and Security guardrails
+npx xyeena-agent@latest init --components harness --guards 00-core,60-security --yes
 
-# All components, agent targets, skills and guardrail groups (explicit opt-in)
-npx xyeena-agent init --components all --runtime all --skills all --guards all --yes
+# Explicit opt-in for all components
+npx xyeena-agent@latest init --components all --runtime all --skills all --guards all --yes
 
-# Preview without writing files
-npx xyeena-agent init --components all --runtime all --skills all --guards all --dry-run
+# Dry-run preview without writing to disk
+npx xyeena-agent@latest init --components all --runtime all --skills all --guards all --dry-run
 ```
 
-The installer automatically includes only **required** skill dependencies, reports them, and refuses to overwrite modified destination files unless you explicitly choose `--force`. Existing selections can be extended without erasing previous installation inventory.
+### Installer safeguards
 
-### Files created
+- **No silent installation:** Every component requires explicit selection.
+- **Dependency preview:** Mandatory skill dependencies are resolved and printed before installation.
+- **Overwrite protection:** Modified destination files are preserved unless `--force` is passed.
+- **Safe cancellation:** Exiting early writes zero files.
+- **Root protection:** Does not touch root `AGENTS.md` or Git hooks without consent.
 
-| Selection | Project-level installation |
+### Project files created
+
+| Selection | Project-level destination |
 | --- | --- |
 | Skills for Codex / Antigravity | `.agents/skills/` |
 | Skills for Claude Code | `.claude/skills/` |
 | Selected Harness groups | `.xyeena/config.json`, `.xyeena/profile.md`, `.xyeena/harness/guides/` |
 | Installation inventory | `.xyeena/install.json` |
 
-Selected orchestration capabilities may install native agent roles; Xyeena does **not** silently replace root `AGENTS.md` or existing Git hooks. Harness diagnostic commands do not require installing project configuration first.
+---
 
 ## Antigravity Guided hooks
 
@@ -92,39 +104,43 @@ Workspace-level hooks are an optional, separately approved install. They suggest
 
 ## Harness commands
 
-Run from a Git repository to inspect project state or check risks without configuring the Harness first:
+Run from any Git repository to inspect project state or check risks without configuring the Harness first:
 
 ```bash
-npx xyeena-agent harness doctor  # Harness diagnostics
-npx xyeena-agent audit           # Read-only findings
-npx xyeena-agent scan            # Read-only scan; nonzero on blockers
-npx xyeena-agent risk            # Explain change risk
-npx xyeena-agent verify          # Explicitly run supported project-native checks
+npx xyeena-agent@latest harness doctor  # Harness diagnostics
+npx xyeena-agent@latest audit           # Read-only findings against active adapters
+npx xyeena-agent@latest scan            # Repository scan; exits nonzero on blockers
+npx xyeena-agent@latest risk            # Classify change risk against base branch
+npx xyeena-agent@latest changed         # Inspect changed files against base branch
+npx xyeena-agent@latest adapters        # Inspect active project adapters
+npx xyeena-agent@latest verify          # Execute native project check scripts
 ```
 
-`xyeena doctor` still provides the original **Agentic installation diagnostics**. The Harness variant is `xyeena harness doctor`.
+`xyeena doctor` inspects Agent Skills installation. `xyeena harness doctor` inspects Harness configuration and Git status.
 
-**Verification is not passive:** `verify` can run available project scripts. When no meaningful check ran, it reports **INCOMPLETE**, not a false PASS. Evidence files are generated only when requested via `--evidence` and live under the Git-ignored `.harness/evidence/` directory. Audit and scan do not modify project files. Harness `init` and Git-hook installation are not exposed through the unified CLI; installation remains opt-in through Xyeena's selection workflow.
+**Verification is not passive:** `verify` executes available project scripts. When no meaningful check ran, it reports **INCOMPLETE**, not an invented PASS. Evidence files are written only when `--evidence` is passed and stay under the Git-ignored `.harness/evidence/` directory.
 
-## Upgrade from xyeena-agent 0.1.0
+---
 
-- `xyeena init` changes from its legacy all-skills installer to a **selection-first wizard**; scripts that depended on the old default must be updated.
-- Non-interactive installation must pass `--components` and the appropriate `--runtime` / `--skills` / `--guards` with `--yes`.
-- Existing Agentic commands, skill registry and governance concepts remain available. Harness functionality adds commands without replacing `xyeena doctor`.
-- The Harness source is bundled inside the same `xyeena-agent` npm package. There is **no separate Harness npm install**.
-- Check changed files and run `npm run test:consumer` before publishing or automating the new package.
+## Upgrading from xyeena-agent 0.1.0
 
-See the [changelog](CHANGELOG.md), [installation guide](docs/GETTING-STARTED.md), [CLI reference](docs/CLI-REFERENCE.md) and [Harness adoption record](docs/HARNESS-V3.1-IMPORT-PLAN.md).
+- `xyeena init` changed from a legacy all-skills installer to a selection-first wizard.
+- CI scripts must pass `--components`, `--runtime` / `--skills` / `--guards`, and `--yes`.
+- Harness source is bundled directly inside `xyeena-agent`. There is no separate Harness package.
 
-## Native plugin repository layouts
+See the [Changelog](CHANGELOG.md), [Installation guide](docs/GETTING-STARTED.md), and [CLI reference](docs/CLI-REFERENCE.md).
 
-The repository itself contains native plugin metadata:
+---
 
-- Antigravity: root `plugin.json` + `skills/` + `rules/`.
-- Claude Code: `.claude-plugin/plugin.json` + `skills/`.
-- Codex: `.codex-plugin/plugin.json` + `skills/`, plus `.agents/plugins/marketplace.json`.
+## Native plugin layouts
 
-The npx installer intentionally uses project-level Agent Skills for the most portable path. Native marketplace/plugin installation can be added after the repository URL is configured and validated in each runtime.
+This repository contains native plugin metadata:
+
+- **Antigravity:** Root `plugin.json` + `skills/` + `rules/`.
+- **Claude Code:** `.claude-plugin/plugin.json` + `skills/`.
+- **Codex:** `.codex-plugin/plugin.json` + `skills/`, plus `.agents/plugins/marketplace.json`.
+
+---
 
 ## Core lifecycle
 
@@ -139,44 +155,44 @@ EXECUTE → VERIFY → REVIEW → RELEASE → CLOSE
     └─fail→ DEBUG      └─changes→ EXECUTE
 ```
 
-The governor chooses the shortest defensible route. A typo does not need a planning ceremony; an authentication migration does.
+---
 
 ## Included capabilities
 
-Run:
+List all packaged capabilities:
 
 ```bash
-npx xyeena-agent list
+npx xyeena-agent@latest list
 ```
 
-Major capabilities include core judgment/context, Full GRILL, primary-source research, disposable technical prototyping, planning, debugging, testing, verification, independent review, architecture, UI/UX craft, security, release, handoff, skill authoring and dynamic orchestration.
+Capabilities include core context, frontier grilling, primary-source research, technical prototyping, planning, debugging, testing, verification, independent review, architecture, UI craft, security, release, handoff, skill authoring, and orchestration.
 
-Resolve a prompt locally to inspect activation:
+Resolve capability activation against a prompt:
 
 ```bash
-npx xyeena-agent resolve --prompt "grill gua soal auth architecture" --state DISCOVER
-npx xyeena-agent resolve --prompt "redesign dashboard UI" --path src/Dashboard.tsx
+npx xyeena-agent@latest resolve --prompt "grill me on auth architecture" --state DISCOVER
+npx xyeena-agent@latest resolve --prompt "redesign dashboard UI" --path src/Dashboard.tsx
 ```
 
-## UI/UX philosophy
+---
 
-`xyeena-interface` combines a design process with an anti-generic quality filter. It does not prescribe a house style. It inspects real product context, shapes hierarchy and interaction before polish, and verifies the rendered result across critical interactions, responsive states and human/accessibility concerns. The detailed craft reference lives at `skills/xyeena-interface/references/design-craft.md`.
+## UI craft philosophy
 
-## Orchestration: modular and dynamic
+`xyeena-interface` combines a disciplined design process with an anti-generic quality filter. It does not prescribe a house style. It shapes hierarchy and interaction before visual polish, verifying the result across keyboard navigation, responsive viewports, and WCAG AA contrast. The reference guide lives at `skills/xyeena-interface/references/design-craft.md`.
 
-Xyeena uses a manager-controlled DAG rather than an agent mesh. Only the governor owns topology. Workers do not recursively spawn arbitrary workers. Tasks are immutable units with dependencies; messages are small and typed; large outputs are artifacts; contradictory results are reconciled through evidence.
+---
 
-Native agent role definitions live under `agents/` and are installed to documented Antigravity/Claude project-agent locations **when the relevant orchestration capability is selected**. The runtime-neutral broker and task-DAG implementation live in `src/broker.mjs` and `src/task-graph.mjs`; runtime-native agent definitions can evolve without changing the capability domain model.
+## Orchestration
 
-## Persistent state
+Xyeena uses a manager-controlled DAG rather than an unconstrained agent mesh. Only the governor owns topology. Workers do not recursively spawn arbitrary workers. Tasks are immutable units with dependencies; messages are typed envelopes; large outputs become persistent artifacts.
 
-The library supports append-only run journals and derived snapshots under `.xyeena/runs/<run-id>/`. The ledger tracks claims, decisions, tasks, artifacts, messages, consent and workflow state. Context packs can be compiled per role so auditors do not inherit executor rationale and researchers do not receive irrelevant implementation chatter.
-
-Initialize a run:
+Run journal initialization:
 
 ```bash
-npx xyeena-agent run-init --goal "Ship reader anchor regression fix"
+npx xyeena-agent@latest run-init --goal "Ship reader anchor regression fix"
 ```
+
+---
 
 ## Development
 
@@ -192,12 +208,8 @@ npm run eval
 npm pack --dry-run
 ```
 
-CI also runs `skills-ref validate` against each skill.
+---
 
 ## License
 
 MIT. See `NOTICE.md` for research influences and attribution policy.
-
-## Architecture docs
-
-See `docs/ARCHITECTURE.md`, `docs/CAPABILITY-CONTRACT.md`, `docs/ORCHESTRATION.md`, `docs/RUNTIME-ADAPTERS.md`, and `docs/EVALS.md` for the technical contracts behind the package.

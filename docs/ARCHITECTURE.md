@@ -6,15 +6,15 @@ Xyeena Rig is a manager-orchestrated capability system. It intentionally avoids 
 
 The runtime-neutral kernel is implemented in `src/`:
 
-- `resolver.mjs` — context-activated capability selection with a bounded support budget.
-- `governor.mjs` — workflow state machine, failure routing and loop breaker.
-- `task-graph.mjs` — immutable task units, dependency validation and ready-task selection.
-- `broker.mjs` — single-topology-owner agent broker. Only the Governor may spawn or cancel workers.
-- `context.mjs` — role-scoped context packs.
-- `ledger.mjs` — append-only run journal and rebuildable snapshot.
-- `consent.mjs` — safe/workspace/external/destructive operation classification.
-- `protocol.mjs` — small typed message envelope.
-- `runtime.mjs` — portable runtime descriptors for Antigravity, Claude Code and Codex.
+- `resolver.mjs`: context-activated capability selection with a bounded support budget.
+- `governor.mjs`: workflow state machine, failure routing and loop breaker.
+- `task-graph.mjs`: immutable task units, dependency validation and ready-task selection.
+- `broker.mjs`: single-topology-owner agent broker. Only the Governor may spawn or cancel workers.
+- `context.mjs`: role-scoped context packs.
+- `ledger.mjs`: append-only run journal and rebuildable snapshot.
+- `consent.mjs`: safe/workspace/external/destructive operation classification.
+- `protocol.mjs`: small typed message envelope.
+- `runtime.mjs`: portable runtime descriptors for Antigravity, Claude Code and Codex.
 
 ## Topology
 
@@ -76,3 +76,9 @@ Verification is scoped to the state it observed. Git-bound evidence can become s
 ## Consent boundary
 
 Workspace-local reversible changes may run inside an approved task. External or destructive actions require user authorization. The policy engine is deliberately separate from skills so safety does not depend only on a model remembering prose.
+
+## Specifications and runtime references
+
+- [Capability Contract](CAPABILITY-CONTRACT.md): capability manifest schema, lifecycle declarations, and validation rules.
+- [Orchestration Protocol](ORCHESTRATION.md): message flow and envelope contracts between Governor and workers.
+- [Runtime Adapters](RUNTIME-ADAPTERS.md): integration details for Antigravity, Claude Code, and Codex runtime manifests.
