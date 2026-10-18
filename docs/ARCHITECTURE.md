@@ -76,3 +76,9 @@ Verification is scoped to the state it observed. Git-bound evidence can become s
 ## Consent boundary
 
 Workspace-local reversible changes may run inside an approved task. External or destructive actions require user authorization. The policy engine is deliberately separate from skills so safety does not depend only on a model remembering prose.
+
+## Specifications and runtime references
+
+- [Capability Contract](CAPABILITY-CONTRACT.md): capability manifest schema, lifecycle declarations, and validation rules.
+- [Orchestration Protocol](ORCHESTRATION.md): message flow and envelope contracts between Governor and workers.
+- [Runtime Adapters](RUNTIME-ADAPTERS.md): integration details for Antigravity, Claude Code, and Codex runtime manifests.
