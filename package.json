@@ -1,6 +1,6 @@
 {
   "name": "xyeena-agent",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Xyeena Rig: selectable Agent Skills and opt-in project Harness with guardrails, audits, and verification.",
   "type": "module",
   "bin": {
