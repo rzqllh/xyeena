@@ -6,7 +6,7 @@ Xyeena is the umbrella brand. Each product has a distinct name and scope.
 | --- | --- | --- |
 | **Xyeena Rig** | Developer toolkit: selectable Agent Skills and opt-in project Harness | `rzqllh/xyeena`, npm `xyeena-agent` |
 | **Xyeena Notch** | Desktop companion with its Island interface | Separate repo `rzqllh/xyeena-notch`; not bundled in Rig |
-| **Xyn — The Lion Guardian** | Original Xyeena mascot identity | Mascot assets/components are managed separately from Rig |
+| **Xyn: The Lion Guardian** | Original Xyeena mascot identity | Mascot assets/components are managed separately from Rig |
 
 **Rig positioning:** Equip your agent. Guard your project.
 

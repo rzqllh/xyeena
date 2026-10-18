@@ -11,8 +11,8 @@ Usage:
   xyeena init --components all --runtime all --skills all --guards all --yes
   xyeena init --components ... --dry-run         # preview, no files written
   xyeena doctor [--dir PATH]                      # existing installation doctor
-  xyeena harness doctor|audit|scan|verify [--dir PATH] [--base REF]
-  xyeena audit|scan|verify [--dir PATH] [--base REF]
+  xyeena harness doctor|audit|scan|verify|risk|changed|adapters [--dir PATH] [--base REF] [--evidence]
+  xyeena audit|scan|verify|risk|changed|adapters [--dir PATH] [--base REF] [--evidence]
   xyeena check [--source PATH]
   xyeena list
   xyeena resolve --prompt TEXT [--state TRIAGE] [--path FILE]
@@ -22,7 +22,8 @@ Usage:
 `;
 export async function main(args){
  const cmd=args[0]||'help', f=parseFlags(args.slice(1));
- if(['help','--help','-h'].includes(cmd)){console.log(help);return} if(['version','--version','-v'].includes(cmd)){console.log(VERSION);return}
+ if(['help','--help','-h'].includes(cmd) || f.help || f._.includes('-h') || f._.includes('help')){console.log(help);return}
+ if(['version','--version','-v'].includes(cmd)){console.log(VERSION);return}
  if(cmd==='init'){
     const cwd=path.resolve(f.dir||process.cwd());
     let choice;
@@ -54,13 +55,10 @@ export async function main(args){
     return;
   }
  if(cmd==='doctor'){console.log(JSON.stringify(doctor(path.resolve(f.dir||process.cwd())),null,2));return}
- if(cmd==='check'){const r=validateSource(path.resolve(f.source||PACKAGE_ROOT)); if(!r.ok){for(const e of r.errors)console.error(`FAIL ${e}`);process.exitCode=1}else console.log(`PASS ${r.capabilities.length} capabilities + runtime manifests`);return}
- if(cmd==='list'){for(const c of loadRegistry())console.log(`${c.metadata.name}	${c.activation.class}	${c.metadata.category}`);return}
+ if(cmd==='check'){const r=validateSource(path.resolve(f.source||PACKAGE_ROOT)); if(!r.ok){for(const e of r.errors)console.error(`[FAIL] ${e}`);process.exitCode=1}else console.log(`[PASS] ${r.capabilities.length} capabilities + runtime manifests`);return}
+ if(cmd==='list'){for(const c of loadRegistry())console.log(`${c.metadata.name}\t${c.activation.class}\t${c.metadata.category}`);return}
  if(cmd==='resolve'){if(!f.prompt)throw new Error('--prompt is required'); const r=resolveCapabilities(loadRegistry(),{prompt:f.prompt,state:f.state||'TRIAGE',paths:f.path?[f.path]:[]}); console.log(JSON.stringify(r,null,2));return}
- if(cmd==='eval'){const r=runEvals(); for(const d of r.details)console.log(`${d.ok?'PASS':'FAIL'} ${d.name}: ${d.actual}`); console.log(`
-${r.pass} passed, ${r.fail} failed`); if(r.fail)process.exitCode=1;return}
+ if(cmd==='eval'){const r=runEvals(); for(const d of r.details)console.log(`${d.ok?'PASS':'FAIL'} ${d.name}: ${d.actual}`); console.log(`\n${r.pass} passed, ${r.fail} failed`); if(r.fail)process.exitCode=1;return}
  if(cmd==='run-init'){const cwd=path.resolve(f.dir||process.cwd()); const l=RunLedger.create(cwd,{goal:f.goal||'',cwd}); console.log(l.runDir);return}
- throw new Error(`unknown command ${cmd}
-
-${help}`);
+ throw new Error(`unknown command ${cmd}\n\n${help}`);
 }

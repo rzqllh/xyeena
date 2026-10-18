@@ -1,4 +1,4 @@
-# Xyeena Rig / xyeena-agent 0.2.0 — acceptance and release record
+# Xyeena Rig / xyeena-agent 0.2.0: acceptance and release record
 
 **Status (14 October 2026): PUBLISHED.** The [GitHub release v0.2.0](https://github.com/rzqllh/xyeena/releases/tag/v0.2.0) and [npm package `xyeena-agent@0.2.0`](https://www.npmjs.com/package/xyeena-agent/v/0.2.0) are public. The [release workflow](https://github.com/rzqllh/xyeena/actions/runs/38536465520) completed successfully for commit `db5f2bf71eccef601efc08e58840c299e273312c`; [issue #3](https://github.com/rzqllh/xyeena/issues/3) is closed. Skills + Harness was integrated by [PR #2](https://github.com/rzqllh/xyeena/pull/2).
 
