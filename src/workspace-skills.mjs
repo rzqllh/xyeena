@@ -3,7 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { loadRegistry } from './registry.mjs';
 import { resolveCapabilities } from './resolver.mjs';
-import { skillLocations, requireSkillHost } from './skill-hosts.mjs';
+import { skillLocations, requireSkillHost, supportedSkillHosts } from './skill-hosts.mjs';
 
 const STOPWORDS = new Set(['about','after','agent','agents','also','and','are','based','before','best','can','code','does','for','from','have','into','more','must','only','our','that','the','their','this','use','user','using','when','with','work','your']);
 const words = value => [...new Set(String(value || '').toLowerCase().match(/[a-z0-9]{3,}/g) || [])]
@@ -127,4 +127,17 @@ export function routeWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigravi
     primary: detail(primary), supporting: supporting.map(detail),
     installedCount: installed.length, detectedCount: discovered.length,
     unavailable: discovered.filter(skill => skill.availability === 'requires-host-trust'), candidates: candidates.map(detail) };
+}
+
+/** Per-host inventory avoids falsely assuming that a skill in one AI host exists in another. */
+export function skillAvailabilityMatrix(options = {}) {
+  const hosts = {};
+  for (const runtime of supportedSkillHosts()) {
+    const skills = discoverWorkspaceSkills({ ...options, runtime });
+    hosts[runtime] = { detected: skills.length,
+      requiresTrust: skills.filter(skill => skill.availability === 'requires-host-trust').length,
+      skills: skills.map(skill => ({ name: skill.name, scope: skill.scope, path: skill.path,
+        availability: skill.availability })) };
+  }
+  return { mode: 'inventory-only', executed: false, hosts };
 }
