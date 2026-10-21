@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createInterface } from 'node:readline/promises';
-import { availableSkills, parseChoice, selectSkillRuntimes } from './selection.mjs';
+import { availableSkills, parseChoice, selectSkillRuntimes, skillDependencyClosure } from './selection.mjs';
 import { setupFilePlan, installStagedSetup } from './setup-upgrade.mjs';
 import { discoverWorkspaceSkills } from './workspace-skills.mjs';
 
@@ -69,6 +69,7 @@ export function previewSetup({ cwd = process.cwd(), runtime, preset = 'essential
     ...(update ? filePlan.conflicts : [])];
   return {
     kind: 'xyeena-setup', version: 2, cwd: root, ...choice, dryRun:true,
+    autoDependencies:skillDependencyClosure(choice.skills).filter(name=>!choice.skills.includes(name)),
     fingerprint: filePlan.fingerprint, conflicts: filePlan.conflicts,
     conflictPolicy: update ? 'backup-replace' : 'keep',
     creates: filePlan.create, unchangedCount: filePlan.unchanged.length,
@@ -104,6 +105,7 @@ export function applySetup({ cwd = process.cwd(), runtime, preset = 'essential',
   });
   return { installed:true, filesWritten:result.written.length,
     cwd:preview.cwd, runtimes:preview.runtimes, skills:preview.skills, guards:preview.guards,
+    autoDependencies:preview.autoDependencies,
     conflictsPreserved:result.preserved, conflictsReplaced:result.replaced,
     conflictPolicy:result.conflictPolicy, backupDirectory:result.backupDirectory,
     unchangedCount:result.unchangedCount, diagnostics,
