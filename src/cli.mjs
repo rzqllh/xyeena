@@ -4,6 +4,7 @@ import { explicitSelection, interactiveSelection } from './selection.mjs';
 import { runHarness } from './harness.mjs'; import { doctor } from './doctor.mjs'; import { validateSource } from './validate.mjs'; import { loadRegistry } from './registry.mjs'; import { resolveCapabilities } from './resolver.mjs'; import { runEvals } from './eval.mjs'; import { RunLedger } from './ledger.mjs';
 import { guidedCommand } from './antigravity-guided.mjs';
 import { discoverWorkspaceSkills, routeWorkspaceSkills } from './workspace-skills.mjs';
+import { createAntigravitySdkAdapter, previewAntigravitySdkTask } from './antigravity-sdk-adapter.mjs';
 const help=`Xyeena Rig ${VERSION}
 
 Usage:
@@ -20,6 +21,8 @@ Usage:
   xyeena resolve --prompt TEXT [--state TRIAGE] [--path FILE]
   xyeena skills discover [--dir PATH] [--runtime antigravity|claude|codex|all] [--local-only]
   xyeena route --prompt TEXT [--dir PATH] [--runtime antigravity|claude|codex|all] [--state TRIAGE]
+  xyeena sdk preview --goal TEXT [--dir PATH] [--local-only]
+  xyeena sdk run --goal TEXT --yes [--dir PATH] [--python PATH] [--timeout-ms N]
   xyeena eval
   xyeena run-init --goal TEXT [--dir PATH]
   xyeena guided preview|install|status|uninstall [--dir PATH] [--yes]
@@ -76,6 +79,21 @@ export async function main(args){
       prompt:f.prompt,state:f.state||'TRIAGE',paths:f.path?[f.path]:[],maxSupporting:f.maxSupporting===undefined?2:Number(f.maxSupporting),
       includeGlobal:!f.localOnly});
     console.log(JSON.stringify(result,null,2));return;
+  }
+ if(cmd==='sdk'){
+    const subcommand=f._[0];
+    if(!['preview','run'].includes(subcommand))throw new Error('Expected: xyeena sdk preview|run');
+    if(typeof f.goal!=='string'||!f.goal.trim())throw new Error('--goal TEXT required');
+    const preview=previewAntigravitySdkTask({cwd:path.resolve(f.dir||process.cwd()),goal:f.goal,includeGlobal:!f.localOnly});
+    if(subcommand==='preview'){console.log(JSON.stringify(preview,null,2));return}
+    if(f.yes!==true)throw new Error('SDK run makes a real model call; pass --yes for this invocation');
+    const adapter=createAntigravitySdkAdapter({cwd:preview.cwd,skillPaths:preview.skillPaths,
+      ...(typeof f.python==='string'?{python:f.python}:{}),
+      ...(f.timeoutMs!==undefined?{timeoutMs:Number(f.timeoutMs)}:{})});
+    const result=await adapter.executeTask({id:'sdk-one-shot',title:f.goal,
+      scope:{readOnly:true,operationClass:'safe'}});
+    console.log(JSON.stringify({status:'REVIEW_REQUIRED', ...result, selectedSkills:preview.selectedSkills},null,2));
+    return;
   }
  if(cmd==='eval'){const r=runEvals(); for(const d of r.details)console.log(`${d.ok?'PASS':'FAIL'} ${d.name}: ${d.actual}`); console.log(`\n${r.pass} passed, ${r.fail} failed`); if(r.fail)process.exitCode=1;return}
  if(cmd==='guided'){
