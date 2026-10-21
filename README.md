@@ -140,6 +140,22 @@ node bin/xyeena.mjs host run --runtime gemini --goal "Investigate a regression" 
 
 Only a host with a detected, eligible `xyeena-orchestrate` can run. Hermes uses its `safe` toolset and preloads selected skill names. Gemini CLI uses headless JSON with `--approval-mode plan` (subject to that CLI's native policy support). The CLI never passes `--yolo`. Outputs remain `REVIEW_REQUIRED`; users must configure and authenticate the actual AI runtime separately. **These calls start fresh CLI turns; they do not inject into an existing IDE/Telegram session.**
 
+## Unified Orchestrator v0.3.0 (development)
+
+One command chooses only skills **actually detected** for the requested host, and one explicit command starts a restricted agent call:
+
+```sh
+node bin/xyeena.mjs orchestrate preview --runtime codex --goal "Review the failing tests" --state REVIEW
+node bin/xyeena.mjs orchestrate run --runtime codex --goal "Review the failing tests" --state REVIEW --yes
+# Supported hosts: antigravity, codex, claude, gemini, hermes.
+```
+
+The `/xyeena-orchestrate` installed skill remains the conversational entry point where the host recognizes that command. Inside native host conversations, Xyeena asks the agent to discover and activate installed skills using the host's own interface. The CLI command starts a **new one-shot session**, not the currently open IDE or Telegram conversation.
+
+All `orchestrate run` paths are read-only and ask for explicit model-call consent. They recheck skill availability immediately before dispatch and report `REVIEW_REQUIRED` for model summaries. Hermes project skills need native trust. Codex uses a read-only sandbox; Claude uses `--bare --add-dir . --permission-mode plan`; Gemini CLI uses Plan mode; Antigravity uses the optional Python SDK. None of this silently enables workspace writes or publishes artifacts. Provider credentials and real host acceptance are separate requirements.
+
+A bounded in-process `SkillInventoryCache` is available for long-running integrations. It invalidates on skill-directory, metadata and Hermes config changes, with no watcher process or persistent cache files.
+
 ## Antigravity Guided hooks
 
 Workspace-level hooks are an optional, separately approved install. They suggest possible unfinished work, and explicitly bound conversations receive a bounded capsule and checkpoint support without automatic execution or permission changes. See [Guided hooks](docs/ANTIGRAVITY-GUIDED.md).
