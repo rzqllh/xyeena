@@ -17,3 +17,4 @@ export { previewPortableHost, createPortableHostAdapter } from './portable-cli-a
 
 export { previewOrchestration, executeOrchestration } from './orchestrator.mjs';
 export { SkillInventoryCache, inventoryFingerprint } from './skill-cache.mjs';
+export { recordOrchestrationRun } from './orchestration-ledger.mjs';
