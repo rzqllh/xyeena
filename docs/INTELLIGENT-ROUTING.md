@@ -58,9 +58,11 @@ node bin/xyeena.mjs sdk preview --goal "Inspect regressions in tests"
 node bin/xyeena.mjs sdk run --goal "Inspect regressions in tests" --yes
 ```
 
+For complex read-only work, optionally append `--delegate` to `sdk run --yes` to enable native SDK self-cloning subagents. This adds `START_SUBAGENT` to the otherwise read-only built-in tool selection and can increase provider token usage. It is never enabled by default.
+
 When installed as an npm package use `npx xyeena-agent sdk ...`. Use `--dir PATH`, `--local-only`, `--python PATH`, or `--timeout-ms N` as appropriate.
 
-- The worker uses `LocalAgentConfig(skills_paths=[...], capabilities=CapabilitiesConfig(enabled_tools=BuiltinTools.read_only()))` and a restricted read-only instruction. It never enables write tools or subagents.
+- The worker uses `LocalAgentConfig(skills_paths=[...])` with restricted read-only tools. It never enables write or shell tools. Subagents are disabled by default and enabled only via explicit `--delegate`.
 - It discovers installed and selected skill directories on the host, allowing native SDK skill loading. It does not copy SKILL.md into a prompt.
 - The worker requires a valid Gemini API/Vertex environment. Provider usage may incur token charges; it is not a free/local mode.
 - Calls are one-shot and return the text report plus optional token usage. Outputs are always `REVIEW_REQUIRED` (not `VERIFIED`); model-generated text is **not independent evidence**.
