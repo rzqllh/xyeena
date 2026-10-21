@@ -62,17 +62,74 @@ test('guided setup installs only user-selected Hermes and Gemini skills',async t
   assert.equal(fs.existsSync(path.join(cwd,'AGENTS.md')),false);
   assert.match(out.join(''),/No API keys/);
 });
-test('repeated setup preserves inventory; modified skill conflict fails before changes',t=>{
+test('repeated setup preserves inventory, custom files, and safely backs up before replacement',t=>{
   const cwd=fixture(t);
   const options={cwd,runtime:'codex',preset:'essential',harness:'none'};
   applySetup({...options,yes:true});
   assert.equal(previewSetup(options).filesToWrite,0);
   const file=path.join(cwd,'.agents/skills/xyeena-orchestrate/SKILL.md');
+  const original=fs.readFileSync(file,'utf8');
   fs.appendFileSync(file,'\n# own custom instructions\n');
-  const before=fs.readFileSync(file,'utf8');
-  assert.throws(()=>applySetup({...options,yes:true}),/overwrite modified|overwrite/);
-  assert.equal(fs.readFileSync(file,'utf8'),before);
+  const custom=fs.readFileSync(file,'utf8');
+  const preview=previewSetup(options);
+  assert.ok(preview.conflicts.includes('.agents/skills/xyeena-orchestrate/SKILL.md'));
+  assert.equal(preview.conflictPolicy,'keep');
+  const keep=applySetup({...options,yes:true});
+  assert.equal(keep.conflictsPreserved.length,1);
+  assert.equal(fs.readFileSync(file,'utf8'),custom);
+  const newPlan=previewSetup({...options,update:true});
+  assert.equal(newPlan.conflictPolicy,'backup-replace');
+  const updated=applySetup({...options,update:true,yes:true,expectedFingerprint:newPlan.fingerprint});
+  assert.equal(updated.conflictsReplaced.length,1);
+  assert.equal(fs.readFileSync(file,'utf8'),original);
+  assert.ok(updated.backupDirectory);
+  const copy=path.join(cwd,updated.backupDirectory,'.agents/skills/xyeena-orchestrate/SKILL.md');
+  assert.equal(fs.readFileSync(copy,'utf8'),custom);
+  assert.equal(fs.readFileSync(path.join(cwd,updated.backupDirectory,'.gitignore'),'utf8'),'*'+'\n'+'!.gitignore'+'\n');
   assert.throws(()=>applySetup({...options,yes:false}),/explicit --yes/);
+});
+
+test('interactive conflict resolution reaches review and can preserve or back up custom skills',async t=>{
+  const cwd=fixture(t);
+  applySetup({cwd,runtime:'antigravity',preset:'essential',yes:true});
+  const file=path.join(cwd,'.agents/skills/xyeena-orchestrate/SKILL.md');
+  const original=fs.readFileSync(file,'utf8');
+  fs.appendFileSync(file,'\n# hand-edited before update\n');
+  const custom=fs.readFileSync(file,'utf8');
+  const out=[];
+  const replies=['3','1','1','1','y'];let i=0;
+  const kept=await guidedSetup({cwd,ask:async()=>replies[i++],output:{write:t=>out.push(t)}});
+  assert.equal(kept.installed,true);
+  assert.equal(kept.conflictsPreserved.length,1);
+  assert.equal(fs.readFileSync(file,'utf8'),custom);
+  assert.match(out.join(''),/Existing skill\/Harness files differ/);
+  assert.match(out.join(''),/STEP 4\/4/);
+  const replaceReplies=['3','1','1','2','y'];let j=0;
+  const updated=await guidedSetup({cwd,ask:async()=>replaceReplies[j++],output:{write:()=>{}}});
+  assert.equal(updated.conflictsReplaced.length,1);
+  assert.equal(fs.readFileSync(file,'utf8'),original);
+  assert.equal(fs.readFileSync(path.join(cwd,updated.backupDirectory,'.agents/skills/xyeena-orchestrate/SKILL.md'),'utf8'),custom);
+});
+
+test('stale preview fingerprint blocks update before a single project write',t=>{
+  const cwd=fixture(t),options={cwd,runtime:'codex',preset:'essential'};
+  applySetup({...options,yes:true});
+  const file=path.join(cwd,'.agents/skills/xyeena-orchestrate/SKILL.md');
+  const plan=previewSetup({...options,update:true});
+  fs.appendFileSync(file,'\nnew local change\n');
+  assert.throws(()=>applySetup({...options,yes:true,update:true,expectedFingerprint:plan.fingerprint}),/changed since the review/);
+  assert.match(fs.readFileSync(file,'utf8'),/new local change/);
+});
+
+test('custom third-party skill is untouched across complete setup and update',t=>{
+  const cwd=fixture(t);
+  const third=path.join(cwd,'.agents/skills/external-special/SKILL.md');
+  fs.mkdirSync(path.dirname(third),{recursive:true});
+  fs.writeFileSync(third,'# Custom third-party skill\n');
+  const opts={cwd,runtime:'antigravity',preset:'complete',harness:'full'};
+  applySetup({...opts,yes:true});
+  applySetup({...opts,update:true,yes:true});
+  assert.equal(fs.readFileSync(third,'utf8'),'# Custom third-party skill\n');
 });
 test('setup detects hints but never assumes Ambiguous .agents folder is a chosen host',t=>{
   const cwd=fixture(t);
@@ -104,4 +161,40 @@ test('PowerShell-style split runtime arguments fail closed instead of installing
   assert.notEqual(result.status,0);
   assert.match(result.stderr,/quote comma-separated runtimes/);
   assert.deepEqual(fs.readdirSync(cwd),[]);
+});
+
+test('setup explicitly rejects unknown or blind --force flags without project mutations',t=>{
+  const cwd=fixture(t);
+  const a=call(cwd,['setup','--runtime','antigravity','--froce','--yes']);
+  assert.notEqual(a.status,0);
+  assert.match(a.stderr,/Unrecognized setup option/);
+  const b=call(cwd,['setup','--runtime','antigravity','--force','--yes']);
+  assert.notEqual(b.status,0);
+  assert.match(b.stderr,/Use --update/);
+  assert.deepEqual(fs.readdirSync(cwd),[]);
+});
+test('CLI --update preserves backups of custom files and reports them',t=>{
+  const cwd=fixture(t),file=path.join(cwd,'.agents/skills/xyeena-orchestrate/SKILL.md');
+  assert.equal(call(cwd,['setup','--runtime','antigravity','--yes']).status,0);
+  const original=fs.readFileSync(file,'utf8');
+  fs.appendFileSync(file,'\nCUSTOM MARKER\n');
+  const dry=call(cwd,['setup','--runtime','antigravity','--update','--dry-run']);
+  assert.equal(dry.status,0,dry.stderr);
+  const preview=JSON.parse(dry.stdout);
+  assert.ok(preview.conflicts.length>0);
+  assert.ok(preview.filesToWrite>0);
+  assert.equal(preview.conflictPolicy,'backup-replace');
+  const run=call(cwd,['setup','--runtime','antigravity','--update','--yes']);
+  assert.equal(run.status,0,run.stderr);
+  const report=JSON.parse(run.stdout);
+  assert.ok(report.conflictsReplaced.length>0);
+  assert.ok(report.backupDirectory);
+  assert.equal(fs.readFileSync(file,'utf8'),original);
+  assert.match(fs.readFileSync(path.join(cwd,report.backupDirectory,'.agents/skills/xyeena-orchestrate/SKILL.md'),'utf8'),/CUSTOM MARKER/);
+});
+test('public beginner runtime choices never mention Xyn or a personal bot identity',t=>{
+  const cwd=fixture(t),writes=[];
+  const replies=['0','1','1','n'];let i=0;
+  await guidedSetup({cwd,ask:async()=>replies[i++],output:{write:v=>writes.push(v)}}).catch(()=>{});
+  assert.doesNotMatch(writes.join(''),/\bXyn\b|Telegram gateway/i);
 });
