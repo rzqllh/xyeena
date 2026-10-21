@@ -17,3 +17,13 @@ Portable project skills install under `.agents/skills/`. The source repository i
 ## Policy
 
 The npm installer is the conservative cross-runtime path. Native plugin manifests are shipped as source metadata, but each native marketplace flow should be dogfooded in that runtime before being advertised as verified.
+
+## Gemini CLI (opt-in)
+
+Gemini CLI loads workspace skills from `.gemini/skills/` or the cross-tool alias `.agents/skills/`, and global skills from `~/.gemini/skills/` or `~/.agents/skills/`. The alias takes precedence at the same scope. Only skills explicitly installed by the user are copied to `.gemini/skills/`. Native host approval and enabling remain under Gemini CLI control.
+
+## Hermes Agent (opt-in)
+
+Hermes loads project skills from `.hermes/skills/` and `.agents/skills/` inside the nearest Git repository, and profile skills from `~/.hermes/skills/`. It also supports category-nested skills and `skills.external_dirs` in `~/.hermes/config.yaml`. A project must be trusted by Hermes before its skills are available; Xyeena reports untrusted candidates but excludes them from routing. The user must manage trust through `hermes skills trust`, not through Xyeena.
+
+These new hosts are added to the **selective installer** only. Historical `--runtime all` continues targeting Antigravity, Claude, and Codex. Use `--runtime all-supported` to explicitly opt into all five runtimes. Discovery and routing are available before installing anything.
