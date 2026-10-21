@@ -45,3 +45,26 @@ The branch deliberately does **not** claim to provide a verified native Antigrav
 5. Confirm external/destructive actions remain user-approved and task-scoped.
 
 References: [Antigravity Agent Skills](https://www.antigravity.google/docs/skills?tab=ide), [Claude Code Skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview).
+
+## Experimental one-shot Antigravity SDK execution
+
+The bridge is **optional**. It uses the official Python Antigravity SDK and is distinct from the existing Antigravity IDE conversation. It will call the configured Gemini provider only when the user explicitly runs `sdk run --yes`. No Python dependency is installed by the normal Xyeena package.
+
+```powershell
+# Install SDK separately in a Python environment (optional).
+python -m pip install google-antigravity
+# Set GEMINI_API_KEY in your own environment before the run.
+node bin/xyeena.mjs sdk preview --goal "Inspect regressions in tests"
+node bin/xyeena.mjs sdk run --goal "Inspect regressions in tests" --yes
+```
+
+When installed as an npm package use `npx xyeena-agent sdk ...`. Use `--dir PATH`, `--local-only`, `--python PATH`, or `--timeout-ms N` as appropriate.
+
+- The worker uses `LocalAgentConfig(skills_paths=[...], capabilities=CapabilitiesConfig(enabled_tools=BuiltinTools.read_only()))` and a restricted read-only instruction. It never enables write tools or subagents.
+- It discovers installed and selected skill directories on the host, allowing native SDK skill loading. It does not copy SKILL.md into a prompt.
+- The worker requires a valid Gemini API/Vertex environment. Provider usage may incur token charges; it is not a free/local mode.
+- Calls are one-shot and return the text report plus optional token usage. Outputs are always `REVIEW_REQUIRED` (not `VERIFIED`); model-generated text is **not independent evidence**.
+- SDK availability and model authentication cannot be verified by repository CI; acceptance requires a manual smoke test on a configured host.
+- This does **not** control an already-running Antigravity IDE session, and it cannot replace native IDE-level permissions. Separate native IDE tool-dispatch support remains pending.
+
+Security boundaries: no `--force` installer, no implicit SDK invocation, no automatic permissions, no external/destructive tasks, no background daemon, bounded input/output/timeout, no command-shell execution, and no user secrets in the JSON invocation.
