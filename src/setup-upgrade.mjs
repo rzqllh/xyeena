@@ -128,6 +128,10 @@ export function installStagedSetup({cwd,choice,policy='keep',expectedFingerprint
       for(const item of toBackup) safeDestination(root,path.join(backupRoot,...item.rel.split('/')));
       fs.mkdirSync(backupRoot,{recursive:true});
       backupDir = backupRoot;
+      // Protect backups from accidental Git commits without editing project .gitignore.
+      const localIgnore = path.join(backupRoot,'.gitignore');
+      safeDestination(root,localIgnore);
+      fs.writeFileSync(localIgnore,'*\n!.gitignore\n',{flag:'wx'});
       for(const item of toBackup){
         const backupFile = path.join(backupRoot,...item.rel.split('/'));
         ensureSafeParents(root,backupFile);
@@ -142,8 +146,8 @@ export function installStagedSetup({cwd,choice,policy='keep',expectedFingerprint
         const current = exists(item.dst) ? hash(fs.readFileSync(item.dst)) : null;
         if (current !== item.currentHash)
           throw new Error('Destination changed after preview: '+item.rel);
-        copyToDestination(root,item);
         written.push(item);
+        copyToDestination(root,item);
       }
     } catch (error){
       // Best-effort rollback: preserve originals and remove only newly created files.
