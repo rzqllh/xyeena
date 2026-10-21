@@ -3,9 +3,8 @@ import path from 'node:path';
 import os from 'node:os';
 import { loadRegistry } from './registry.mjs';
 import { resolveCapabilities } from './resolver.mjs';
+import { skillLocations, requireSkillHost } from './skill-hosts.mjs';
 
-const TARGETS = Object.freeze({ antigravity: ['.agents/skills', '.agent/skills'], codex: ['.agents/skills'], claude: ['.claude/skills'] });
-const GLOBAL_TARGETS = Object.freeze({ antigravity: ['.gemini/config/skills', '.gemini/antigravity/skills'], codex: ['.agents/skills'], claude: ['.claude/skills'] });
 const STOPWORDS = new Set(['about','after','agent','agents','also','and','are','based','before','best','can','code','does','for','from','have','into','more','must','only','our','that','the','their','this','use','user','using','when','with','work','your']);
 const words = value => [...new Set(String(value || '').toLowerCase().match(/[a-z0-9]{3,}/g) || [])]
   .filter(word => !STOPWORDS.has(word));
@@ -40,31 +39,49 @@ function readMetadata(file, fallbackName) {
       }
       fields[match[1]] = value.replace(/^(['"])(.*)\1$/, '$2').slice(0, 1000);
     }
-    return { name: fallbackName, description: fields.description || '' };
+    const name = fields.name || fallbackName;
+    if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(name) || !fields.description) return null;
+    return { name, description: fields.description };
   } catch { return null; }
 }
 
 /** Discover already-installed, local Agent Skills. Never execute SKILL.md or follow links. */
 export function discoverWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigravity',
-  home = os.homedir(), includeGlobal = true } = {}) {
-  if (runtime !== 'all' && !Object.hasOwn(TARGETS, runtime)) throw new Error('Unknown runtime: ' + runtime);
-  const root = fs.realpathSync(path.resolve(cwd));
-  const targets = runtime === 'all' ? ['antigravity', 'claude', 'codex'] : [runtime];
-  const locations = [
-    ...targets.flatMap(target => TARGETS[target].map(relative => ({ base: root, relative, target, scope: 'workspace' }))),
-    ...(includeGlobal ? targets.flatMap(target => GLOBAL_TARGETS[target].map(relative =>
-      ({ base: home, relative, target, scope: 'global' }))) : [])
-  ];
-  const found = new Map();
-  for (const { base, relative, target, scope } of locations) {
-    if (!safeTree(base, relative)) continue;
-    const dir = path.join(base, relative);
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a,b) => a.name.localeCompare(b.name))) {
-      if (!entry.isDirectory() || entry.isSymbolicLink()) continue;
-      const skillPath = path.join(dir, entry.name, 'SKILL.md');
-      const metadata = readMetadata(skillPath, entry.name);
-      if (!metadata || found.has(entry.name)) continue;
-      found.set(entry.name, { ...metadata, path: skillPath, runtime: target, scope, source: scope });
+  home = os.homedir(), includeGlobal = true, env = process.env } = {}) {
+  requireSkillHost(runtime);
+  const locations = skillLocations({ cwd, runtime, home, includeGlobal, env });
+  const found = new Map(), seenPaths = new Set();
+  const visitSkill = (dir, entry, loc) => {
+    if (!entry.isDirectory() || entry.isSymbolicLink() || entry.name.startsWith('.')) return false;
+    const skillPath = path.join(dir, entry.name, 'SKILL.md');
+    const metadata = readMetadata(skillPath, entry.name);
+    if (!metadata) return false;
+    let canonical;
+    try { canonical = fs.realpathSync(skillPath); } catch { return false; }
+    if (seenPaths.has(canonical)) return true;
+    seenPaths.add(canonical);
+    // Native host must confirm project trust and skill enablement; detection is not activation.
+    if (!found.has(metadata.name)) found.set(metadata.name, {
+      ...metadata, path: skillPath, runtime: loc.runtime, scope: loc.scope,
+      source: loc.scope, availability: loc.requiresTrust ? 'requires-host-trust' : 'detected'
+    });
+    return true;
+  };
+  const entries = dir => {
+    try { return fs.readdirSync(dir, { withFileTypes: true })
+      .filter(x => x.isDirectory() && !x.isSymbolicLink() && !x.name.startsWith('.'))
+      .sort((a,b) => a.name.localeCompare(b.name)).slice(0, 256); }
+    catch { return []; }
+  };
+  for (const loc of locations) {
+    if (!safeDirectory(loc.base) || (loc.relative && !safeTree(loc.base, loc.relative))) continue;
+    const dir = loc.relative ? path.join(loc.base, loc.relative) : loc.base;
+    if (!safeDirectory(dir)) continue;
+    for (const entry of entries(dir)) {
+      if (visitSkill(dir, entry, loc) || !loc.nested) continue;
+      const category = path.join(dir, entry.name);
+      if (!safeDirectory(category)) continue;
+      for (const skill of entries(category)) visitSkill(category, skill, loc);
     }
   }
   return [...found.values()];
@@ -88,7 +105,9 @@ export function routeWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigravi
   home = os.homedir(), includeGlobal = true } = {}) {
   if (typeof prompt !== 'string' || !prompt.trim()) throw new Error('A non-empty prompt is required');
   if (!Number.isInteger(maxSupporting) || maxSupporting < 0 || maxSupporting > 8) throw new Error('Invalid supporting-skill budget');
-  const installed = discoverWorkspaceSkills({ cwd, runtime, home, includeGlobal });
+  if (runtime === 'all') throw new Error('Select one host for routing; use all for inventory only');
+  const discovered = discoverWorkspaceSkills({ cwd, runtime, home, includeGlobal });
+  const installed = discovered.filter(skill => skill.availability !== 'requires-host-trust');
   const installedByName = new Map(installed.map(skill => [skill.name, skill]));
   const builtins = loadRegistry().filter(cap => installedByName.has(cap.metadata.name));
   const builtinNames = new Set(builtins.map(cap => cap.metadata.name));
@@ -106,5 +125,6 @@ export function routeWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigravi
     source: builtinNames.has(value.name) ? 'xyeena' : 'external' } : null;
   return { mode: 'preview-only', executed: false, runtime, kernel: installedByName.has('xyeena-core') ? 'xyeena-core' : null,
     primary: detail(primary), supporting: supporting.map(detail),
-    installedCount: installed.length, candidates: candidates.map(detail) };
+    installedCount: installed.length, detectedCount: discovered.length,
+    unavailable: discovered.filter(skill => skill.availability === 'requires-host-trust'), candidates: candidates.map(detail) };
 }
