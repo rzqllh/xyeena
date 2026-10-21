@@ -6,7 +6,7 @@ on:
   # Future versions continue to use the ordinary GitHub Release trigger.
   push:
     branches: [main]
-    paths: [package.json]
+    paths: [package.json, .github/workflows/publish.yml]
 permissions:
   contents: read
   id-token: write
@@ -17,7 +17,7 @@ jobs:
   npm:
     if: >-
       github.event_name == 'release' ||
-      (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release: xyeena-agent v0.3.0'))
+      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'release: xyeena-agent v0.3.0') || startsWith(github.event.head_commit.message, 'verify: xyeena-agent v0.3.0')))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -65,7 +65,7 @@ jobs:
             echo "published=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Authenticate to npm registry
-        if: steps.existing.outputs.published != 'true'
+        if: steps.existing.outputs.published != 'true' && !startsWith(github.event.head_commit.message, 'verify: xyeena-agent v0.3.0')
         run: |
           if [ -n "${{ secrets.NPM_TOKEN }}" ]; then
             echo "Using NPM_TOKEN secret from GitHub repository."
@@ -96,17 +96,35 @@ jobs:
             echo "Successfully authenticated to npm via OIDC session token!"
           fi
       - name: Publish new package to npm with provenance
-        if: steps.existing.outputs.published != 'true'
+        if: steps.existing.outputs.published != 'true' && !startsWith(github.event.head_commit.message, 'verify: xyeena-agent v0.3.0')
         run: npm publish --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Verify exact version is live on npm
+      - name: Wait for npm processing and verify public version
+        timeout-minutes: 35
         run: |
           set -eu
           VERSION="$(node -p 'require("./package.json").version')"
-          FOUND="$(npm view "xyeena-agent@$VERSION" version --registry=https://registry.npmjs.org/)"
+          for attempt in $(seq 1 90); do
+            FOUND="$(npm view "xyeena-agent@$VERSION" version --registry=https://registry.npmjs.org/ --prefer-online --fetch-retries=0 2>/dev/null || true)"
+            if [ "$FOUND" = "$VERSION" ]; then
+              echo "Verified xyeena-agent@$VERSION on public npm registry (attempt $attempt)."
+              exit 0
+            fi
+            echo "npm has accepted this version but public metadata is not yet visible (attempt $attempt/90)."
+            sleep 20
+          done
+          echo "::error::Package not publicly visible after 30 minutes. It may still be processing or require maintainer action in npm."
+          exit 1
+      - name: Test fresh consumer installation from npm registry
+        run: |
+          set -eu
+          VERSION="$(node -p 'require("./package.json").version')"
+          TMP="$(mktemp -d)"
+          cd "$TMP"
+          FOUND="$(npm exec --yes --package="xyeena-agent@$VERSION" -- xyeena version)"
           if [ "$FOUND" != "$VERSION" ]; then
-            echo "::error::npm registry did not return expected version $VERSION"
+            echo "::error::Fresh registry install reported $FOUND, expected $VERSION"
             exit 1
           fi
       - name: Create GitHub Release for one-time v0.3.0 main push
@@ -117,6 +135,6 @@ jobs:
           set -eu
           VERSION="$(node -p 'require("./package.json").version')"
           gh release view "v$VERSION" >/dev/null 2>&1 || \
-            gh release create "v$VERSION" --target "$GITHUB_SHA" \
+            gh release create "v$VERSION" --target "a5e7dfb43b3e342a8f589ce7c9b7d95edd4b8782" \
               --title "v$VERSION — Portable Xyeena Rig and safe beginner setup" \
               --generate-notes
