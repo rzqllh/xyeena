@@ -96,11 +96,15 @@ export function routeWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigravi
   const candidates = [...routed.candidates, ...installed.filter(skill => !builtinNames.has(skill.name))
     .map(skill => externalScore(skill, prompt)).filter(Boolean)]
     .sort((a,b) => b.score - a.score || a.name.localeCompare(b.name));
-  const selected = candidates.slice(0, maxSupporting + 1);
+  const primary = candidates[0] || null;
+  const primaryContract = builtins.find(cap => cap.metadata.name === primary?.name);
+  const allowed = new Set(primaryContract?.chain?.allowed || []);
+  const supporting = primary ? candidates.slice(1).filter(item => allowed.has(item.name) || item.score >= 30)
+    .slice(0, maxSupporting) : [];
   const detail = value => value ? { ...value, path: installedByName.get(value.name).path,
     runtime: installedByName.get(value.name).runtime, scope: installedByName.get(value.name).scope,
     source: builtinNames.has(value.name) ? 'xyeena' : 'external' } : null;
   return { mode: 'preview-only', executed: false, runtime, kernel: installedByName.has('xyeena-core') ? 'xyeena-core' : null,
-    primary: detail(selected[0]), supporting: selected.slice(1).map(detail),
+    primary: detail(primary), supporting: supporting.map(detail),
     installedCount: installed.length, candidates: candidates.map(detail) };
 }
