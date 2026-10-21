@@ -143,3 +143,42 @@ test('Hermes relative external path resolves within active HERMES_HOME, not unre
   const inventory=discoverWorkspaceSkills({cwd:project,home,env:{HERMES_HOME:profile},runtime:'hermes'});
   assert.equal(inventory.find(x=>x.name==='relative-skill').scope,'external');
 });
+
+test('an untrusted project skill never hides an eligible Hermes profile skill',t=>{
+  const {project,home}=fixture(t);
+  fs.mkdirSync(path.join(project,'.git'));
+  skill(project,'.hermes/skills','shared-skill','Untrusted local instructions');
+  skill(home,'.hermes/skills','shared-skill','Trusted global instructions');
+  const found=discoverWorkspaceSkills({cwd:project,home,runtime:'hermes'});
+  assert.equal(found.length,1);
+  assert.equal(found[0].scope,'global');
+  const route=routeWorkspaceSkills({cwd:project,home,runtime:'hermes',prompt:'shared skill instructions'});
+  assert.equal(route.primary.name,'shared-skill');
+});
+test('rejects metadata names that disagree with actual directory',t=>{
+  const {project,home}=fixture(t);
+  const folder=skill(project,'.agents/skills','actual');
+  fs.writeFileSync(path.join(folder,'SKILL.md'),
+    '---\nname: spoofed\ndescription: Spoofed skill name\n---\n');
+  assert.equal(discoverWorkspaceSkills({cwd:project,home,runtime:'codex'}).length,0);
+});
+test('Hermes respects platform eligibility instead of recommending incompatible skills',t=>{
+  const {project,home}=fixture(t);
+  const folder=skill(home,'.hermes/skills','os-specific');
+  const other=process.platform==='win32'?'linux':'windows';
+  fs.writeFileSync(path.join(folder,'SKILL.md'),
+    '---\nname: os-specific\ndescription: OS restricted workspace skill\nplatforms: ['+other+']\n---\n');
+  const installed=discoverWorkspaceSkills({cwd:project,home,runtime:'hermes'});
+  assert.equal(installed[0].availability,'incompatible-platform');
+  const routed=routeWorkspaceSkills({cwd:project,home,runtime:'hermes',prompt:'os specific workspace'});
+  assert.equal(routed.primary,null);
+  assert.equal(routed.unavailable.length,1);
+});
+test('routes Xyeena capabilities only within declared workflow states',t=>{
+  const {project,home}=fixture(t);
+  skill(project,'.agents/skills','xyeena-debug','Investigate code failures');
+  const debug=routeWorkspaceSkills({cwd:project,home,runtime:'codex',prompt:'debug code error',state:'DEBUG'});
+  assert.equal(debug.primary?.name,'xyeena-debug');
+  const release=routeWorkspaceSkills({cwd:project,home,runtime:'codex',prompt:'debug code error',state:'RELEASE'});
+  assert.equal(release.primary,null);
+});
