@@ -1,3 +1,20 @@
+## [0.3.0] - Release candidate (not published)
+
+- Add portable skill orchestration and per-host skill inventory for Antigravity, Codex, Claude Code, Gemini CLI, and Hermes.
+- Add novice-safe `xyeena setup` wizard, Essential/Balanced/Complete presets, optional Harness, conflict-aware reinstallation, bounded file diffs, per-file update, explicit dry-run/confirmation, rollback journal and read-only post-install check.
+- Add optional restricted host SDK/CLI one-shot execution, skill routing previews, workflow hints, cache/invalidation, evidence-gated tasks, and local run ledger.
+- Preserve existing package name, 19 skill IDs, 41 Harness guardrails, and `init`/previous CLI behavior.
+- Runtime execution is host-dependent and does not imply full autonomous write permissions or verified live IDE dispatch.
+- Publish only when CI, package consumer smoke, and explicit release acceptance have been completed.
+
+## Unreleased (v0.3.0 candidate, PR #12)
+
+- Additive portable orchestration for Antigravity, Codex, Claude Code, Gemini CLI and Hermes; existing Skills, Harness and original install defaults preserved.
+- Inventory installed skills by host and trust/platform eligibility, zero-token AUTO workflow inference, bounded metadata cache, duplicate-shadow safety, external/nested Hermes and named profile support.
+- Unified `xyeena orchestrate preview|run` entrypoint. Real model calls are explicit and limited to read-only one-shot host adapters, not active IDE sessions; model output is REVIEW_REQUIRED without independent proof.
+- Optional privacy-constrained `--record` journal for recovery, with no automatic resume, provider approval or write-enabled autonomy.
+- Add independent `verifyEvidence` gate to task graph, cross-platform CLI/SDK CI and host-acceptance checklist. Production publish and native in-session end-to-end verification remain pending.
+
 # Changelog
 
 ## [Unreleased]

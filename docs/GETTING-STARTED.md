@@ -4,14 +4,30 @@
 
 - **npm package:** [`xyeena-agent`](https://www.npmjs.com/package/xyeena-agent)
 - **Included:** 19 Agent Skills; 41 Harness guardrails across 11 groups.
-- **Targets:** Antigravity, Claude Code, Codex.
+- **Targets:** Antigravity, Claude Code, Codex, Gemini CLI, Hermes.
 - **Branding note:** Version `0.2.1` introduces Xyeena Rig display names. Technical package and CLI identifiers remain compatible.
 
 ## Requirements
 
 Node.js **22.14 or newer**, npm/npx, and write access to a project directory. Use an interactive terminal for the wizard; CI must use explicit flags.
 
-## Interactive setup
+## Beginner setup (v0.3.0 after publication)
+
+```sh
+npx --yes xyeena-agent@0.3.0 setup
+```
+
+This new wizard requires only four choices: AI host(s), Essential/Balanced/Complete skill preset, optional Harness, and a final review/confirmation. It never preselects a host, installs model runtimes, or stores credentials. For Windows screenshots-independent step-by-step instructions, see [Instalasi Windows untuk Pemula](INSTALL-WINDOWS-PEMULA.md).
+
+To preview without changing any project files:
+
+```sh
+npx --yes xyeena-agent@0.3.0 setup --runtime "hermes,gemini" --preset essential --dry-run
+```
+
+After reviewing, change `--dry-run` to `--yes` to install. `--harness essential` adds Core, Quality, Security guides; defaults to `none`. For complete installs, use `--preset complete --harness full`. The older `init` wizard remains supported. On re-run, the beginner wizard lists conflicts before final confirmation. It defaults to keeping modified files, or offers a separately confirmed backup-and-replace choice.
+
+## Interactive setup (advanced / legacy)
 
 From the target project directory:
 
@@ -38,6 +54,19 @@ npx xyeena-agent@latest init --components all --runtime all --skills all --guard
 ```
 
 To target another project directory, add `--dir PATH`. Non-interactive installation requires `--components`, the associated `--runtime` and `--skills` for Skills, `--guards` for Harness, and `--yes` for writes.
+
+## Updating an existing Xyeena installation
+
+When a previous `SKILL.md` differs from the release package, the new `setup` wizard shows the conflict instead of aborting unexpectedly. Choose **keep custom** (default) to install only missing files, or **backup and replace** to save originals in `.xyeena/backups/` before refreshing Xyeena-owned files.
+
+Non-interactive usage:
+
+```powershell
+npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --update --dry-run
+npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --update --yes
+```
+
+Without `--update`, customized files remain unchanged. No third-party skills are deleted. `--force` is deliberately rejected by beginner setup; use `--update` for recoverable replacements.
 
 ## Installed files
 

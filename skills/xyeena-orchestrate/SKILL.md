@@ -12,3 +12,35 @@ Model work as immutable tasks with dependencies. Parallelize only ready independ
 Messages stay small and typed (`ASSIGN`, `QUESTION`, `RESULT`, `FINDING`, `CHALLENGE`, `RESPONSE`, `EVIDENCE`, `BLOCKED`, `FAILED`, `CANCEL`). Large results live as artifacts. Joins reconcile contradictions through evidence rather than concatenating reports or voting.
 
 Independent auditors do not inherit executor rationale. Repeated review/fix loops trip a breaker and re-diagnose or escalate instead of recursing forever.
+
+## Native skill selection and execution
+
+When the user gives a natural-language goal, use the host's installed Agent Skills inventory
+(workspace first, then global) to identify relevant Xyeena and third-party skills.
+Read only the selected `SKILL.md` files as needed. Do not ask the user to paste a list of
+slash commands, do not blindly load every skill, and do not invent missing skills.
+
+Use the native host's actual subagent/tool invocation interface when available. In Antigravity
+that may be `invoke_subagent` for independent scoped work; pass bounded task instructions,
+a suitable declared role and an isolated worktree when writes might conflict. Respect
+native IDE permission prompts. Never treat emitting a plan, naming an agent, or registering
+a synthetic READY worker as proof that a worker ran. If no real host adapter is present,
+mark execution BLOCKED and report precisely what is missing.
+
+Use the smallest relevant capability set first. Parallelize independent read-only tasks
+when useful; keep shared writes serialized or explicitly isolated. Capture actual
+file changes, test logs and evidence references before changing a task to VERIFIED.
+Unverified model summaries remain REVIEW_REQUIRED. Do not silently merge, publish,
+deploy, send communications, or broaden an approval.
+
+## Cross-host portability
+
+Xyeena orchestrates skills by their actual runtime inventory, not a memorized universal registry.
+Identify the active host (Antigravity IDE, Gemini CLI, Codex, Claude Code, or Hermes), then
+discover installed skill metadata using host-native facilities. If needed and permitted, run
+`xyeena skills discover --runtime <host>` for a read-only inventory. Do not load or invoke a
+skill if it is missing, incompatible, untrusted, or disabled. In Hermes, never treat
+`availability: requires-host-trust` as executable; only the user may trust a repository.
+Prefer the smallest adequate combination, lazy-load selected skill instructions, and ask
+the runtime to activate them through its native mechanisms. Preserve native permission
+prompts and independent verification. A directory scan is **not** proof of execution.

@@ -2,10 +2,11 @@
 
 **Equip your agent. Guard your project.**
 
-Xyeena Rig combines modular **Agent Skills** with an opt-in project **Harness** for coding agents. It gives agents bounded scope, safer operations, verifiable evidence, and automated repository checks. Built for solo developers and engineering teams using **Antigravity**, **Claude Code**, and **Codex**. Zero runtime dependencies.
+Xyeena Rig combines modular **Agent Skills** with an opt-in project **Harness** for coding agents. It gives agents bounded scope, safer operations, verifiable evidence, and automated repository checks. Built for solo developers and engineering teams using **Antigravity**, **Claude Code**, **Codex**, **Gemini CLI**, and **Hermes**. Zero runtime dependencies.
 
 ```bash
-npx xyeena-agent@latest init
+# After the v0.3.0 npm release is published:
+npx --yes xyeena-agent@0.3.0 setup
 ```
 
 | Component | What it adds | Selection |
@@ -17,6 +18,58 @@ npx xyeena-agent@latest init
 Supported agent runtimes: **Antigravity**, **Claude Code**, and **Codex**. Project detection covers Node/Next.js, Python, static web, monorepos, and Git workflows.
 
 ---
+
+## Beginner setup (v0.3.0 release candidate)
+
+**Recommended command:** `npx --yes xyeena-agent@0.3.0 setup` once **v0.3.0 is published**. It launches a four-step wizard: select AI host(s) → skill preset (Essential / Balanced / Complete) → optional Harness → review file changes and confirm. Nothing is written before confirmation.
+
+For unattended Windows/CI setup, specify exactly what to install:
+
+```powershell
+npx --yes xyeena-agent@0.3.0 setup --runtime "hermes,gemini" --preset essential --dry-run
+npx --yes xyeena-agent@0.3.0 setup --runtime "hermes,gemini" --preset essential --yes
+```
+
+To update previously installed skills without losing custom edits:
+
+```powershell
+# Preview conflicts and proposed updates
+npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --update --dry-run
+
+# Explicitly back up conflicting originals before replacing them
+npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --update --yes
+```
+
+Without `--update`, Xyeena keeps custom files and installs only missing files. The interactive wizard offers both options after displaying conflicts; originals are backed up under `.xyeena/backups/` when replaced. Blind `--force` is intentionally not supported by beginner `setup`.
+
+Already using `init`? It remains supported. The beginner `setup` command is additive: it **preserves differing user-modified files by default**, or backs them up before replacement when the user explicitly chooses `--update`. Xyeena installs skill files only in the chosen project; it neither installs nor logs you into the AI host. The existing model call and in-session limitations are unchanged.
+
+**[Windows setup guide in Indonesian](docs/INSTALL-WINDOWS-PEMULA.md)** explains Node.js/npm, choosing Hermes/Gemini/Codex, installing, verifying skill inventory, and troubleshooting from zero.
+
+> Until v0.3.0 is actually published, npm `@latest` may still install an earlier version that lacks `setup`. The unmerged PR can be smoke-tested from its GitHub tarball separately; do not present the release candidate as already published.
+
+---
+
+## Recoverable installation: diff, selective upgrade, rollback, and host check
+
+Installer v0.3.0 also supports **reviewing a single conflicting file**, **updating only that conflict**, and a **guarded rollback journal** for new installations:
+
+```powershell
+# This checks local files only, does not call a model:
+npx --yes xyeena-agent@0.3.0 setup check --runtime antigravity
+# Preview differences against one packaged file:
+npx --yes xyeena-agent@0.3.0 setup diff --runtime antigravity --preset complete --harness full --file ".agents/skills/xyeena-orchestrate/SKILL.md"
+# Replace just that file; other custom files remain untouched:
+npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --replace-files ".agents/skills/xyeena-orchestrate/SKILL.md" --dry-run
+npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --replace-files ".agents/skills/xyeena-orchestrate/SKILL.md" --yes
+
+# For installations created with rollback journals:
+npx --yes xyeena-agent@0.3.0 setup backups
+npx --yes xyeena-agent@0.3.0 setup rollback --id BACKUP_ID --dry-run
+npx --yes xyeena-agent@0.3.0 setup rollback --id BACKUP_ID --yes
+```
+
+Older backup directories created before rollback journaling are listed but require **manual restore**; automatic rollback refuses them. Rollback also refuses when files have changed after installation, preserving the user's later edits. Rollback removes only files created by that specific setup run and restores backed-up originals, never deletes an entire skill directory. The host check reports filesystem inventory, not verified native IDE activation.
 
 ## Quick links
 
@@ -33,7 +86,6 @@ Supported agent runtimes: **Antigravity**, **Claude Code**, and **Codex**. Proje
 
 - **Xyeena Rig:** Portable Agent Skills + optional project Harness, published on npm as `xyeena-agent`.
 - **Xyeena Notch:** A separate Windows desktop companion application, maintained in its own repository (`rzqllh/xyeena-notch`).
-- **Xyn (The Lion Guardian):** The Xyeena mascot identity; not shipped in the Rig npm package.
 
 **Compatibility:** The package name `xyeena-agent`, CLI commands `xyeena` and `xyeena-agent`, skill IDs (`xyeena-*`), plugin IDs, `.xyeena/` paths, and configuration contracts remain unchanged.
 
@@ -94,6 +146,69 @@ npx xyeena-agent@latest init --components all --runtime all --skills all --guard
 | Installation inventory | `.xyeena/install.json` |
 
 ---
+
+## Installed-skill routing preview (development)
+
+Xyeena now includes opt-in, read-only discovery and routing for installed project and global Agent Skills, including third-party skills. These commands are available from a source checkout of this development branch (not yet the published npm release):
+
+```bash
+node bin/xyeena.mjs skills discover --runtime antigravity
+node bin/xyeena.mjs route --runtime antigravity --prompt "systematic debugging of a regression" --state DEBUG
+```
+
+Native Antigravity can automatically invoke relevant skills without manual slash commands. The routing CLI only **previews** routes and never invokes the model.
+
+An additional optional SDK bridge makes a **real one-shot read-only agent call** via the official Python Antigravity SDK; it is **not** connected to an already-running IDE conversation. This requires a separately installed SDK and API credentials, and can consume provider tokens:
+
+```sh
+node bin/xyeena.mjs sdk preview --goal "Review unit test failures"
+node bin/xyeena.mjs sdk run --goal "Review unit test failures" --yes
+# Optional: add --delegate for SDK-managed read-only subagents (extra provider usage)
+```
+
+The task runner library requires a real host adapter and independent evidence. The SDK bridge always returns `REVIEW_REQUIRED`, never automatically marks a model answer verified. Native IDE worker dispatch remains unvalidated. See [Intelligent skill routing](docs/INTELLIGENT-ROUTING.md).
+
+## Portable skill discovery: Gemini CLI and Hermes
+
+The same `xyeena-orchestrate` skill can now be installed explicitly for **Gemini CLI** and **Hermes** in addition to Antigravity, Codex and Claude. The modular registry scans actual skill files from each host; it never fabricates unavailable skills. In Hermes, untrusted project skills remain ineligible for routing.
+
+```bash
+node bin/xyeena.mjs skills matrix
+node bin/xyeena.mjs route --runtime hermes --prompt "investigate failing tests"
+node bin/xyeena.mjs init --components skills --runtime gemini,hermes --skills xyeena-orchestrate --yes
+```
+
+Historical `--runtime all` installs to the original three hosts only; `--runtime all-supported` opts into all five. The SDK execution bridge remains an independent, opt-in **Antigravity-only** path. Gemini CLI and Hermes currently use native skill loading by their respective hosts, not a validated programmatic worker-dispatch adapter. See [Runtime adapters](docs/RUNTIME-ADAPTERS.md) and [Intelligent routing](docs/INTELLIGENT-ROUTING.md).
+
+## Portable headless execution (experimental, opt-in)
+
+Gemini CLI and Hermes can be invoked with the same goal, with actual host-specific skill routing and an explicit model-call gate:
+
+```sh
+node bin/xyeena.mjs host preview --runtime hermes --goal "Review test failures"
+node bin/xyeena.mjs host run --runtime hermes --goal "Review test failures" --yes
+node bin/xyeena.mjs host run --runtime gemini --goal "Investigate a regression" --yes
+```
+
+Only a host with a detected, eligible `xyeena-orchestrate` can run. Hermes uses its `safe` toolset and preloads selected skill names. Gemini CLI uses headless JSON with `--approval-mode plan` (subject to that CLI's native policy support). The CLI never passes `--yolo`. Outputs remain `REVIEW_REQUIRED`; users must configure and authenticate the actual AI runtime separately. **These calls start fresh CLI turns; they do not inject into an existing IDE/Telegram session.**
+
+## Unified Orchestrator v0.3.0 (development)
+
+One command chooses only skills **actually detected** for the requested host, and one explicit command starts a restricted agent call:
+
+```sh
+node bin/xyeena.mjs orchestrate preview --runtime codex --goal "Review the failing tests"
+node bin/xyeena.mjs orchestrate run --runtime codex --goal "Review the failing tests" --yes --record
+# Supported hosts: antigravity, codex, claude, gemini, hermes.
+```
+
+The orchestrator automatically infers a conservative workflow state from Indonesian/English task language with zero model tokens; `--state REVIEW|DEBUG|...` overrides it explicitly. The `/xyeena-orchestrate` installed skill remains the conversational entry point where the host recognizes that command. Inside native host conversations, Xyeena asks the agent to discover and activate installed skills using the host's own interface. The CLI command starts a **new one-shot session**, not the currently open IDE or Telegram conversation.
+
+All `orchestrate run` paths are read-only and ask for explicit model-call consent. They recheck skill availability immediately before dispatch and report `REVIEW_REQUIRED` for model summaries. Hermes project skills need native trust. Codex uses a read-only sandbox; Claude uses `--bare --add-dir . --permission-mode plan`; Gemini CLI uses Plan mode; Antigravity uses the optional Python SDK. None of this silently enables workspace writes or publishes artifacts. Provider credentials and real host acceptance are separate requirements.
+
+Optional `--record` creates a local Xyeena run journal that Guided Resume can discover later; it records the supplied goal, selected skill names, status and token count, not the model's response. No work is resumed automatically.
+
+A bounded in-process `SkillInventoryCache` is available for long-running integrations. It invalidates on skill-directory, metadata and Hermes config changes, with no watcher process or persistent cache files.
 
 ## Antigravity Guided hooks
 

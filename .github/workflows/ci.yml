@@ -38,6 +38,39 @@ jobs:
             [ -d "$d" ] && skills-ref validate "$d"
           done
 
+
+  sdk-worker-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile standalone Python SDK worker
+        run: python -m py_compile bridges/antigravity-sdk-worker.py
+      - name: Reject unsafe SDK tasks without invoking the SDK
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          import sys
+          payload = {
+              "cwd": ".",
+              "task": {"id": "test", "title": "Reject unsafe task",
+                       "scope": {"readOnly": False, "operationClass": "safe"}},
+              "skillPaths": [],
+          }
+          proc = subprocess.run(
+              [sys.executable, "bridges/antigravity-sdk-worker.py"],
+              input=json.dumps(payload) + "\n", text=True, capture_output=True, timeout=5
+          )
+          assert proc.returncode != 0, "unsafe task should be rejected"
+          out = json.loads(proc.stdout)
+          assert out["ok"] is False
+          assert "read-only" in out["error"]
+          assert not proc.stderr
+          PY
+
   npx-github-smoke:
     if: github.event_name == 'pull_request'
     runs-on: windows-latest
@@ -67,3 +100,33 @@ jobs:
           npx --yes --package $package xyeena guided uninstall --dir . --yes
           if ($LASTEXITCODE -ne 0) { throw 'Guided uninstall failed' }
           if (Test-Path '.agents/hooks.json') { throw 'Uninstall left the managed config behind' }
+          npx --yes --package $package xyeena setup --runtime "hermes,gemini" --preset essential --dry-run
+          if ($LASTEXITCODE -ne 0) { throw 'Beginner setup preview failed' }
+          if (Test-Path '.hermes/skills/xyeena-orchestrate/SKILL.md') { throw 'Setup preview wrote files' }
+          npx --yes --package $package xyeena setup --runtime "hermes,gemini" --preset essential --yes
+          if ($LASTEXITCODE -ne 0) { throw 'Beginner setup failed' }
+          if (-not (Test-Path '.hermes/skills/xyeena-orchestrate/SKILL.md')) { throw 'Hermes orchestrator missing' }
+          if (-not (Test-Path '.gemini/skills/xyeena-orchestrate/SKILL.md')) { throw 'Gemini orchestrator missing' }
+          if (Test-Path 'AGENTS.md') { throw 'Beginner setup modified root AGENTS.md' }
+          $target = '.hermes/skills/xyeena-orchestrate/SKILL.md'
+          Add-Content -Path $target -Value 'CUSTOM-XYEENA-UPGRADE-SMOKE'
+          npx --yes --package $package xyeena setup --runtime hermes --preset essential --update --dry-run
+          if ($LASTEXITCODE -ne 0) { throw 'Beginner update preview failed' }
+          if (-not (Select-String -Path $target -Pattern 'CUSTOM-XYEENA-UPGRADE-SMOKE' -Quiet)) { throw 'Dry-run replaced a custom skill' }
+          npx --yes --package $package xyeena setup --runtime hermes --preset essential --update --yes
+          if ($LASTEXITCODE -ne 0) { throw 'Beginner update failed' }
+          if (Select-String -Path $target -Pattern 'CUSTOM-XYEENA-UPGRADE-SMOKE' -Quiet) { throw 'Upgrade did not replace old skill' }
+          $copies = @(Get-ChildItem -Path '.xyeena/backups' -Recurse -Filter 'SKILL.md' -File)
+          if (-not ($copies | Where-Object { Select-String -Path $_.FullName -Pattern 'CUSTOM-XYEENA-UPGRADE-SMOKE' -Quiet })) {
+            throw 'Upgrade did not back up custom skill'
+          }
+          $backups = @(npx --yes --package $package xyeena setup backups | ConvertFrom-Json)
+          if ($LASTEXITCODE -ne 0 -or -not $backups) { throw 'Could not list rollback backups' }
+          $id = $backups[0].id
+          $rollbackPreview = npx --yes --package $package xyeena setup rollback --id $id --dry-run | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or -not $rollbackPreview.available) { throw 'Rollback preview failed' }
+          npx --yes --package $package xyeena setup rollback --id $id --yes
+          if ($LASTEXITCODE -ne 0) { throw 'Rollback execution failed' }
+          if (-not (Select-String -Path $target -Pattern 'CUSTOM-XYEENA-UPGRADE-SMOKE' -Quiet)) {
+            throw 'Rollback did not restore customized SKILL.md'
+          }

@@ -9,6 +9,35 @@ npx xyeena-agent@latest version
 
 Use `npx xyeena-agent@latest <command>` for the subcommands listed below. Command names remain compatible.
 
+## Beginner installation (v0.3.0)
+
+| Command | Meaning |
+| --- | --- |
+| `setup` | Interactive beginner wizard with conflict keep/backup choice and final approval |
+| `setup --runtime hermes --preset essential --dry-run` | Read-only preview with no model call or project edits |
+| `setup --runtime hermes,gemini --preset balanced --harness essential --yes` | Explicit safe local installation |
+| `setup --runtime all-supported --preset complete --harness full --dry-run` | Inspect broad installation before consent |
+
+Existing installations: `setup --update --dry-run` previews files that differ from the package; `setup --update --yes` backs up originals to `.xyeena/backups/` and updates them. Default setup **keeps** modified files and adds only missing ones. The beginner command deliberately rejects `--force`, which does not preserve backups.
+
+Presets: `essential` (orchestrator + required deps), `balanced` (orchestrator/planning/debugging/review/testing/verification), `complete` (all packaged skills). Harness: `none`, `essential` (three groups), `full` (11 groups). `setup` refuses overwrites of modified skill files and does not support forcing a beginner installation.
+
+**Detailed Windows guide:** [INSTALL-WINDOWS-PEMULA.md](INSTALL-WINDOWS-PEMULA.md).
+
+## Conflict inspection and post-install health (v0.3.0)
+
+| Command | Effect |
+| --- | --- |
+| `setup diff --runtime HOST --preset PRESET --file PATH` | Bounded local text diff for one listed conflicting file; read-only |
+| `setup --runtime HOST --preset PRESET --replace-files PATH[,PATH] --dry-run` | Preview specifically selected conflict updates |
+| `setup --runtime HOST --preset PRESET --replace-files PATH[,PATH] --yes` | Back up then replace only selected conflicts |
+| `setup backups` | List recent backup IDs; old journal-less backups marked as manual recovery |
+| `setup rollback --id ID --dry-run` | Integrity-check preview without modifying files |
+| `setup rollback --id ID --yes` | Explicit safe restore only if no subsequent file edits occurred |
+| `setup check --runtime HOST` | Report local skill eligibility and host detection clues; not live activation |
+
+Rollback journaling is available for *new* installations through the updated installer. Backups created by older candidates without a journal are not automatically restored; recovery remains manual. The rollback command does not remove entire skill directories or touch unrelated third-party skills. All commands respect project path and symlink safeguards.
+
 ## Installation
 
 | Command | Behavior |

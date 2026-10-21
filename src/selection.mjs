@@ -76,12 +76,22 @@ export function parseChoice(raw, options, { allowAll = true } = {}) {
   return result;
 }
 
+const LEGACY_RUNTIMES = ['antigravity','claude','codex'];
+const EXTENDED_RUNTIMES = [...LEGACY_RUNTIMES, 'gemini', 'hermes'];
+/** Preserve historical --runtime all (three runtimes); require explicit opt-in for new hosts. */
+export function selectSkillRuntimes(raw) {
+  const value = String(raw || '').trim().toLowerCase();
+  if (value === 'all') return [...LEGACY_RUNTIMES];
+  if (value === 'all-supported') return [...EXTENDED_RUNTIMES];
+  return parseChoice(raw, EXTENDED_RUNTIMES, { allowAll: false });
+}
+
 export function explicitSelection(flags) {
   const components = flags.components || flags.component;
   if (!components) throw new Error('Non-interactive install requires --components skills|harness|all. Nothing was installed.');
   const selected = parseChoice(components, ['skills', 'harness']);
   const wantsSkills = selected.includes('skills');
-  const runtimes = wantsSkills ? parseChoice(flags.runtime || '', ['antigravity', 'claude', 'codex']) : [];
+  const runtimes = wantsSkills ? selectSkillRuntimes(flags.runtime || '') : [];
   const skills = wantsSkills ? parseChoice(flags.skills || '', availableSkills()) : [];
   const guards = selected.includes('harness') ? parseChoice(flags.guards || '', availableHarnessGroups()) : [];
   return { components: selected, runtimes, skills, guards };
@@ -100,10 +110,10 @@ export async function interactiveSelection({ input = process.stdin, output = pro
     if (!components) throw new Error('Invalid component selection. Nothing was installed.');
     let runtimes = [], skills = [], guards = [];
     if (components.includes('skills')) {
-      const runtimesAvailable = ['antigravity','claude','codex'];
-      output.write('\nAgent runtimes (comma-separated numbers or "all"):\n');
+      const runtimesAvailable = [...EXTENDED_RUNTIMES];
+      output.write('\nAgent runtimes (comma-separated numbers; all = original 3, all-supported = all 5):\n');
       runtimesAvailable.forEach((v,i) => output.write('  ' + (i+1) + '. ' + v + '\n'));
-      runtimes = parseChoice(await rl.question('Runtime(s): '),runtimesAvailable);
+      runtimes = selectSkillRuntimes(await rl.question('Runtime(s): '));
       const names = availableSkills();
       output.write('\nSkills (comma-separated numbers/names or "all"):\n');
       names.forEach((v,i) => output.write('  ' + (i+1) + '. ' + v + (skillDescription(v)?': '+skillDescription(v):'') + '\n'));

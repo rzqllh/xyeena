@@ -24,6 +24,18 @@ export const RUNTIMES = Object.freeze({
     marketplaceManifest: '.agents/plugins/marketplace.json',
     features: ['skills', 'agents', 'plugins'],
   }),
+  gemini: Object.freeze({
+    id: 'gemini',
+    skillDir: '.gemini/skills',
+    agentDir: null,
+    features: ['skills'],
+  }),
+  hermes: Object.freeze({
+    id: 'hermes',
+    skillDir: '.hermes/skills',
+    agentDir: null,
+    features: ['skills'],
+  }),
 });
 
 export function runtimeDescriptor(name) {
