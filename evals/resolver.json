@@ -99,6 +99,6 @@
       "prompt": "Verify all test suites and run security checks before releasing to main",
       "state": "VERIFY"
     },
-    "expectedPrimary": "xyeena-verify"
+    "expectedPrimary": "xyeena-security"
   }
 ]
