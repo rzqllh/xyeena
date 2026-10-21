@@ -67,8 +67,8 @@ When a previous `SKILL.md` differs from the release package, the new `setup` wiz
 Non-interactive usage:
 
 ```powershell
-npx --yes xyeena-agent@0.4.0 setup --runtime antigravity --preset complete --harness full --update --dry-run
-npx --yes xyeena-agent@0.4.0 setup --runtime antigravity --preset complete --harness full --update --yes
+npx --yes xyeena-agent@0.4.1 setup --runtime antigravity --preset complete --harness full --update --dry-run
+npx --yes xyeena-agent@0.4.1 setup --runtime antigravity --preset complete --harness full --update --yes
 ```
 
 Without `--update`, customized files remain unchanged. No third-party skills are deleted. `--force` is deliberately rejected by beginner setup; use `--update` for recoverable replacements.
