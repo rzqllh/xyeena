@@ -84,5 +84,21 @@
       ]
     },
     "expectedPrimary": "xyeena-writing"
+  },
+  {
+    "name": "architecture refactor",
+    "input": {
+      "prompt": "Refactor internal database query logic in repository",
+      "state": "TRIAGE"
+    },
+    "expectedPrimary": "xyeena-architecture"
+  },
+  {
+    "name": "verify suites not UI",
+    "input": {
+      "prompt": "Verify all test suites and run security checks before releasing to main",
+      "state": "VERIFY"
+    },
+    "expectedPrimary": "xyeena-security"
   }
 ]

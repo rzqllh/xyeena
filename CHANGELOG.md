@@ -1,4 +1,11 @@
-## [0.4.0] - Global and symlink setup (release candidate)
+## [0.4.1] - Installer status and routing corrections
+
+- Global copy installation now verifies matching packaged skills for each selected AI host separately; reports real paths and counts without claiming native AI activation.
+- Beginner wizard installs Global skills with Copy automatically; workspace setup offers Copy/Symlink. Explicit global symlink remains available for advanced CLI usage.
+- Router no longer treats `suites` as the `ui` signal or `author` as `auth`; architecture refactoring prompts are recognized.
+- Regression tests added for three-host global installation, partial/conflicting files, wizard simplification, and routing collisions.
+
+## [0.4.0] - Global and symlink setup
 
 - One-command beginner installation: location (global/workspace), host selection, preset, copy or symlink, final preview/consent.
 - Global user skills installed into native per-host directories, without writing into the current workspace.

@@ -35,6 +35,14 @@ test('global copy installs into selected user home without touching workspace',t
   const result=applySetup({...opts,yes:true,expectedFingerprint:preview.fingerprint});
   assert.equal(result.installed,true);
   assert.equal(result.mode,'copy');
+  assert.deepEqual(result.diagnostics.map(x=>x.host),['gemini','codex']);
+  for(const host of result.diagnostics){
+    assert.equal(host.filesystemVerified,true);
+    assert.equal(host.availability,'detected');
+    assert.equal(host.verifiedSkills,host.expectedSkills);
+    assert.equal(host.hostActivationVerified,false);
+    assert.ok(host.skillDirectory.startsWith(fs.realpathSync(home)));
+  }
   assert.ok(fs.existsSync(path.join(home,'.gemini/skills/xyeena-orchestrate/SKILL.md')));
   assert.ok(fs.existsSync(path.join(home,'.agents/skills/xyeena-orchestrate/SKILL.md')));
   assert.deepEqual(fs.readdirSync(cwd),[]);
@@ -82,6 +90,8 @@ test('global copy preserves unrelated existing skill by default and backs it up 
   assert.ok(plan.conflicts.includes(skill));
   const keep=applySetup({...opts,yes:true});
   assert.ok(keep.conflictsPreserved.includes(skill));
+  assert.equal(keep.diagnostics.find(x=>x.host==='gemini').filesystemVerified,false);
+  assert.equal(keep.diagnostics.find(x=>x.host==='gemini').availability,'partial');
   assert.match(fs.readFileSync(path.join(skill,'SKILL.md'),'utf8'),/CUSTOM/);
   const repl=applySetup({...opts,update:true,yes:true});
   assert.ok(repl.backupDirectory);
@@ -101,15 +111,31 @@ test('foreign symlinks and modified immutable store are refused',t=>{
   assert.throws(()=>applySetup({...opts,yes:true,update:true}),/Unsafe global\/linked paths/);
   assert.equal(fs.lstatSync(malicious).isSymbolicLink(),true);
 });
-test('beginner wizard offers global scope and symlink with no advanced flags',async t=>{
+test('beginner wizard defaults global to copy and reports actual per-host verification',async t=>{
   const {cwd,home}=sandbox(t);
-  const answers=['1','3','1','2','y'];let idx=0;const out=[];
+  const answers=['1','1,3,4','1','y'];let idx=0;const out=[];
   const result=await guidedSetup({cwd,home,selectLocation:true,ask:async()=>answers[idx++],output:{write:v=>out.push(v)}});
   assert.equal(result.installed,true);
   assert.equal(result.scope,'global');
-  assert.equal(result.mode,'symlink');
+  assert.equal(result.mode,'copy');
+  assert.deepEqual(result.diagnostics.map(x=>x.host),['hermes','antigravity','codex']);
+  assert.ok(result.diagnostics.every(x=>x.filesystemVerified && x.verifiedSkills===x.expectedSkills));
+  assert.ok(result.diagnostics.every(x=>!x.hostActivationVerified));
   assert.deepEqual(fs.readdirSync(cwd),[]);
   assert.match(out.join(''),/Global/);
+  assert.match(out.join(''),/packaged skills verified on disk/);
+  assert.doesNotMatch(out.join(''),/filesystem-not-verified/);
+  assert.doesNotMatch(out.join(''),/Installation method:/);
+});
+test('beginner wizard offers symlink for workspace only',async t=>{
+  const {cwd,home}=sandbox(t);
+  const answers=['2','3','1','2','1','y'];let idx=0;const out=[];
+  const result=await guidedSetup({cwd,home,selectLocation:true,ask:async()=>answers[idx++],output:{write:v=>out.push(v)}});
+  assert.equal(result.installed,true);
+  assert.equal(result.scope,'workspace');
+  assert.equal(result.mode,'symlink');
+  assert.equal(fs.lstatSync(path.join(cwd,'.agents/skills/xyeena-orchestrate')).isSymbolicLink(),true);
+  assert.match(out.join(''),/Installation method:/);
   assert.match(out.join(''),/Symlink/);
 });
 test('global Harness must stay project-scoped instead of silently faking host guards',t=>{
@@ -134,7 +160,7 @@ test('upgrades an earlier Xyeena-managed global junction without replacing forei
   assert.equal(fs.realpathSync(destination),fs.realpathSync(old));
   const updated=applySetup({...opts,yes:true,update:true});
   assert.notEqual(fs.realpathSync(destination),fs.realpathSync(old));
-  assert.ok(fs.realpathSync(destination).includes('v0.4.0'));
+  assert.ok(fs.realpathSync(destination).includes('v0.4.1'));
   assert.ok(updated.backupDirectory);
   const backupNames=fs.readdirSync(updated.backupDirectory).filter(x=>x.endsWith('.link-target'));
   assert.ok(backupNames.length>0);

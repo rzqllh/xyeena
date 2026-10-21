@@ -155,6 +155,26 @@ export function previewPortableSetup(options={}){
     noModelCalls:true,next:errors.length?'Cannot replace foreign links or modified immutable store.':
       'Review the absolute paths and confirm before installing.'};
 }
+/** Read installed package bytes directly from each chosen host's target location.
+ *  This verifies filesystem copies/junctions only, never native AI activation. */
+export function inspectPortableInstallation(options={}){
+  const plan=build(options);
+  return plan.runtimes.map(host=>{
+    const targets=plan.records.filter(x=>x.runtime===host);
+    const matching=targets.filter(x=>x.status==='unchanged');
+    const missing=targets.filter(x=>x.status!=='unchanged')
+      .map(x=>({skill:x.skill,path:x.dst,status:x.status}));
+    const directory=targets.length ? path.dirname(targets[0].dst) : null;
+    return {host,scope:plan.scope,mode:plan.mode,skillDirectory:directory,
+      expectedSkills:targets.length,verifiedSkills:matching.length,
+      filesystemVerified:targets.length>0&&targets.length===matching.length,
+      availability:matching.length===targets.length&&targets.length?'detected':
+        matching.length?'partial':'not-found',
+      missing,hostActivationVerified:false,
+      note:'Matching skill files verified at the host target; reload the AI app and check native skill discovery separately.'};
+  });
+}
+
 export function applyPortableSetup(options={}){
   if(options.yes!==true)throw new Error('Explicit --yes or wizard confirmation required');
   const p=build(options),update=options.update===true;
@@ -218,7 +238,9 @@ export function applyPortableSetup(options={}){
     }
     throw error;
   }
+  const diagnostics=inspectPortableInstallation(options);
   return {installed:true,scope:p.scope,mode:p.mode,runtimes:p.runtimes,
+    diagnostics,
     linked:written.filter(x=>x.kind==='link').map(x=>x.dst),
     written:written.map(x=>x.dst),
     preserved:p.records.filter(x=>x.status==='conflict'&&!update).map(x=>x.dst),

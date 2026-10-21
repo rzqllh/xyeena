@@ -20,7 +20,16 @@ function pathMatch(pattern,p){
   if(pattern.endsWith('/**')) return p.replaceAll('\\','/').startsWith(pattern.slice(0,-3));
   return p.replaceAll('\\','/').includes(pattern.replaceAll('**',''));
 }
-function phraseMatch(text, phrase){ return text.includes(normalizeText(phrase)); }
+// Match complete phrases rather than substrings inside unrelated words. For
+// example, "suites" must not trigger the "ui" interface capability, and
+// "author" must not trigger the "auth" security signal.
+function phraseMatch(text, phrase){
+  const normalized = normalizeText(phrase);
+  if (!normalized) return false;
+  const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp('(?<![\\p{L}\\p{N}_])' + escaped +
+    '(?![\\p{L}\\p{N}_])', 'u').test(text);
+}
 
 export function resolveCapabilities(registry,{prompt='',state='TRIAGE',paths=[],maxSupporting=2}={}){
   const text=normalizeText(prompt); const scored=[];
@@ -35,7 +44,10 @@ export function resolveCapabilities(registry,{prompt='',state='TRIAGE',paths=[],
     }
     for(const patt of a.paths||[]) if(paths.some(p=>pathMatch(patt,p))){score+=12; reasons.push(`path:${patt}`)}
     if((a.exclude||[]).some(x=>phraseMatch(text,x))){score=-999;reasons.push('excluded')}
-    if(score>0 && stateEligible){score+=15; reasons.unshift(`state:${state}`)}
+    if(score>0 && stateEligible){
+      score+=15;
+      reasons.unshift(`state:${state}`);
+    }
     if(score>0) scored.push({name,score,reasons,capability:cap});
   }
   scored.sort((a,b)=>b.score-a.score || a.name.localeCompare(b.name));
