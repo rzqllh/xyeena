@@ -146,13 +146,15 @@ One command chooses only skills **actually detected** for the requested host, an
 
 ```sh
 node bin/xyeena.mjs orchestrate preview --runtime codex --goal "Review the failing tests" --state REVIEW
-node bin/xyeena.mjs orchestrate run --runtime codex --goal "Review the failing tests" --state REVIEW --yes
+node bin/xyeena.mjs orchestrate run --runtime codex --goal "Review the failing tests" --state REVIEW --yes --record
 # Supported hosts: antigravity, codex, claude, gemini, hermes.
 ```
 
 The `/xyeena-orchestrate` installed skill remains the conversational entry point where the host recognizes that command. Inside native host conversations, Xyeena asks the agent to discover and activate installed skills using the host's own interface. The CLI command starts a **new one-shot session**, not the currently open IDE or Telegram conversation.
 
 All `orchestrate run` paths are read-only and ask for explicit model-call consent. They recheck skill availability immediately before dispatch and report `REVIEW_REQUIRED` for model summaries. Hermes project skills need native trust. Codex uses a read-only sandbox; Claude uses `--bare --add-dir . --permission-mode plan`; Gemini CLI uses Plan mode; Antigravity uses the optional Python SDK. None of this silently enables workspace writes or publishes artifacts. Provider credentials and real host acceptance are separate requirements.
+
+Optional `--record` creates a local Xyeena run journal that Guided Resume can discover later; it records the supplied goal, selected skill names, status and token count, not the model's response. No work is resumed automatically.
 
 A bounded in-process `SkillInventoryCache` is available for long-running integrations. It invalidates on skill-directory, metadata and Hermes config changes, with no watcher process or persistent cache files.
 
