@@ -70,3 +70,26 @@ When installed as an npm package use `npx xyeena-agent sdk ...`. Use `--dir PATH
 - This does **not** control an already-running Antigravity IDE session, and it cannot replace native IDE-level permissions. Separate native IDE tool-dispatch support remains pending.
 
 Security boundaries: no `--force` installer, no implicit SDK invocation, no automatic permissions, no external/destructive tasks, no background daemon, bounded input/output/timeout, no command-shell execution, and no user secrets in the JSON invocation.
+
+## Portable host adapters (Gemini CLI, Hermes, Codex, Antigravity, Claude)
+
+Skill discovery is host-specific. The core never assumes a skill installed in one environment exists in another. The `skill-hosts.mjs` registry declares paths, precedence and bounded scanning rules; `workspace-skills.mjs` discovers actual files and routes only eligible candidates. No scan reads `scripts/` or executes skill instructions.
+
+```sh
+node bin/xyeena.mjs skills matrix --local-only
+node bin/xyeena.mjs skills discover --runtime hermes
+node bin/xyeena.mjs route --runtime gemini --prompt "investigate regression" --state DEBUG
+# Optional manual install in checkout; existing Harness is untouched.
+node bin/xyeena.mjs init --components skills --runtime gemini,hermes --skills xyeena-orchestrate --yes
+```
+
+Supported scopes and precedence:
+- Antigravity IDE: project `.agents/skills`, legacy `.agent/skills`; user `~/.gemini/config/skills`, legacy `~/.gemini/antigravity/skills`.
+- Codex: project `.agents/skills`; user `~/.agents/skills`.
+- Gemini CLI: project `.agents/skills`, `.gemini/skills`; user `~/.agents/skills`, `~/.gemini/skills`. Shared alias wins at each level.
+- Claude Code: project `.claude/skills`; user `~/.claude/skills`.
+- Hermes: project `.hermes/skills` and `.agents/skills` in Git repository; user `~/.hermes/skills`; optionally `skills.external_dirs` from Hermes config. Category-nested skills are supported. Project trust is mandatory and not granted by discovery.
+
+For Hermes, Xyeena reads a conservative subset of the local `skills:` settings from `~/.hermes/config.yaml` (external_dirs, trusted_project_dirs, project_discovery). A detected untrusted skill returns `availability: requires-host-trust` and is excluded from automatic routing. For stronger guarantees, verify Hermes' effective skills with `hermes skills list`. Config macros or unsupported YAML styles are never interpreted as executable commands. Native runtime disablement, permissions and skill quality/security scanners must still be checked by the host: `detected` means a valid local file exists, not that execution or activation succeeded.
+
+Use `xyeena skills matrix` for per-host inventory; `--runtime all` on discovery is a deduplicated, cross-host view, **not** a claim that every runtime can load the result. For routing, select exactly one host. No automatic installation, global skill mutation, shell invocation, permission bypass or publishing occurs.
