@@ -4,6 +4,7 @@ import { createInterface } from 'node:readline/promises';
 import { availableSkills, parseChoice, selectSkillRuntimes, skillDependencyClosure } from './selection.mjs';
 import { setupFilePlan, installStagedSetup, setupFileDiff } from './setup-upgrade.mjs';
 import { discoverWorkspaceSkills } from './workspace-skills.mjs';
+import { inspectSetupHosts } from './setup-health.mjs';
 
 const HOSTS = Object.freeze([
   { id: 'hermes', label: 'Hermes Agent', folder: '.hermes/skills' },
@@ -141,12 +142,15 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
   explain(output, 'Project: ' + root);
   explain(output, 'This only copies the skills you select into THIS project.');
   explain(output, 'It will not modify your AI app, passwords, global folders, Git hooks or root AGENTS.md.');
-  const hints = setupRuntimeHints(root);
+  const hints = inspectSetupHosts({cwd:root});
   explain(output, '\nSTEP 1/4: Which AI tools will use Xyeena?');
   for (let i = 0; i < HOSTS.length; i++) {
     const h = HOSTS[i];
-    explain(output, '  ' + (i+1) + '. ' + h.label +
-      (hints.includes(h.id) ? '  [folder detected; confirm yourself]' : ''));
+    const detected=hints.find(x=>x.host===h.id);
+    const suffix=detected?.hostCommandAvailable ? '  [CLI found on PATH; confirm yourself]' :
+      detected?.level==='shared-folder-only' ? '  [shared .agents folder; host NOT confirmed]' :
+      detected?.level==='project-markers-only' ? '  [project files found; host NOT confirmed]' : '';
+    explain(output, '  ' + (i+1) + '. ' + h.label + suffix);
   }
   explain(output, 'You can select multiple, e.g. 1,2. Antigravity and Codex share .agents/skills.');
   const chosen = chosenHosts(await ask('AI tool number(s), e.g. 1,2: '));
@@ -213,6 +217,7 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
     explain(output, '  ' + d.host + ': ' + d.availability + '. ' + d.note);
   explain(output, 'Next: reopen your AI app, then ask it to use xyeena-orchestrate.');
   explain(output, 'To check installed skills: npx xyeena-agent skills matrix --local-only');
+  explain(output, 'To check host detection without running the model: npx xyeena-agent setup check --runtime '+result.runtimes[0]);
   explain(output, 'To preview routing without tokens: npx xyeena-agent orchestrate preview --runtime ' +
     result.runtimes[0] + ' --goal "review project"');
   explain(output, 'No API keys, host account permissions, or model execution were changed.');
