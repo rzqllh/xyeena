@@ -133,3 +133,9 @@ The Hermes inventory reader honors `HERMES_HOME`, which may select a named Herme
 On Windows, native `.exe` programs run directly; existing npm `.cmd` wrappers are found in PATH and launched through guarded `cmd.exe /d /s /c` arguments. Only fixed CLI flags and validated skill identifiers are included in the command string. The user's task text goes through stdin. The Windows `.cmd` launch path has a real GitHub Actions fixture test; availability, authentication and behavior of a specific installed Gemini/Hermes version still require local acceptance.
 
 For safety, `host run` never invokes with `--yolo`, `--skip-trust`, `auto_edit`, or default Hermes terminal/file-write toolsets. A successful native CLI response is still an unverified result; inspect worktree state, tool permissions and host logs before relying on it for consequential operations.
+
+## Recovery and approval boundary
+
+`xyeena orchestrate run ... --yes --record` explicitly creates an append-only run journal under `.xyeena/runs/`. The journal stores the user's goal, workflow/task status, selected skill identifiers and reported token count. It does **not** persist the model response, stderr, credentials or host failure text. Failed runs enter DEBUG; successful model output enters VERIFY/REVIEW_REQUIRED. The Guided Resume mechanism can suggest this run later, but it still requires user confirmation to bind/resume. The path is checked for linked directories before journaling.
+
+This recording is **opt-in** because the user goal may contain private information. The `--record` flag does not grant write permissions to a model, install hooks, or enable an unattended background agent. Without it, headless orchestration leaves no Xyeena run ledger. The model provider and host may have their own independent session/history retention policies.
