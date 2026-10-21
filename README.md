@@ -111,6 +111,7 @@ An additional optional SDK bridge makes a **real one-shot read-only agent call**
 ```sh
 node bin/xyeena.mjs sdk preview --goal "Review unit test failures"
 node bin/xyeena.mjs sdk run --goal "Review unit test failures" --yes
+# Optional: add --delegate for SDK-managed read-only subagents (extra provider usage)
 ```
 
 The task runner library requires a real host adapter and independent evidence. The SDK bridge always returns `REVIEW_REQUIRED`, never automatically marks a model answer verified. Native IDE worker dispatch remains unvalidated. See [Intelligent skill routing](docs/INTELLIGENT-ROUTING.md).
