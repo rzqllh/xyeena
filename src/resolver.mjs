@@ -20,7 +20,16 @@ function pathMatch(pattern,p){
   if(pattern.endsWith('/**')) return p.replaceAll('\\','/').startsWith(pattern.slice(0,-3));
   return p.replaceAll('\\','/').includes(pattern.replaceAll('**',''));
 }
-function phraseMatch(text, phrase){ return text.includes(normalizeText(phrase)); }
+// Match complete phrases rather than substrings inside unrelated words. For
+// example, "suites" must not trigger the "ui" interface capability, and
+// "author" must not trigger the "auth" security signal.
+function phraseMatch(text, phrase){
+  const normalized = normalizeText(phrase);
+  if (!normalized) return false;
+  const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\function phraseMatch(text, phrase){ return text.includes(normalizeText(phrase)); }');
+  return new RegExp('(?<![\\p{L}\\p{N}_])' + escaped +
+    '(?![\\p{L}\\p{N}_])', 'u').test(text);
+}
 
 export function resolveCapabilities(registry,{prompt='',state='TRIAGE',paths=[],maxSupporting=2}={}){
   const text=normalizeText(prompt); const scored=[];
