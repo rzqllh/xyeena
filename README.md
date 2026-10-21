@@ -104,7 +104,16 @@ node bin/xyeena.mjs skills discover --runtime antigravity
 node bin/xyeena.mjs route --runtime antigravity --prompt "systematic debugging of a regression" --state DEBUG
 ```
 
-Native Antigravity can automatically invoke relevant skills without manual slash commands. The new CLI only **previews** routes; it does not run tools or subagents. The task runner library requires an actual host adapter and task-scoped authorization, and does not ship a validated native Antigravity worker adapter. See [Intelligent skill routing](docs/INTELLIGENT-ROUTING.md).
+Native Antigravity can automatically invoke relevant skills without manual slash commands. The routing CLI only **previews** routes and never invokes the model.
+
+An additional optional SDK bridge makes a **real one-shot read-only agent call** via the official Python Antigravity SDK; it is **not** connected to an already-running IDE conversation. This requires a separately installed SDK and API credentials, and can consume provider tokens:
+
+```sh
+node bin/xyeena.mjs sdk preview --goal "Review unit test failures"
+node bin/xyeena.mjs sdk run --goal "Review unit test failures" --yes
+```
+
+The task runner library requires a real host adapter and independent evidence. The SDK bridge always returns `REVIEW_REQUIRED`, never automatically marks a model answer verified. Native IDE worker dispatch remains unvalidated. See [Intelligent skill routing](docs/INTELLIGENT-ROUTING.md).
 
 ## Antigravity Guided hooks
 
