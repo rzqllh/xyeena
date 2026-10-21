@@ -76,7 +76,7 @@ export function discoverWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigr
   const found = new Map(), seenPaths = new Set();
   const visitSkill = (dir, entry, loc) => {
     if(entry.name.startsWith('.') ||
-      !(entry.isDirectory() || (entry.isSymbolicLink() && managedSkillLink(dir,entry.name,home))))return false;
+      !((entry.isDirectory()&&!entry.isSymbolicLink()) || (entry.isSymbolicLink() && managedSkillLink(dir,entry.name,home))))return false;
     const skillPath = path.join(dir, entry.name, 'SKILL.md');
     const metadata = readMetadata(skillPath, entry.name);
     if (!metadata) return false;
