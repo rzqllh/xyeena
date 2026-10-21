@@ -9,6 +9,7 @@ export { message, MESSAGE_TYPES } from './protocol.mjs';
 export { RUNTIMES, runtimeDescriptor, runtimeTargets } from './runtime.mjs';
 export { TASK_STATES, createTask, validateTaskGraph, readyTasks, taskTransition, supersedeTask } from './task-graph.mjs';
 export { AgentBroker } from './broker.mjs';
-export { discoverWorkspaceSkills, routeWorkspaceSkills } from './workspace-skills.mjs';
+export { discoverWorkspaceSkills, routeWorkspaceSkills, skillAvailabilityMatrix } from './workspace-skills.mjs';
+export { SKILL_HOSTS, supportedSkillHosts, skillLocations, hermesSkillSettings } from './skill-hosts.mjs';
 export { runTaskGraph } from './task-runner.mjs';
 export { createAntigravitySdkAdapter, previewAntigravitySdkTask } from './antigravity-sdk-adapter.mjs';
