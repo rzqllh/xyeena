@@ -26,8 +26,8 @@ Supported agent runtimes: **Antigravity**, **Claude Code**, and **Codex**. Proje
 For unattended Windows/CI setup, specify exactly what to install:
 
 ```powershell
-npx --yes xyeena-agent@0.3.0 setup --runtime hermes,gemini --preset essential --dry-run
-npx --yes xyeena-agent@0.3.0 setup --runtime hermes,gemini --preset essential --yes
+npx --yes xyeena-agent@0.3.0 setup --runtime "hermes,gemini" --preset essential --dry-run
+npx --yes xyeena-agent@0.3.0 setup --runtime "hermes,gemini" --preset essential --yes
 ```
 
 Already using `init`? It remains supported. The beginner `setup` command is additive and **does not overwrite user-modified skills**. Xyeena installs skill files only in the chosen project; it neither installs nor logs you into the AI host. The existing model call and in-session limitations are unchanged.
