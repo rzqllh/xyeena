@@ -116,6 +116,18 @@ node bin/xyeena.mjs sdk run --goal "Review unit test failures" --yes
 
 The task runner library requires a real host adapter and independent evidence. The SDK bridge always returns `REVIEW_REQUIRED`, never automatically marks a model answer verified. Native IDE worker dispatch remains unvalidated. See [Intelligent skill routing](docs/INTELLIGENT-ROUTING.md).
 
+## Portable skill discovery: Gemini CLI and Hermes
+
+The same `xyeena-orchestrate` skill can now be installed explicitly for **Gemini CLI** and **Hermes** in addition to Antigravity, Codex and Claude. The modular registry scans actual skill files from each host; it never fabricates unavailable skills. In Hermes, untrusted project skills remain ineligible for routing.
+
+```bash
+node bin/xyeena.mjs skills matrix
+node bin/xyeena.mjs route --runtime hermes --prompt "investigate failing tests"
+node bin/xyeena.mjs init --components skills --runtime gemini,hermes --skills xyeena-orchestrate --yes
+```
+
+Historical `--runtime all` installs to the original three hosts only; `--runtime all-supported` opts into all five. The SDK execution bridge remains an independent, opt-in **Antigravity-only** path. Gemini CLI and Hermes currently use native skill loading by their respective hosts, not a validated programmatic worker-dispatch adapter. See [Runtime adapters](docs/RUNTIME-ADAPTERS.md) and [Intelligent routing](docs/INTELLIGENT-ROUTING.md).
+
 ## Antigravity Guided hooks
 
 Workspace-level hooks are an optional, separately approved install. They suggest possible unfinished work, and explicitly bound conversations receive a bounded capsule and checkpoint support without automatic execution or permission changes. See [Guided hooks](docs/ANTIGRAVITY-GUIDED.md).
