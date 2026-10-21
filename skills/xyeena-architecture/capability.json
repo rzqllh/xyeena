@@ -19,7 +19,9 @@
       "interface",
       "seam",
       "refactor design",
-      "system design"
+      "system design",
+      "refactor",
+      "refactoring"
     ],
     "states": [
       "DISCOVER",
