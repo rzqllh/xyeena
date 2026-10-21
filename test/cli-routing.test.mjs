@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
-const cli = new URL('../bin/xyeena.mjs', import.meta.url).pathname;
+const cli = fileURLToPath(new URL('../bin/xyeena.mjs', import.meta.url));
 const command = (args, cwd) => spawnSync(process.execPath, [path.resolve(cli), ...args], {
   cwd, encoding: 'utf8', timeout: 10000, windowsHide: true
 });
