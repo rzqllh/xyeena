@@ -4,6 +4,7 @@ import { supportedSkillHosts } from './skill-hosts.mjs';
 import { routeWorkspaceSkills, discoverWorkspaceSkills } from './workspace-skills.mjs';
 import { createPortableHostAdapter } from './portable-cli-adapter.mjs';
 import { createAntigravitySdkAdapter } from './antigravity-sdk-adapter.mjs';
+import { inferWorkflowState } from './workflow-intent.mjs';
 
 const HOSTS = new Set(supportedSkillHosts());
 const VALID_STATES = new Set(['TRIAGE','DISCOVER','GRILL','RESEARCH','PROTOTYPE','DEFINE','PLAN','EXECUTE','DEBUG','VERIFY','REVIEW','RELEASE','CLOSE','ESCALATE']);
@@ -11,12 +12,14 @@ const EXECUTABLE_HOSTS = new Set(['hermes','gemini','codex','claude','antigravit
 const VALID_SKILL = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 /** Single entry point with explicit host capability boundaries. No model calls in preview. */
-export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state = 'TRIAGE',
+export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state = 'AUTO',
   includeGlobal = true, home, env = process.env, maxSupporting = 2 } = {}) {
   if (!HOSTS.has(runtime)) throw new Error('Choose a supported AI host');
   if (typeof goal !== 'string' || !goal.trim() || goal.length > 12000)
     throw new Error('Provide a non-empty bounded orchestration goal');
-  if (!VALID_STATES.has(state)) throw new Error('Unsupported workflow state');
+  if (state !== 'AUTO' && !VALID_STATES.has(state)) throw new Error('Unsupported workflow state');
+  const inference = state === 'AUTO' ? inferWorkflowState(goal) : null;
+  const resolvedState = inference?.state || state;
   if (!Number.isInteger(maxSupporting) || maxSupporting < 0 || maxSupporting > 7)
     throw new Error('Invalid supporting-skill budget');
   const root = fs.realpathSync(path.resolve(cwd));
@@ -24,7 +27,7 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
   const inventory = discoverWorkspaceSkills(settings);
   const installed = inventory.filter(s => s.availability === 'detected');
   const governor = installed.find(s => s.name === 'xyeena-orchestrate');
-  const route = routeWorkspaceSkills({ ...settings, state, prompt: goal, maxSupporting });
+  const route = routeWorkspaceSkills({ ...settings, state: resolvedState, prompt: goal, maxSupporting });
   const picked = [route.primary, ...route.supporting].filter(s => s && s.name !== 'xyeena-orchestrate');
   const skills = [...new Set([...(governor ? ['xyeena-orchestrate'] : []), ...picked.map(s => s.name)])].slice(0, 8);
   const sdkSkillPaths = [...new Set(skills.map(name => inventory.find(s => s.name === name && s.availability === 'detected'))
@@ -32,7 +35,8 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
   const hasBridge = EXECUTABLE_HOSTS.has(runtime);
   const ready = !!governor;
   return {
-    schema: 1, mode: 'preview-only', executed: false, runtime, goal, cwd: root, state,
+    schema: 1, mode: 'preview-only', executed: false, runtime, goal, cwd: root,
+    state: resolvedState, stateSource: inference?.source || 'explicit',
     includeGlobal, maxSupporting, ...(home ? { home } : {}),
     ready, hostExecutionAvailable: hasBridge,
     execution: runtime === 'antigravity' ? 'sdk-one-shot' : 'cli-one-shot',
