@@ -79,7 +79,7 @@ test('Gemini headless uses plan mode, JSON and stdin rather than prompt args',as
   const adapter=createPortableHostAdapter({cwd,runtime:'gemini',selectedSkills:['xyeena-orchestrate'],
     spawnImpl:mockProcess(JSON.stringify({response:'Plan reviewed',stats:{models:{'flash':{tokens:{total:15}}}}}),
       {expectedCommand:'gemini',capture:captured,argsCheck(args){
-        assert.deepEqual(args,['--output-format','json','--approval-mode','plan','--extensions','none']);
+        assert.deepEqual(args,['--output-format','json','--approval-mode','plan']);
         assert.ok(!args.includes('--yolo'));
         assert.ok(!args.includes('Plan reviewed'));
       }})});
