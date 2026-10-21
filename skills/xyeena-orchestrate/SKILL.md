@@ -32,3 +32,15 @@ when useful; keep shared writes serialized or explicitly isolated. Capture actua
 file changes, test logs and evidence references before changing a task to VERIFIED.
 Unverified model summaries remain REVIEW_REQUIRED. Do not silently merge, publish,
 deploy, send communications, or broaden an approval.
+
+## Cross-host portability
+
+Xyeena orchestrates skills by their actual runtime inventory, not a memorized universal registry.
+Identify the active host (Antigravity IDE, Gemini CLI, Codex, Claude Code, or Hermes), then
+discover installed skill metadata using host-native facilities. If needed and permitted, run
+`xyeena skills discover --runtime <host>` for a read-only inventory. Do not load or invoke a
+skill if it is missing, incompatible, untrusted, or disabled. In Hermes, never treat
+`availability: requires-host-trust` as executable; only the user may trust a repository.
+Prefer the smallest adequate combination, lazy-load selected skill instructions, and ask
+the runtime to activate them through its native mechanisms. Preserve native permission
+prompts and independent verification. A directory scan is **not** proof of execution.
