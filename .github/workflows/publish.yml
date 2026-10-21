@@ -65,7 +65,7 @@ jobs:
             echo "published=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Authenticate to npm registry
-        if: steps.existing.outputs.published != 'true' && !startsWith(github.event.head_commit.message, 'verify: xyeena-agent v0.3.0')
+        if: "steps.existing.outputs.published != 'true' && !startsWith(github.event.head_commit.message, 'verify: xyeena-agent v0.3.0')"
         run: |
           if [ -n "${{ secrets.NPM_TOKEN }}" ]; then
             echo "Using NPM_TOKEN secret from GitHub repository."
@@ -96,7 +96,7 @@ jobs:
             echo "Successfully authenticated to npm via OIDC session token!"
           fi
       - name: Publish new package to npm with provenance
-        if: steps.existing.outputs.published != 'true' && !startsWith(github.event.head_commit.message, 'verify: xyeena-agent v0.3.0')
+        if: "steps.existing.outputs.published != 'true' && !startsWith(github.event.head_commit.message, 'verify: xyeena-agent v0.3.0')"
         run: npm publish --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
