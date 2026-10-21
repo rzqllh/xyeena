@@ -112,3 +112,34 @@ test('host-specific route rejects cross-host all and never fabricates absent ski
   const gemini=routeWorkspaceSkills({cwd:project,home,runtime:'gemini',prompt:'gemini only investigate bug'});
   assert.equal(gemini.primary.name,'gemini-only');
 });
+
+test('Hermes honors HERMES_HOME profile isolation and explicit create_dir before external skills',t=>{
+  const {root,project,home}=fixture(t);
+  const profile=path.join(root,'profiles','coding');
+  const created=path.join(root,'generated-skills');
+  const external=path.join(root,'third-party-skills');
+  skill(profile,'skills/devops','profile-skill');
+  skill(created,'ops','created-skill');
+  skill(external,'ops','external-skill');
+  fs.mkdirSync(profile,{recursive:true});
+  fs.writeFileSync(path.join(profile,'config.yaml'),
+    'skills:\n  create_dir: '+created+'\n  external_dirs:\n    - '+external+'\n');
+  const env={HERMES_HOME:profile};
+  const inventory=discoverWorkspaceSkills({cwd:project,home,env,runtime:'hermes'});
+  assert.deepEqual(inventory.map(x=>x.name).sort(),['created-skill','external-skill','profile-skill']);
+  assert.equal(inventory.find(x=>x.name==='profile-skill').scope,'global');
+  assert.equal(inventory.find(x=>x.name==='created-skill').scope,'create-dir');
+  assert.equal(inventory.find(x=>x.name==='external-skill').scope,'external');
+  const setting=hermesSkillSettings(home,env);
+  assert.equal(setting.profileRoot,profile);
+  assert.equal(setting.createDir,created);
+  assert.equal(discoverWorkspaceSkills({cwd:project,home,runtime:'hermes',env,includeGlobal:false}).length,0);
+});
+test('Hermes relative external path resolves within active HERMES_HOME, not unrelated cwd',t=>{
+  const {root,project,home}=fixture(t);
+  const profile=path.join(root,'custom');
+  skill(profile,'shared','relative-skill');
+  fs.writeFileSync(path.join(profile,'config.yaml'),'skills:\n  external_dirs:\n    - shared\n');
+  const inventory=discoverWorkspaceSkills({cwd:project,home,env:{HERMES_HOME:profile},runtime:'hermes'});
+  assert.equal(inventory.find(x=>x.name==='relative-skill').scope,'external');
+});
