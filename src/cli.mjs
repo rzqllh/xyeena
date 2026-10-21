@@ -14,6 +14,7 @@ const help=`Xyeena Rig ${VERSION}
 Usage:
   xyeena setup                                  # beginner-friendly guided setup
   xyeena setup --runtime hermes,gemini --preset essential --harness none --dry-run
+  xyeena setup --runtime antigravity --preset complete --harness full --update --yes
   xyeena setup --runtime hermes --preset balanced --harness essential --yes
   xyeena init                                   # interactive: Skills / Harness / All
   xyeena init --components skills --runtime codex --skills xyeena-core --yes
@@ -50,18 +51,20 @@ export async function main(args){
  if(['version','--version','-v'].includes(cmd)){console.log(VERSION);return}
  if(cmd==='setup'){
     if(f._.length)throw new Error('Unexpected setup argument(s): '+f._.join(' ')+'. In PowerShell quote comma-separated runtimes, for example --runtime "hermes,gemini".');
+    if(f.force)throw new Error('Setup does not blindly overwrite files. Use --update to back up and replace existing differing files.');
+    const allowed=new Set(['_', 'runtime', 'preset', 'harness', 'dir', 'dryRun', 'yes', 'update', 'help']);
+    for(const key of Object.keys(f))if(!allowed.has(key))throw new Error('Unrecognized setup option --'+key+' (for safe updates use --update)');
     const cwd=path.resolve(f.dir||process.cwd());
     if (!f.runtime) {
       if(f.yes||f.dryRun||f.preset||f.harness)throw new Error('Non-interactive setup requires --runtime HOST to prevent selecting tools implicitly');
       await interactiveSetup({cwd});
       return;
     }
-    const options={cwd,runtime:f.runtime,preset:f.preset||'essential',harness:f.harness||'none'};
+    const options={cwd,runtime:f.runtime,preset:f.preset||'essential',harness:f.harness||'none',update:f.update===true};
     if(f.dryRun) {
       console.log(JSON.stringify(previewSetup(options),null,2));return;
     }
     if(!f.yes)throw new Error('Pass --dry-run to preview or --yes for explicitly selected setup; no files changed');
-    if(f.force)throw new Error('Beginner setup never overwrites custom files. Use advanced init only after reviewing conflicts');
     console.log(JSON.stringify(applySetup({...options,yes:true}),null,2));return;
   }
  if(cmd==='init'){
