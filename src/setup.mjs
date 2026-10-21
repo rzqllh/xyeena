@@ -112,8 +112,7 @@ export function applySetup({ cwd = process.cwd(), runtime, preset = 'essential',
       expectedFingerprint:expectedFingerprint || preview.fingerprint});
     return {...result,skills:preview.skills,guards:preview.guards,filesWritten:result.written.length,
       conflictsPreserved:result.preserved,conflictsReplaced:result.written.filter(x=>preview.conflicts.includes(x)),
-      diagnostics:preview.runtimes.map(host=>({host,installed:true,availability:'filesystem-not-verified',
-        note:'Reload this AI host and verify skill discovery in the native app.'}))};
+      diagnostics:result.diagnostics};
   }
   if (expectedFingerprint && preview.fingerprint !== expectedFingerprint)
     throw new Error('Installed files changed since the review screen. Run setup preview again');
@@ -188,13 +187,17 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
   explain(output, '  3. Complete — all packaged skills (more files, not automatic model usage)');
   const preset = ({'1':'essential','2':'balanced','3':'complete'})[String(await ask('Choose 1 / 2 / 3: ')).trim()];
   if (!preset) throw new Error('Invalid skill preset; no files were installed');
-  if(selectLocation){
+  if(selectLocation && scope==='workspace'){
     explain(output, '\nInstallation method:');
     explain(output, '  1. Copy — independent skill files (recommended for first install)');
     explain(output, '  2. Symlink — share a permanent skill store; no dependency on npx cache');
     const method=String(await ask('Choose 1 / 2 [default 1]: ')).trim();
     if(!['','1','2'].includes(method))throw new Error('Invalid method; no files changed');
     mode=method==='2'?'symlink':'copy';
+  }
+  if(selectLocation && scope==='global'){
+    explain(output, 'Global install will copy skills into each AI user directory.');
+    explain(output, 'Advanced option: global symlink remains available using --scope global --mode symlink.');
   }
   if(scope==='global')explain(output, 'Harness is workspace-only; global installation installs skills only.');
   if(scope==='workspace'){
@@ -259,8 +262,15 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
   if (result.conflictsReplaced.length) explain(output, 'Replaced with backups: '+result.conflictsReplaced.length);
   if (result.backupDirectory) explain(output, 'Backup directory: '+result.backupDirectory);
   if (result.durableStore)explain(output, 'Stable symlink sources: '+result.durableStore);
-  for (const d of result.diagnostics)
-    explain(output, '  ' + d.host + ': ' + d.availability + '. ' + d.note);
+  for (const d of result.diagnostics){
+    const count=Number.isInteger(d.verifiedSkills)
+      ? d.verifiedSkills+'/'+d.expectedSkills+' packaged skills verified on disk'
+      : d.availability;
+    explain(output,'  '+d.host+': '+count+' — '+d.skillDirectory);
+    explain(output,'    AI app activation: not yet verified; reload host to confirm.');
+    if(d.missing?.length)
+      explain(output,'    Nonmatching/missing skills: '+d.missing.map(x=>x.skill).join(', '));
+  }
   explain(output, 'Next: reopen your AI app, then ask it to use xyeena-orchestrate.');
   explain(output, 'To check installed skills: npx xyeena-agent skills matrix'+(scope==='workspace'?' --local-only':''));
   explain(output, 'To check host detection without running the model: npx xyeena-agent setup check --runtime '+result.runtimes[0]);
