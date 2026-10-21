@@ -116,3 +116,27 @@ test('global Harness must stay project-scoped instead of silently faking host gu
   const {cwd,home}=sandbox(t);
   assert.throws(()=>previewSetup({cwd,home,runtime:'gemini',scope:'global',mode:'copy',harness:'full'}),/workspace-only/);
 });
+
+test('upgrades an earlier Xyeena-managed global junction without replacing foreign links',t=>{
+  const {cwd,home}=sandbox(t);
+  const canonicalHome=fs.realpathSync(home);
+  const old=path.join(canonicalHome,'.xyeena/skill-store/v0.3.0/xyeena-core-0123456789abcdef');
+  fs.mkdirSync(old,{recursive:true});
+  fs.writeFileSync(path.join(old,'SKILL.md'),'---\nname: xyeena-core\ndescription: Earlier version\n---\n');
+  const destination=path.join(canonicalHome,'.gemini/skills/xyeena-core');
+  fs.mkdirSync(path.dirname(destination),{recursive:true});
+  fs.symlinkSync(old,destination,process.platform==='win32'?'junction':'dir');
+  const opts={cwd,home,scope:'global',mode:'symlink',runtime:'gemini',preset:'essential'};
+  const preview=previewSetup(opts);
+  assert.ok(preview.conflicts.includes(destination));
+  const keep=applySetup({...opts,yes:true});
+  assert.ok(keep.conflictsPreserved.includes(destination));
+  assert.equal(fs.realpathSync(destination),fs.realpathSync(old));
+  const updated=applySetup({...opts,yes:true,update:true});
+  assert.notEqual(fs.realpathSync(destination),fs.realpathSync(old));
+  assert.ok(fs.realpathSync(destination).includes('v0.4.0'));
+  assert.ok(updated.backupDirectory);
+  const backupNames=fs.readdirSync(updated.backupDirectory).filter(x=>x.endsWith('.link-target'));
+  assert.ok(backupNames.length>0);
+  assert.equal(fs.readFileSync(path.join(updated.backupDirectory,backupNames[0]),'utf8'),fs.realpathSync(old));
+});
