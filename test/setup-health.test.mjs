@@ -45,7 +45,7 @@ test('setup check validates actual installed skill state but does not claim nati
   const cwd=fixture(t);
   applySetup({cwd,runtime:'antigravity',preset:'essential',yes:true});
   const report=setupHealthCheck({cwd,runtime:'antigravity',includeGlobal:false});
-  assert.equal(report.filesystem.manifestVersion,'0.3.0');
+  assert.equal(report.filesystem.manifestVersion,'0.4.0');
   assert.equal(report.filesystem.orchestratorFound,true);
   assert.equal(report.filesystem.orchestratorEligibility,'detected');
   assert.equal(report.hostActivationVerified,false);
