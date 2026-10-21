@@ -1,7 +1,7 @@
 {
   "name": "xyeena-agent",
-  "version": "0.2.2",
-  "description": "Xyeena Rig: selectable Agent Skills and opt-in project Harness with guardrails, audits, and verification.",
+  "version": "0.3.0",
+  "description": "Xyeena Rig: portable AI skill orchestration, beginner setup, and opt-in Harness for five agent runtimes.",
   "type": "module",
   "bin": {
     "xyeena-agent": "bin/xyeena.mjs",
