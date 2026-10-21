@@ -3,13 +3,15 @@ import { parseFlags } from './util.mjs'; import { VERSION, PACKAGE_ROOT } from '
 import { explicitSelection, interactiveSelection } from './selection.mjs';
 import { runHarness } from './harness.mjs'; import { doctor } from './doctor.mjs'; import { validateSource } from './validate.mjs'; import { loadRegistry } from './registry.mjs'; import { resolveCapabilities } from './resolver.mjs'; import { runEvals } from './eval.mjs'; import { RunLedger } from './ledger.mjs';
 import { guidedCommand } from './antigravity-guided.mjs';
-import { discoverWorkspaceSkills, routeWorkspaceSkills } from './workspace-skills.mjs';
+import { discoverWorkspaceSkills, routeWorkspaceSkills, skillAvailabilityMatrix } from './workspace-skills.mjs';
 import { createAntigravitySdkAdapter, previewAntigravitySdkTask } from './antigravity-sdk-adapter.mjs';
 const help=`Xyeena Rig ${VERSION}
 
 Usage:
   xyeena init                                   # interactive: Skills / Harness / All
   xyeena init --components skills --runtime codex --skills xyeena-core --yes
+  xyeena init --components skills --runtime gemini,hermes --skills xyeena-orchestrate --yes
+  xyeena init --components skills --runtime all-supported --skills all --yes
   xyeena init --components harness --guards 00-core,60-security --yes
   xyeena init --components all --runtime all --skills all --guards all --yes
   xyeena init --components ... --dry-run         # preview, no files written
@@ -19,8 +21,8 @@ Usage:
   xyeena check [--source PATH]
   xyeena list
   xyeena resolve --prompt TEXT [--state TRIAGE] [--path FILE]
-  xyeena skills discover [--dir PATH] [--runtime antigravity|claude|codex|all] [--local-only]
-  xyeena route --prompt TEXT [--dir PATH] [--runtime antigravity|claude|codex|all] [--state TRIAGE]
+  xyeena skills discover|matrix [--dir PATH] [--runtime antigravity|gemini|codex|claude|hermes|all] [--local-only]
+  xyeena route --prompt TEXT [--dir PATH] [--runtime antigravity|gemini|codex|claude|hermes] [--state TRIAGE]
   xyeena sdk preview --goal TEXT [--dir PATH] [--local-only]
   xyeena sdk run --goal TEXT --yes [--delegate] [--dir PATH] [--python PATH] [--timeout-ms N]
   xyeena eval
@@ -70,8 +72,12 @@ export async function main(args){
  if(cmd==='list'){for(const c of loadRegistry())console.log(`${c.metadata.name}\t${c.activation.class}\t${c.metadata.category}`);return}
  if(cmd==='resolve'){if(!f.prompt)throw new Error('--prompt is required'); const r=resolveCapabilities(loadRegistry(),{prompt:f.prompt,state:f.state||'TRIAGE',paths:f.path?[f.path]:[]}); console.log(JSON.stringify(r,null,2));return}
  if(cmd==='skills'){
-    if(f._[0]!=='discover')throw new Error('Expected: xyeena skills discover');
-    console.log(JSON.stringify(discoverWorkspaceSkills({cwd:path.resolve(f.dir||process.cwd()),runtime:f.runtime||'antigravity',includeGlobal:!f.localOnly}),null,2));return;
+    const directory=path.resolve(f.dir||process.cwd());
+    if(f._[0]==='matrix'){
+      console.log(JSON.stringify(skillAvailabilityMatrix({cwd:directory,includeGlobal:!f.localOnly}),null,2));return;
+    }
+    if(f._[0]!=='discover')throw new Error('Expected: xyeena skills discover|matrix');
+    console.log(JSON.stringify(discoverWorkspaceSkills({cwd:directory,runtime:f.runtime||'antigravity',includeGlobal:!f.localOnly}),null,2));return;
   }
  if(cmd==='route'){
     if(typeof f.prompt!=='string'||!f.prompt.trim())throw new Error('--prompt TEXT is required');
