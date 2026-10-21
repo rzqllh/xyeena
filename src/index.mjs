@@ -11,3 +11,4 @@ export { TASK_STATES, createTask, validateTaskGraph, readyTasks, taskTransition,
 export { AgentBroker } from './broker.mjs';
 export { discoverWorkspaceSkills, routeWorkspaceSkills } from './workspace-skills.mjs';
 export { runTaskGraph } from './task-runner.mjs';
+export { createAntigravitySdkAdapter, previewAntigravitySdkTask } from './antigravity-sdk-adapter.mjs';
