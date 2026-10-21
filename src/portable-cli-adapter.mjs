@@ -48,7 +48,7 @@ export function previewPortableHost({ cwd = process.cwd(), runtime, goal, state 
   const root = fs.realpathSync(path.resolve(cwd));
   const options = { cwd: root, runtime, ...(home ? { home } : {}), includeGlobal };
   const inventory = discoverWorkspaceSkills(options);
-  const eligible = inventory.filter(s => s.availability !== 'requires-host-trust');
+  const eligible = inventory.filter(s => s.availability === 'detected');
   const governor = eligible.find(s => s.name === 'xyeena-orchestrate');
   const routing = routeWorkspaceSkills({ ...options, prompt: goal, state });
   const skills = [...new Set([...(governor ? ['xyeena-orchestrate'] : []),
@@ -59,6 +59,7 @@ export function previewPortableHost({ cwd = process.cwd(), runtime, goal, state 
     ready: !blocked, reason: blocked ? 'Install and enable xyeena-orchestrate in this host; Hermes project skills must be trusted' : null,
     requestedSkills: skills, detectedCount: inventory.length,
     untrustedSkills: inventory.filter(s => s.availability === 'requires-host-trust').map(s => s.name),
+    incompatibleSkills: inventory.filter(s => s.availability === 'incompatible-platform').map(s => s.name),
     action: 'Explicit --yes required for a provider-backed model call',
   };
 }
