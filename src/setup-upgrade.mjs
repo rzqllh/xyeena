@@ -179,14 +179,14 @@ export function installStagedSetup({cwd,choice,policy='keep',replaceFiles=[],exp
         safeDestination(root,path.join(backupRoot,'.gitignore'));
         fs.mkdirSync(backupRoot,{recursive:true});
         backupDir=backupRoot;
-        fs.writeFileSync(path.join(backupRoot,'.gitignore'),'*\\n!.gitignore\\n',{flag:'wx'});
+        fs.writeFileSync(path.join(backupRoot,'.gitignore'),'*\n!.gitignore\n',{flag:'wx'});
       }
       const journal={schema:1,cwd:root,createdAt:new Date().toISOString(),files:changed.map(r=>({
         path:r.rel,existed:r.present,beforeSha256:r.currentHash,afterSha256:r.desiredHash
       }))};
       const journalFile=path.join(backupRoot,'rollback.json');
       safeDestination(root,journalFile);
-      fs.writeFileSync(journalFile,JSON.stringify(journal,null,2)+'\\n',{flag:'wx'});
+      fs.writeFileSync(journalFile,JSON.stringify(journal,null,2)+'\n',{flag:'wx'});
     }
     const written = [];
     try {
