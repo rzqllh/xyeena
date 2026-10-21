@@ -44,7 +44,16 @@ export function resolveCapabilities(registry,{prompt='',state='TRIAGE',paths=[],
     }
     for(const patt of a.paths||[]) if(paths.some(p=>pathMatch(patt,p))){score+=12; reasons.push(`path:${patt}`)}
     if((a.exclude||[]).some(x=>phraseMatch(text,x))){score=-999;reasons.push('excluded')}
-    if(score>0 && stateEligible){score+=15; reasons.unshift(`state:${state}`)}
+    if(score>0 && stateEligible){
+      score+=15;
+      // A verification request may also mention tests. Break close score ties
+      // toward the evidence gate, not whichever skill sorts alphabetically.
+      if(state==='VERIFY' && name==='xyeena-verify'){
+        score+=5;
+        reasons.push('verify:state-primary');
+      }
+      reasons.unshift(`state:${state}`);
+    }
     if(score>0) scored.push({name,score,reasons,capability:cap});
   }
   scored.sort((a,b)=>b.score-a.score || a.name.localeCompare(b.name));
