@@ -86,8 +86,8 @@ npx --yes xyeena-agent@0.3.0 setup --runtime hermes --preset essential --yes
 Contoh kombinasi Hermes + Gemini CLI dengan perlindungan Harness:
 
 ```powershell
-npx --yes xyeena-agent@0.3.0 setup --runtime hermes,gemini --preset balanced --harness essential --dry-run
-npx --yes xyeena-agent@0.3.0 setup --runtime hermes,gemini --preset balanced --harness essential --yes
+npx --yes xyeena-agent@0.3.0 setup --runtime "hermes,gemini" --preset balanced --harness essential --dry-run
+npx --yes xyeena-agent@0.3.0 setup --runtime "hermes,gemini" --preset balanced --harness essential --yes
 ```
 
 Nilai `--preset`: `essential`, `balanced`, `complete`. Nilai `--harness`: `none`, `essential`, `full`. Pilihan host: `antigravity`, `codex`, `gemini`, `claude`, `hermes`.
