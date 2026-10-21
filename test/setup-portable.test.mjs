@@ -53,7 +53,7 @@ test('global symlink uses durable home store instead of npm cache and is discove
     const target=portableSkillTarget(host,{home});
     const item=path.join(target,'xyeena-orchestrate');
     assert.equal(fs.lstatSync(item).isSymbolicLink(),true);
-    assert.ok(fs.realpathSync(item).startsWith(path.join(home,'.xyeena','skill-store')));
+    assert.ok(fs.realpathSync(item).startsWith(path.join(fs.realpathSync(home),'.xyeena','skill-store')));
     const found=discoverWorkspaceSkills({cwd,home,runtime:host});
     assert.equal(found.find(x=>x.name==='xyeena-orchestrate')?.availability,'detected');
   }
@@ -74,7 +74,7 @@ test('workspace symlink is selected explicitly and does not follow npm cache evi
 });
 test('global copy preserves unrelated existing skill by default and backs it up only with --update',t=>{
   const {cwd,home}=sandbox(t);
-  const skill=path.join(home,'.gemini/skills/xyeena-orchestrate');
+  const skill=path.join(fs.realpathSync(home),'.gemini/skills/xyeena-orchestrate');
   fs.mkdirSync(skill,{recursive:true});
   fs.writeFileSync(path.join(skill,'SKILL.md'),'---\nname: xyeena-orchestrate\n---\nCUSTOM\n');
   const opts={cwd,home,scope:'global',mode:'copy',runtime:'gemini',preset:'essential'};
@@ -91,7 +91,7 @@ test('global copy preserves unrelated existing skill by default and backs it up 
 });
 test('foreign symlinks and modified immutable store are refused',t=>{
   const {cwd,home}=sandbox(t);
-  const malicious=path.join(home,'.gemini/skills/xyeena-core');
+  const malicious=path.join(fs.realpathSync(home),'.gemini/skills/xyeena-core');
   const elsewhere=path.join(home,'elsewhere');
   fs.mkdirSync(path.dirname(malicious),{recursive:true});fs.mkdirSync(elsewhere);
   fs.symlinkSync(elsewhere,malicious,process.platform==='win32'?'junction':'dir');
