@@ -22,8 +22,8 @@ test('unified Codex preview selects installed skills but does not claim CLI exec
   add(cwd,'.agents/skills','systematic-debugging');
   const plan=previewOrchestration({cwd,runtime:'codex',goal:'systematic debugging tests',includeGlobal:false});
   assert.equal(plan.ready,true);
-  assert.equal(plan.hostExecutionAvailable,false);
-  assert.equal(plan.requiresManualHost,true);
+  assert.equal(plan.hostExecutionAvailable,true);
+  assert.equal(plan.requiresManualHost,false);
   assert.equal(plan.executed,false);
   assert.equal(plan.entrypoint,'/xyeena-orchestrate');
   assert.ok(plan.selectedSkills.includes('systematic-debugging'));
@@ -35,12 +35,18 @@ test('missing or untrusted orchestrator cannot be dispatched',async t=>{
   assert.equal(plan.ready,false);
   await assert.rejects(executeOrchestration(plan,{yes:true}),/missing or not eligible/);
 });
-test('CLI-only hosts are never pretended to run through an absent adapter',async t=>{
+test('Claude headless host needs explicit consent and stays unverified',async t=>{
   const cwd=workspace(t);
   add(cwd,'.claude/skills','xyeena-orchestrate');
   const plan=previewOrchestration({cwd,runtime:'claude',goal:'review PR',includeGlobal:false});
-  assert.equal(plan.execution,'host-native-only');
-  await assert.rejects(executeOrchestration(plan,{yes:true}),/Native in-session dispatch/);
+  assert.equal(plan.execution,'cli-one-shot');
+  await assert.rejects(executeOrchestration(plan),/explicit --yes/);
+  const result=await executeOrchestration(plan,{yes:true,
+    portableAdapterFactory:options=>{
+      assert.equal(options.runtime,'claude');
+      return {async executeTask(){return {executed:true,verified:false,report:'Review'};}};
+    }});
+  assert.equal(result.status,'REVIEW_REQUIRED');
 });
 test('host CLI execution needs explicit consent and results remain REVIEW_REQUIRED',async t=>{
   const cwd=workspace(t);
