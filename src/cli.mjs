@@ -22,7 +22,7 @@ Usage:
   xyeena skills discover [--dir PATH] [--runtime antigravity|claude|codex|all] [--local-only]
   xyeena route --prompt TEXT [--dir PATH] [--runtime antigravity|claude|codex|all] [--state TRIAGE]
   xyeena sdk preview --goal TEXT [--dir PATH] [--local-only]
-  xyeena sdk run --goal TEXT --yes [--dir PATH] [--python PATH] [--timeout-ms N]
+  xyeena sdk run --goal TEXT --yes [--delegate] [--dir PATH] [--python PATH] [--timeout-ms N]
   xyeena eval
   xyeena run-init --goal TEXT [--dir PATH]
   xyeena guided preview|install|status|uninstall [--dir PATH] [--yes]
@@ -88,6 +88,7 @@ export async function main(args){
     if(subcommand==='preview'){console.log(JSON.stringify(preview,null,2));return}
     if(f.yes!==true)throw new Error('SDK run makes a real model call; pass --yes for this invocation');
     const adapter=createAntigravitySdkAdapter({cwd:preview.cwd,skillPaths:preview.skillPaths,
+      enableSubagents:f.delegate===true,
       ...(typeof f.python==='string'?{python:f.python}:{}),
       ...(f.timeoutMs!==undefined?{timeoutMs:Number(f.timeoutMs)}:{})});
     const result=await adapter.executeTask({id:'sdk-one-shot',title:f.goal,
