@@ -1,7 +1,7 @@
 {
   "name": "xyeena",
   "description": "Xyeena Rig: agent skills, engineering workflows, verification and optional project guardrails.",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "author": {
     "name": "Xyeena contributors"
   },
