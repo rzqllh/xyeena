@@ -72,7 +72,7 @@ test('Antigravity read-only SDK is the only supported explicit --delegate path',
     }});
   assert.equal(result.status,'REVIEW_REQUIRED');
   const gemini=previewOrchestration({cwd,runtime:'gemini',goal:'review code',includeGlobal:false});
-  await assert.rejects(executeOrchestration(gemini,{yes:true,delegate:true}),/missing or not eligible/);
+  await assert.rejects(executeOrchestration(gemini,{yes:true,delegate:true}),/Subagent delegation/);
 });
 test('preview validates runtime, state and bounded inputs before side effects',t=>{
   const cwd=workspace(t);
