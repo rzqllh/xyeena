@@ -38,6 +38,39 @@ jobs:
             [ -d "$d" ] && skills-ref validate "$d"
           done
 
+
+  sdk-worker-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile standalone Python SDK worker
+        run: python -m py_compile bridges/antigravity-sdk-worker.py
+      - name: Reject unsafe SDK tasks without invoking the SDK
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          import sys
+          payload = {
+              "cwd": ".",
+              "task": {"id": "test", "title": "Reject unsafe task",
+                       "scope": {"readOnly": False, "operationClass": "safe"}},
+              "skillPaths": [],
+          }
+          proc = subprocess.run(
+              [sys.executable, "bridges/antigravity-sdk-worker.py"],
+              input=json.dumps(payload) + "\n", text=True, capture_output=True, timeout=5
+          )
+          assert proc.returncode != 0, "unsafe task should be rejected"
+          out = json.loads(proc.stdout)
+          assert out["ok"] is False
+          assert "read-only" in out["error"]
+          assert not proc.stderr
+          PY
+
   npx-github-smoke:
     if: github.event_name == 'pull_request'
     runs-on: windows-latest
