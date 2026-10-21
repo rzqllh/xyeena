@@ -192,7 +192,7 @@ test('CLI --update preserves backups of custom files and reports them',t=>{
   assert.equal(fs.readFileSync(file,'utf8'),original);
   assert.match(fs.readFileSync(path.join(cwd,report.backupDirectory,'.agents/skills/xyeena-orchestrate/SKILL.md'),'utf8'),/CUSTOM MARKER/);
 });
-test('public beginner runtime choices never mention Xyn or a personal bot identity',t=>{
+test('public beginner runtime choices never mention Xyn or a personal bot identity',async t=>{
   const cwd=fixture(t),writes=[];
   const replies=['0','1','1','n'];let i=0;
   await guidedSetup({cwd,ask:async()=>replies[i++],output:{write:v=>writes.push(v)}}).catch(()=>{});
