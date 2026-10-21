@@ -7,6 +7,7 @@ import { discoverWorkspaceSkills, routeWorkspaceSkills, skillAvailabilityMatrix 
 import { createAntigravitySdkAdapter, previewAntigravitySdkTask } from './antigravity-sdk-adapter.mjs';
 import { previewPortableHost, createPortableHostAdapter } from './portable-cli-adapter.mjs';
 import { previewOrchestration, executeOrchestration } from './orchestrator.mjs';
+import { recordOrchestrationRun } from './orchestration-ledger.mjs';
 const help=`Xyeena Rig ${VERSION}
 
 Usage:
@@ -26,7 +27,7 @@ Usage:
   xyeena skills discover|matrix [--dir PATH] [--runtime antigravity|gemini|codex|claude|hermes|all] [--local-only]
   xyeena route --prompt TEXT [--dir PATH] [--runtime antigravity|gemini|codex|claude|hermes] [--state TRIAGE]
   xyeena orchestrate preview --runtime HOST --goal TEXT [--state TRIAGE]
-  xyeena orchestrate run --runtime antigravity|gemini|hermes|codex|claude --goal TEXT --yes [--delegate]
+  xyeena orchestrate run --runtime antigravity|gemini|hermes|codex|claude --goal TEXT --yes [--record] [--delegate]
   xyeena host preview --runtime gemini|hermes|codex|claude --goal TEXT [--dir PATH] [--local-only]
   xyeena host run --runtime gemini|hermes|codex|claude --goal TEXT --yes [--command EXECUTABLE]
   xyeena sdk preview --goal TEXT [--dir PATH] [--local-only]
@@ -99,10 +100,11 @@ export async function main(args){
       maxSupporting:f.maxSupporting===undefined?2:Number(f.maxSupporting)});
     if(f._[0]==='preview'){console.log(JSON.stringify(plan,null,2));return}
     if(!f.yes)throw new Error('Orchestrate run may invoke a real provider; pass --yes');
-    const result=await executeOrchestration(plan,{yes:true,delegate:!!f.delegate,
+    const dispatch=()=>executeOrchestration(plan,{yes:true,delegate:!!f.delegate,
       ...(typeof f.command==='string'?{command:f.command}:{}),
       ...(typeof f.python==='string'?{python:f.python}:{}),
       ...(f.timeoutMs===undefined?{}:{timeoutMs:Number(f.timeoutMs)})});
+    const result=f.record===true ? await recordOrchestrationRun(plan,dispatch) : await dispatch();
     console.log(JSON.stringify(result,null,2));return;
   }
  if(cmd==='host'){
