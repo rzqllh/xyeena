@@ -160,7 +160,7 @@ test('upgrades an earlier Xyeena-managed global junction without replacing forei
   assert.equal(fs.realpathSync(destination),fs.realpathSync(old));
   const updated=applySetup({...opts,yes:true,update:true});
   assert.notEqual(fs.realpathSync(destination),fs.realpathSync(old));
-  assert.ok(fs.realpathSync(destination).includes('v0.4.0'));
+  assert.ok(fs.realpathSync(destination).includes('v0.4.1'));
   assert.ok(updated.backupDirectory);
   const backupNames=fs.readdirSync(updated.backupDirectory).filter(x=>x.endsWith('.link-target'));
   assert.ok(backupNames.length>0);
