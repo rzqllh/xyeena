@@ -17,7 +17,7 @@ Node.js **22.14 or newer**, npm/npx, and write access to a project directory. Us
 npx --yes xyeena-agent setup
 ```
 
-Choose **Global** to make skills available across every project in the selected AI host, or **Workspace** to limit them to this project. Then select your AI host(s), Essential/Balanced/Complete skill preset, **Copy or Symlink** method, and review all paths before confirming. Workspace setup additionally supports opt-in Harness; global setup installs skills only.
+Choose **Global** to make skills available across every project in the selected AI host, or **Workspace** to limit them to this project. Then select your AI host(s), Essential/Balanced/Complete preset, and review paths before confirming. The beginner wizard uses **Copy automatically for Global**; **Workspace** offers Copy/Symlink plus project Harness. Workspace setup additionally supports opt-in Harness; global setup installs skills only.
 
 Copy places independent files in each native host folder. Symlink creates durable user-home links to `~/.xyeena/skill-store/v<VERSION>` — never into disposable npm/npx caches. On Windows, the installer uses folder junctions.
 
@@ -30,7 +30,7 @@ npx --yes xyeena-agent setup --scope global --mode symlink --runtime "antigravit
 npx --yes xyeena-agent setup --scope global --mode symlink --runtime "antigravity,gemini" --preset complete --yes
 ```
 
-The original workspace-copy flow (`setup --runtime ...`) and advanced `init` are still supported. AI accounts, native trust and model permissions are not modified.
+Global installer checks each selected host's copied files and reports on-disk verification counts, separately from native activation. Global symlink remains an advanced CLI-only option. The original workspace-copy flow (`setup --runtime ...`) and advanced `init` are still supported. AI accounts, native trust and model permissions are not modified.
 
 ## Interactive setup (advanced / legacy)
 
