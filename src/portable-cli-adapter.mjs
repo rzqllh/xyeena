@@ -128,7 +128,8 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
         };
         try {
           child = spawnImpl(launch.command, launch.args, { cwd: root, shell: false, windowsHide: true,
-            stdio: ['pipe','pipe','pipe'] });
+            stdio: ['pipe','pipe','pipe'],
+            windowsVerbatimArguments: platform === 'win32' && launch.command !== executable });
         } catch { reject(new Error('Cannot launch host executable')); return; }
         const timer = setTimeout(() => { child.kill(); done(new Error('Host execution timeout')); }, timeoutMs);
         child.on('error', () => done(new Error('Cannot launch host executable')));
