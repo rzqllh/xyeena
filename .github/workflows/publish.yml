@@ -39,7 +39,7 @@ jobs:
               exit 1
             fi
           elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
-            if [ "$GITHUB_REF" != "refs/heads/main" ] || [ "$PACKAGE_VERSION" != "0.4.0" ] && [ "$PACKAGE_VERSION" != "0.3.0" ]; then
+            if [ "$GITHUB_REF" != "refs/heads/main" ] || { [ "$PACKAGE_VERSION" != "0.4.0" ] && [ "$PACKAGE_VERSION" != "0.3.0" ]; }; then
               echo "::error::Main-branch publish is limited to an explicitly approved release version"
               exit 1
             fi
@@ -127,7 +127,7 @@ jobs:
             echo "::error::Fresh registry install reported $FOUND, expected $VERSION"
             exit 1
           fi
-      - name: Create GitHub Release for one-time v0.3.0 main push
+      - name: Create matching GitHub Release after verified main publish
         if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
