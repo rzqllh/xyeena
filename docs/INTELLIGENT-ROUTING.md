@@ -111,3 +111,11 @@ node bin/xyeena.mjs host run --runtime gemini --goal "Review architecture" --yes
 **Gemini CLI:** launches headless JSON with `--approval-mode plan --extensions none`, passing the task on stdin. Plan Mode provides native read-only constraints according to Gemini's documentation. Enforcement is delegated to the installed Gemini CLI; do not interpret a model response or our mock tests as proof of sandboxing. Folder trust must already be satisfied; `--skip-trust` is deliberately not used.
 
 Both adapters use argv arrays with no shell and bounded output/timeouts. Neither asserts independently verified completion; even a successful host execution returns `REVIEW_REQUIRED`. For higher-assurance read-only execution, verify the host policy and filesystem side effects in a disposable workspace. CLI wrappers on Windows (such as `.cmd`) require platform-specific live acceptance before declaring support. Source tests mock the native process; they do not authenticate models.
+
+## Hermes named profiles and Windows host launch
+
+The Hermes inventory reader honors `HERMES_HOME`, which may select a named Hermes profile with its own `config.yaml` and `skills/`. The current active profile's `skills.create_dir` is scanned between profile skills and external dirs, matching Hermes precedence. Relative `external_dirs` resolve from that profile home. Xyeena never modifies Hermes trust entries, host configuration, global skills, or profile selection.
+
+On Windows, native `.exe` programs run directly; existing npm `.cmd` wrappers are found in PATH and launched through guarded `cmd.exe /d /s /c` arguments. Only fixed CLI flags and validated skill identifiers are included in the command string. The user's task text goes through stdin. The Windows `.cmd` launch path has a real GitHub Actions fixture test; availability, authentication and behavior of a specific installed Gemini/Hermes version still require local acceptance.
+
+For safety, `host run` never invokes with `--yolo`, `--skip-trust`, `auto_edit`, or default Hermes terminal/file-write toolsets. A successful native CLI response is still an unverified result; inspect worktree state, tool permissions and host logs before relying on it for consequential operations.
