@@ -13,7 +13,7 @@ Select:
 1. **Global** = your AI can find the skills across all projects. **Workspace** = only this project.
 2. Your AI app(s): Antigravity, Gemini CLI, Codex, Claude Code, Hermes Agent.
 3. Skills preset: Essential / Balanced / Complete.
-4. **Copy** or **Symlink**, followed by a review of the exact paths and a final confirmation. Workspace installs can also add project Harness.
+4. **Global** uses Copy automatically in the beginner wizard. **Workspace** asks Copy or Symlink and optionally offers project Harness. Both show the exact paths and request confirmation.
 
 No administrator privileges, Git clone, API key, Git hook installation, or environment-variable edits are required for this installer.
 
@@ -54,7 +54,7 @@ npx --yes xyeena-agent setup --scope global --mode symlink --runtime "gemini,her
 npx --yes xyeena-agent setup --scope workspace --mode symlink --runtime antigravity --preset essential --yes
 ~~~
 
-Omitting --scope / --mode in **non-interactive** commands preserves the old default: workspace + copy. In the interactive wizard, scope and method are explicit choices.
+Omitting --scope / --mode in **non-interactive** commands preserves the old default: workspace + copy. The interactive beginner wizard uses Global → Copy by default, while Workspace offers Copy/Symlink. Global symlink remains an **advanced CLI-only** option using explicit `--scope global --mode symlink`.
 
 ### Existing skills, conflicts, and upgrading
 
@@ -73,7 +73,7 @@ npx --yes xyeena-agent skills matrix
 npx --yes xyeena-agent setup check --runtime antigravity
 ~~~
 
-Both inspect filesystem metadata. Detection is **not** proof of in-session agent activation. To confirm the host actually loaded a skill, reopen the AI app and use its native skill listing; in Antigravity check Customizations, in Gemini CLI use /skills list. Native runtime permissions and folder trust are not modified by setup.
+The installer now also checks packaged skill contents in each destination after a global install and reports the matching count and path per host. This is **filesystem verification**, not proof of in-session agent activation. Both commands inspect metadata without invoking a model. To confirm the host actually loaded a skill, reopen the AI app and use its native skill listing; in Antigravity check Customizations, in Gemini CLI use /skills list. Native runtime permissions and folder trust are not modified by setup.
 
 ### Troubleshooting
 
