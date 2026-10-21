@@ -151,7 +151,7 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
           : runtime === 'claude'
             ? ['--bare', '--add-dir', '.', '--permission-mode', 'plan',
                '--output-format', 'json', '--no-session-persistence', '-p',
-               'Review the instructions on stdin using only relevant installed Xyeena skills.']
+               'stdin']
             : ['--output-format', 'json', '--approval-mode', 'plan'];
       const launch = portableLaunchPlan({ runtime, args, executable, platform, env });
       return new Promise((resolve, reject) => {
