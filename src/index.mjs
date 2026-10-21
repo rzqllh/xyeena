@@ -23,3 +23,4 @@ export { setupSelection, setupRuntimeHints, previewSetup, applySetup, guidedSetu
 export { setupFileDiff } from './setup-upgrade.mjs';
 export { listSetupBackups, previewSetupRollback, runSetupRollback } from './setup-rollback.mjs';
 export { setupHealthCheck, inspectSetupHosts } from './setup-health.mjs';
+export { portableSkillTarget, previewPortableSetup, applyPortableSetup } from './setup-portable.mjs';
