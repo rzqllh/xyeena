@@ -30,7 +30,19 @@ npx --yes xyeena-agent@0.3.0 setup --runtime "hermes,gemini" --preset essential 
 npx --yes xyeena-agent@0.3.0 setup --runtime "hermes,gemini" --preset essential --yes
 ```
 
-Already using `init`? It remains supported. The beginner `setup` command is additive and **does not overwrite user-modified skills**. Xyeena installs skill files only in the chosen project; it neither installs nor logs you into the AI host. The existing model call and in-session limitations are unchanged.
+To update previously installed skills without losing custom edits:
+
+```powershell
+# Preview conflicts and proposed updates
+npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --update --dry-run
+
+# Explicitly back up conflicting originals before replacing them
+npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --update --yes
+```
+
+Without `--update`, Xyeena keeps custom files and installs only missing files. The interactive wizard offers both options after displaying conflicts; originals are backed up under `.xyeena/backups/` when replaced. Blind `--force` is intentionally not supported by beginner `setup`.
+
+Already using `init`? It remains supported. The beginner `setup` command is additive: it **preserves differing user-modified files by default**, or backs them up before replacement when the user explicitly chooses `--update`. Xyeena installs skill files only in the chosen project; it neither installs nor logs you into the AI host. The existing model call and in-session limitations are unchanged.
 
 **[Windows setup guide in Indonesian](docs/INSTALL-WINDOWS-PEMULA.md)** explains Node.js/npm, choosing Hermes/Gemini/Codex, installing, verifying skill inventory, and troubleshooting from zero.
 
@@ -53,7 +65,6 @@ Already using `init`? It remains supported. The beginner `setup` command is addi
 
 - **Xyeena Rig:** Portable Agent Skills + optional project Harness, published on npm as `xyeena-agent`.
 - **Xyeena Notch:** A separate Windows desktop companion application, maintained in its own repository (`rzqllh/xyeena-notch`).
-- **Xyn (The Lion Guardian):** The Xyeena mascot identity; not shipped in the Rig npm package.
 
 **Compatibility:** The package name `xyeena-agent`, CLI commands `xyeena` and `xyeena-agent`, skill IDs (`xyeena-*`), plugin IDs, `.xyeena/` paths, and configuration contracts remain unchanged.
 
