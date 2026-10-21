@@ -2,11 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { availableSkills, parseChoice, selectSkillRuntimes } from './selection.mjs';
-import { installSelective } from './install.mjs';
+import { setupFilePlan, installStagedSetup } from './setup-upgrade.mjs';
 import { discoverWorkspaceSkills } from './workspace-skills.mjs';
 
 const HOSTS = Object.freeze([
-  { id: 'hermes', label: 'Hermes / Xyn (local or Telegram gateway)', folder: '.hermes/skills' },
+  { id: 'hermes', label: 'Hermes Agent', folder: '.hermes/skills' },
   { id: 'gemini', label: 'Gemini CLI', folder: '.gemini/skills' },
   { id: 'antigravity', label: 'Google Antigravity IDE', folder: '.agents/skills' },
   { id: 'codex', label: 'OpenAI Codex', folder: '.agents/skills' },
@@ -20,7 +20,6 @@ const GUARDS = Object.freeze({
   none: [],
   essential: ['00-core', '50-quality', '60-security'],
 });
-const HAS_OWN = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 
 function safeRoot(cwd) {
   const root = fs.realpathSync(path.resolve(cwd));
@@ -62,28 +61,38 @@ export function setupSelection({ runtime, preset = 'essential', harness = 'none'
 
 /** Inspect all conflicts and exact paths before *any* installation. No writes. */
 export function previewSetup({ cwd = process.cwd(), runtime, preset = 'essential',
-  harness = 'none' } = {}) {
+  harness = 'none', update = false } = {}) {
   const root = safeRoot(cwd);
   const choice = setupSelection({ runtime, preset, harness });
-  const result = installSelective({cwd:root, ...choice, dryRun:true, force:false});
-  const paths = result.actions.map(action => path.relative(root, action).split(path.sep).join('/'));
+  const filePlan = setupFilePlan({cwd:root,choice});
+  const proposed = [...filePlan.create, ...filePlan.metadataUpdates,
+    ...(update ? filePlan.conflicts : [])];
   return {
-    kind: 'xyeena-setup', version: 1, cwd: root, ...choice, dryRun:true,
-    autoDependencies: result.autoDependencies, filesToWrite: paths.length,
-    previewPaths: paths.slice(0, 12),
-    remainingPaths: Math.max(0, paths.length - 12),
+    kind: 'xyeena-setup', version: 2, cwd: root, ...choice, dryRun:true,
+    fingerprint: filePlan.fingerprint, conflicts: filePlan.conflicts,
+    conflictPolicy: update ? 'backup-replace' : 'keep',
+    creates: filePlan.create, unchangedCount: filePlan.unchanged.length,
+    metadataUpdates: filePlan.metadataUpdates,
+    filesToWrite: proposed.length, previewPaths: proposed.slice(0,12),
+    remainingPaths: Math.max(0,proposed.length-12),
     noGlobalEdits: true, noProviderCalls: true, noHostAuthChanges: true,
-    next: 'Review the preview, then approve setup. No existing customized files are overwritten.'
+    next: filePlan.conflicts.length
+      ? update ? 'Existing differing files will be backed up before replacement; confirm before continuing.'
+        : 'Existing differing files will be PRESERVED. Use --update to back them up and replace them.'
+      : 'No file conflicts found. Review the selection before confirmation.'
   };
 }
 
 export function applySetup({ cwd = process.cwd(), runtime, preset = 'essential',
-  harness = 'none', yes = false } = {}) {
+  harness = 'none', update = false, yes = false, expectedFingerprint } = {}) {
   if (yes !== true) throw new Error('Setup installation requires explicit --yes or interactive confirmation');
-  const preview = previewSetup({cwd,runtime,preset,harness});
-  const result = installSelective({cwd:preview.cwd, components:preview.components,
-    runtimes:preview.runtimes, skills:preview.skills, guards:preview.guards,
-    dryRun:false, force:false});
+  const preview = previewSetup({cwd,runtime,preset,harness,update});
+  if (expectedFingerprint && preview.fingerprint !== expectedFingerprint)
+    throw new Error('Installed files changed since the review screen. Run setup preview again');
+  const result = installStagedSetup({
+    cwd:preview.cwd,choice:preview,policy:update ? 'backup-replace' : 'keep',
+    expectedFingerprint:preview.fingerprint
+  });
   const diagnostics = preview.runtimes.map(host => {
     const items = discoverWorkspaceSkills({cwd:preview.cwd,runtime:host,includeGlobal:false});
     const orchestrator = items.find(item => item.name === 'xyeena-orchestrate');
@@ -93,10 +102,12 @@ export function applySetup({ cwd = process.cwd(), runtime, preset = 'essential',
         ? 'Project-local Hermes skills may require trusting the Git workspace inside Hermes before activation.'
         : 'Restart or reload the corresponding AI host to discover newly installed skills.' };
   });
-  return {installed:true, filesWritten:result.actions.length,
-    cwd:preview.cwd, runtimes:preview.runtimes, skills:result.skills,
-    guards:result.guards, autoDependencies:result.autoDependencies, diagnostics,
-    providerAuthenticationConfigured:false, modelCallsMade:0};
+  return { installed:true, filesWritten:result.written.length,
+    cwd:preview.cwd, runtimes:preview.runtimes, skills:preview.skills, guards:preview.guards,
+    conflictsPreserved:result.preserved, conflictsReplaced:result.replaced,
+    conflictPolicy:result.conflictPolicy, backupDirectory:result.backupDirectory,
+    unchangedCount:result.unchangedCount, diagnostics,
+    providerAuthenticationConfigured:false, modelCallsMade:0 };
 }
 
 function explain(output, message) { output.write(message + '\n'); }
@@ -112,7 +123,7 @@ const yesAnswer = a => /^(y|yes|ya|iya)$/i.test(String(a).trim());
 export async function guidedSetup({ cwd = process.cwd(), ask, output = process.stdout } = {}) {
   if (typeof ask !== 'function') throw new Error('Guided setup requires an interactive terminal');
   const root = safeRoot(cwd);
-  explain(output, '\nXYEENA RIG — First-time setup (no account login or API key needed)');
+  explain(output, '\nXYEENA RIG — Setup / Upgrade (no account login or API key needed)');
   explain(output, 'Project: ' + root);
   explain(output, 'This only copies the skills you select into THIS project.');
   explain(output, 'It will not modify your AI app, passwords, global folders, Git hooks or root AGENTS.md.');
@@ -137,13 +148,33 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
   explain(output, '  3. Full — all packaged Harness guardrail groups');
   const harness = ({'1':'none','2':'essential','3':'full'})[String(await ask('Choose 1 / 2 / 3: ')).trim()];
   if (!harness) throw new Error('Invalid Harness selection; no files were installed');
-  const plan = previewSetup({cwd:root,runtime:chosen,preset,harness});
+  const basePlan = previewSetup({cwd:root,runtime:chosen,preset,harness});
+  let update = false;
+  if (basePlan.conflicts.length) {
+    explain(output, '\nExisting skill/Harness files differ from the package ('+basePlan.conflicts.length+' conflict(s)).');
+    for (const file of basePlan.conflicts.slice(0,12)) explain(output, '  ! '+file);
+    if (basePlan.conflicts.length>12) explain(output, '  ...and '+(basePlan.conflicts.length-12)+' more.');
+    explain(output, '  1. Keep existing custom files; install only missing files (safe default)');
+    explain(output, '  2. Back up originals to .xyeena/backups, then replace with the current package');
+    explain(output, '  0. Cancel without changes');
+    const decision = String(await ask('Existing files [1/2/0, default 1]: ')).trim();
+    if (decision === '0') {
+      explain(output, 'Cancelled. No files written.');
+      return {cancelled:true,installed:false,preview:basePlan};
+    }
+    if (!['','1','2'].includes(decision)) throw new Error('Unknown update selection; no changes made');
+    update=decision==='2';
+  }
+  const plan = update ? previewSetup({cwd:root,runtime:chosen,preset,harness,update:true}) : basePlan;
   explain(output, '\nSTEP 4/4: Review before installation');
   explain(output, 'AI hosts: ' + plan.runtimes.join(', '));
   explain(output, 'Skill preset: ' + preset + ' (' + plan.skills.length + ' explicitly selected)');
   explain(output, 'Required skill dependencies: ' + (plan.autoDependencies.join(', ') || 'none'));
   explain(output, 'Harness: ' + harness);
-  explain(output, 'New/changed files: ' + plan.filesToWrite + ', only under this project');
+  explain(output, 'Files to write: ' + plan.filesToWrite + ', only under this project');
+  explain(output, 'Unchanged files: '+plan.unchangedCount);
+  explain(output, 'Custom file conflicts: '+plan.conflicts.length+
+    (update ? ' (BACKUP THEN REPLACE)' : ' (KEEP EXISTING)'));
   for (const file of plan.previewPaths) explain(output, '  + ' + file);
   if (plan.remainingPaths) explain(output, '  ...and ' + plan.remainingPaths + ' more files.');
   explain(output, 'You can cancel without making any changes.');
@@ -151,8 +182,11 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
     explain(output, 'Cancelled. No files written.');
     return {cancelled:true, installed:false, preview:plan};
   }
-  const result = applySetup({cwd:root,runtime:chosen,preset,harness,yes:true});
+  const result = applySetup({cwd:root,runtime:chosen,preset,harness,update,yes:true,expectedFingerprint:plan.fingerprint});
   explain(output, '\nInstalled. Xyeena is configured for: ' + result.runtimes.join(', '));
+  if (result.conflictsPreserved.length) explain(output, 'Preserved custom files: '+result.conflictsPreserved.length);
+  if (result.conflictsReplaced.length) explain(output, 'Replaced with backups: '+result.conflictsReplaced.length);
+  if (result.backupDirectory) explain(output, 'Backup directory: '+result.backupDirectory);
   for (const d of result.diagnostics)
     explain(output, '  ' + d.host + ': ' + d.availability + '. ' + d.note);
   explain(output, 'Next: reopen your AI app, then ask it to use xyeena-orchestrate.');
