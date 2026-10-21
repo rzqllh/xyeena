@@ -93,3 +93,21 @@ Supported scopes and precedence:
 For Hermes, Xyeena reads a conservative subset of the local `skills:` settings from `~/.hermes/config.yaml` (external_dirs, trusted_project_dirs, project_discovery). A detected untrusted skill returns `availability: requires-host-trust` and is excluded from automatic routing. For stronger guarantees, verify Hermes' effective skills with `hermes skills list`. Config macros or unsupported YAML styles are never interpreted as executable commands. Native runtime disablement, permissions and skill quality/security scanners must still be checked by the host: `detected` means a valid local file exists, not that execution or activation succeeded.
 
 Use `xyeena skills matrix` for per-host inventory; `--runtime all` on discovery is a deduplicated, cross-host view, **not** a claim that every runtime can load the result. For routing, select exactly one host. No automatic installation, global skill mutation, shell invocation, permission bypass or publishing occurs.
+
+## Gemini CLI and Hermes native one-shot execution (experimental)
+
+The portable `host` CLI is a separate opt-in path for real headless agent execution, not a replacement for a live IDE/chat session:
+
+```sh
+node bin/xyeena.mjs host preview --runtime hermes --goal "Audit tests" --local-only
+node bin/xyeena.mjs host run --runtime hermes --goal "Audit tests" --yes
+node bin/xyeena.mjs host run --runtime gemini --goal "Review architecture" --yes
+```
+
+`host preview` never makes model calls. `host run --yes` is a **real provider-backed AI call** which may consume paid tokens. It is refused unless `xyeena-orchestrate` has been found in the active runtime (for Hermes project skills, trust is required). It uses the discovered eligible skills as *suggestions*, not proof of host-native activation. Native settings, disabled skills and Hermes security quarantine may narrow actual availability further.
+
+**Hermes:** launches `hermes chat --query-file - --oneshot -Q --format stream-json --toolsets safe --skills <detected names>`. The task arrives on stdin (not command arguments); `safe` excludes shell and file-edit toolsets and permits research/media tools only. It intentionally does not grant file/terminal writes or the complete `skills` toolset (which includes `skill_manage`). Thus this mode cannot perform normal code-editing work and may have limited local codebase access. It does not use `--yolo` or silently trust a repository.
+
+**Gemini CLI:** launches headless JSON with `--approval-mode plan --extensions none`, passing the task on stdin. Plan Mode provides native read-only constraints according to Gemini's documentation. Enforcement is delegated to the installed Gemini CLI; do not interpret a model response or our mock tests as proof of sandboxing. Folder trust must already be satisfied; `--skip-trust` is deliberately not used.
+
+Both adapters use argv arrays with no shell and bounded output/timeouts. Neither asserts independently verified completion; even a successful host execution returns `REVIEW_REQUIRED`. For higher-assurance read-only execution, verify the host policy and filesystem side effects in a disposable workspace. CLI wrappers on Windows (such as `.cmd`) require platform-specific live acceptance before declaring support. Source tests mock the native process; they do not authenticate models.
