@@ -40,8 +40,17 @@ function readMetadata(file, fallbackName) {
       fields[match[1]] = value.replace(/^(['"])(.*)\1$/, '$2').slice(0, 1000);
     }
     const name = fields.name || fallbackName;
-    if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(name) || !fields.description) return null;
-    return { name, description: fields.description };
+    if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(name) || !fields.description ||
+        name !== fallbackName) return null;
+    const platformValue = fields.platforms;
+    let platforms = null;
+    if (platformValue !== undefined) {
+      // Fail closed on unrecognised YAML rather than ignoring OS constraints.
+      if (!/^\[[^\]\r\n]*\]$/.test(platformValue)) return null;
+      platforms = platformValue.slice(1, -1).split(',').map(x => x.trim().replace(/^(['"])(.*)\1$/, '$2'));
+      if (!platforms.length || platforms.some(x => !['windows', 'macos', 'linux'].includes(x))) return null;
+    }
+    return { name, description: fields.description, platforms };
   } catch { return null; }
 }
 
@@ -60,11 +69,16 @@ export function discoverWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigr
     try { canonical = fs.realpathSync(skillPath); } catch { return false; }
     if (seenPaths.has(canonical)) return true;
     seenPaths.add(canonical);
-    // Native host must confirm project trust and skill enablement; detection is not activation.
-    if (!found.has(metadata.name)) found.set(metadata.name, {
-      ...metadata, path: skillPath, runtime: loc.runtime, scope: loc.scope,
-      source: loc.scope, availability: loc.requiresTrust ? 'requires-host-trust' : 'detected'
-    });
+    const osName = process.platform === 'win32' ? 'windows' :
+      process.platform === 'darwin' ? 'macos' : 'linux';
+    const availability = loc.requiresTrust ? 'requires-host-trust' :
+      metadata.platforms && !metadata.platforms.includes(osName) ? 'incompatible-platform' : 'detected';
+    // A blocked project skill must not shadow an eligible profile-level skill.
+    const previous = found.get(metadata.name);
+    const record = { ...metadata, path: skillPath, runtime: loc.runtime, scope: loc.scope,
+      source: loc.scope, availability };
+    if (!previous || (previous.availability !== 'detected' && availability === 'detected'))
+      found.set(metadata.name, record);
     return true;
   };
   const entries = dir => {
@@ -102,14 +116,15 @@ function externalScore(skill, prompt) {
 
 /** Select from installed skills only. Built-in Xyeena contracts retain the existing resolver semantics. */
 export function routeWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigravity', prompt = '', state = 'TRIAGE', maxSupporting = 2, paths = [],
-  home = os.homedir(), includeGlobal = true } = {}) {
+  home = os.homedir(), includeGlobal = true, env = process.env } = {}) {
   if (typeof prompt !== 'string' || !prompt.trim()) throw new Error('A non-empty prompt is required');
   if (!Number.isInteger(maxSupporting) || maxSupporting < 0 || maxSupporting > 8) throw new Error('Invalid supporting-skill budget');
   if (runtime === 'all') throw new Error('Select one host for routing; use all for inventory only');
-  const discovered = discoverWorkspaceSkills({ cwd, runtime, home, includeGlobal });
-  const installed = discovered.filter(skill => skill.availability !== 'requires-host-trust');
+  const discovered = discoverWorkspaceSkills({ cwd, runtime, home, includeGlobal, env });
+  const installed = discovered.filter(skill => skill.availability === 'detected');
   const installedByName = new Map(installed.map(skill => [skill.name, skill]));
-  const builtins = loadRegistry().filter(cap => installedByName.has(cap.metadata.name));
+  const builtins = loadRegistry().filter(cap => installedByName.has(cap.metadata.name) &&
+    (!(cap.activation?.states?.length) || cap.activation.states.includes(state)));
   const builtinNames = new Set(builtins.map(cap => cap.metadata.name));
   const routed = resolveCapabilities(builtins, { prompt, state, paths, maxSupporting });
   const candidates = [...routed.candidates, ...installed.filter(skill => !builtinNames.has(skill.name))
@@ -126,7 +141,7 @@ export function routeWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigravi
   return { mode: 'preview-only', executed: false, runtime, kernel: installedByName.has('xyeena-core') ? 'xyeena-core' : null,
     primary: detail(primary), supporting: supporting.map(detail),
     installedCount: installed.length, detectedCount: discovered.length,
-    unavailable: discovered.filter(skill => skill.availability === 'requires-host-trust'), candidates: candidates.map(detail) };
+    unavailable: discovered.filter(skill => skill.availability !== 'detected'), candidates: candidates.map(detail) };
 }
 
 /** Per-host inventory avoids falsely assuming that a skill in one AI host exists in another. */
