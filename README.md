@@ -128,6 +128,18 @@ node bin/xyeena.mjs init --components skills --runtime gemini,hermes --skills xy
 
 Historical `--runtime all` installs to the original three hosts only; `--runtime all-supported` opts into all five. The SDK execution bridge remains an independent, opt-in **Antigravity-only** path. Gemini CLI and Hermes currently use native skill loading by their respective hosts, not a validated programmatic worker-dispatch adapter. See [Runtime adapters](docs/RUNTIME-ADAPTERS.md) and [Intelligent routing](docs/INTELLIGENT-ROUTING.md).
 
+## Portable headless execution (experimental, opt-in)
+
+Gemini CLI and Hermes can be invoked with the same goal, with actual host-specific skill routing and an explicit model-call gate:
+
+```sh
+node bin/xyeena.mjs host preview --runtime hermes --goal "Review test failures"
+node bin/xyeena.mjs host run --runtime hermes --goal "Review test failures" --yes
+node bin/xyeena.mjs host run --runtime gemini --goal "Investigate a regression" --yes
+```
+
+Only a host with a detected, eligible `xyeena-orchestrate` can run. Hermes uses its `safe` toolset and preloads selected skill names. Gemini CLI uses headless JSON with `--approval-mode plan` (subject to that CLI's native policy support). The CLI never passes `--yolo`. Outputs remain `REVIEW_REQUIRED`; users must configure and authenticate the actual AI runtime separately. **These calls start fresh CLI turns; they do not inject into an existing IDE/Telegram session.**
+
 ## Antigravity Guided hooks
 
 Workspace-level hooks are an optional, separately approved install. They suggest possible unfinished work, and explicitly bound conversations receive a bounded capsule and checkpoint support without automatic execution or permission changes. See [Guided hooks](docs/ANTIGRAVITY-GUIDED.md).
