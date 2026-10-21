@@ -19,3 +19,4 @@ export { previewOrchestration, executeOrchestration } from './orchestrator.mjs';
 export { SkillInventoryCache, inventoryFingerprint } from './skill-cache.mjs';
 export { recordOrchestrationRun } from './orchestration-ledger.mjs';
 export { inferWorkflowState } from './workflow-intent.mjs';
+export { setupSelection, setupRuntimeHints, previewSetup, applySetup, guidedSetup, interactiveSetup } from './setup.mjs';
