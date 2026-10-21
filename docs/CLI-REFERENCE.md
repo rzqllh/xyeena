@@ -9,22 +9,26 @@ npx xyeena-agent@latest version
 
 Use `npx xyeena-agent@latest <command>` for the subcommands listed below. Command names remain compatible.
 
-## Beginner installation (v0.3.0)
+## Beginner setup
 
-| Command | Meaning |
-| --- | --- |
-| `setup` | Interactive beginner wizard with conflict keep/backup choice and final approval |
-| `setup --runtime hermes --preset essential --dry-run` | Read-only preview with no model call or project edits |
-| `setup --runtime hermes,gemini --preset balanced --harness essential --yes` | Explicit safe local installation |
-| `setup --runtime all-supported --preset complete --harness full --dry-run` | Inspect broad installation before consent |
+The recommended public command for humans is simply `npx --yes xyeena-agent setup`. It asks for scope, runtime, preset, mode, optional project Harness, and confirmation.
 
-Existing installations: `setup --update --dry-run` previews files that differ from the package; `setup --update --yes` backs up originals to `.xyeena/backups/` and updates them. Default setup **keeps** modified files and adds only missing ones. The beginner command deliberately rejects `--force`, which does not preserve backups.
+| Flag | Values | Default / notes |
+| --- | --- | --- |
+| `--scope` | `workspace`, `global` | Workspace for noninteractive backward compatibility; wizard asks explicitly |
+| `--mode` | `copy`, `symlink` | Copy |
+| `--runtime` | `antigravity`, `gemini`, `codex`, `claude`, `hermes`, comma-separated | Required noninteractively |
+| `--preset` | `essential`, `balanced`, `complete` | Essential |
+| `--harness` | `none`, `essential`, `full` | None; **global scope requires none** |
+| `--dry-run` | no value | Preview with no writes |
+| `--yes` | no value | Explicit confirmation for unattended changes |
+| `--update` | no value | Back up and replace existing packaged conflicts |
 
-Presets: `essential` (orchestrator + required deps), `balanced` (orchestrator/planning/debugging/review/testing/verification), `complete` (all packaged skills). Harness: `none`, `essential` (three groups), `full` (11 groups). `setup` refuses overwrites of modified skill files and does not support forcing a beginner installation.
+Workspace copy retains the v0.3.0 install/rollback behavior. Symlinks use a home-persistent content snapshot, not npm cache; previous Xyeena-managed links can be updated with `--update`. The portable global/symlink method does not currently support the workspace-copy rollback journal and must be manually restored from the displayed backup directory.
 
-**Detailed Windows guide:** [INSTALL-WINDOWS-PEMULA.md](INSTALL-WINDOWS-PEMULA.md).
+For exact native global destinations and setup examples: [Global installation guide](GLOBAL-INSTALL.md), [Windows beginner guide](INSTALL-WINDOWS-PEMULA.md).
 
-## Conflict inspection and post-install health (v0.3.0)
+## Conflict inspection and post-install health
 
 | Command | Effect |
 | --- | --- |
