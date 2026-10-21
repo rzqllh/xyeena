@@ -17,7 +17,7 @@ jobs:
   npm:
     if: >-
       github.event_name == 'release' ||
-      (github.event_name == 'push' && github.event.head_commit.message == 'release: xyeena-agent v0.3.0')
+      (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release: xyeena-agent v0.3.0'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
