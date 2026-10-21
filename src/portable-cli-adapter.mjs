@@ -10,6 +10,36 @@ const HOST_TIMEOUT_MAX = 300000;
 const skillName = s => typeof s === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(s);
 const object = x => x !== null && typeof x === 'object' && !Array.isArray(x);
 
+function windowsResolveExecutable(command, env) {
+  if (path.isAbsolute(command) || /[\\/]/.test(command) || /\.[a-z0-9]+$/i.test(command)) return command;
+  const entries = String(env.Path || env.PATH || '').split(';').filter(Boolean).slice(0, 128);
+  for (const dir of entries) {
+    for (const ext of ['.exe', '.com', '.cmd', '.bat']) {
+      const candidate = path.join(dir, command + ext);
+      try {
+        if (fs.statSync(candidate).isFile()) return candidate;
+      } catch { /* continue */ }
+    }
+  }
+  return command;
+}
+export function portableLaunchPlan({ runtime, args, executable, platform = process.platform,
+  env = process.env } = {}) {
+  if (!HOSTS.has(runtime) || !Array.isArray(args) ||
+      args.some(a => typeof a !== 'string' || !/^[A-Za-z0-9,._/-]+$/.test(a)))
+    throw new Error('Unsafe portable host arguments');
+  const resolved = platform === 'win32' ? windowsResolveExecutable(executable, env) : executable;
+  if (platform !== 'win32' || !/\.(cmd|bat)$/i.test(resolved))
+    return { command: resolved, args };
+  if (/[%!^&|<>"\r\n]/.test(resolved))
+    throw new Error('Unsafe Windows shim path; use a native executable');
+  // cmd.exe is necessary for Windows npm .cmd shims. Only vetted constant
+  // arguments and skill identifiers are interpolated; the task prompt is stdin.
+  return { command: env.ComSpec || 'cmd.exe',
+    args: ['/d', '/s', '/c', '""' + resolved + '" ' + args.join(' ') + '"'] };
+}
+
+
 export function previewPortableHost({ cwd = process.cwd(), runtime, goal, home,
   includeGlobal = true } = {}) {
   if (!HOSTS.has(runtime)) throw new Error('Portable CLI host must be gemini or hermes');
@@ -58,7 +88,7 @@ function decodeResponse(host, output) {
 
 /** Caller-provided, explicit host process; never auto-launch or inherit external approvals. */
 export function createPortableHostAdapter({ cwd = process.cwd(), runtime, selectedSkills = [],
-  command, timeoutMs = 120000, spawnImpl = spawn } = {}) {
+  command, timeoutMs = 120000, spawnImpl = spawn, platform = process.platform, env = process.env } = {}) {
   if (!HOSTS.has(runtime)) throw new Error('Unsupported portable CLI host');
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > HOST_TIMEOUT_MAX)
     throw new Error('Invalid portable host timeout');
@@ -87,6 +117,7 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
         ? ['chat', '--query-file', '-', '--oneshot', '-Q', '--format', 'stream-json',
            '--toolsets', 'safe', ...(selectedSkills.length ? ['--skills', selectedSkills.join(',')] : [])]
         : ['--output-format', 'json', '--approval-mode', 'plan', '--extensions', 'none'];
+      const launch = portableLaunchPlan({ runtime, args, executable, platform, env });
       return new Promise((resolve, reject) => {
         let finished = false, stdout = '', stderrLength = 0, child;
         const done = (error, result) => {
@@ -96,7 +127,7 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
           if (error) reject(error); else resolve(result);
         };
         try {
-          child = spawnImpl(executable, args, { cwd: root, shell: false, windowsHide: true,
+          child = spawnImpl(launch.command, launch.args, { cwd: root, shell: false, windowsHide: true,
             stdio: ['pipe','pipe','pipe'] });
         } catch { reject(new Error('Cannot launch host executable')); return; }
         const timer = setTimeout(() => { child.kill(); done(new Error('Host execution timeout')); }, timeoutMs);
