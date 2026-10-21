@@ -197,10 +197,12 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
     mode=method==='2'?'symlink':'copy';
   }
   if(scope==='global')explain(output, 'Harness is workspace-only; global installation installs skills only.');
-  explain(output, '\nSTEP 3/4: Add optional Harness safety guides?');
-  explain(output, '  1. None — skills only (simplest setup)');
-  explain(output, '  2. Essential — core, quality and security guides');
-  explain(output, '  3. Full — all packaged Harness guardrail groups');
+  if(scope==='workspace'){
+    explain(output, '\nOptional project Harness safety guides:');
+    explain(output, '  1. None — skills only (simplest setup)');
+    explain(output, '  2. Essential — core, quality and security guides');
+    explain(output, '  3. Full — all packaged Harness guardrail groups');
+  }
   const harness = scope==='global'?'none':
     ({'1':'none','2':'essential','3':'full'})[String(await ask('Choose 1 / 2 / 3: ')).trim()];
   if (!harness) throw new Error('Invalid Harness selection; no files were installed');
