@@ -22,7 +22,7 @@ This new wizard requires only four choices: AI host(s), Essential/Balanced/Compl
 To preview without changing any project files:
 
 ```sh
-npx --yes xyeena-agent@0.3.0 setup --runtime hermes,gemini --preset essential --dry-run
+npx --yes xyeena-agent@0.3.0 setup --runtime "hermes,gemini" --preset essential --dry-run
 ```
 
 After reviewing, change `--dry-run` to `--yes` to install. `--harness essential` adds Core, Quality, Security guides; defaults to `none`. For complete installs, use `--preset complete --harness full`. The older `init` wizard remains supported.
