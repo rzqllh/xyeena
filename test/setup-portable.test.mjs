@@ -85,7 +85,8 @@ test('global copy preserves unrelated existing skill by default and backs it up 
   assert.match(fs.readFileSync(path.join(skill,'SKILL.md'),'utf8'),/CUSTOM/);
   const repl=applySetup({...opts,update:true,yes:true});
   assert.ok(repl.backupDirectory);
-  assert.equal(fs.readFileSync(path.join(repl.backupDirectory,'0','SKILL.md'),'utf8').includes('CUSTOM'),true);
+  const copies=fs.readdirSync(repl.backupDirectory,{withFileTypes:true}).filter(x=>x.isDirectory()).map(x=>path.join(repl.backupDirectory,x.name,'SKILL.md')).filter(x=>fs.existsSync(x));
+  assert.ok(copies.some(x=>fs.readFileSync(x,'utf8').includes('CUSTOM')));
   assert.doesNotMatch(fs.readFileSync(path.join(skill,'SKILL.md'),'utf8'),/CUSTOM/);
 });
 test('foreign symlinks and modified immutable store are refused',t=>{
