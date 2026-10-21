@@ -13,9 +13,10 @@ const MAX_TIMEOUT = 300000;
 /** Explicit, one-shot Antigravity SDK bridge. Never invoked by Guided hooks. */
 export function createAntigravitySdkAdapter({
   cwd = process.cwd(), python = process.platform === 'win32' ? 'python' : 'python3',
-  skillPaths = [], timeoutMs = 120000, workerPath = WORKER, spawnImpl = spawn
+  skillPaths = [], timeoutMs = 120000, enableSubagents = false, workerPath = WORKER, spawnImpl = spawn
 } = {}) {
   const root = fs.realpathSync(path.resolve(cwd));
+  if (typeof enableSubagents !== 'boolean') throw new Error('Invalid subagent flag');
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > MAX_TIMEOUT)
     throw new Error('SDK timeout must be between 1000 and 300000 milliseconds');
   if (typeof python !== 'string' || !python.trim()) throw new Error('Invalid Python executable');
@@ -35,7 +36,7 @@ export function createAntigravitySdkAdapter({
       if (typeof task.title !== 'string' || !task.title.trim() || task.title.length > 4000)
         throw new Error('Invalid task title');
       const request = JSON.stringify({ cwd: root, task: { id: task.id, title: task.title,
-        scope: { readOnly: true, operationClass: 'safe' } }, skillPaths }) + '\n';
+        scope: { readOnly: true, operationClass: 'safe' } }, skillPaths, enableSubagents }) + '\n';
       return new Promise((resolve, reject) => {
         let finished = false, stdout = '', stderr = '';
         let child;
