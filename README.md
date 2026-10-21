@@ -12,12 +12,14 @@ Install **Node.js 22.14+** once, then open PowerShell, Terminal or your IDE term
 npx --yes xyeena-agent setup
 ```
 
-The wizard asks four human-friendly questions. **No flags, GitHub URL, Git command or npm global install required.**
+The wizard asks a few human-friendly questions. **No flags, GitHub URL, Git command or npm global install required.**
 
 1. **Where?** Global (all your projects, recommended) or this workspace only.
 2. **Which AI?** Antigravity, Codex, Gemini CLI, Claude Code and/or Hermes Agent.
 3. **How many skills?** Essential, Balanced, or Complete (all 19). Dependencies are included.
-4. **Installation method?** Copy (simplest) or Symlink (one durable shared source). For workspace installations, choose optional Harness (none, essential or full). Finally preview the exact paths and confirm.
+4. **Installation method:** Global uses Copy automatically. Workspace offers Copy or Symlink, plus optional Harness (none, essential, full). Finally review paths and confirm.
+
+Global setup now verifies matching packaged skill files at each selected AI path after installation and reports the real count. **Native AI activation remains unverified until you reload the app.**
 
 The default global install writes **only to your own AI user directories**, never system-wide or administrator directories. A global skill can be used from any workspace. **Harness is project-scoped**, so its guards are not silently made global.
 
