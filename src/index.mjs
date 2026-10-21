@@ -16,3 +16,4 @@ export { createAntigravitySdkAdapter, previewAntigravitySdkTask } from './antigr
 export { previewPortableHost, createPortableHostAdapter } from './portable-cli-adapter.mjs';
 
 export { previewOrchestration, executeOrchestration } from './orchestrator.mjs';
+export { SkillInventoryCache, inventoryFingerprint } from './skill-cache.mjs';
