@@ -1,0 +1,113 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
+import { previewPortableHost, createPortableHostAdapter } from '../src/portable-cli-adapter.mjs';
+import { runTaskGraph } from '../src/task-runner.mjs';
+
+function fixture(t) {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'xyeena-headless-'));
+  t.after(() => fs.rmSync(cwd,{recursive:true,force:true}));
+  return cwd;
+}
+function addSkill(cwd, relative, name) {
+  const folder=path.join(cwd,relative,name);
+  fs.mkdirSync(folder,{recursive:true});
+  fs.writeFileSync(path.join(folder,'SKILL.md'),
+    '---\nname: '+name+'\ndescription: Debug and review code changes\n---\n# Demo\n');
+}
+function mockProcess(output, { exitCode=0, expectedCommand=null, argsCheck=null, capture=null }={}) {
+  return (command,args,options) => {
+    if(expectedCommand)assert.equal(command,expectedCommand);
+    if(argsCheck)argsCheck(args);
+    assert.equal(options.shell,false);
+    const child=new EventEmitter();
+    child.stdin=new PassThrough();child.stdout=new PassThrough();child.stderr=new PassThrough();
+    child.kill=()=>{child.emit('close',130);};
+    if(capture)child.stdin.on('data',chunk=>capture.push(chunk.toString('utf8')));
+    process.nextTick(()=>{child.stdout.write(output);child.stdout.end();child.emit('close',exitCode);});
+    return child;
+  };
+}
+const makeTask=(safe=true)=>({id:'T',title:'Review tests for regression',state:'READY',depends_on:[],
+  scope:{readOnly:safe,operationClass:'safe'}});
+
+test('portable preview refuses absent orchestrator and makes no changes',t=>{
+  const cwd=fixture(t);addSkill(cwd,'.gemini/skills','systematic-debugging');
+  const preview=previewPortableHost({cwd,runtime:'gemini',goal:'systematic debugging',includeGlobal:false});
+  assert.equal(preview.ready,false);
+  assert.equal(preview.executed,false);
+  assert.equal(preview.reason.includes('Install'),true);
+  assert.equal(fs.existsSync(path.join(cwd,'.xyeena')),false);
+});
+test('portable preview selects only available Xyeena and third-party skills',t=>{
+  const cwd=fixture(t);
+  addSkill(cwd,'.gemini/skills','xyeena-orchestrate');
+  addSkill(cwd,'.gemini/skills','systematic-debugging');
+  const preview=previewPortableHost({cwd,runtime:'gemini',goal:'systematic debugging regression',includeGlobal:false});
+  assert.equal(preview.ready,true);
+  assert.deepEqual(preview.requestedSkills.slice(0,2),['xyeena-orchestrate','systematic-debugging']);
+  assert.equal(preview.mode,'headless-one-shot');
+});
+test('Hermes safe one-shot runs native preloaded installed skills, never YOLO',async t=>{
+  const cwd=fixture(t);
+  const captured=[];
+  const adapter=createPortableHostAdapter({cwd,runtime:'hermes',selectedSkills:['xyeena-orchestrate','systematic-debugging'],
+    spawnImpl:mockProcess(JSON.stringify({type:'system',subtype:'init'})+'\n'+
+      JSON.stringify({type:'result',exit_code:0,text:'Observed review results',tokens:{total:38}})+'\n',
+      {expectedCommand:'hermes',capture:captured,argsCheck(args){
+        assert.deepEqual(args.slice(0,4),['chat','--query-file','-','--oneshot']);
+        assert.ok(args.includes('safe'));
+        assert.ok(args.includes('stream-json'));
+        assert.ok(args.includes('xyeena-orchestrate,systematic-debugging'));
+        assert.ok(!args.includes('--yolo'));
+      }})});
+  const result=await adapter.executeTask(makeTask());
+  assert.equal(result.executed,true);
+  assert.equal(result.verified,false);
+  assert.equal(result.status,'REVIEW_REQUIRED');
+  assert.equal(result.usageTokens,38);
+  assert.match(captured.join(''),/Review tests/);
+  const graph=await runTaskGraph({tasks:{T:makeTask()},adapter});
+  assert.equal(graph.complete,false);
+});
+test('Gemini headless uses plan mode, JSON and stdin rather than prompt args',async t=>{
+  const cwd=fixture(t);const captured=[];
+  const adapter=createPortableHostAdapter({cwd,runtime:'gemini',selectedSkills:['xyeena-orchestrate'],
+    spawnImpl:mockProcess(JSON.stringify({response:'Plan reviewed',stats:{models:{'flash':{tokens:{total:15}}}}}),
+      {expectedCommand:'gemini',capture:captured,argsCheck(args){
+        assert.deepEqual(args,['--output-format','json','--approval-mode','plan','--extensions','none']);
+        assert.ok(!args.includes('--yolo'));
+        assert.ok(!args.includes('Plan reviewed'));
+      }})});
+  const result=await adapter.executeTask(makeTask());
+  assert.equal(result.report,'Plan reviewed');
+  assert.equal(result.usageTokens,15);
+  assert.equal(result.verified,false);
+  assert.match(captured.join(''),/read-only/);
+});
+test('host adapter refuses workspace mutations and external operations',async t=>{
+  const cwd=fixture(t);
+  const adapter=createPortableHostAdapter({cwd,runtime:'hermes',spawnImpl:()=>{throw Error('must not spawn')}});
+  await assert.rejects(adapter.executeTask(makeTask(false)),/safe read-only/);
+  await assert.rejects(adapter.executeTask({...makeTask(),scope:{readOnly:true,operationClass:'external'}}),/safe read-only/);
+  await assert.rejects(adapter.executeTask({...makeTask(),title:' '}),/Invalid task title/);
+  assert.throws(()=>createPortableHostAdapter({cwd,runtime:'codex'}),/Unsupported portable/);
+  assert.throws(()=>createPortableHostAdapter({cwd,runtime:'hermes',selectedSkills:['does not/exists']}),/Invalid selected/);
+  assert.throws(()=>createPortableHostAdapter({cwd,runtime:'gemini',timeoutMs:0}),/timeout/);
+});
+test('nonzero status, invalid JSON, and reported errors cannot be verified',async t=>{
+  const cwd=fixture(t);
+  const bad1=createPortableHostAdapter({cwd,runtime:'gemini',
+    spawnImpl:mockProcess('{"error":{"message":"something"}}')});
+  await assert.rejects(bad1.executeTask(makeTask()),/reported an error/);
+  const bad2=createPortableHostAdapter({cwd,runtime:'hermes',
+    spawnImpl:mockProcess('{"type":"result","exit_code":1,"text":"failed"}')});
+  await assert.rejects(bad2.executeTask(makeTask()),/successful final/);
+  const bad3=createPortableHostAdapter({cwd,runtime:'gemini',
+    spawnImpl:mockProcess('bad', {exitCode:1})});
+  await assert.rejects(bad3.executeTask(makeTask()),/nonzero status/);
+});
