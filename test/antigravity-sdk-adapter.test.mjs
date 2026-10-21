@@ -51,6 +51,7 @@ test('SDK adapter cannot run write, external or malformed tasks', async t => {
   await assert.rejects(adapter.executeTask({...task(), scope:{ readOnly:true, operationClass:'external'}}), /safe read-only/);
   await assert.rejects(adapter.executeTask({...task(), title:''}), /Invalid task title/);
   assert.throws(() => createAntigravitySdkAdapter({cwd, timeoutMs: 0}), /timeout/);
+  assert.throws(() => createAntigravitySdkAdapter({cwd, enableSubagents: 'yes'}), /subagent flag/);
 });
 
 test('native SDK worker result never automatically counts as verification', async t => {
