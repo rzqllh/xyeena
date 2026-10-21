@@ -112,6 +112,43 @@ npx --yes --package $pkg xyeena setup --runtime antigravity --preset complete --
 
 `--update` berarti **backup sebelum replace**, bukan menghapus file custom. File pihak ketiga yang tidak berasal dari paket Xyeena tidak disentuh. Perintah `--force` *tidak* didukung oleh wizard beginner; salah ketik seperti `--froce` sekarang ditolak sebagai opsi tak dikenal. Jangan menaruh `--force` sebelum `$pkg`, karena `npx` akan menafsirkannya sebagai argumen npm.
 
+## C3. Beda file, update sebagian, dan rollback
+
+Untuk melihat **perbedaan sebuah file** sebelum memilih ganti, gunakan `setup diff` dan tentukan `--file` sesuai nama yang muncul di daftar `conflicts`. Contoh:
+
+```powershell
+npx --yes --package $pkg xyeena setup diff --runtime antigravity --preset complete --harness full --file ".agents/skills/xyeena-orchestrate/SKILL.md"
+```
+
+Bila hanya ingin memperbarui `xyeena-orchestrate` tetapi mempertahankan `.agents/rules/xyeena-core.md` yang sudah disunting:
+
+```powershell
+npx --yes --package $pkg xyeena setup --runtime antigravity --preset complete --harness full --replace-files ".agents/skills/xyeena-orchestrate/SKILL.md" --dry-run
+npx --yes --package $pkg xyeena setup --runtime antigravity --preset complete --harness full --replace-files ".agents/skills/xyeena-orchestrate/SKILL.md" --yes
+```
+
+Atau pilih opsi **3 — Choose specific conflicting files** dalam wizard. Semua file yang benar-benar diganti mendapat backup sebelum replace.
+
+### Rollback yang aman
+
+Instalasi yang memakai versi baru menyimpan jurnal perubahan di `.xyeena/backups/<ID>/rollback.json`. Cari ID backup dan pratinjau lebih dulu:
+
+```powershell
+npx --yes --package $pkg xyeena setup backups
+npx --yes --package $pkg xyeena setup rollback --id "ID_DARI_HASIL" --dry-run
+npx --yes --package $pkg xyeena setup rollback --id "ID_DARI_HASIL" --yes
+```
+
+Rollback baru dapat memulihkan **file yang dibackup dan file yang dibuat oleh instalasi spesifik itu saja**. Bila file tersebut sudah diedit setelah pemasangan, rollback otomatis akan menolak agar edit selanjutnya tidak hilang. Backup terdahulu yang **tidak punya `rollback.json`**, seperti backup dari instalasi kandidat sebelumnya, **tidak bisa di-rollback otomatis**; lakukan pemulihan manual dari salinan file di folder backup tersebut. Jangan menghapus backup tanpa memeriksa hasilnya.
+
+### Pemeriksaan sesudah instalasi
+
+```powershell
+npx --yes --package $pkg xyeena setup check --runtime antigravity
+```
+
+Perintah ini hanya mengecek manifest, keberadaan skill, metadata, dan petunjuk executable/config host. Status "detected" **bukan** bukti bahwa Antigravity berhasil memuat/menjalankan skill di chat aktif.
+
 ## D. Cek hasil dan jalankan Xyeena
 
 ```powershell
