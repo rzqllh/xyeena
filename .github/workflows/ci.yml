@@ -100,3 +100,11 @@ jobs:
           npx --yes --package $package xyeena guided uninstall --dir . --yes
           if ($LASTEXITCODE -ne 0) { throw 'Guided uninstall failed' }
           if (Test-Path '.agents/hooks.json') { throw 'Uninstall left the managed config behind' }
+          npx --yes --package $package xyeena setup --runtime hermes,gemini --preset essential --dry-run
+          if ($LASTEXITCODE -ne 0) { throw 'Beginner setup preview failed' }
+          if (Test-Path '.hermes/skills/xyeena-orchestrate/SKILL.md') { throw 'Setup preview wrote files' }
+          npx --yes --package $package xyeena setup --runtime hermes,gemini --preset essential --yes
+          if ($LASTEXITCODE -ne 0) { throw 'Beginner setup failed' }
+          if (-not (Test-Path '.hermes/skills/xyeena-orchestrate/SKILL.md')) { throw 'Hermes orchestrator missing' }
+          if (-not (Test-Path '.gemini/skills/xyeena-orchestrate/SKILL.md')) { throw 'Gemini orchestrator missing' }
+          if (Test-Path 'AGENTS.md') { throw 'Beginner setup modified root AGENTS.md' }
