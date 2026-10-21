@@ -50,6 +50,27 @@ Already using `init`? It remains supported. The beginner `setup` command is addi
 
 ---
 
+## Recoverable installation: diff, selective upgrade, rollback, and host check
+
+Installer v0.3.0 also supports **reviewing a single conflicting file**, **updating only that conflict**, and a **guarded rollback journal** for new installations:
+
+```powershell
+# This checks local files only, does not call a model:
+npx --yes xyeena-agent@0.3.0 setup check --runtime antigravity
+# Preview differences against one packaged file:
+npx --yes xyeena-agent@0.3.0 setup diff --runtime antigravity --preset complete --harness full --file ".agents/skills/xyeena-orchestrate/SKILL.md"
+# Replace just that file; other custom files remain untouched:
+npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --replace-files ".agents/skills/xyeena-orchestrate/SKILL.md" --dry-run
+npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --replace-files ".agents/skills/xyeena-orchestrate/SKILL.md" --yes
+
+# For installations created with rollback journals:
+npx --yes xyeena-agent@0.3.0 setup backups
+npx --yes xyeena-agent@0.3.0 setup rollback --id BACKUP_ID --dry-run
+npx --yes xyeena-agent@0.3.0 setup rollback --id BACKUP_ID --yes
+```
+
+Older backup directories created before rollback journaling are listed but require **manual restore**; automatic rollback refuses them. Rollback also refuses when files have changed after installation, preserving the user's later edits. Rollback removes only files created by that specific setup run and restores backed-up originals, never deletes an entire skill directory. The host check reports filesystem inventory, not verified native IDE activation.
+
 ## Quick links
 
 - [Getting started](docs/GETTING-STARTED.md): Requirements, interactive setup, and selective installation.
