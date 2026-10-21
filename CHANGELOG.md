@@ -1,7 +1,7 @@
 ## [0.3.0] - Release candidate (not published)
 
 - Add portable skill orchestration and per-host skill inventory for Antigravity, Codex, Claude Code, Gemini CLI, and Hermes.
-- Add novice-safe `xyeena setup` wizard, Essential/Balanced/Complete presets, optional Harness, conflict-aware reinstallation, explicit dry-run/confirmation and backed-up `--update`.
+- Add novice-safe `xyeena setup` wizard, Essential/Balanced/Complete presets, optional Harness, conflict-aware reinstallation, bounded file diffs, per-file update, explicit dry-run/confirmation, rollback journal and read-only post-install check.
 - Add optional restricted host SDK/CLI one-shot execution, skill routing previews, workflow hints, cache/invalidation, evidence-gated tasks, and local run ledger.
 - Preserve existing package name, 19 skill IDs, 41 Harness guardrails, and `init`/previous CLI behavior.
 - Runtime execution is host-dependent and does not imply full autonomous write permissions or verified live IDE dispatch.
