@@ -49,6 +49,7 @@ export async function main(args){
  if(['help','--help','-h'].includes(cmd) || f.help || f._.includes('-h') || f._.includes('help')){console.log(help);return}
  if(['version','--version','-v'].includes(cmd)){console.log(VERSION);return}
  if(cmd==='setup'){
+    if(f._.length)throw new Error('Unexpected setup argument(s): '+f._.join(' ')+'. In PowerShell quote comma-separated runtimes, for example --runtime "hermes,gemini".');
     const cwd=path.resolve(f.dir||process.cwd());
     if (!f.runtime) {
       if(f.yes||f.dryRun||f.preset||f.harness)throw new Error('Non-interactive setup requires --runtime HOST to prevent selecting tools implicitly');
