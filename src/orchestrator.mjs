@@ -33,6 +33,7 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
   const ready = !!governor;
   return {
     schema: 1, mode: 'preview-only', executed: false, runtime, goal, cwd: root, state,
+    includeGlobal, maxSupporting, ...(home ? { home } : {}),
     ready, hostExecutionAvailable: hasBridge,
     execution: hasBridge ? runtime === 'antigravity' ? 'sdk-one-shot' : 'cli-one-shot' : 'host-native-only',
     entrypoint: '/xyeena-orchestrate',
@@ -58,8 +59,15 @@ export async function executeOrchestration(plan, {
   if (!plan || plan.schema !== 1 || plan.mode !== 'preview-only' || plan.executed !== false)
     throw new Error('Use a fresh orchestration preview before execution');
   if (!yes) throw new Error('A real provider-backed call requires explicit --yes');
-  if (!plan.ready) throw new Error(plan.reason || 'Orchestrator is unavailable');
-  if (!plan.hostExecutionAvailable) throw new Error(plan.reason || 'No native host execution adapter');
+  // Re-scan at execution time so a stale preview never asserts removed or untrusted skills.
+  const fresh = previewOrchestration({ cwd: plan.cwd, runtime: plan.runtime, goal: plan.goal,
+    state: plan.state, includeGlobal: plan.includeGlobal, maxSupporting: plan.maxSupporting,
+    ...(plan.home ? { home: plan.home } : {}) });
+  if (JSON.stringify(fresh.selectedSkills) !== JSON.stringify(plan.selectedSkills) ||
+      JSON.stringify(fresh.skillPaths) !== JSON.stringify(plan.skillPaths))
+    throw new Error('Installed skill inventory changed since preview; preview again');
+  if (!fresh.ready) throw new Error(fresh.reason || 'Orchestrator is unavailable');
+  if (!fresh.hostExecutionAvailable) throw new Error(fresh.reason || 'No native host execution adapter');
   if (typeof delegate !== 'boolean') throw new Error('Invalid delegation flag');
   if (delegate && plan.runtime !== 'antigravity')
     throw new Error('Subagent delegation is not enabled for this host bridge');
