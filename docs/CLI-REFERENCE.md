@@ -9,6 +9,19 @@ npx xyeena-agent@latest version
 
 Use `npx xyeena-agent@latest <command>` for the subcommands listed below. Command names remain compatible.
 
+## Beginner installation (v0.3.0)
+
+| Command | Meaning |
+| --- | --- |
+| `setup` | Interactive four-step beginner wizard; preview then explicit confirmation |
+| `setup --runtime hermes --preset essential --dry-run` | Read-only preview with no model call or project edits |
+| `setup --runtime hermes,gemini --preset balanced --harness essential --yes` | Explicit safe local installation |
+| `setup --runtime all-supported --preset complete --harness full --dry-run` | Inspect broad installation before consent |
+
+Presets: `essential` (orchestrator + required deps), `balanced` (orchestrator/planning/debugging/review/testing/verification), `complete` (all packaged skills). Harness: `none`, `essential` (three groups), `full` (11 groups). `setup` refuses overwrites of modified skill files and does not support forcing a beginner installation.
+
+**Detailed Windows guide:** [INSTALL-WINDOWS-PEMULA.md](INSTALL-WINDOWS-PEMULA.md).
+
 ## Installation
 
 | Command | Behavior |
