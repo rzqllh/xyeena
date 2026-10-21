@@ -2,10 +2,11 @@
 
 **Equip your agent. Guard your project.**
 
-Xyeena Rig combines modular **Agent Skills** with an opt-in project **Harness** for coding agents. It gives agents bounded scope, safer operations, verifiable evidence, and automated repository checks. Built for solo developers and engineering teams using **Antigravity**, **Claude Code**, and **Codex**. Zero runtime dependencies.
+Xyeena Rig combines modular **Agent Skills** with an opt-in project **Harness** for coding agents. It gives agents bounded scope, safer operations, verifiable evidence, and automated repository checks. Built for solo developers and engineering teams using **Antigravity**, **Claude Code**, **Codex**, **Gemini CLI**, and **Hermes**. Zero runtime dependencies.
 
 ```bash
-npx xyeena-agent@latest init
+# After the v0.3.0 npm release is published:
+npx --yes xyeena-agent@0.3.0 setup
 ```
 
 | Component | What it adds | Selection |
@@ -15,6 +16,25 @@ npx xyeena-agent@latest init
 | **All** | Skills + Harness combined | Explicit selection only |
 
 Supported agent runtimes: **Antigravity**, **Claude Code**, and **Codex**. Project detection covers Node/Next.js, Python, static web, monorepos, and Git workflows.
+
+---
+
+## Beginner setup (v0.3.0 release candidate)
+
+**Recommended command:** `npx --yes xyeena-agent@0.3.0 setup` once **v0.3.0 is published**. It launches a four-step wizard: select AI host(s) → skill preset (Essential / Balanced / Complete) → optional Harness → review file changes and confirm. Nothing is written before confirmation.
+
+For unattended Windows/CI setup, specify exactly what to install:
+
+```powershell
+npx --yes xyeena-agent@0.3.0 setup --runtime hermes,gemini --preset essential --dry-run
+npx --yes xyeena-agent@0.3.0 setup --runtime hermes,gemini --preset essential --yes
+```
+
+Already using `init`? It remains supported. The beginner `setup` command is additive and **does not overwrite user-modified skills**. Xyeena installs skill files only in the chosen project; it neither installs nor logs you into the AI host. The existing model call and in-session limitations are unchanged.
+
+**[Windows setup guide in Indonesian](docs/INSTALL-WINDOWS-PEMULA.md)** explains Node.js/npm, choosing Hermes/Gemini/Codex, installing, verifying skill inventory, and troubleshooting from zero.
+
+> Until v0.3.0 is actually published, npm `@latest` may still install an earlier version that lacks `setup`. The unmerged PR can be smoke-tested from its GitHub tarball separately; do not present the release candidate as already published.
 
 ---
 
