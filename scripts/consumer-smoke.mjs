@@ -7,9 +7,9 @@ import { fileURLToPath } from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const scratch=fs.mkdtempSync(path.join(os.tmpdir(),'xyeena-package-'));
 const npm=process.platform==='win32'?'npm.cmd':'npm';
-function run(file,args,cwd=root) {
+function run(file,args,cwd=root,extraEnv={}) {
   const r=spawnSync(file,args,{cwd,encoding:'utf8',timeout:120000,windowsHide:true,shell:process.platform==='win32' && /\.(cmd|bat)$/i.test(file),
-    env:{...process.env,npm_config_audit:'false',npm_config_fund:'false'}});
+    env:{...process.env,npm_config_audit:'false',npm_config_fund:'false',...extraEnv}});
   if(r.error||r.status!==0)throw new Error(file+' '+args.join(' ')+'\n'+(r.error?.message||r.stderr||r.stdout));
   return r.stdout;
 }
@@ -72,5 +72,23 @@ try {
   }
   if(fs.existsSync(path.join(beginner,'AGENTS.md')) || fs.existsSync(path.join(beginner,'.claude')))
     throw new Error('Beginner setup modified unselected hosts or root policies');
-  console.log('PASS packed consumer: no implicit all, harness-only, selective skills, beginner setup preview/install.');
+  const portableHome=path.join(scratch,'portable-profile');
+  fs.mkdirSync(portableHome);
+  const portableEnv=process.platform==='win32'?{USERPROFILE:portableHome}:{HOME:portableHome};
+  const portableProject=path.join(scratch,'portable-project');
+  fs.mkdirSync(portableProject);
+  const portableArgs=['setup','--scope','global','--mode','symlink','--runtime','antigravity,gemini','--preset','essential'];
+  const portablePlan=JSON.parse(run(process.execPath,[bin,...portableArgs,'--dry-run'],portableProject,portableEnv));
+  if(portablePlan.scope!=='global'||portablePlan.mode!=='symlink'||fs.readdirSync(portableHome).length)
+    throw new Error('Packed portable setup dry-run did not stay read-only');
+  run(process.execPath,[bin,...portableArgs,'--yes'],portableProject,portableEnv);
+  for(const folder of ['.gemini/config/skills','.gemini/skills']) {
+    const target=path.join(portableHome,folder,'xyeena-orchestrate');
+    if(!fs.lstatSync(target).isSymbolicLink()||
+      !fs.readFileSync(path.join(target,'SKILL.md'),'utf8').includes('xyeena-orchestrate'))
+      throw new Error('Packed global symlink source missing: '+target);
+  }
+  if(fs.readdirSync(portableProject).length)
+    throw new Error('Global setup wrote to current workspace');
+  console.log('PASS packed consumer: workspace copy + user-global symlink installs from npm tarball.');
 } finally {fs.rmSync(scratch,{recursive:true,force:true})}
