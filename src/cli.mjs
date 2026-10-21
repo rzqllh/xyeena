@@ -10,6 +10,7 @@ import { previewOrchestration, executeOrchestration } from './orchestrator.mjs';
 import { recordOrchestrationRun } from './orchestration-ledger.mjs';
 import { interactiveSetup, previewSetup, applySetup, previewSetupDiff } from './setup.mjs';
 import { listSetupBackups, previewSetupRollback, runSetupRollback } from './setup-rollback.mjs';
+import { setupHealthCheck } from './setup-health.mjs';
 const help=`Xyeena Rig ${VERSION}
 
 Usage:
@@ -17,6 +18,7 @@ Usage:
   xyeena setup --runtime "hermes,gemini" --preset essential --harness none --dry-run
   xyeena setup --runtime antigravity --preset complete --replace-files .agents/skills/xyeena-orchestrate/SKILL.md --yes
   xyeena setup diff --runtime antigravity --preset complete --file .agents/skills/xyeena-orchestrate/SKILL.md
+  xyeena setup check --runtime antigravity
   xyeena setup backups
   xyeena setup rollback --id BACKUP_ID [--dry-run|--yes]
   xyeena setup --runtime antigravity --preset complete --harness full --update --yes
@@ -56,6 +58,12 @@ export async function main(args){
  if(['version','--version','-v'].includes(cmd)){console.log(VERSION);return}
  if(cmd==='setup'){
     const sub=f._[0];
+    if(sub==='check'){
+      if(f._.length!==1||!f.runtime||Object.keys(f).some(key=>!['_','dir','runtime','localOnly'].includes(key)))
+        throw new Error('Usage: xyeena setup check --runtime HOST [--local-only]');
+      console.log(JSON.stringify(setupHealthCheck({cwd:path.resolve(f.dir||process.cwd()),
+        runtime:f.runtime,includeGlobal:!f.localOnly}),null,2));return;
+    }
     if(sub==='backups'){
       if(f._.length!==1||Object.keys(f).some(key=>!['_','dir'].includes(key)))
         throw new Error('Usage: xyeena setup backups [--dir PATH]');
