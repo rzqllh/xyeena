@@ -48,6 +48,6 @@ test('portable host run refuses execution without explicit --yes',t=>{
 });
 test('portable host parser rejects unsupported hosts and empty goals',t=>{
   const cwd=workspace(t);
-  assert.notEqual(call(cwd,['host','preview','--runtime','codex','--goal','Review']).status,0);
+  assert.notEqual(call(cwd,['host','preview','--runtime','unsupported','--goal','Review']).status,0);
   assert.notEqual(call(cwd,['host','preview','--runtime','gemini']).status,0);
 });
