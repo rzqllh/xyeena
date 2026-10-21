@@ -101,3 +101,16 @@ test('stale selected skill or revoked trust is blocked before launching a host',
     portableAdapterFactory:()=>{invoked=true;return {};} }),/inventory changed/);
   assert.equal(invoked,false);
 });
+
+test('manifest content change invalidates preview even when selected skill names stay equal',async t=>{
+  const cwd=workspace(t);
+  add(cwd,'.gemini/skills','xyeena-orchestrate');
+  const plan=previewOrchestration({cwd,runtime:'gemini',goal:'review tests',includeGlobal:false});
+  const file=path.join(cwd,'.gemini','skills','xyeena-orchestrate','SKILL.md');
+  fs.appendFileSync(file,'\n# Different instructions since approval preview\n');
+  let called=false;
+  await assert.rejects(executeOrchestration(plan,{yes:true,portableAdapterFactory:()=>{
+    called=true;return {executeTask:async()=>({})};
+  }}),/inventory changed/);
+  assert.equal(called,false);
+});
