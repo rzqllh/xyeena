@@ -60,7 +60,7 @@ function priorManagedLink(dst,item){
   if(item.kind!=='link')return null;
   try {
     if(!fs.lstatSync(dst).isSymbolicLink())return null;
-    const store=path.join(item.root===undefined?os.homedir():item.storeHome,'.xyeena','skill-store');
+    const store=path.join(item.storeHome,'.xyeena','skill-store');
     if(!fs.lstatSync(store).isDirectory()||fs.lstatSync(store).isSymbolicLink())return null;
     const root=fs.realpathSync(store),actual=fs.realpathSync(dst);
     const rel=path.relative(root,actual).split(path.sep);
