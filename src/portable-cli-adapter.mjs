@@ -40,7 +40,7 @@ export function portableLaunchPlan({ runtime, args, executable, platform = proce
 }
 
 
-export function previewPortableHost({ cwd = process.cwd(), runtime, goal, home,
+export function previewPortableHost({ cwd = process.cwd(), runtime, goal, state = 'TRIAGE', home,
   includeGlobal = true } = {}) {
   if (!HOSTS.has(runtime)) throw new Error('Portable CLI host must be gemini or hermes');
   if (typeof goal !== 'string' || !goal.trim() || goal.length > MAX_PROMPT)
@@ -50,12 +50,12 @@ export function previewPortableHost({ cwd = process.cwd(), runtime, goal, home,
   const inventory = discoverWorkspaceSkills(options);
   const eligible = inventory.filter(s => s.availability !== 'requires-host-trust');
   const governor = eligible.find(s => s.name === 'xyeena-orchestrate');
-  const routing = routeWorkspaceSkills({ ...options, prompt: goal });
+  const routing = routeWorkspaceSkills({ ...options, prompt: goal, state });
   const skills = [...new Set([...(governor ? ['xyeena-orchestrate'] : []),
     routing.primary?.name, ...routing.supporting.map(s => s.name)].filter(Boolean))];
   const blocked = !governor;
   return {
-    mode: 'headless-one-shot', runtime, cwd: root, goal, executed: false,
+    mode: 'headless-one-shot', runtime, cwd: root, goal, state, executed: false,
     ready: !blocked, reason: blocked ? 'Install and enable xyeena-orchestrate in this host; Hermes project skills must be trusted' : null,
     requestedSkills: skills, detectedCount: inventory.length,
     untrustedSkills: inventory.filter(s => s.availability === 'requires-host-trust').map(s => s.name),
@@ -116,7 +116,7 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
       const args = runtime === 'hermes'
         ? ['chat', '--query-file', '-', '--oneshot', '-Q', '--format', 'stream-json',
            '--toolsets', 'safe', ...(selectedSkills.length ? ['--skills', selectedSkills.join(',')] : [])]
-        : ['--output-format', 'json', '--approval-mode', 'plan', '--extensions', 'none'];
+        : ['--output-format', 'json', '--approval-mode', 'plan'];
       const launch = portableLaunchPlan({ runtime, args, executable, platform, env });
       return new Promise((resolve, reject) => {
         let finished = false, stdout = '', stderrLength = 0, child;
