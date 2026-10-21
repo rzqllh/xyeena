@@ -54,7 +54,7 @@ test('Gemini CLI shared alias takes precedence over host-specific folder for dup
 test('Hermes discovers category-nested local and configured external skills', t => {
   const {root,project,home}=fixture(t), external=path.join(root,'shared');
   skill(home,'.hermes/skills/devops','kubernetes-check');
-  skill(external,'group/subgroup','audit-special'); // nested category from configured external root
+  skill(external,'group','audit-special'); // category nested under configured external root
   hermesConfig(home, 'skills:\n  external_dirs:\n    - '+external+'\n');
   const found=discoverWorkspaceSkills({cwd:project,home,runtime:'hermes'});
   assert.deepEqual(found.map(x=>x.name).sort(),['audit-special','kubernetes-check']);
