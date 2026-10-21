@@ -17,7 +17,7 @@ jobs:
   npm:
     if: >-
       github.event_name == 'release' ||
-      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'release: xyeena-agent v0.4.0') || startsWith(github.event.head_commit.message, 'release: xyeena-agent v0.3.0') || startsWith(github.event.head_commit.message, 'verify: xyeena-agent v0.3.0')))
+      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'release: xyeena-agent v0.4.1') || startsWith(github.event.head_commit.message, 'release: xyeena-agent v0.4.0') || startsWith(github.event.head_commit.message, 'release: xyeena-agent v0.3.0') || startsWith(github.event.head_commit.message, 'verify: xyeena-agent v0.3.0')))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -39,7 +39,7 @@ jobs:
               exit 1
             fi
           elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
-            if [ "$GITHUB_REF" != "refs/heads/main" ] || { [ "$PACKAGE_VERSION" != "0.4.0" ] && [ "$PACKAGE_VERSION" != "0.3.0" ]; }; then
+            if [ "$GITHUB_REF" != "refs/heads/main" ] || { [ "$PACKAGE_VERSION" != "0.4.1" ] && [ "$PACKAGE_VERSION" != "0.4.0" ] && [ "$PACKAGE_VERSION" != "0.3.0" ]; }; then
               echo "::error::Main-branch publish is limited to an explicitly approved release version"
               exit 1
             fi
