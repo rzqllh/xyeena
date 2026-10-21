@@ -4,6 +4,7 @@ import { supportedSkillHosts } from './skill-hosts.mjs';
 import { routeWorkspaceSkills, discoverWorkspaceSkills } from './workspace-skills.mjs';
 import { createPortableHostAdapter } from './portable-cli-adapter.mjs';
 import { createAntigravitySdkAdapter } from './antigravity-sdk-adapter.mjs';
+import { inventoryFingerprint } from './skill-cache.mjs';
 import { inferWorkflowState } from './workflow-intent.mjs';
 
 const HOSTS = new Set(supportedSkillHosts());
@@ -25,6 +26,7 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
   const root = fs.realpathSync(path.resolve(cwd));
   const settings = { cwd: root, runtime, includeGlobal, env, ...(home ? { home } : {}) };
   const inventory = discoverWorkspaceSkills(settings);
+  const inventoryRevision = inventoryFingerprint(settings);
   const installed = inventory.filter(s => s.availability === 'detected');
   const governor = installed.find(s => s.name === 'xyeena-orchestrate');
   const route = routeWorkspaceSkills({ ...settings, state: resolvedState, prompt: goal, maxSupporting });
@@ -41,7 +43,7 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
     ready, hostExecutionAvailable: hasBridge,
     execution: runtime === 'antigravity' ? 'sdk-one-shot' : 'cli-one-shot',
     entrypoint: '/xyeena-orchestrate',
-    selectedSkills: skills, skillPaths: sdkSkillPaths,
+    selectedSkills: skills, skillPaths: sdkSkillPaths, inventoryRevision,
     missingOrchestrator: !governor,
     unavailable: inventory.filter(s => s.availability !== 'detected').map(s => ({
       name: s.name, reason: s.availability
@@ -67,7 +69,8 @@ export async function executeOrchestration(plan, {
   const fresh = previewOrchestration({ cwd: plan.cwd, runtime: plan.runtime, goal: plan.goal,
     state: plan.state, includeGlobal: plan.includeGlobal, maxSupporting: plan.maxSupporting,
     ...(plan.home ? { home: plan.home } : {}) });
-  if (JSON.stringify(fresh.selectedSkills) !== JSON.stringify(plan.selectedSkills) ||
+  if (fresh.inventoryRevision !== plan.inventoryRevision ||
+      JSON.stringify(fresh.selectedSkills) !== JSON.stringify(plan.selectedSkills) ||
       JSON.stringify(fresh.skillPaths) !== JSON.stringify(plan.skillPaths))
     throw new Error('Installed skill inventory changed since preview; preview again');
   if (!fresh.ready) throw new Error(fresh.reason || 'Orchestrator is unavailable');
