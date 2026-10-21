@@ -123,11 +123,13 @@ export function routeWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigravi
   const discovered = discoverWorkspaceSkills({ cwd, runtime, home, includeGlobal, env });
   const installed = discovered.filter(skill => skill.availability === 'detected');
   const installedByName = new Map(installed.map(skill => [skill.name, skill]));
-  const builtins = loadRegistry().filter(cap => installedByName.has(cap.metadata.name) &&
+  const allBuiltinCaps = loadRegistry();
+  const allBuiltinNames = new Set(allBuiltinCaps.map(cap => cap.metadata.name));
+  const builtins = allBuiltinCaps.filter(cap => installedByName.has(cap.metadata.name) &&
     (!(cap.activation?.states?.length) || cap.activation.states.includes(state)));
   const builtinNames = new Set(builtins.map(cap => cap.metadata.name));
   const routed = resolveCapabilities(builtins, { prompt, state, paths, maxSupporting });
-  const candidates = [...routed.candidates, ...installed.filter(skill => !builtinNames.has(skill.name))
+  const candidates = [...routed.candidates, ...installed.filter(skill => !allBuiltinNames.has(skill.name))
     .map(skill => externalScore(skill, prompt)).filter(Boolean)]
     .sort((a,b) => b.score - a.score || a.name.localeCompare(b.name));
   const primary = candidates[0] || null;
