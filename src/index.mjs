@@ -13,3 +13,4 @@ export { discoverWorkspaceSkills, routeWorkspaceSkills, skillAvailabilityMatrix 
 export { SKILL_HOSTS, supportedSkillHosts, skillLocations, hermesSkillSettings } from './skill-hosts.mjs';
 export { runTaskGraph } from './task-runner.mjs';
 export { createAntigravitySdkAdapter, previewAntigravitySdkTask } from './antigravity-sdk-adapter.mjs';
+export { previewPortableHost, createPortableHostAdapter } from './portable-cli-adapter.mjs';
