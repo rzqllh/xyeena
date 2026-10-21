@@ -1,3 +1,11 @@
+## Unreleased (v0.3.0 candidate, PR #12)
+
+- Additive portable orchestration for Antigravity, Codex, Claude Code, Gemini CLI and Hermes; existing Skills, Harness and original install defaults preserved.
+- Inventory installed skills by host and trust/platform eligibility, zero-token AUTO workflow inference, bounded metadata cache, duplicate-shadow safety, external/nested Hermes and named profile support.
+- Unified `xyeena orchestrate preview|run` entrypoint. Real model calls are explicit and limited to read-only one-shot host adapters, not active IDE sessions; model output is REVIEW_REQUIRED without independent proof.
+- Optional privacy-constrained `--record` journal for recovery, with no automatic resume, provider approval or write-enabled autonomy.
+- Add independent `verifyEvidence` gate to task graph, cross-platform CLI/SDK CI and host-acceptance checklist. Production publish and native in-session end-to-end verification remain pending.
+
 # Changelog
 
 ## [Unreleased]
