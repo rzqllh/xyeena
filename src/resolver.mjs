@@ -26,7 +26,7 @@ function pathMatch(pattern,p){
 function phraseMatch(text, phrase){
   const normalized = normalizeText(phrase);
   if (!normalized) return false;
-  const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\function phraseMatch(text, phrase){ return text.includes(normalizeText(phrase)); }');
+  const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp('(?<![\\p{L}\\p{N}_])' + escaped +
     '(?![\\p{L}\\p{N}_])', 'u').test(text);
 }
