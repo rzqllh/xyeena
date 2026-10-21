@@ -81,3 +81,17 @@ test('preview validates runtime, state and bounded inputs before side effects',t
   assert.throws(()=>previewOrchestration({cwd,runtime:'codex',goal:'test',state:'WRONG'}),/workflow state/);
   assert.throws(()=>previewOrchestration({cwd,runtime:'codex',goal:'test',maxSupporting:200}),/supporting-skill/);
 });
+
+test('stale selected skill or revoked trust is blocked before launching a host',async t=>{
+  const cwd=workspace(t);
+  add(cwd,'.gemini/skills','xyeena-orchestrate');
+  add(cwd,'.gemini/skills','systematic-debugging');
+  const plan=previewOrchestration({cwd,runtime:'gemini',goal:'systematic debugging regression',
+    includeGlobal:false});
+  assert.ok(plan.selectedSkills.includes('systematic-debugging'));
+  fs.rmSync(path.join(cwd,'.gemini/skills/systematic-debugging'),{recursive:true});
+  let invoked=false;
+  await assert.rejects(executeOrchestration(plan,{yes:true,
+    portableAdapterFactory:()=>{invoked=true;return {};} }),/inventory changed/);
+  assert.equal(invoked,false);
+});
