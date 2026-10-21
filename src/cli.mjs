@@ -26,7 +26,7 @@ Usage:
   xyeena resolve --prompt TEXT [--state TRIAGE] [--path FILE]
   xyeena skills discover|matrix [--dir PATH] [--runtime antigravity|gemini|codex|claude|hermes|all] [--local-only]
   xyeena route --prompt TEXT [--dir PATH] [--runtime antigravity|gemini|codex|claude|hermes] [--state TRIAGE]
-  xyeena orchestrate preview --runtime HOST --goal TEXT [--state TRIAGE]
+  xyeena orchestrate preview --runtime HOST --goal TEXT [--state AUTO|DEBUG|REVIEW|...]
   xyeena orchestrate run --runtime antigravity|gemini|hermes|codex|claude --goal TEXT --yes [--record] [--delegate]
   xyeena host preview --runtime gemini|hermes|codex|claude --goal TEXT [--dir PATH] [--local-only]
   xyeena host run --runtime gemini|hermes|codex|claude --goal TEXT --yes [--command EXECUTABLE]
@@ -96,7 +96,7 @@ export async function main(args){
  if(cmd==='orchestrate'){
     if(!['preview','run'].includes(f._[0]))throw new Error('Expected: xyeena orchestrate preview|run');
     const plan=previewOrchestration({cwd:path.resolve(f.dir||process.cwd()),runtime:f.runtime,
-      goal:f.goal,state:f.state||'TRIAGE',includeGlobal:!f.localOnly,
+      goal:f.goal,state:f.state||'AUTO',includeGlobal:!f.localOnly,
       maxSupporting:f.maxSupporting===undefined?2:Number(f.maxSupporting)});
     if(f._[0]==='preview'){console.log(JSON.stringify(plan,null,2));return}
     if(!f.yes)throw new Error('Orchestrate run may invoke a real provider; pass --yes');
