@@ -8,9 +8,13 @@ import { createAntigravitySdkAdapter, previewAntigravitySdkTask } from './antigr
 import { previewPortableHost, createPortableHostAdapter } from './portable-cli-adapter.mjs';
 import { previewOrchestration, executeOrchestration } from './orchestrator.mjs';
 import { recordOrchestrationRun } from './orchestration-ledger.mjs';
+import { interactiveSetup, previewSetup, applySetup } from './setup.mjs';
 const help=`Xyeena Rig ${VERSION}
 
 Usage:
+  xyeena setup                                  # beginner-friendly guided setup
+  xyeena setup --runtime hermes,gemini --preset essential --harness none --dry-run
+  xyeena setup --runtime hermes --preset balanced --harness essential --yes
   xyeena init                                   # interactive: Skills / Harness / All
   xyeena init --components skills --runtime codex --skills xyeena-core --yes
   xyeena init --components skills --runtime gemini,hermes --skills xyeena-orchestrate --yes
@@ -44,6 +48,21 @@ export async function main(args){
  const cmd=args[0]||'help', f=parseFlags(args.slice(1));
  if(['help','--help','-h'].includes(cmd) || f.help || f._.includes('-h') || f._.includes('help')){console.log(help);return}
  if(['version','--version','-v'].includes(cmd)){console.log(VERSION);return}
+ if(cmd==='setup'){
+    const cwd=path.resolve(f.dir||process.cwd());
+    if (!f.runtime) {
+      if(f.yes||f.dryRun||f.preset||f.harness)throw new Error('Non-interactive setup requires --runtime HOST to prevent selecting tools implicitly');
+      await interactiveSetup({cwd});
+      return;
+    }
+    const options={cwd,runtime:f.runtime,preset:f.preset||'essential',harness:f.harness||'none'};
+    if(f.dryRun) {
+      console.log(JSON.stringify(previewSetup(options),null,2));return;
+    }
+    if(!f.yes)throw new Error('Pass --dry-run to preview or --yes for explicitly selected setup; no files changed');
+    if(f.force)throw new Error('Beginner setup never overwrites custom files. Use advanced init only after reviewing conflicts');
+    console.log(JSON.stringify(applySetup({...options,yes:true}),null,2));return;
+  }
  if(cmd==='init'){
     const cwd=path.resolve(f.dir||process.cwd());
     let choice;
