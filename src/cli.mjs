@@ -26,9 +26,9 @@ Usage:
   xyeena skills discover|matrix [--dir PATH] [--runtime antigravity|gemini|codex|claude|hermes|all] [--local-only]
   xyeena route --prompt TEXT [--dir PATH] [--runtime antigravity|gemini|codex|claude|hermes] [--state TRIAGE]
   xyeena orchestrate preview --runtime HOST --goal TEXT [--state TRIAGE]
-  xyeena orchestrate run --runtime antigravity|gemini|hermes --goal TEXT --yes [--delegate]
-  xyeena host preview --runtime gemini|hermes --goal TEXT [--dir PATH] [--local-only]
-  xyeena host run --runtime gemini|hermes --goal TEXT --yes [--command EXECUTABLE]
+  xyeena orchestrate run --runtime antigravity|gemini|hermes|codex|claude --goal TEXT --yes [--delegate]
+  xyeena host preview --runtime gemini|hermes|codex|claude --goal TEXT [--dir PATH] [--local-only]
+  xyeena host run --runtime gemini|hermes|codex|claude --goal TEXT --yes [--command EXECUTABLE]
   xyeena sdk preview --goal TEXT [--dir PATH] [--local-only]
   xyeena sdk run --goal TEXT --yes [--delegate] [--dir PATH] [--python PATH] [--timeout-ms N]
   xyeena eval
