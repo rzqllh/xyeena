@@ -120,3 +120,13 @@ jobs:
           if (-not ($copies | Where-Object { Select-String -Path $_.FullName -Pattern 'CUSTOM-XYEENA-UPGRADE-SMOKE' -Quiet })) {
             throw 'Upgrade did not back up custom skill'
           }
+          $backups = @(npx --yes --package $package xyeena setup backups | ConvertFrom-Json)
+          if ($LASTEXITCODE -ne 0 -or -not $backups) { throw 'Could not list rollback backups' }
+          $id = $backups[0].id
+          $rollbackPreview = npx --yes --package $package xyeena setup rollback --id $id --dry-run | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or -not $rollbackPreview.available) { throw 'Rollback preview failed' }
+          npx --yes --package $package xyeena setup rollback --id $id --yes
+          if ($LASTEXITCODE -ne 0) { throw 'Rollback execution failed' }
+          if (-not (Select-String -Path $target -Pattern 'CUSTOM-XYEENA-UPGRADE-SMOKE' -Quiet)) {
+            throw 'Rollback did not restore customized SKILL.md'
+          }
