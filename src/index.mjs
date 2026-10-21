@@ -20,3 +20,6 @@ export { SkillInventoryCache, inventoryFingerprint } from './skill-cache.mjs';
 export { recordOrchestrationRun } from './orchestration-ledger.mjs';
 export { inferWorkflowState } from './workflow-intent.mjs';
 export { setupSelection, setupRuntimeHints, previewSetup, applySetup, guidedSetup, interactiveSetup } from './setup.mjs';
+export { setupFileDiff } from './setup-upgrade.mjs';
+export { listSetupBackups, previewSetupRollback, runSetupRollback } from './setup-rollback.mjs';
+export { setupHealthCheck, inspectSetupHosts } from './setup-health.mjs';
