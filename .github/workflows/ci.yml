@@ -108,3 +108,15 @@ jobs:
           if (-not (Test-Path '.hermes/skills/xyeena-orchestrate/SKILL.md')) { throw 'Hermes orchestrator missing' }
           if (-not (Test-Path '.gemini/skills/xyeena-orchestrate/SKILL.md')) { throw 'Gemini orchestrator missing' }
           if (Test-Path 'AGENTS.md') { throw 'Beginner setup modified root AGENTS.md' }
+          $target = '.hermes/skills/xyeena-orchestrate/SKILL.md'
+          Add-Content -Path $target -Value 'CUSTOM-XYEENA-UPGRADE-SMOKE'
+          npx --yes --package $package xyeena setup --runtime hermes --preset essential --update --dry-run
+          if ($LASTEXITCODE -ne 0) { throw 'Beginner update preview failed' }
+          if (-not (Select-String -Path $target -Pattern 'CUSTOM-XYEENA-UPGRADE-SMOKE' -Quiet)) { throw 'Dry-run replaced a custom skill' }
+          npx --yes --package $package xyeena setup --runtime hermes --preset essential --update --yes
+          if ($LASTEXITCODE -ne 0) { throw 'Beginner update failed' }
+          if (Select-String -Path $target -Pattern 'CUSTOM-XYEENA-UPGRADE-SMOKE' -Quiet) { throw 'Upgrade did not replace old skill' }
+          $copies = @(Get-ChildItem -Path '.xyeena/backups' -Recurse -Filter 'SKILL.md' -File)
+          if (-not ($copies | Where-Object { Select-String -Path $_.FullName -Pattern 'CUSTOM-XYEENA-UPGRADE-SMOKE' -Quiet })) {
+            throw 'Upgrade did not back up custom skill'
+          }
