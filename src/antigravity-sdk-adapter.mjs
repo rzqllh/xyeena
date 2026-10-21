@@ -90,10 +90,10 @@ export function createAntigravitySdkAdapter({
 }
 
 /** No model call: determine which already-installed skills a read-only task may use. */
-export function previewAntigravitySdkTask({ cwd = process.cwd(), goal, home, includeGlobal = true } = {}) {
+export function previewAntigravitySdkTask({ cwd = process.cwd(), goal, state = 'TRIAGE', home, includeGlobal = true } = {}) {
   if (typeof goal !== 'string' || !goal.trim()) throw new Error('Goal is required');
   const root = fs.realpathSync(path.resolve(cwd));
-  const routing = routeWorkspaceSkills({ cwd: root, runtime: 'antigravity', prompt: goal,
+  const routing = routeWorkspaceSkills({ cwd: root, runtime: 'antigravity', prompt: goal, state,
     ...(home ? {home} : {}), includeGlobal });
   const discovered = discoverWorkspaceSkills({ cwd: root, runtime: 'antigravity',
     ...(home ? {home} : {}), includeGlobal });
