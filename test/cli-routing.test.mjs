@@ -44,3 +44,15 @@ test('original resolve command is still supported', t => {
   assert.equal(result.status, 0, result.stderr);
   assert.ok(JSON.parse(result.stdout).kernel === 'xyeena-core');
 });
+
+test('skills matrix reports actual files per runtime and is read-only', t => {
+  const cwd = workspace(t);
+  const result = command(['skills', 'matrix', '--local-only'], cwd);
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.mode, 'inventory-only');
+  assert.equal(report.executed, false);
+  assert.ok(report.hosts.codex.skills.some(skill => skill.name === 'systematic-debugging'));
+  assert.equal(report.hosts.hermes.skills.length, 0);
+  assert.equal(fs.existsSync(path.join(cwd, '.xyeena')), false);
+});
