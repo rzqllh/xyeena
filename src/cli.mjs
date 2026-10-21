@@ -6,6 +6,7 @@ import { guidedCommand } from './antigravity-guided.mjs';
 import { discoverWorkspaceSkills, routeWorkspaceSkills, skillAvailabilityMatrix } from './workspace-skills.mjs';
 import { createAntigravitySdkAdapter, previewAntigravitySdkTask } from './antigravity-sdk-adapter.mjs';
 import { previewPortableHost, createPortableHostAdapter } from './portable-cli-adapter.mjs';
+import { previewOrchestration, executeOrchestration } from './orchestrator.mjs';
 const help=`Xyeena Rig ${VERSION}
 
 Usage:
@@ -24,6 +25,8 @@ Usage:
   xyeena resolve --prompt TEXT [--state TRIAGE] [--path FILE]
   xyeena skills discover|matrix [--dir PATH] [--runtime antigravity|gemini|codex|claude|hermes|all] [--local-only]
   xyeena route --prompt TEXT [--dir PATH] [--runtime antigravity|gemini|codex|claude|hermes] [--state TRIAGE]
+  xyeena orchestrate preview --runtime HOST --goal TEXT [--state TRIAGE]
+  xyeena orchestrate run --runtime antigravity|gemini|hermes --goal TEXT --yes [--delegate]
   xyeena host preview --runtime gemini|hermes --goal TEXT [--dir PATH] [--local-only]
   xyeena host run --runtime gemini|hermes --goal TEXT --yes [--command EXECUTABLE]
   xyeena sdk preview --goal TEXT [--dir PATH] [--local-only]
@@ -87,6 +90,19 @@ export async function main(args){
     const result=routeWorkspaceSkills({cwd:path.resolve(f.dir||process.cwd()),runtime:f.runtime||'antigravity',
       prompt:f.prompt,state:f.state||'TRIAGE',paths:f.path?[f.path]:[],maxSupporting:f.maxSupporting===undefined?2:Number(f.maxSupporting),
       includeGlobal:!f.localOnly});
+    console.log(JSON.stringify(result,null,2));return;
+  }
+ if(cmd==='orchestrate'){
+    if(!['preview','run'].includes(f._[0]))throw new Error('Expected: xyeena orchestrate preview|run');
+    const plan=previewOrchestration({cwd:path.resolve(f.dir||process.cwd()),runtime:f.runtime,
+      goal:f.goal,state:f.state||'TRIAGE',includeGlobal:!f.localOnly,
+      maxSupporting:f.maxSupporting===undefined?2:Number(f.maxSupporting)});
+    if(f._[0]==='preview'){console.log(JSON.stringify(plan,null,2));return}
+    if(!f.yes)throw new Error('Orchestrate run may invoke a real provider; pass --yes');
+    const result=await executeOrchestration(plan,{yes:true,delegate:!!f.delegate,
+      ...(typeof f.command==='string'?{command:f.command}:{}),
+      ...(typeof f.python==='string'?{python:f.python}:{}),
+      ...(f.timeoutMs===undefined?{}:{timeoutMs:Number(f.timeoutMs)})});
     console.log(JSON.stringify(result,null,2));return;
   }
  if(cmd==='host'){
