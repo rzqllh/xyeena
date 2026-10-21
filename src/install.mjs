@@ -6,7 +6,7 @@ import { RUNTIMES, runtimeDescriptor, runtimeTargets } from './runtime.mjs';
 
 export function install({ cwd = process.cwd(), runtime = 'all', force = false, dryRun = false } = {}) {
   const runtimes = runtime === 'all'
-    ? Object.keys(RUNTIMES)
+    ? ['antigravity','claude','codex'] // Keep historical legacy-install default stable.
     : String(runtime).split(',').map((s) => s.trim()).filter(Boolean);
   for (const r of runtimes) runtimeDescriptor(r);
 
