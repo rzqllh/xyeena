@@ -11,21 +11,26 @@
 
 Node.js **22.14 or newer**, npm/npx, and write access to a project directory. Use an interactive terminal for the wizard; CI must use explicit flags.
 
-## Beginner setup (v0.3.0 after publication)
+## Beginner setup — one command, all projects
 
 ```sh
-npx --yes xyeena-agent@0.3.0 setup
+npx --yes xyeena-agent setup
 ```
 
-This new wizard requires only four choices: AI host(s), Essential/Balanced/Complete skill preset, optional Harness, and a final review/confirmation. It never preselects a host, installs model runtimes, or stores credentials. For Windows screenshots-independent step-by-step instructions, see [Instalasi Windows untuk Pemula](INSTALL-WINDOWS-PEMULA.md).
+Choose **Global** to make skills available across every project in the selected AI host, or **Workspace** to limit them to this project. Then select your AI host(s), Essential/Balanced/Complete skill preset, **Copy or Symlink** method, and review all paths before confirming. Workspace setup additionally supports opt-in Harness; global setup installs skills only.
 
-To preview without changing any project files:
+Copy places independent files in each native host folder. Symlink creates durable user-home links to `~/.xyeena/skill-store/v<VERSION>` — never into disposable npm/npx caches. On Windows, the installer uses folder junctions.
 
-```sh
-npx --yes xyeena-agent@0.3.0 setup --runtime "hermes,gemini" --preset essential --dry-run
+For beginner screenshots-independent instructions see [Windows guide](INSTALL-WINDOWS-PEMULA.md). For native global host paths, limitations and symlink upgrades see [Global and Symlink install](GLOBAL-INSTALL.md).
+
+Example read-only preview, followed by explicit install:
+
+```powershell
+npx --yes xyeena-agent setup --scope global --mode symlink --runtime "antigravity,gemini" --preset complete --dry-run
+npx --yes xyeena-agent setup --scope global --mode symlink --runtime "antigravity,gemini" --preset complete --yes
 ```
 
-After reviewing, change `--dry-run` to `--yes` to install. `--harness essential` adds Core, Quality, Security guides; defaults to `none`. For complete installs, use `--preset complete --harness full`. The older `init` wizard remains supported. On re-run, the beginner wizard lists conflicts before final confirmation. It defaults to keeping modified files, or offers a separately confirmed backup-and-replace choice.
+The original workspace-copy flow (`setup --runtime ...`) and advanced `init` are still supported. AI accounts, native trust and model permissions are not modified.
 
 ## Interactive setup (advanced / legacy)
 
@@ -62,8 +67,8 @@ When a previous `SKILL.md` differs from the release package, the new `setup` wiz
 Non-interactive usage:
 
 ```powershell
-npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --update --dry-run
-npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --update --yes
+npx --yes xyeena-agent@0.4.0 setup --runtime antigravity --preset complete --harness full --update --dry-run
+npx --yes xyeena-agent@0.4.0 setup --runtime antigravity --preset complete --harness full --update --yes
 ```
 
 Without `--update`, customized files remain unchanged. No third-party skills are deleted. `--force` is deliberately rejected by beginner setup; use `--update` for recoverable replacements.

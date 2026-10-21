@@ -21,6 +21,20 @@ function safeTree(root, relative) {
   }
   return true;
 }
+function managedSkillLink(directory, name, home) {
+  const target=path.join(directory,name);
+  try {
+    if(!fs.lstatSync(target).isSymbolicLink())return false;
+    const root=path.join(home,'.xyeena','skill-store');
+    for(const part of [path.join(home,'.xyeena'),root])
+      if(fs.lstatSync(part).isSymbolicLink())return false;
+    const realRoot=fs.realpathSync(root),realTarget=fs.realpathSync(target);
+    const relative=path.relative(realRoot,realTarget);
+    if(!relative||relative.startsWith('..'+path.sep)||path.isAbsolute(relative))return false;
+    if(relative.split(path.sep).length!==2)return false; // vVERSION/skill-content-hash only
+    return fs.statSync(realTarget).isDirectory() && fs.lstatSync(realTarget).isDirectory();
+  }catch{return false}
+}
 function readMetadata(file, fallbackName) {
   try {
     if (!fs.lstatSync(file).isFile() || fs.lstatSync(file).isSymbolicLink() || fs.statSync(file).size > 65536) return null;
@@ -54,14 +68,15 @@ function readMetadata(file, fallbackName) {
   } catch { return null; }
 }
 
-/** Discover already-installed, local Agent Skills. Never execute SKILL.md or follow links. */
+/** Discover installed Agent Skills. Only Xyeena-managed links to its immutable home store are followed. */
 export function discoverWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigravity',
   home = os.homedir(), includeGlobal = true, env = process.env } = {}) {
   requireSkillHost(runtime);
   const locations = skillLocations({ cwd, runtime, home, includeGlobal, env });
   const found = new Map(), seenPaths = new Set();
   const visitSkill = (dir, entry, loc) => {
-    if (!entry.isDirectory() || entry.isSymbolicLink() || entry.name.startsWith('.')) return false;
+    if(entry.name.startsWith('.') ||
+      !((entry.isDirectory()&&!entry.isSymbolicLink()) || (entry.isSymbolicLink() && managedSkillLink(dir,entry.name,home))))return false;
     const skillPath = path.join(dir, entry.name, 'SKILL.md');
     const metadata = readMetadata(skillPath, entry.name);
     if (!metadata) return false;
@@ -83,7 +98,7 @@ export function discoverWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigr
   };
   const entries = dir => {
     try { return fs.readdirSync(dir, { withFileTypes: true })
-      .filter(x => x.isDirectory() && !x.isSymbolicLink() && !x.name.startsWith('.'))
+      .filter(x => (x.isDirectory() || x.isSymbolicLink()) && !x.name.startsWith('.'))
       .sort((a,b) => a.name.localeCompare(b.name)).slice(0, 256); }
     catch { return []; }
   };

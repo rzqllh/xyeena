@@ -4,69 +4,65 @@
 
 Xyeena Rig combines modular **Agent Skills** with an opt-in project **Harness** for coding agents. It gives agents bounded scope, safer operations, verifiable evidence, and automated repository checks. Built for solo developers and engineering teams using **Antigravity**, **Claude Code**, **Codex**, **Gemini CLI**, and **Hermes**. Zero runtime dependencies.
 
-```bash
-# After the v0.3.0 npm release is published:
-npx --yes xyeena-agent@0.3.0 setup
+## Install in one command
+
+Install **Node.js 22.14+** once, then open PowerShell, Terminal or your IDE terminal:
+
+```sh
+npx --yes xyeena-agent setup
 ```
 
-| Component | What it adds | Selection |
-| --- | --- | --- |
-| **Skills** | 19 portable capabilities for planning, execution, review, debugging, UI craft, security, and orchestration | Opt-in |
-| **Harness** | 41 guardrail documents across 11 groups, project profiling, and runnable audit/scan/verification commands | Opt-in |
-| **All** | Skills + Harness combined | Explicit selection only |
+The wizard asks four human-friendly questions. **No flags, GitHub URL, Git command or npm global install required.**
 
-Supported agent runtimes: **Antigravity**, **Claude Code**, and **Codex**. Project detection covers Node/Next.js, Python, static web, monorepos, and Git workflows.
+1. **Where?** Global (all your projects, recommended) or this workspace only.
+2. **Which AI?** Antigravity, Codex, Gemini CLI, Claude Code and/or Hermes Agent.
+3. **How many skills?** Essential, Balanced, or Complete (all 19). Dependencies are included.
+4. **Installation method?** Copy (simplest) or Symlink (one durable shared source). For workspace installations, choose optional Harness (none, essential or full). Finally preview the exact paths and confirm.
 
----
+The default global install writes **only to your own AI user directories**, never system-wide or administrator directories. A global skill can be used from any workspace. **Harness is project-scoped**, so its guards are not silently made global.
 
-## Beginner setup (v0.3.0 release candidate)
-
-**Recommended command:** `npx --yes xyeena-agent@0.3.0 setup` once **v0.3.0 is published**. It launches a four-step wizard: select AI host(s) → skill preset (Essential / Balanced / Complete) → optional Harness → review file changes and confirm. Nothing is written before confirmation.
-
-For unattended Windows/CI setup, specify exactly what to install:
+### Quick reference for advanced or automated setups
 
 ```powershell
-npx --yes xyeena-agent@0.3.0 setup --runtime "hermes,gemini" --preset essential --dry-run
-npx --yes xyeena-agent@0.3.0 setup --runtime "hermes,gemini" --preset essential --yes
+# Global for all projects — inspect then install
+npx --yes xyeena-agent setup --scope global --runtime antigravity --preset complete --dry-run
+npx --yes xyeena-agent setup --scope global --runtime antigravity --preset complete --yes
+
+# Global with durable symlinks for more than one AI host
+npx --yes xyeena-agent setup --scope global --mode symlink --runtime "gemini,hermes" --preset balanced --dry-run
+npx --yes xyeena-agent setup --scope global --mode symlink --runtime "gemini,hermes" --preset balanced --yes
+
+# This project only, symlinked; local Harness is optional
+npx --yes xyeena-agent setup --scope workspace --mode symlink --runtime codex --preset essential --yes
 ```
 
-To update previously installed skills without losing custom edits:
+On Windows symlink mode uses **directory junctions** where supported. It copies source skills first to `~/.xyeena/skill-store/v<VERSION>/`, so links remain usable even if npm deletes its temporary `npx` cache. A new npm version uses a new immutable skill-store snapshot; previous managed links can be updated with `--update` after review and backup.
 
-```powershell
-# Preview conflicts and proposed updates
-npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --update --dry-run
+**Existing skills remain untouched by default.** Conflicts are listed before installation. `--update` explicitly backs up and replaces conflicting files/managed links; unrecognized symlinks and modified store entries are refused. Workspace copy installation and legacy `xyeena init` remain compatible.
 
-# Explicitly back up conflicting originals before replacing them
-npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --update --yes
-```
+Learn more in [Global install and symlink guide](docs/GLOBAL-INSTALL.md), [Windows setup for beginners (Indonesian)](docs/INSTALL-WINDOWS-PEMULA.md), or [CLI reference](docs/CLI-REFERENCE.md).
 
-Without `--update`, Xyeena keeps custom files and installs only missing files. The interactive wizard offers both options after displaying conflicts; originals are backed up under `.xyeena/backups/` when replaced. Blind `--force` is intentionally not supported by beginner `setup`.
-
-Already using `init`? It remains supported. The beginner `setup` command is additive: it **preserves differing user-modified files by default**, or backs them up before replacement when the user explicitly chooses `--update`. Xyeena installs skill files only in the chosen project; it neither installs nor logs you into the AI host. The existing model call and in-session limitations are unchanged.
-
-**[Windows setup guide in Indonesian](docs/INSTALL-WINDOWS-PEMULA.md)** explains Node.js/npm, choosing Hermes/Gemini/Codex, installing, verifying skill inventory, and troubleshooting from zero.
-
-> Until v0.3.0 is actually published, npm `@latest` may still install an earlier version that lacks `setup`. The unmerged PR can be smoke-tested from its GitHub tarball separately; do not present the release candidate as already published.
+**Boundaries:** Xyeena installs skill files. It does not install or authenticate the AI app, bypass native workspace trust, auto-run a model, or prove a skill was activated in an IDE chat.
 
 ---
 
 ## Recoverable installation: diff, selective upgrade, rollback, and host check
 
-Installer v0.3.0 also supports **reviewing a single conflicting file**, **updating only that conflict**, and a **guarded rollback journal** for new installations:
+Installer also supports **reviewing a single conflicting file**, **updating only that conflict**, and a **guarded rollback journal** for new installations:
 
 ```powershell
 # This checks local files only, does not call a model:
-npx --yes xyeena-agent@0.3.0 setup check --runtime antigravity
+npx --yes xyeena-agent@0.4.0 setup check --runtime antigravity
 # Preview differences against one packaged file:
-npx --yes xyeena-agent@0.3.0 setup diff --runtime antigravity --preset complete --harness full --file ".agents/skills/xyeena-orchestrate/SKILL.md"
+npx --yes xyeena-agent@0.4.0 setup diff --runtime antigravity --preset complete --harness full --file ".agents/skills/xyeena-orchestrate/SKILL.md"
 # Replace just that file; other custom files remain untouched:
-npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --replace-files ".agents/skills/xyeena-orchestrate/SKILL.md" --dry-run
-npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --replace-files ".agents/skills/xyeena-orchestrate/SKILL.md" --yes
+npx --yes xyeena-agent@0.4.0 setup --runtime antigravity --preset complete --harness full --replace-files ".agents/skills/xyeena-orchestrate/SKILL.md" --dry-run
+npx --yes xyeena-agent@0.4.0 setup --runtime antigravity --preset complete --harness full --replace-files ".agents/skills/xyeena-orchestrate/SKILL.md" --yes
 
 # For installations created with rollback journals:
-npx --yes xyeena-agent@0.3.0 setup backups
-npx --yes xyeena-agent@0.3.0 setup rollback --id BACKUP_ID --dry-run
-npx --yes xyeena-agent@0.3.0 setup rollback --id BACKUP_ID --yes
+npx --yes xyeena-agent@0.4.0 setup backups
+npx --yes xyeena-agent@0.4.0 setup rollback --id BACKUP_ID --dry-run
+npx --yes xyeena-agent@0.4.0 setup rollback --id BACKUP_ID --yes
 ```
 
 Older backup directories created before rollback journaling are listed but require **manual restore**; automatic rollback refuses them. Rollback also refuses when files have changed after installation, preserving the user's later edits. Rollback removes only files created by that specific setup run and restores backed-up originals, never deletes an entire skill directory. The host check reports filesystem inventory, not verified native IDE activation.
@@ -192,7 +188,7 @@ node bin/xyeena.mjs host run --runtime gemini --goal "Investigate a regression" 
 
 Only a host with a detected, eligible `xyeena-orchestrate` can run. Hermes uses its `safe` toolset and preloads selected skill names. Gemini CLI uses headless JSON with `--approval-mode plan` (subject to that CLI's native policy support). The CLI never passes `--yolo`. Outputs remain `REVIEW_REQUIRED`; users must configure and authenticate the actual AI runtime separately. **These calls start fresh CLI turns; they do not inject into an existing IDE/Telegram session.**
 
-## Unified Orchestrator v0.3.0 (development)
+## Unified Orchestrator v0.4.0 (development)
 
 One command chooses only skills **actually detected** for the requested host, and one explicit command starts a restricted agent call:
 

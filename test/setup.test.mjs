@@ -103,7 +103,7 @@ test('interactive conflict resolution reaches review and can preserve or back up
   assert.equal(kept.conflictsPreserved.length,1);
   assert.equal(fs.readFileSync(file,'utf8'),custom);
   assert.match(out.join(''),/Existing skill\/Harness files differ/);
-  assert.match(out.join(''),/STEP 4\/4/);
+  assert.match(out.join(''),/Review before installation/);
   const replaceReplies=['3','1','1','2','y'];let j=0;
   const updated=await guidedSetup({cwd,ask:async()=>replaceReplies[j++],output:{write:()=>{}}});
   assert.equal(updated.conflictsReplaced.length,1);

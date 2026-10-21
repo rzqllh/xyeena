@@ -2,7 +2,7 @@ name: publish
 on:
   release:
     types: [published]
-  # One-time, approved v0.3.0 publish after PR #12 is merged to main.
+  # Approved main-branch publish: v0.3.0 historical and v0.4.0 global/symlink release.
   # Future versions continue to use the ordinary GitHub Release trigger.
   push:
     branches: [main]
@@ -17,7 +17,7 @@ jobs:
   npm:
     if: >-
       github.event_name == 'release' ||
-      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'release: xyeena-agent v0.3.0') || startsWith(github.event.head_commit.message, 'verify: xyeena-agent v0.3.0')))
+      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'release: xyeena-agent v0.4.0') || startsWith(github.event.head_commit.message, 'release: xyeena-agent v0.3.0') || startsWith(github.event.head_commit.message, 'verify: xyeena-agent v0.3.0')))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -39,8 +39,8 @@ jobs:
               exit 1
             fi
           elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
-            if [ "$GITHUB_REF" != "refs/heads/main" ] || [ "$PACKAGE_VERSION" != "0.3.0" ]; then
-              echo "::error::One-time main-branch publish is limited to v0.3.0"
+            if [ "$GITHUB_REF" != "refs/heads/main" ] || { [ "$PACKAGE_VERSION" != "0.4.0" ] && [ "$PACKAGE_VERSION" != "0.3.0" ]; }; then
+              echo "::error::Main-branch publish is limited to an explicitly approved release version"
               exit 1
             fi
           else
@@ -127,14 +127,18 @@ jobs:
             echo "::error::Fresh registry install reported $FOUND, expected $VERSION"
             exit 1
           fi
-      - name: Create GitHub Release for one-time v0.3.0 main push
+      - name: Create matching GitHub Release after verified main publish
         if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -eu
           VERSION="$(node -p 'require("./package.json").version')"
+          TARGET="$GITHUB_SHA"
+          if [ "$VERSION" = "0.3.0" ]; then
+            TARGET="a5e7dfb43b3e342a8f589ce7c9b7d95edd4b8782"
+          fi
           gh release view "v$VERSION" >/dev/null 2>&1 || \
-            gh release create "v$VERSION" --target "a5e7dfb43b3e342a8f589ce7c9b7d95edd4b8782" \
-              --title "v$VERSION — Portable Xyeena Rig and safe beginner setup" \
+            gh release create "v$VERSION" --target "$TARGET" \
+              --title "v$VERSION — Xyeena Rig global and symlink setup" \
               --generate-notes
