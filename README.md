@@ -52,17 +52,17 @@ Installer also supports **reviewing a single conflicting file**, **updating only
 
 ```powershell
 # This checks local files only, does not call a model:
-npx --yes xyeena-agent@0.3.0 setup check --runtime antigravity
+npx --yes xyeena-agent@0.4.0 setup check --runtime antigravity
 # Preview differences against one packaged file:
-npx --yes xyeena-agent@0.3.0 setup diff --runtime antigravity --preset complete --harness full --file ".agents/skills/xyeena-orchestrate/SKILL.md"
+npx --yes xyeena-agent@0.4.0 setup diff --runtime antigravity --preset complete --harness full --file ".agents/skills/xyeena-orchestrate/SKILL.md"
 # Replace just that file; other custom files remain untouched:
-npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --replace-files ".agents/skills/xyeena-orchestrate/SKILL.md" --dry-run
-npx --yes xyeena-agent@0.3.0 setup --runtime antigravity --preset complete --harness full --replace-files ".agents/skills/xyeena-orchestrate/SKILL.md" --yes
+npx --yes xyeena-agent@0.4.0 setup --runtime antigravity --preset complete --harness full --replace-files ".agents/skills/xyeena-orchestrate/SKILL.md" --dry-run
+npx --yes xyeena-agent@0.4.0 setup --runtime antigravity --preset complete --harness full --replace-files ".agents/skills/xyeena-orchestrate/SKILL.md" --yes
 
 # For installations created with rollback journals:
-npx --yes xyeena-agent@0.3.0 setup backups
-npx --yes xyeena-agent@0.3.0 setup rollback --id BACKUP_ID --dry-run
-npx --yes xyeena-agent@0.3.0 setup rollback --id BACKUP_ID --yes
+npx --yes xyeena-agent@0.4.0 setup backups
+npx --yes xyeena-agent@0.4.0 setup rollback --id BACKUP_ID --dry-run
+npx --yes xyeena-agent@0.4.0 setup rollback --id BACKUP_ID --yes
 ```
 
 Older backup directories created before rollback journaling are listed but require **manual restore**; automatic rollback refuses them. Rollback also refuses when files have changed after installation, preserving the user's later edits. Rollback removes only files created by that specific setup run and restores backed-up originals, never deletes an entire skill directory. The host check reports filesystem inventory, not verified native IDE activation.
@@ -188,7 +188,7 @@ node bin/xyeena.mjs host run --runtime gemini --goal "Investigate a regression" 
 
 Only a host with a detected, eligible `xyeena-orchestrate` can run. Hermes uses its `safe` toolset and preloads selected skill names. Gemini CLI uses headless JSON with `--approval-mode plan` (subject to that CLI's native policy support). The CLI never passes `--yolo`. Outputs remain `REVIEW_REQUIRED`; users must configure and authenticate the actual AI runtime separately. **These calls start fresh CLI turns; they do not inject into an existing IDE/Telegram session.**
 
-## Unified Orchestrator v0.3.0 (development)
+## Unified Orchestrator v0.4.0 (development)
 
 One command chooses only skills **actually detected** for the requested host, and one explicit command starts a restricted agent call:
 
