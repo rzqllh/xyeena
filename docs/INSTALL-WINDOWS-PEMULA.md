@@ -69,7 +69,7 @@ Harness adalah **dokumen dan pemeriksaan**, bukan auto-approval atau kebebasan p
 
 Wizard menampilkan runtime, preset, dependency tambahan, jumlah file, dan contoh lokasi yang akan dibuat. Periksa semuanya. Jawab `y` jika setuju atau `n` untuk membatalkan tanpa menulis file.
 
-Xyeena tidak menimpa file yang sudah dimodifikasi. Jika ada konflik, proses dibatalkan dan menampilkan lokasi file bermasalah. Jangan memakai `--force` hanya untuk menghilangkan error: periksa dulu apakah file tersebut custom milik Anda.
+Xyeena tidak menimpa file yang sudah dimodifikasi. Jika ada konflik, wizard menawarkan dua pilihan: **(1) pertahankan file custom** atau **(2) backup kemudian update dari paket**. Pilihan bawaan mempertahankan file lama. File asli yang diganti akan tersalin ke `.xyeena/backups/` dengan struktur folder yang sama. Jangan hapus backup sebelum memeriksa hasilnya.
 
 ## C. Kalau tidak mau pakai wizard
 
@@ -91,6 +91,26 @@ npx --yes xyeena-agent@0.3.0 setup --runtime "hermes,gemini" --preset balanced -
 ```
 
 Nilai `--preset`: `essential`, `balanced`, `complete`. Nilai `--harness`: `none`, `essential`, `full`. Pilihan host: `antigravity`, `codex`, `gemini`, `claude`, `hermes`.
+
+## C2. Update instalasi lama (tanpa kehilangan file custom)
+
+Jika sebelumnya pernah menginstal Xyeena lalu mendapat konflik `.agents/skills/xyeena-orchestrate/SKILL.md`, **jangan menghapus folder `.agents`**. Skill lain bisa berada di sana.
+
+Untuk memilih sendiri cara penyelesaiannya, ulangi `setup` terbaru. Setelah tiga pilihan awal, jika menemukan konflik, wizard menampilkan file yang berbeda dan menawarkan:
+
+- **1 — Keep existing:** file yang sudah dimodifikasi dipertahankan; hanya file yang belum tersedia dipasang.
+- **2 — Backup + replace:** file lama disalin terlebih dahulu ke `.xyeena/backups/<waktu>-<id>/`, baru diganti dengan isi paket.
+- **0 — Cancel:** tidak melakukan perubahan.
+
+Untuk melakukan update eksplisit tanpa wizard:
+
+```powershell
+# Jika menggunakan GitHub release candidate, pakai $pkg yang mengarah ke commit yang baru.
+npx --yes --package $pkg xyeena setup --runtime antigravity --preset complete --harness full --update --dry-run
+npx --yes --package $pkg xyeena setup --runtime antigravity --preset complete --harness full --update --yes
+```
+
+`--update` berarti **backup sebelum replace**, bukan menghapus file custom. File pihak ketiga yang tidak berasal dari paket Xyeena tidak disentuh. Perintah `--force` *tidak* didukung oleh wizard beginner; salah ketik seperti `--froce` sekarang ditolak sebagai opsi tak dikenal. Jangan menaruh `--force` sebelum `$pkg`, karena `npx` akan menafsirkannya sebagai argumen npm.
 
 ## D. Cek hasil dan jalankan Xyeena
 
@@ -147,7 +167,7 @@ Ini dapat membuat/memperbarui `package.json` dan `package-lock.json` milik proje
 | `node` / `npx` tidak ditemukan | Instal Node.js 22.14+; buka ulang terminal dan cek PATH. |
 | `No matching version found` | Versi belum dipublish. Jangan ganti diam-diam ke `@latest`; periksa status release. |
 | Project `not found` | Masuk ke folder project yang ada terlebih dulu, lalu `Get-Location`. |
-| `overwriting modified file` | Skill sudah diedit; simpan perubahan dan lakukan review/manual diff. Wizard tidak memaksa overwrite. |
+| Ada conflict pada file skill | Pilih 1 untuk menjaga file lama, atau 2 agar file lama dibackup dulu lalu di-update. |
 | `requires-host-trust` (Hermes) | Proyek belum dipercaya di Hermes. Konfirmasikan trust menggunakan fitur Hermes sendiri, bukan Xyeena. |
 | Orchestrator tak muncul di chat | Pastikan runtime yang dipilih sesuai, folder terpasang benar, reload host dan cek `skills matrix`. |
 | Model login/API error | Login di runtime/provider terkait. Xyeena tidak menyimpan API keys lewat wizard. |
@@ -157,5 +177,5 @@ Ini dapat membuat/memperbarui `package.json` dan `package-lock.json` milik proje
 
 - Wizard bekerja hanya di project tujuan dan menolak overwrite file yang dimodifikasi. Jangan jalankan lewat administrator kecuali benar-benar dibutuhkan.
 - Data instalasi lokal disimpan dalam `.xyeena/install.json`. Pemasangan Harness tidak mengaktifkan hooks, model calls, atau background daemon.
-- Sebelum upgrade, jalankan `git status --short` dan backup skill custom. Kemudian lakukan `setup --dry-run` terhadap versi yang ingin dipakai. Installer sengaja menolak konflik alih-alih mengganti file custom.
+- Sebelum upgrade, jalankan `git status --short` dan backup skill custom. Kemudian lakukan `setup --dry-run` terhadap versi yang ingin dipakai. Installer mempertahankan file custom secara default, dan memerlukan pilihan `--update` atau persetujuan eksplisit di wizard untuk backup serta menggantinya.
 - **Tidak ada perintah uninstall otomatis dalam setup v0.3.0**. Jika ingin rollback, tinjau manifest instalasi dan Git diff lalu hapus hanya file yang dipasang oleh Xyeena. Jangan menghapus direktori `.agents` atau `.hermes` secara keseluruhan karena mungkin berisi skill lain.
