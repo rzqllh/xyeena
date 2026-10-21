@@ -74,7 +74,7 @@ test('verifier rejection or throw keeps task REVIEW_REQUIRED',async()=>{
     verifyEvidence:async()=>{throw new Error('No independent proof');}});
   assert.equal(failure.tasks.A.state,'REVIEW_REQUIRED');
   assert.equal(failure.complete,false);
-  assert.throws(()=>runTaskGraph({tasks:{A:task('A')},adapter,verifyEvidence:true}),/verifier function/);
+  await assert.rejects(runTaskGraph({tasks:{A:task('A')},adapter,verifyEvidence:true}),/verifier function/);
 });
 test('empty task graph is not a verified run',async()=>{
   const result=await runTaskGraph({tasks:{},adapter:{async executeTask(){throw Error('unexpected');}}});
