@@ -28,3 +28,18 @@ test('punctuation and hyphen boundaries retain literal phrase matching',()=>{
   const result=resolveCapabilities(r,{prompt:'Need UI-based redesign and a security review',state:'TRIAGE'});
   assert.ok(result.candidates.some(item=>item.name==='xyeena-interface'));
 });
+
+test('refactor request without explicit architecture keyword routes to architecture',()=>{
+  const result=resolveCapabilities(r,{
+    prompt:'Refactor internal database query logic in repository',
+    state:'TRIAGE'
+  });
+  assert.equal(result.primary?.name,'xyeena-architecture');
+});
+test('refactoring retains boundary safety without triggering unrelated capabilities',()=>{
+  const result=resolveCapabilities(r,{
+    prompt:'Refactoring database access layers and adapters',
+    state:'PLAN'
+  });
+  assert.equal(result.primary?.name,'xyeena-architecture');
+});
