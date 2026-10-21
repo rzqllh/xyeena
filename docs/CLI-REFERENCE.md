@@ -13,10 +13,12 @@ Use `npx xyeena-agent@latest <command>` for the subcommands listed below. Comman
 
 | Command | Meaning |
 | --- | --- |
-| `setup` | Interactive four-step beginner wizard; preview then explicit confirmation |
+| `setup` | Interactive beginner wizard with conflict keep/backup choice and final approval |
 | `setup --runtime hermes --preset essential --dry-run` | Read-only preview with no model call or project edits |
 | `setup --runtime hermes,gemini --preset balanced --harness essential --yes` | Explicit safe local installation |
 | `setup --runtime all-supported --preset complete --harness full --dry-run` | Inspect broad installation before consent |
+
+Existing installations: `setup --update --dry-run` previews files that differ from the package; `setup --update --yes` backs up originals to `.xyeena/backups/` and updates them. Default setup **keeps** modified files and adds only missing ones. The beginner command deliberately rejects `--force`, which does not preserve backups.
 
 Presets: `essential` (orchestrator + required deps), `balanced` (orchestrator/planning/debugging/review/testing/verification), `complete` (all packaged skills). Harness: `none`, `essential` (three groups), `full` (11 groups). `setup` refuses overwrites of modified skill files and does not support forcing a beginner installation.
 
