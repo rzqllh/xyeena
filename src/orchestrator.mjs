@@ -7,7 +7,7 @@ import { createAntigravitySdkAdapter } from './antigravity-sdk-adapter.mjs';
 
 const HOSTS = new Set(supportedSkillHosts());
 const VALID_STATES = new Set(['TRIAGE','DISCOVER','GRILL','RESEARCH','PROTOTYPE','DEFINE','PLAN','EXECUTE','DEBUG','VERIFY','REVIEW','RELEASE','CLOSE','ESCALATE']);
-const EXECUTABLE_HOSTS = new Set(['hermes','gemini','antigravity']);
+const EXECUTABLE_HOSTS = new Set(['hermes','gemini','codex','claude','antigravity']);
 const VALID_SKILL = /^[a-z0-9][a-z0-9-]{0,63}$/;
 
 /** Single entry point with explicit host capability boundaries. No model calls in preview. */
@@ -35,7 +35,7 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
     schema: 1, mode: 'preview-only', executed: false, runtime, goal, cwd: root, state,
     includeGlobal, maxSupporting, ...(home ? { home } : {}),
     ready, hostExecutionAvailable: hasBridge,
-    execution: hasBridge ? runtime === 'antigravity' ? 'sdk-one-shot' : 'cli-one-shot' : 'host-native-only',
+    execution: runtime === 'antigravity' ? 'sdk-one-shot' : 'cli-one-shot',
     entrypoint: '/xyeena-orchestrate',
     selectedSkills: skills, skillPaths: sdkSkillPaths,
     missingOrchestrator: !governor,
