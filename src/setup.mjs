@@ -5,6 +5,7 @@ import { availableSkills, parseChoice, selectSkillRuntimes, skillDependencyClosu
 import { setupFilePlan, installStagedSetup, setupFileDiff } from './setup-upgrade.mjs';
 import { discoverWorkspaceSkills } from './workspace-skills.mjs';
 import { inspectSetupHosts } from './setup-health.mjs';
+import { previewPortableSetup, applyPortableSetup } from './setup-portable.mjs';
 
 const HOSTS = Object.freeze([
   { id: 'hermes', label: 'Hermes Agent', folder: '.hermes/skills' },
@@ -62,9 +63,17 @@ export function setupSelection({ runtime, preset = 'essential', harness = 'none'
 
 /** Inspect all conflicts and exact paths before *any* installation. No writes. */
 export function previewSetup({ cwd = process.cwd(), runtime, preset = 'essential',
-  harness = 'none', update = false, replaceFiles = [] } = {}) {
-  const root = safeRoot(cwd);
+  harness = 'none', update = false, replaceFiles = [], scope = 'workspace', mode = 'copy',
+  home, env } = {}) {
   const choice = setupSelection({ runtime, preset, harness });
+  if(scope !== 'workspace' || mode !== 'copy'){
+    if(replaceFiles.length)throw new Error('For symlinks or global installs, choose keep or --update for conflicts.');
+    const p=previewPortableSetup({cwd,home,env,scope,mode,update,...choice});
+    return {kind:'xyeena-setup',version:3,...choice,...p,dryRun:true,
+      autoDependencies:skillDependencyClosure(choice.skills).filter(x=>!choice.skills.includes(x)),
+      noProviderCalls:true,noHostAuthChanges:true};
+  }
+  const root = safeRoot(cwd);
   const filePlan = setupFilePlan({cwd:root,choice});
   if(update && replaceFiles.length)throw new Error('Choose either --update for all conflicts or --replace-files for selected conflicts');
   if(!Array.isArray(replaceFiles) || replaceFiles.length>128 ||
@@ -93,9 +102,19 @@ export function previewSetup({ cwd = process.cwd(), runtime, preset = 'essential
 }
 
 export function applySetup({ cwd = process.cwd(), runtime, preset = 'essential',
-  harness = 'none', update = false, replaceFiles = [], yes = false, expectedFingerprint } = {}) {
+  harness = 'none', update = false, replaceFiles = [], scope = 'workspace', mode = 'copy',
+  home, env, yes = false, expectedFingerprint } = {}) {
   if (yes !== true) throw new Error('Setup installation requires explicit --yes or interactive confirmation');
-  const preview = previewSetup({cwd,runtime,preset,harness,update,replaceFiles});
+  const preview = previewSetup({cwd,runtime,preset,harness,update,replaceFiles,scope,mode,home,env});
+  if(scope !== 'workspace' || mode !== 'copy'){
+    const result=applyPortableSetup({cwd,home,env,scope,mode,update,yes:true,
+      runtimes:preview.runtimes,skills:preview.skills,guards:preview.guards,harness:preview.harness,
+      expectedFingerprint:expectedFingerprint || preview.fingerprint});
+    return {...result,skills:preview.skills,guards:preview.guards,filesWritten:result.written.length,
+      conflictsPreserved:result.preserved,conflictsReplaced:result.written.filter(x=>preview.conflicts.includes(x)),
+      diagnostics:preview.runtimes.map(host=>({host,installed:true,availability:'filesystem-not-verified',
+        note:'Reload this AI host and verify skill discovery in the native app.'}))};
+  }
   if (expectedFingerprint && preview.fingerprint !== expectedFingerprint)
     throw new Error('Installed files changed since the review screen. Run setup preview again');
   const result = installStagedSetup({
@@ -135,13 +154,22 @@ function chosenHosts(answer) {
 const yesAnswer = a => /^(y|yes|ya|iya)$/i.test(String(a).trim());
 
 /** Injectable ask() makes the genuine conversational flow testable offline. */
-export async function guidedSetup({ cwd = process.cwd(), ask, output = process.stdout } = {}) {
+export async function guidedSetup({ cwd = process.cwd(), ask, output = process.stdout,
+  selectLocation = false, home, env } = {}) {
   if (typeof ask !== 'function') throw new Error('Guided setup requires an interactive terminal');
   const root = safeRoot(cwd);
   explain(output, '\nXYEENA RIG — Setup / Upgrade (no account login or API key needed)');
   explain(output, 'Project: ' + root);
-  explain(output, 'This only copies the skills you select into THIS project.');
-  explain(output, 'It will not modify your AI app, passwords, global folders, Git hooks or root AGENTS.md.');
+  explain(output, 'No AI login, API key, global permission override or Git hooks will be changed.');
+  let scope='workspace', mode='copy';
+  if(selectLocation){
+    explain(output, '\nSTEP 1: Where should the skills work?');
+    explain(output, '  1. Global — available across all my projects (recommended)');
+    explain(output, '  2. This workspace only — limited to the current project');
+    const choice=String(await ask('Choose 1 / 2 [default 1]: ')).trim();
+    if(!['','1','2'].includes(choice))throw new Error('Invalid location; no files changed');
+    scope=choice==='2'?'workspace':'global';
+  }
   const hints = inspectSetupHosts({cwd:root});
   explain(output, '\nSTEP 1/4: Which AI tools will use Xyeena?');
   for (let i = 0; i < HOSTS.length; i++) {
@@ -160,13 +188,24 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
   explain(output, '  3. Complete — all packaged skills (more files, not automatic model usage)');
   const preset = ({'1':'essential','2':'balanced','3':'complete'})[String(await ask('Choose 1 / 2 / 3: ')).trim()];
   if (!preset) throw new Error('Invalid skill preset; no files were installed');
+  if(selectLocation){
+    explain(output, '\nInstallation method:');
+    explain(output, '  1. Copy — independent skill files (recommended for first install)');
+    explain(output, '  2. Symlink — share a permanent skill store; no dependency on npx cache');
+    const method=String(await ask('Choose 1 / 2 [default 1]: ')).trim();
+    if(!['','1','2'].includes(method))throw new Error('Invalid method; no files changed');
+    mode=method==='2'?'symlink':'copy';
+  }
+  if(scope==='global')explain(output, 'Harness is workspace-only; global installation installs skills only.');
   explain(output, '\nSTEP 3/4: Add optional Harness safety guides?');
   explain(output, '  1. None — skills only (simplest setup)');
   explain(output, '  2. Essential — core, quality and security guides');
   explain(output, '  3. Full — all packaged Harness guardrail groups');
-  const harness = ({'1':'none','2':'essential','3':'full'})[String(await ask('Choose 1 / 2 / 3: ')).trim()];
+  const harness = scope==='global'?'none':
+    ({'1':'none','2':'essential','3':'full'})[String(await ask('Choose 1 / 2 / 3: ')).trim()];
   if (!harness) throw new Error('Invalid Harness selection; no files were installed');
-  const basePlan = previewSetup({cwd:root,runtime:chosen,preset,harness});
+  const opts={cwd:root,home,env,scope,mode,runtime:chosen,preset,harness};
+  const basePlan = previewSetup(opts);
   let update = false, replaceFiles = [];
   if (basePlan.conflicts.length) {
     explain(output, '\nExisting skill/Harness files differ from the package ('+basePlan.conflicts.length+' conflict(s)).');
@@ -174,14 +213,16 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
     if (basePlan.conflicts.length>12) explain(output, '  ...and '+(basePlan.conflicts.length-12)+' more.');
     explain(output, '  1. Keep existing custom files; install only missing files (safe default)');
     explain(output, '  2. Back up originals to .xyeena/backups, then replace with the current package');
-    explain(output, '  3. Choose specific conflicting files to replace (each original backed up)');
+    if(scope==='workspace'&&mode==='copy')
+      explain(output, '  3. Choose specific conflicting files to replace (each original backed up)');
     explain(output, '  0. Cancel without changes');
     const decision = String(await ask('Existing files [1/2/3/0, default 1]: ')).trim();
     if (decision === '0') {
       explain(output, 'Cancelled. No files written.');
       return {cancelled:true,installed:false,preview:basePlan};
     }
-    if (!['','1','2','3'].includes(decision)) throw new Error('Unknown update selection; no changes made');
+    if (!['','1','2',...(scope==='workspace'&&mode==='copy'?['3']:[])].includes(decision))
+      throw new Error('Unknown update selection; no changes made');
     update=decision==='2';
     if(decision==='3'){
       const opts=basePlan.conflicts;
@@ -191,13 +232,15 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
     }
   }
   const plan = update || replaceFiles.length
-    ? previewSetup({cwd:root,runtime:chosen,preset,harness,update,replaceFiles}) : basePlan;
+    ? previewSetup({...opts,update,replaceFiles}) : basePlan;
   explain(output, '\nSTEP 4/4: Review before installation');
   explain(output, 'AI hosts: ' + plan.runtimes.join(', '));
+  explain(output, 'Location: ' + scope + ' — Method: ' + mode);
+  if(plan.durableStore)explain(output,'Permanent skill store: '+plan.durableStore);
   explain(output, 'Skill preset: ' + preset + ' (' + plan.skills.length + ' explicitly selected)');
   explain(output, 'Required skill dependencies: ' + (plan.autoDependencies.join(', ') || 'none'));
   explain(output, 'Harness: ' + harness);
-  explain(output, 'Files to write: ' + plan.filesToWrite + ', only under this project');
+  explain(output, 'Files to write: ' + plan.filesToWrite + (scope==='global'?', in AI user-global directories':', within workspace and user-owned skill store'));
   explain(output, 'Unchanged files: '+plan.unchangedCount);
   explain(output, 'Custom file conflicts: '+plan.conflicts.length+
     (update ? ' (BACKUP THEN REPLACE ALL)' : replaceFiles.length ? ' (BACKUP AND REPLACE SELECTED)' : ' (KEEP EXISTING)'));
@@ -208,15 +251,16 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
     explain(output, 'Cancelled. No files written.');
     return {cancelled:true, installed:false, preview:plan};
   }
-  const result = applySetup({cwd:root,runtime:chosen,preset,harness,update,replaceFiles,yes:true,expectedFingerprint:plan.fingerprint});
+  const result = applySetup({...opts,update,replaceFiles,yes:true,expectedFingerprint:plan.fingerprint});
   explain(output, '\nInstalled. Xyeena is configured for: ' + result.runtimes.join(', '));
   if (result.conflictsPreserved.length) explain(output, 'Preserved custom files: '+result.conflictsPreserved.length);
   if (result.conflictsReplaced.length) explain(output, 'Replaced with backups: '+result.conflictsReplaced.length);
   if (result.backupDirectory) explain(output, 'Backup directory: '+result.backupDirectory);
+  if (result.durableStore)explain(output, 'Stable symlink sources: '+result.durableStore);
   for (const d of result.diagnostics)
     explain(output, '  ' + d.host + ': ' + d.availability + '. ' + d.note);
   explain(output, 'Next: reopen your AI app, then ask it to use xyeena-orchestrate.');
-  explain(output, 'To check installed skills: npx xyeena-agent skills matrix --local-only');
+  explain(output, 'To check installed skills: npx xyeena-agent skills matrix'+(scope==='workspace'?' --local-only':''));
   explain(output, 'To check host detection without running the model: npx xyeena-agent setup check --runtime '+result.runtimes[0]);
   explain(output, 'To preview routing without tokens: npx xyeena-agent orchestrate preview --runtime ' +
     result.runtimes[0] + ' --goal "review project"');
@@ -229,6 +273,6 @@ export async function interactiveSetup({ cwd = process.cwd(),
   if (!input.isTTY || !output.isTTY)
     throw new Error('Interactive setup requires a terminal. Use setup --runtime HOST --preset essential --dry-run or --yes.');
   const rl = createInterface({input,output});
-  try { return await guidedSetup({cwd,ask:prompt=>rl.question(prompt),output}); }
+  try { return await guidedSetup({cwd,ask:prompt=>rl.question(prompt),output,selectLocation:true}); }
   finally {rl.close();}
 }
