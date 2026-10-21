@@ -17,10 +17,12 @@ Tidak perlu GitHub URL, Git clone, atau instalasi npm global. npx mengunduh dan 
 - **Lokasi:** 1 Global (direkomendasikan, untuk semua project di akun Windows ini) atau 2 Workspace (hanya project yang sedang dibuka). Global bisa dipilih dari folder mana pun.
 - **Aplikasi AI:** pilih angka Hermes Agent, Gemini CLI, Antigravity IDE, Codex, atau Claude Code yang benar-benar digunakan. Pilih beberapa dengan koma, misalnya 2,3.
 - **Paket skills:** Essential (paling ringan), Balanced (untuk pekerjaan coding umum), atau Complete (semua 19 skills).
-- **Metode:** 1 Copy (paling sederhana) atau 2 Symlink (menggunakan satu sumber permanen di folder pengguna). Jika Workspace, wizard juga menawarkan Harness None, Essential, atau Full.
+- **Metode:** Jika memilih **Global**, skill otomatis di-*Copy* ke direktori pengguna setiap AI; tidak perlu memilih metode lagi. Jika **Workspace**, pilih Copy atau Symlink, lalu Harness None, Essential, atau Full.
 - **Review:** periksa lokasi file yang akan dibuat, lalu jawab y untuk lanjut atau n untuk batal. File custom existing dipertahankan secara default.
 
 Xyeena tidak menginstal aplikasi AI, tidak melakukan login akun, tidak membuat Git hooks, dan tidak menjalankan model saat setup.
+
+Setelah instalasi Global, Xyeena menampilkan lokasi dan jumlah file skill yang cocok dengan paket untuk setiap AI. **Pemeriksaan file ini berbeda dari aktivasi skill di aplikasi**—buka ulang aplikasi AI untuk memastikannya.
 
 ## Bedanya Copy dan Symlink
 
@@ -58,7 +60,7 @@ npx --yes xyeena-agent setup --scope global --runtime antigravity --preset compl
 npx --yes xyeena-agent setup --scope global --runtime antigravity --preset complete --yes
 ~~~
 
-Global Antigravity + Gemini CLI dengan mode symlink:
+**Opsi advanced saja:** Global Antigravity + Gemini CLI dengan mode symlink (tidak ditawarkan wizard Global):
 
 ~~~powershell
 npx --yes xyeena-agent setup --scope global --mode symlink --runtime "antigravity,gemini" --preset complete --dry-run
