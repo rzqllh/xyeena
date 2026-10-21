@@ -110,10 +110,10 @@ export async function interactiveSelection({ input = process.stdin, output = pro
     if (!components) throw new Error('Invalid component selection. Nothing was installed.');
     let runtimes = [], skills = [], guards = [];
     if (components.includes('skills')) {
-      const runtimesAvailable = ['antigravity','claude','codex'];
-      output.write('\nAgent runtimes (comma-separated numbers or "all"):\n');
+      const runtimesAvailable = [...EXTENDED_RUNTIMES];
+      output.write('\nAgent runtimes (comma-separated numbers; all = original 3, all-supported = all 5):\n');
       runtimesAvailable.forEach((v,i) => output.write('  ' + (i+1) + '. ' + v + '\n'));
-      runtimes = parseChoice(await rl.question('Runtime(s): '),runtimesAvailable);
+      runtimes = selectSkillRuntimes(await rl.question('Runtime(s): '));
       const names = availableSkills();
       output.write('\nSkills (comma-separated numbers/names or "all"):\n');
       names.forEach((v,i) => output.write('  ' + (i+1) + '. ' + v + (skillDescription(v)?': '+skillDescription(v):'') + '\n'));
