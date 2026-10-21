@@ -97,3 +97,11 @@ test('CLI setup dry-run and explicit consent work from packed-compatible entry p
   assert.equal(report.installed,true);
   assert.equal(report.diagnostics[0].host,'hermes');
 });
+
+test('PowerShell-style split runtime arguments fail closed instead of installing partial selection',t=>{
+  const cwd=fixture(t);
+  const result=call(cwd,['setup','--runtime','hermes','gemini','--preset','essential','--yes']);
+  assert.notEqual(result.status,0);
+  assert.match(result.stderr,/quote comma-separated runtimes/);
+  assert.deepEqual(fs.readdirSync(cwd),[]);
+});
