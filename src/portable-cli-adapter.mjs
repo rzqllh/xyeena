@@ -3,7 +3,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { discoverWorkspaceSkills, routeWorkspaceSkills } from './workspace-skills.mjs';
 
-const HOSTS = new Set(['gemini', 'hermes']);
+const HOSTS = new Set(['gemini', 'hermes', 'codex', 'claude']);
 const MAX_OUTPUT = 256 * 1024;
 const MAX_PROMPT = 12000;
 const HOST_TIMEOUT_MAX = 300000;
@@ -42,7 +42,7 @@ export function portableLaunchPlan({ runtime, args, executable, platform = proce
 
 export function previewPortableHost({ cwd = process.cwd(), runtime, goal, state = 'TRIAGE', home,
   includeGlobal = true } = {}) {
-  if (!HOSTS.has(runtime)) throw new Error('Portable CLI host must be gemini or hermes');
+  if (!HOSTS.has(runtime)) throw new Error('Portable CLI host must be gemini, hermes, codex or claude');
   if (typeof goal !== 'string' || !goal.trim() || goal.length > MAX_PROMPT)
     throw new Error('A non-empty bounded goal is required');
   const root = fs.realpathSync(path.resolve(cwd));
@@ -74,7 +74,35 @@ function decodeResponse(host, output) {
       (count, m) => count + (Number.isSafeInteger(m?.tokens?.total) ? m.tokens.total : 0), 0) : null;
     return { report: parsed.response, usageTokens: tokens };
   }
+  if (host === 'claude') {
+    let parsed;
+    try { parsed = JSON.parse(output.trim()); }
+    catch { throw new Error('Claude Code did not return JSON'); }
+    if (!object(parsed) || parsed.is_error === true || typeof parsed.result !== 'string')
+      throw new Error('Claude Code returned an error or missing result');
+    const usage = parsed.usage || {};
+    const total = Number.isSafeInteger(usage.input_tokens) && Number.isSafeInteger(usage.output_tokens)
+      ? usage.input_tokens + usage.output_tokens : null;
+    return { report: parsed.result, usageTokens: total };
+  }
   const lines = output.trim().split(/\r?\n/).filter(Boolean);
+  if (host === 'codex') {
+    let last = null, usageTokens = null, failed = false;
+    for (const line of lines) {
+      let event;
+      try { event = JSON.parse(line); } catch { throw new Error('Codex returned invalid JSONL'); }
+      if (event?.type === 'turn.failed' || event?.type === 'error') failed = true;
+      if (event?.type === 'item.completed' && event?.item?.type === 'agent_message' &&
+          typeof event.item.text === 'string') last = event.item.text;
+      if (event?.type === 'turn.completed') {
+        const u = event.usage;
+        if (Number.isSafeInteger(u?.input_tokens) && Number.isSafeInteger(u?.output_tokens))
+          usageTokens = u.input_tokens + u.output_tokens;
+      }
+    }
+    if (failed || !last) throw new Error('Codex CLI did not return a successful agent message');
+    return { report: last, usageTokens };
+  }
   let last = null;
   for (const line of lines) {
     let event;
@@ -111,12 +139,20 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
         'Do not edit files, execute shell commands, send messages, approve actions or publish.',
         'Return an evidence-aware report and clearly identify any blocked or unknown step.',
         'Preferred skill names (verify they are available in the native host): ' + selectedSkills.join(', '),
+        runtime === 'codex' ? 'If available use $xyeena-orchestrate as the orchestrator skill.' :
+          'Load xyeena-orchestrate from the already-installed skill inventory when available.',
         'Task:', task.title,
       ].join('\n');
       const args = runtime === 'hermes'
         ? ['chat', '--query-file', '-', '--oneshot', '-Q', '--format', 'stream-json',
            '--toolsets', 'safe', ...(selectedSkills.length ? ['--skills', selectedSkills.join(',')] : [])]
-        : ['--output-format', 'json', '--approval-mode', 'plan'];
+        : runtime === 'codex'
+          ? ['exec', '--json', '--sandbox', 'read-only', '-']
+          : runtime === 'claude'
+            ? ['--bare', '--add-dir', '.', '--permission-mode', 'plan',
+               '--output-format', 'json', '--no-session-persistence', '-p',
+               'Review the instructions on stdin using only relevant installed Xyeena skills.']
+            : ['--output-format', 'json', '--approval-mode', 'plan'];
       const launch = portableLaunchPlan({ runtime, args, executable, platform, env });
       return new Promise((resolve, reject) => {
         let finished = false, stdout = '', stderrLength = 0, child;
