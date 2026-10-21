@@ -14,7 +14,10 @@ import { setupHealthCheck } from './setup-health.mjs';
 const help=`Xyeena Rig ${VERSION}
 
 Usage:
-  xyeena setup                                  # beginner-friendly guided setup
+  xyeena setup                                  # guided: global/workspace, copy/symlink, AI runtimes
+  xyeena setup --scope global --mode copy --runtime antigravity --preset complete --dry-run
+  xyeena setup --scope global --mode symlink --runtime "gemini,hermes" --preset balanced --yes
+  xyeena setup --scope workspace --mode symlink --runtime codex --preset essential --yes
   xyeena setup --runtime "hermes,gemini" --preset essential --harness none --dry-run
   xyeena setup --runtime antigravity --preset complete --replace-files .agents/skills/xyeena-orchestrate/SKILL.md --yes
   xyeena setup diff --runtime antigravity --preset complete --file .agents/skills/xyeena-orchestrate/SKILL.md
@@ -86,17 +89,17 @@ export async function main(args){
     }
     if(f._.length)throw new Error('Unexpected setup argument(s): '+f._.join(' ')+'. In PowerShell quote comma-separated runtimes, for example --runtime "hermes,gemini".');
     if(f.force)throw new Error('Setup does not blindly overwrite files. Use --update to back up and replace existing differing files.');
-    const allowed=new Set(['_', 'runtime', 'preset', 'harness', 'dir', 'dryRun', 'yes', 'update', 'replaceFiles', 'help']);
+    const allowed=new Set(['_', 'runtime', 'preset', 'harness', 'dir', 'dryRun', 'yes', 'update', 'replaceFiles', 'scope', 'mode', 'help']);
     for(const key of Object.keys(f))if(!allowed.has(key))throw new Error('Unrecognized setup option --'+key+' (for safe updates use --update)');
     const cwd=path.resolve(f.dir||process.cwd());
     if (!f.runtime) {
-      if(f.yes||f.dryRun||f.preset||f.harness||f.update||f.replaceFiles)throw new Error('Non-interactive setup requires --runtime HOST to prevent selecting tools implicitly');
+      if(f.yes||f.dryRun||f.preset||f.harness||f.update||f.replaceFiles||f.scope||f.mode)throw new Error('Non-interactive setup requires --runtime HOST to prevent selecting tools implicitly');
       await interactiveSetup({cwd});
       return;
     }
     const replaceFiles=f.replaceFiles ? String(f.replaceFiles).split(',').map(x=>x.trim()) : [];
     const options={cwd,runtime:f.runtime,preset:f.preset||'essential',harness:f.harness||'none',
-      update:f.update===true,replaceFiles};
+      scope:f.scope||'workspace',mode:f.mode||'copy',update:f.update===true,replaceFiles};
     if(f.dryRun) {
       console.log(JSON.stringify(previewSetup(options),null,2));return;
     }
