@@ -111,3 +111,29 @@ test('nonzero status, invalid JSON, and reported errors cannot be verified',asyn
     spawnImpl:mockProcess('bad', {exitCode:1})});
   await assert.rejects(bad3.executeTask(makeTask()),/nonzero status/);
 });
+
+test('Windows CMD launcher uses only safe static arguments, never task text',async t=>{
+  const cwd=fixture(t);
+  const { portableLaunchPlan }=await import('../src/portable-cli-adapter.mjs');
+  const shim=path.join(cwd,'gemini.cmd');
+  const plan=portableLaunchPlan({runtime:'gemini',executable:shim,platform:'win32',
+    env:{ComSpec:'cmd.exe'},
+    args:['--output-format','json','--approval-mode','plan','--extensions','none']});
+  assert.equal(plan.command,'cmd.exe');
+  assert.deepEqual(plan.args.slice(0,3),['/d','/s','/c']);
+  assert.match(plan.args[3],/gemini\.cmd/);
+  assert.ok(!plan.args[3].includes('Review tests for regression'));
+  assert.throws(()=>portableLaunchPlan({runtime:'hermes',executable:path.join(cwd,'bad&.cmd'),
+    platform:'win32',args:['chat']}),/Unsafe Windows shim path/);
+  assert.throws(()=>portableLaunchPlan({runtime:'gemini',executable:shim,
+    platform:'win32',args:['--model','hello&del']}),/Unsafe portable host arguments/);
+});
+test('Windows can actually execute a local CMD shim without embedding model prompt in argv',
+  {skip:process.platform!=='win32'}, async t=>{
+    const cwd=fixture(t), shim=path.join(cwd,'fake-gemini.cmd');
+    fs.writeFileSync(shim,'@echo off\r\nmore > NUL\r\necho {"response":"shim success"}\r\n');
+    const adapter=createPortableHostAdapter({cwd,runtime:'gemini',command:shim,timeoutMs:10000});
+    const result=await adapter.executeTask(makeTask());
+    assert.equal(result.report,'shim success');
+    assert.equal(result.verified,false);
+  });
