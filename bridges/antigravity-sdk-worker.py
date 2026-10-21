@@ -52,9 +52,18 @@ async def execute(request):
     except ImportError as exc:
         raise RuntimeError("Optional Antigravity SDK missing; install google-antigravity separately") from exc
 
+    if request.get("enableSubagents", False) not in (True, False):
+        raise ValueError("Invalid subagent option")
+    delegated = request.get("enableSubagents") is True
+    # Optional real subagent dispatch. Never grant write or shell tools to the parent.
+    permitted_tools = list(BuiltinTools.read_only())
+    if delegated:
+        permitted_tools.append(BuiltinTools.START_SUBAGENT)
     config = LocalAgentConfig(
         skills_paths=skill_paths,
-        capabilities=CapabilitiesConfig(enabled_tools=BuiltinTools.read_only()),
+        capabilities=CapabilitiesConfig(
+            enabled_tools=permitted_tools, enable_subagents=delegated
+        ),
         system_instructions=(
             "Complete only the assigned read-only task. Do not edit files, execute commands, "
             "send communications, or deploy. Consult relevant supplied Agent Skills on demand. "
@@ -62,6 +71,9 @@ async def execute(request):
         ),
     )
     prompt = "Workspace: " + str(Path(cwd).resolve()) + "\nRead-only task: " + title
+    if delegated:
+        prompt += ("\nFor complex independent read-only investigations, delegate to "
+                   "subagents as needed. Do not delegate editing or terminal execution.")
     async with Agent(config) as agent:
         response = await agent.chat(prompt)
         body = str(await response.text())[:MAX_OUTPUT]
