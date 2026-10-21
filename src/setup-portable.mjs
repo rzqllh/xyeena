@@ -56,6 +56,20 @@ function managedLink(dst,src){
   try{return fs.lstatSync(dst).isSymbolicLink() && fs.realpathSync(dst)===fs.realpathSync(src)}
   catch{return false}
 }
+function priorManagedLink(dst,item){
+  if(item.kind!=='link')return null;
+  try {
+    if(!fs.lstatSync(dst).isSymbolicLink())return null;
+    const store=path.join(item.root===undefined?os.homedir():item.storeHome,'.xyeena','skill-store');
+    if(!fs.lstatSync(store).isDirectory()||fs.lstatSync(store).isSymbolicLink())return null;
+    const root=fs.realpathSync(store),actual=fs.realpathSync(dst);
+    const rel=path.relative(root,actual).split(path.sep);
+    if(rel.length!==2 || !/^v[0-9]+\.[0-9]+\.[0-9]+$/.test(rel[0]) ||
+      !rel[1].startsWith(item.skill+'-') || !/^[a-f0-9]{16}$/.test(rel[1].slice(item.skill.length+1)))
+      return null;
+    return actual;
+  }catch{return null}
+}
 function build(options){
   const {scope='workspace',mode='copy',cwd=process.cwd(),home=os.homedir(),runtimes=[],skills=[],guards=[],harness='none',env=process.env}=options;
   if(!['workspace','global'].includes(scope)||!['copy','symlink'].includes(mode))
@@ -87,7 +101,7 @@ function build(options){
       const fingerprint=directoryHash(src);
       const stored=path.join(store,skill+'-'+fingerprint.slice(0,16));
       items.push({kind:mode==='symlink'?'link':'copy',src:mode==='symlink'?stored:src,
-        dst,root:scope==='global'?rootHome:workspace,runtime,skill});
+        dst,root:scope==='global'?rootHome:workspace,storeHome:rootHome,runtime,skill});
     }
   }
   if(scope==='workspace'&&harness!=='none'){
@@ -111,8 +125,10 @@ function inspect(item){
   const stat=lstat(item.dst);
   if(!stat)return {status:'create',before:null};
   if(stat.isSymbolicLink()){
-    return item.kind==='link'&&managedLink(item.dst,item.src)?
-      {status:'unchanged',before:'managed-link'}:{status:'foreign-link',before:'unowned-link'};
+    if(item.kind==='link'&&managedLink(item.dst,item.src))return {status:'unchanged',before:'managed-link'};
+    const old=priorManagedLink(item.dst,item);
+    return old?{status:'conflict',before:'previous-xyeena-link:'+old}:
+      {status:'foreign-link',before:'unowned-link'};
   }
   if(item.kind==='link')return {status:'conflict',before:stat.isDirectory()?safeHash(item.dst):hash(fs.readFileSync(item.dst))};
   if(item.kind==='file'){
@@ -160,13 +176,24 @@ export function applyPortableSetup(options={}){
         const backup=path.join(backupRoot,String(i));
         fs.mkdirSync(backupRoot,{recursive:true});
         if(!lstat(path.join(backupRoot,'.gitignore')))fs.writeFileSync(path.join(backupRoot,'.gitignore'),'*\n!.gitignore\n');
-        if(fs.lstatSync(x.dst).isDirectory())copyDirectory(x.dst,backup);
-        else {fs.mkdirSync(path.dirname(backup),{recursive:true});fs.copyFileSync(x.dst,backup);}
-        backed.push({dst:x.dst,backup});
+        const oldStat=fs.lstatSync(x.dst);
+        if(oldStat.isSymbolicLink()){
+          const previous=priorManagedLink(x.dst,x);
+          if(!previous)throw new Error('Unrecognized symlink. Refusing update: '+x.dst);
+          fs.writeFileSync(backup+'.link-target',previous);
+          backed.push({dst:x.dst,backup,linkTarget:previous});
+        } else {
+          if(oldStat.isDirectory())copyDirectory(x.dst,backup);
+          else {fs.mkdirSync(path.dirname(backup),{recursive:true});fs.copyFileSync(x.dst,backup);}
+          backed.push({dst:x.dst,backup});
+        }
       }
       safePath(x.root,x.dst,{allowLeafSymlink:true});
       fs.mkdirSync(path.dirname(x.dst),{recursive:true});
-      if(x.status==='conflict')fs.rmSync(x.dst,{recursive:true,force:false});
+      if(x.status==='conflict'){
+        if(fs.lstatSync(x.dst).isSymbolicLink())fs.unlinkSync(x.dst);
+        else fs.rmSync(x.dst,{recursive:true,force:false});
+      }
       written.push(x);
       if(x.kind==='link'){
         if(!lstat(x.src)?.isDirectory())throw new Error('Persistent source missing: '+x.src);
@@ -177,10 +204,14 @@ export function applyPortableSetup(options={}){
   }catch(error){
     for(const x of written.reverse()){
       try{
-        if(lstat(x.dst))fs.rmSync(x.dst,{recursive:true,force:true});
+        if(lstat(x.dst)){
+          if(fs.lstatSync(x.dst).isSymbolicLink())fs.unlinkSync(x.dst);
+          else fs.rmSync(x.dst,{recursive:true,force:true});
+        }
         const record=backed.find(b=>b.dst===x.dst);
         if(record){
-          if(fs.lstatSync(record.backup).isDirectory())copyDirectory(record.backup,x.dst);
+          if(record.linkTarget)fs.symlinkSync(record.linkTarget,x.dst,process.platform==='win32'?'junction':'dir');
+          else if(fs.lstatSync(record.backup).isDirectory())copyDirectory(record.backup,x.dst);
           else {fs.mkdirSync(path.dirname(x.dst),{recursive:true});fs.copyFileSync(record.backup,x.dst);}
         }
       }catch{/* originals remain in backup for manual recovery */}
