@@ -3,6 +3,7 @@ import { parseFlags } from './util.mjs'; import { VERSION, PACKAGE_ROOT } from '
 import { explicitSelection, interactiveSelection } from './selection.mjs';
 import { runHarness } from './harness.mjs'; import { doctor } from './doctor.mjs'; import { validateSource } from './validate.mjs'; import { loadRegistry } from './registry.mjs'; import { resolveCapabilities } from './resolver.mjs'; import { runEvals } from './eval.mjs'; import { RunLedger } from './ledger.mjs';
 import { guidedCommand } from './antigravity-guided.mjs';
+import { discoverWorkspaceSkills, routeWorkspaceSkills } from './workspace-skills.mjs';
 const help=`Xyeena Rig ${VERSION}
 
 Usage:
@@ -17,6 +18,8 @@ Usage:
   xyeena check [--source PATH]
   xyeena list
   xyeena resolve --prompt TEXT [--state TRIAGE] [--path FILE]
+  xyeena skills discover [--dir PATH] [--runtime antigravity|claude|codex|all] [--local-only]
+  xyeena route --prompt TEXT [--dir PATH] [--runtime antigravity|claude|codex|all] [--state TRIAGE]
   xyeena eval
   xyeena run-init --goal TEXT [--dir PATH]
   xyeena guided preview|install|status|uninstall [--dir PATH] [--yes]
@@ -63,6 +66,17 @@ export async function main(args){
  if(cmd==='check'){const r=validateSource(path.resolve(f.source||PACKAGE_ROOT)); if(!r.ok){for(const e of r.errors)console.error(`[FAIL] ${e}`);process.exitCode=1}else console.log(`[PASS] ${r.capabilities.length} capabilities + runtime manifests`);return}
  if(cmd==='list'){for(const c of loadRegistry())console.log(`${c.metadata.name}\t${c.activation.class}\t${c.metadata.category}`);return}
  if(cmd==='resolve'){if(!f.prompt)throw new Error('--prompt is required'); const r=resolveCapabilities(loadRegistry(),{prompt:f.prompt,state:f.state||'TRIAGE',paths:f.path?[f.path]:[]}); console.log(JSON.stringify(r,null,2));return}
+ if(cmd==='skills'){
+    if(f._[0]!=='discover')throw new Error('Expected: xyeena skills discover');
+    console.log(JSON.stringify(discoverWorkspaceSkills({cwd:path.resolve(f.dir||process.cwd()),runtime:f.runtime||'antigravity',includeGlobal:!f.localOnly}),null,2));return;
+  }
+ if(cmd==='route'){
+    if(typeof f.prompt!=='string'||!f.prompt.trim())throw new Error('--prompt TEXT is required');
+    const result=routeWorkspaceSkills({cwd:path.resolve(f.dir||process.cwd()),runtime:f.runtime||'antigravity',
+      prompt:f.prompt,state:f.state||'TRIAGE',paths:f.path?[f.path]:[],maxSupporting:f.maxSupporting===undefined?2:Number(f.maxSupporting),
+      includeGlobal:!f.localOnly});
+    console.log(JSON.stringify(result,null,2));return;
+  }
  if(cmd==='eval'){const r=runEvals(); for(const d of r.details)console.log(`${d.ok?'PASS':'FAIL'} ${d.name}: ${d.actual}`); console.log(`\n${r.pass} passed, ${r.fail} failed`); if(r.fail)process.exitCode=1;return}
  if(cmd==='guided'){
     const result=guidedCommand(f._[0]||'preview',{cwd:path.resolve(f.dir||process.cwd()),yes:!!f.yes,id:f.id||null,conversationId:f.conversation||null});
