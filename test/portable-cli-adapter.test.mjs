@@ -183,3 +183,22 @@ test('Codex/Claude malformed or failed response is not a verified result',async 
     spawnImpl:mockProcess('{"is_error":true,"result":"bad"}')});
   await assert.rejects(claude.executeTask(makeTask()),/missing result/);
 });
+
+test('headless preview does not select platform-incompatible orchestrator or supporting skills', t => {
+  const cwd = fixture(t);
+  const unsupported = process.platform === 'win32' ? 'linux' : 'windows';
+  const root = path.join(cwd, '.gemini/skills/xyeena-orchestrate');
+  fs.mkdirSync(root, { recursive: true });
+  fs.writeFileSync(path.join(root, 'SKILL.md'), '---\nname: xyeena-orchestrate\ndescription: Orchestrate skills\nplatforms: [' + unsupported + ']\n---\n');
+  const blocked = previewPortableHost({ cwd, runtime: 'gemini', goal: 'review code', includeGlobal: false });
+  assert.equal(blocked.ready, false);
+  assert.deepEqual(blocked.incompatibleSkills, ['xyeena-orchestrate']);
+  fs.writeFileSync(path.join(root, 'SKILL.md'), '---\nname: xyeena-orchestrate\ndescription: Orchestrate skills\n---\n');
+  const other = path.join(cwd, '.gemini/skills/systematic-debugging');
+  fs.mkdirSync(other, { recursive: true });
+  fs.writeFileSync(path.join(other, 'SKILL.md'), '---\nname: systematic-debugging\ndescription: Debug failing regression\nplatforms: [' + unsupported + ']\n---\n');
+  const ready = previewPortableHost({ cwd, runtime: 'gemini', goal: 'systematic debugging regression', includeGlobal: false });
+  assert.equal(ready.ready, true);
+  assert.deepEqual(ready.requestedSkills, ['xyeena-orchestrate']);
+  assert.deepEqual(ready.incompatibleSkills, ['systematic-debugging']);
+});
