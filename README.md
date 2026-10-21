@@ -95,6 +95,17 @@ npx xyeena-agent@latest init --components all --runtime all --skills all --guard
 
 ---
 
+## Installed-skill routing preview (development)
+
+Xyeena now includes opt-in, read-only discovery and routing for installed project and global Agent Skills, including third-party skills. These commands are available from a source checkout of this development branch (not yet the published npm release):
+
+```bash
+node bin/xyeena.mjs skills discover --runtime antigravity
+node bin/xyeena.mjs route --runtime antigravity --prompt "systematic debugging of a regression" --state DEBUG
+```
+
+Native Antigravity can automatically invoke relevant skills without manual slash commands. The new CLI only **previews** routes; it does not run tools or subagents. The task runner library requires an actual host adapter and task-scoped authorization, and does not ship a validated native Antigravity worker adapter. See [Intelligent skill routing](docs/INTELLIGENT-ROUTING.md).
+
 ## Antigravity Guided hooks
 
 Workspace-level hooks are an optional, separately approved install. They suggest possible unfinished work, and explicitly bound conversations receive a bounded capsule and checkpoint support without automatic execution or permission changes. See [Guided hooks](docs/ANTIGRAVITY-GUIDED.md).
