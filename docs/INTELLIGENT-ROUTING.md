@@ -94,6 +94,20 @@ For Hermes, Xyeena reads a conservative subset of the local `skills:` settings f
 
 Use `xyeena skills matrix` for per-host inventory; `--runtime all` on discovery is a deduplicated, cross-host view, **not** a claim that every runtime can load the result. For routing, select exactly one host. No automatic installation, global skill mutation, shell invocation, permission bypass or publishing occurs.
 
+## One orchestrator across five hosts
+
+`xyeena orchestrate preview --runtime <host> --goal TEXT` is the **single portable CLI entry point** for Antigravity, Gemini CLI, Codex, Hermes and Claude Code. It scans host-specific filesystem locations and validates the installed `xyeena-orchestrate` skill, then selects only eligible skills. `run --yes` rechecks the inventory before sending any prompt.
+
+`xyeena orchestrate run --runtime <host> --goal TEXT --yes` starts a **new headless agent session** in the selected host. This is not connected to the currently active conversation; live host-session dispatch still needs explicit native integration/acceptance. Every result is `REVIEW_REQUIRED`, even when a model claims success.
+
+- **Codex:** `codex exec --json --sandbox read-only -`, sending the request via stdin; parses agent_message and usage from native JSONL.
+- **Claude Code:** `claude --bare --add-dir . --permission-mode plan --output-format json --no-session-persistence -p stdin`, sends the actual task on stdin; `--bare` skips automatically configured hooks/plugins/MCP. Its `--add-dir .` allows a known local skill directory; Claude must still load the selected skill during its turn. Bare mode may require `ANTHROPIC_API_KEY` rather than subscription login.
+- **Gemini CLI:** native Plan mode and JSON output. Any installed extensions/MCP tools are subject to native CLI policy. Xyeena **does not** assert that extensions are disabled because the CLI does not document a universal `none` sentinel.
+- **Hermes:** native skills preload with `--skills`, JSONL results and `safe` toolset. The `safe` toolset allows web/media and does **not** grant local file reads; use this path for research/review of supplied context, not to claim code inspection of files Hermes cannot open.
+- **Antigravity:** Python SDK one-shot with read-only tools and optional `--delegate`; this is distinct from the IDE session.
+
+To reduce repetitive scanning in resident integrations, `SkillInventoryCache` uses a bounded memory-only cache whose fingerprint includes skill manifest/directory timestamps and active Hermes configuration. It does not persist or watch the filesystem in the background. Execution always takes a fresh preview, independently of that cache.
+
 ## Gemini CLI and Hermes native one-shot execution (experimental)
 
 The portable `host` CLI is a separate opt-in path for real headless agent execution, not a replacement for a live IDE/chat session:
