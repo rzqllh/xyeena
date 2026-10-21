@@ -81,8 +81,10 @@ export function stagedSetup({cwd, choice, visit}) {
         status: !present ? 'create' : desired.equals(original) ? 'unchanged' : rel === manifestRel ? 'metadata-update' : 'conflict',
         currentHash:present ? hash(original) : null, desiredHash:hash(desired) };
     }).sort(byPath);
+    // The installer manifest contains a generated timestamp. Only the current
+    // file hash should affect consent; proposed metadata timestamps are not material.
     const digest = hash(JSON.stringify(records.map(({rel,status,currentHash,desiredHash})=>({
-      rel,status,currentHash,desiredHash
+      rel,status,currentHash,desiredHash:rel === '.xyeena/install.json' ? 'managed-metadata' : desiredHash
     }))));
     return visit({root,stage,records,digest});
   } finally {
