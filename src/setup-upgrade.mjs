@@ -92,6 +92,35 @@ export function stagedSetup({cwd, choice, visit}) {
   }
 }
 
+/** Explicit, bounded comparison: no skill scripts are evaluated. */
+export function setupFileDiff({cwd,choice,file,maxBytes=65536,maxLines=120}={}) {
+  if(typeof file!=='string' || !file.trim()) throw new Error('Select one conflict file to inspect');
+  if(!Number.isInteger(maxLines) || maxLines<1 || maxLines>200) throw new Error('Invalid diff budget');
+  return stagedSetup({cwd,choice,visit:({root,records})=>{
+    const normalized=file.replace(/\\/g,'/').replace(/^\.\//,'');
+    const record=records.find(r=>r.rel===normalized);
+    if(!record || record.status!=='conflict') throw new Error('Select a listed conflict file (from setup --dry-run)');
+    if(fs.statSync(record.src).size>maxBytes || fs.statSync(record.dst).size>maxBytes)
+      return {file:normalized,status:'too-large',bytesLimit:maxBytes,diff:[]};
+    const original=fs.readFileSync(record.dst,'utf8').replace(/\r\n/g,'\n').split('\n');
+    const proposed=fs.readFileSync(record.src,'utf8').replace(/\r\n/g,'\n').split('\n');
+    let prefix=0;
+    while(prefix<original.length && prefix<proposed.length && original[prefix]===proposed[prefix]) prefix++;
+    let suffix=0;
+    while(suffix<original.length-prefix && suffix<proposed.length-prefix &&
+      original[original.length-1-suffix]===proposed[proposed.length-1-suffix]) suffix++;
+    const minus=original.slice(prefix,original.length-suffix);
+    const plus=proposed.slice(prefix,proposed.length-suffix);
+    const budget=Math.min(maxLines,minus.length+plus.length);
+    const partMinus=minus.slice(0,budget);
+    const partPlus=plus.slice(0,Math.max(0,budget-partMinus.length));
+    return {file:normalized,status:'conflict',changeStartLine:prefix+1,
+      originalRemovedLines:minus.length,proposedAddedLines:plus.length,
+      truncated:partMinus.length<minus.length||partPlus.length<plus.length,
+      diff:[...partMinus.map(line=>'- '+line),...partPlus.map(line=>'+ '+line)]};
+  }});
+}
+
 export function setupFilePlan({cwd,choice}){
   return stagedSetup({cwd,choice,visit:({records,digest}) => ({
     fingerprint:digest,
@@ -112,14 +141,19 @@ function copyToDestination(root, record) {
   fs.copyFileSync(record.src,record.dst);
 }
 /** Back up conflicting originals before any replacement; keep mode never changes custom files. */
-export function installStagedSetup({cwd,choice,policy='keep',expectedFingerprint} = {}){
-  if (!['keep','backup-replace'].includes(policy)) throw new Error('Unknown conflict policy');
+export function installStagedSetup({cwd,choice,policy='keep',replaceFiles=[],expectedFingerprint} = {}){
+  if (!['keep','backup-replace','selected'].includes(policy)) throw new Error('Unknown conflict policy');
+  if (!Array.isArray(replaceFiles) || replaceFiles.length>128 || replaceFiles.some(x=>typeof x!=='string'))
+    throw new Error('Invalid selected file list');
   return stagedSetup({cwd,choice,visit:({root,records,digest})=>{
     if (expectedFingerprint && expectedFingerprint !== digest)
       throw new Error('Project changed since preview. Run setup preview again; no files written');
     const conflicting = records.filter(r=>r.status==='conflict');
+    const selected=new Set(replaceFiles);
+    if (replaceFiles.length!==selected.size || [...selected].some(file=>!conflicting.some(r=>r.rel===file)))
+      throw new Error('Selected replacement is not a listed conflict; run setup --dry-run');
     const changed = records.filter(r=>r.status==='create' || r.status==='metadata-update' ||
-      (r.status==='conflict' && policy==='backup-replace'));
+      (r.status==='conflict' && (policy==='backup-replace' || (policy==='selected' && selected.has(r.rel)))));
     const toBackup = changed.filter(r=>r.present);
     let backupDir = null;
     const nonce = new Date().toISOString().replace(/[:.]/g,'-')+'-'+crypto.randomBytes(4).toString('hex');
@@ -137,6 +171,22 @@ export function installStagedSetup({cwd,choice,policy='keep',expectedFingerprint
         ensureSafeParents(root,backupFile);
         fs.copyFileSync(item.dst, backupFile, fs.constants.COPYFILE_EXCL);
       }
+    }
+    // Journal is written before changing project files, so a crash can be inspected safely.
+    // Any journal-less backups from earlier versions remain available for manual restoration.
+    if (changed.length) {
+      if (!backupDir) {
+        safeDestination(root,path.join(backupRoot,'.gitignore'));
+        fs.mkdirSync(backupRoot,{recursive:true});
+        backupDir=backupRoot;
+        fs.writeFileSync(path.join(backupRoot,'.gitignore'),'*\\n!.gitignore\\n',{flag:'wx'});
+      }
+      const journal={schema:1,cwd:root,createdAt:new Date().toISOString(),files:changed.map(r=>({
+        path:r.rel,existed:r.present,beforeSha256:r.currentHash,afterSha256:r.desiredHash
+      }))};
+      const journalFile=path.join(backupRoot,'rollback.json');
+      safeDestination(root,journalFile);
+      fs.writeFileSync(journalFile,JSON.stringify(journal,null,2)+'\\n',{flag:'wx'});
     }
     const written = [];
     try {
@@ -162,8 +212,8 @@ export function installStagedSetup({cwd,choice,policy='keep',expectedFingerprint
     }
     return {
       installed:true, conflictPolicy:policy, written:written.map(r=>r.rel),
-      preserved:conflicting.filter(r=>policy==='keep').map(r=>r.rel),
-      replaced:conflicting.filter(r=>policy==='backup-replace').map(r=>r.rel),
+      preserved:conflicting.filter(r=>!changed.includes(r)).map(r=>r.rel),
+      replaced:conflicting.filter(r=>changed.includes(r)).map(r=>r.rel),
       unchangedCount:records.filter(r=>r.status==='unchanged').length,
       backupDirectory:backupDir ? slash(path.relative(root,backupDir)) : null
     };
