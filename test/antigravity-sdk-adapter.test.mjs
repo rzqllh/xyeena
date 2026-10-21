@@ -40,7 +40,7 @@ test('SDK preview is read-only and selects installed skills', t => {
   assert.equal(preview.executed, false);
   assert.equal(preview.requiresExplicitExecution, true);
   assert.deepEqual(preview.selectedSkills, ['systematic-debugging']);
-  assert.deepEqual(preview.skillPaths, [folder]);
+  assert.deepEqual(preview.skillPaths.map(p => fs.realpathSync(p)), [fs.realpathSync(folder)]);
   assert.equal(fs.existsSync(path.join(cwd, '.xyeena')), false);
 });
 
