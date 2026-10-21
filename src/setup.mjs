@@ -163,7 +163,7 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
   explain(output, 'No AI login, API key, global permission override or Git hooks will be changed.');
   let scope='workspace', mode='copy';
   if(selectLocation){
-    explain(output, '\nSTEP 1: Where should the skills work?');
+    explain(output, '\nWhere should the skills work?');
     explain(output, '  1. Global — available across all my projects (recommended)');
     explain(output, '  2. This workspace only — limited to the current project');
     const choice=String(await ask('Choose 1 / 2 [default 1]: ')).trim();
@@ -171,7 +171,7 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
     scope=choice==='2'?'workspace':'global';
   }
   const hints = inspectSetupHosts({cwd:root});
-  explain(output, '\nSTEP 1/4: Which AI tools will use Xyeena?');
+  explain(output, '\nWhich AI tools will use Xyeena?');
   for (let i = 0; i < HOSTS.length; i++) {
     const h = HOSTS[i];
     const detected=hints.find(x=>x.host===h.id);
@@ -182,7 +182,7 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
   }
   explain(output, 'You can select multiple, e.g. 1,2. Antigravity and Codex share .agents/skills.');
   const chosen = chosenHosts(await ask('AI tool number(s), e.g. 1,2: '));
-  explain(output, '\nSTEP 2/4: Which skills should be installed?');
+  explain(output, '\nWhich skills should be installed?');
   explain(output, '  1. Essential — orchestrator + mandatory dependencies (smallest footprint)');
   explain(output, '  2. Balanced — orchestrator, planning, debugging, review, tests and verification');
   explain(output, '  3. Complete — all packaged skills (more files, not automatic model usage)');
@@ -235,7 +235,7 @@ export async function guidedSetup({ cwd = process.cwd(), ask, output = process.s
   }
   const plan = update || replaceFiles.length
     ? previewSetup({...opts,update,replaceFiles}) : basePlan;
-  explain(output, '\nSTEP 4/4: Review before installation');
+  explain(output, '\nReview before installation');
   explain(output, 'AI hosts: ' + plan.runtimes.join(', '));
   explain(output, 'Location: ' + scope + ' — Method: ' + mode);
   if(plan.durableStore)explain(output,'Permanent skill store: '+plan.durableStore);
