@@ -95,7 +95,7 @@ test('host adapter refuses workspace mutations and external operations',async t=
   await assert.rejects(adapter.executeTask(makeTask(false)),/safe read-only/);
   await assert.rejects(adapter.executeTask({...makeTask(),scope:{readOnly:true,operationClass:'external'}}),/safe read-only/);
   await assert.rejects(adapter.executeTask({...makeTask(),title:' '}),/Invalid task title/);
-  assert.throws(()=>createPortableHostAdapter({cwd,runtime:'codex'}),/Unsupported portable/);
+  assert.throws(()=>createPortableHostAdapter({cwd,runtime:'imaginary'}),/Unsupported portable/);
   assert.throws(()=>createPortableHostAdapter({cwd,runtime:'hermes',selectedSkills:['does not/exists']}),/Invalid selected/);
   assert.throws(()=>createPortableHostAdapter({cwd,runtime:'gemini',timeoutMs:0}),/timeout/);
 });
@@ -137,3 +137,49 @@ test('Windows can actually execute a local CMD shim without embedding model prom
     assert.equal(result.report,'shim success');
     assert.equal(result.verified,false);
   });
+
+test('Codex exec uses native read-only sandbox, stdin and structured events',async t=>{
+  const cwd=fixture(t), captured=[];
+  const events=[
+    {type:'thread.started',thread_id:'th'},
+    {type:'item.completed',item:{type:'agent_message',text:'Reviewed code'}},
+    {type:'turn.completed',usage:{input_tokens:11,output_tokens:5}}
+  ].map(x=>JSON.stringify(x)).join('\n')+'\n';
+  const adapter=createPortableHostAdapter({cwd,runtime:'codex',
+    selectedSkills:['xyeena-orchestrate'],spawnImpl:mockProcess(events,{
+      expectedCommand:'codex',capture:captured,argsCheck(args){
+        assert.deepEqual(args,['exec','--json','--sandbox','read-only','-']);
+        assert.ok(!args.includes('--full-auto'));
+      }})});
+  const result=await adapter.executeTask(makeTask());
+  assert.equal(result.report,'Reviewed code');
+  assert.equal(result.usageTokens,16);
+  assert.equal(result.verified,false);
+  assert.match(captured.join(''),/\$xyeena-orchestrate/);
+});
+test('Claude Code launches in bare plan mode without project hooks and parses JSON',async t=>{
+  const cwd=fixture(t), captured=[];
+  const output=JSON.stringify({type:'result',is_error:false,result:'Reviewed tests',
+    usage:{input_tokens:8,output_tokens:3}});
+  const adapter=createPortableHostAdapter({cwd,runtime:'claude',
+    selectedSkills:['xyeena-orchestrate'],spawnImpl:mockProcess(output,{
+      expectedCommand:'claude',capture:captured,argsCheck(args){
+        assert.deepEqual(args,['--bare','--add-dir','.','--permission-mode','plan',
+          '--output-format','json','--no-session-persistence','-p','stdin']);
+        assert.ok(!args.includes('--dangerously-skip-permissions'));
+      }})});
+  const result=await adapter.executeTask(makeTask());
+  assert.equal(result.report,'Reviewed tests');
+  assert.equal(result.usageTokens,11);
+  assert.equal(result.verified,false);
+  assert.match(captured.join(''),/xyeena-orchestrate/);
+});
+test('Codex/Claude malformed or failed response is not a verified result',async t=>{
+  const cwd=fixture(t);
+  const codex=createPortableHostAdapter({cwd,runtime:'codex',
+    spawnImpl:mockProcess('{"type":"turn.failed"}\n')});
+  await assert.rejects(codex.executeTask(makeTask()),/successful agent message/);
+  const claude=createPortableHostAdapter({cwd,runtime:'claude',
+    spawnImpl:mockProcess('{"is_error":true,"result":"bad"}')});
+  await assert.rejects(claude.executeTask(makeTask()),/missing result/);
+});
