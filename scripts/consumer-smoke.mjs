@@ -58,5 +58,19 @@ try {
   run(process.execPath,[bin,'init','--components','skills','--runtime','codex','--skills','xyeena-interface','--yes'],consumer);
   if(!fs.existsSync(path.join(consumer,'.agents','skills','xyeena-core','SKILL.md')))throw new Error('Missing required dependency in packed consumer.');
   if(fs.existsSync(path.join(consumer,'.claude')))throw new Error('Unselected Claude runtime was installed.');
-  console.log('PASS packed consumer: no implicit all, harness-only, selective skills + dependencies.');
+  const beginner=path.join(scratch,'beginner');
+  fs.mkdirSync(beginner);
+  const guidedPreview=JSON.parse(run(process.execPath,
+    [bin,'setup','--runtime','hermes,gemini','--preset','essential','--dry-run'],beginner));
+  if(!guidedPreview.filesToWrite || fs.readdirSync(beginner).length !== 0)
+    throw new Error('Packed beginner setup preview changed the project or had no actions');
+  run(process.execPath,[bin,'setup','--runtime','hermes,gemini',
+    '--preset','essential','--yes'],beginner);
+  for (const hostPath of ['.hermes/skills',' .gemini/skills'.trim()]) {
+    if(!fs.existsSync(path.join(beginner,hostPath,'xyeena-orchestrate','SKILL.md')))
+      throw new Error('Packed setup did not install orchestrator for '+hostPath);
+  }
+  if(fs.existsSync(path.join(beginner,'AGENTS.md')) || fs.existsSync(path.join(beginner,'.claude')))
+    throw new Error('Beginner setup modified unselected hosts or root policies');
+  console.log('PASS packed consumer: no implicit all, harness-only, selective skills, beginner setup preview/install.');
 } finally {fs.rmSync(scratch,{recursive:true,force:true})}
