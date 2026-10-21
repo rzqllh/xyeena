@@ -76,7 +76,7 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
       if (typeof task.title !== 'string' || !task.title.trim() || task.title.length > MAX_PROMPT)
         throw new Error('Invalid task title');
       const prompt = [
-        'Xyeena Rig orchestration request for the current workspace.',
+        'Xyeena Rig read-only orchestration request for the current workspace.',
         'Use only available and trusted native Agent Skills. Do not invent or install missing skills.',
         'Do not edit files, execute shell commands, send messages, approve actions or publish.',
         'Return an evidence-aware report and clearly identify any blocked or unknown step.',
