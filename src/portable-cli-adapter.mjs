@@ -80,6 +80,7 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
         'Use only available and trusted native Agent Skills. Do not invent or install missing skills.',
         'Do not edit files, execute shell commands, send messages, approve actions or publish.',
         'Return an evidence-aware report and clearly identify any blocked or unknown step.',
+        'Preferred skill names (verify they are available in the native host): ' + selectedSkills.join(', '),
         'Task:', task.title,
       ].join('\n');
       const args = runtime === 'hermes'
