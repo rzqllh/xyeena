@@ -27,3 +27,7 @@ Tests and CI results must be attached here after the PR is opened. No live plugi
 ## CI regression addressed
 
 The first PR CI run had 213 passing unit tests and one macOS failure caused by the platform's canonical `/private/var` temporary path alias. The assertion was corrected to compare against `fs.realpathSync(home)`. A new commit also adds a Rig read-only Harness preflight and multi-target compact-install compensation. Subsequent CI results must be recorded separately; the original run was not fully green.
+
+## Packed-install regression coverage
+
+CI now includes a Windows npx GitHub tarball smoke for compact preview (no writes), confirmed compact installation, and compact governor detection by `setup check`. This is filesystem/CLI acceptance, not proof of live IDE skill activation.

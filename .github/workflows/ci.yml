@@ -120,6 +120,17 @@ jobs:
           if (-not ($copies | Where-Object { Select-String -Path $_.FullName -Pattern 'CUSTOM-XYEENA-UPGRADE-SMOKE' -Quiet })) {
             throw 'Upgrade did not back up custom skill'
           }
+          # Exercise actual packed compact install and host health on Windows.
+          npx --yes --package $package xyeena setup compact --runtime codex --preset balanced --dry-run | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw 'Compact setup preview failed' }
+          if (Test-Path '.agents/skills/xyeena-rig/SKILL.md') { throw 'Compact preview wrote to disk' }
+          npx --yes --package $package xyeena setup compact --runtime codex --preset balanced --yes | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw 'Packed compact setup failed' }
+          if (-not (Test-Path '.agents/skills/xyeena-rig/SKILL.md')) { throw 'Compact orchestrator entry missing' }
+          $compactHealth = npx --yes --package $package xyeena setup check --runtime codex --local-only | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or $compactHealth.filesystem.orchestratorName -ne 'xyeena-rig') {
+            throw 'Compact entry not recognized by runtime health check'
+          }
           $backups = @(npx --yes --package $package xyeena setup backups | ConvertFrom-Json)
           if ($LASTEXITCODE -ne 0 -or -not $backups) { throw 'Could not list rollback backups' }
           $id = $backups[0].id
