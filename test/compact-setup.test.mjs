@@ -74,7 +74,7 @@ test('global compact setup goes into the selected user home only',t=>{
   fs.mkdirSync(home);
   const p=previewCompactSetup({cwd,home,scope:'global',runtime:'claude',preset:'essential'});
   assert.equal(p.targets.length,1);
-  assert.ok(p.targets[0].directory.startsWith(path.join(home,'.claude','skills')));
+  assert.ok(p.targets[0].directory.startsWith(path.join(fs.realpathSync(home),'.claude','skills')));
   applyCompactSetup({cwd,home,scope:'global',runtime:'claude',preset:'essential',yes:true});
   assert.ok(fs.existsSync(path.join(home,'.claude','skills','xyeena-rig','SKILL.md')));
   assert.equal(fs.existsSync(path.join(cwd,'.claude')),false);

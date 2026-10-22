@@ -7,6 +7,7 @@ import { createAntigravitySdkAdapter } from './antigravity-sdk-adapter.mjs';
 import { inventoryFingerprint } from './skill-cache.mjs';
 import { inferWorkflowState } from './workflow-intent.mjs';
 import { buildEnterprisePolicy } from './enterprise-policy.mjs';
+import { inspectRigHarness, enforceRigPreflight } from './rig-harness-lifecycle.mjs';
 
 const HOSTS = new Set(supportedSkillHosts());
 const VALID_STATES = new Set(['TRIAGE','DISCOVER','GRILL','RESEARCH','PROTOTYPE','DEFINE','PLAN','EXECUTE','DEBUG','VERIFY','REVIEW','RELEASE','CLOSE','ESCALATE']);
@@ -38,6 +39,7 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
   const hasBridge = EXECUTABLE_HOSTS.has(runtime);
   const ready = !!governor;
   const enterprise = buildEnterprisePolicy({goal,state:resolvedState,inventory,selectedSkills:skills});
+  const harness = inspectRigHarness({cwd:root,contextualRequested:enterprise.harness.contextualRequested});
   return {
     schema: 1, mode: 'preview-only', executed: false, runtime, goal, cwd: root,
     state: resolvedState, stateSource: inference?.source || 'explicit',
@@ -46,6 +48,7 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
     execution: runtime === 'antigravity' ? 'sdk-one-shot' : 'cli-one-shot',
     entrypoint: governor?.name === 'xyeena-rig' ? '/xyeena-rig' : '/xyeena-orchestrate',
     enterprise,
+    harness,
     selectedSkills: skills, skillPaths: sdkSkillPaths, inventoryRevision,
     missingOrchestrator: !governor,
     unavailable: inventory.filter(s => s.availability !== 'detected').map(s => ({
@@ -78,6 +81,7 @@ export async function executeOrchestration(plan, {
     throw new Error('Installed skill inventory changed since preview; preview again');
   if (!fresh.ready) throw new Error(fresh.reason || 'Orchestrator is unavailable');
   if (!fresh.hostExecutionAvailable) throw new Error(fresh.reason || 'No native host execution adapter');
+  const harnessPreflight = enforceRigPreflight(fresh,{consent:yes});
   if (typeof delegate !== 'boolean') throw new Error('Invalid delegation flag');
   if (delegate && plan.runtime !== 'antigravity')
     throw new Error('Subagent delegation is not enabled for this host bridge');
@@ -93,7 +97,7 @@ export async function executeOrchestration(plan, {
       scope: { readOnly: true, operationClass: 'safe' }
     });
     return { ...result, verified: false, evidenceRefs: [], status: 'REVIEW_REQUIRED',
-      entrypoint: plan.entrypoint, selectedSkills: plan.selectedSkills };
+      harnessPreflight, entrypoint: plan.entrypoint, selectedSkills: plan.selectedSkills };
   }
   const adapter = antigravityAdapterFactory({
     cwd: plan.cwd, skillPaths: plan.skillPaths, enableSubagents: delegate,
@@ -104,5 +108,5 @@ export async function executeOrchestration(plan, {
     scope: { readOnly: true, operationClass: 'safe' }
   });
   return { ...result, verified: false, evidenceRefs: [], status: 'REVIEW_REQUIRED',
-    entrypoint: plan.entrypoint, selectedSkills: plan.selectedSkills };
+    harnessPreflight, entrypoint: plan.entrypoint, selectedSkills: plan.selectedSkills };
 }

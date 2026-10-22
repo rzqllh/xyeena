@@ -6,6 +6,8 @@ coverage/
 
 # Xyeena runtime state
 .xyeena/runs/
+.xyeena/backups/
+.xyeena/skill-store/
 
 # Local/internal development material
 .internal/

@@ -122,11 +122,12 @@ export function previewCompactSetup({cwd=process.cwd(),home=os.homedir(),runtime
     targets,conflicts:targets.filter(t => t.status === 'conflict'),noProviderCalls:true,
     noHostAuthChanges:true,dryRun:true};
 }
-/** Confirmed atomic install with strict ownership checks and retained managed-update backups. */
+/** Confirmed multi-target install. Stage all roots before mutation; compensate on failure. */
 export function applyCompactSetup(options={}) {
   if (options.yes !== true) throw new Error('Compact installation requires explicit --yes');
   const plan = previewCompactSetup(options);
-  if (plan.conflicts.length) throw new Error('Unowned or modified compact target; no files changed: ' + plan.conflicts.map(x => x.directory).join(', '));
+  if (plan.conflicts.length)
+    throw new Error('Unowned or modified compact target; no files changed: ' + plan.conflicts.map(x => x.directory).join(', '));
   if (plan.targets.some(t => t.status === 'managed-update') && options.update !== true)
     throw new Error('Managed compact bundle differs; preview and pass --update for backed-up upgrade');
   if (options.expectedFingerprint && options.expectedFingerprint !== plan.fingerprint)
@@ -134,41 +135,70 @@ export function applyCompactSetup(options={}) {
   const files = bundle(plan.selectedSkills);
   const marker = {schema:1,managedBy:'xyeena-agent',layout:'compact',version:VERSION,
     fingerprint:plan.fingerprint,selectedSkills:plan.selectedSkills};
-  const modified = [];
-  for (const target of plan.targets) {
-    if (target.status === 'unchanged') continue;
-    const parent = path.dirname(target.directory);
-    checkPath(plan.root,parent);
-    fs.mkdirSync(parent,{recursive:true});
-    const staging = fs.mkdtempSync(path.join(parent,'.xyeena-stage-'));
-    let backup=null;
-    try {
+  const prepared=[],committed=[];
+  try {
+    // Prepare *all* selected runtime destinations before changing any existing skill.
+    for (const target of plan.targets.filter(t => t.status !== 'unchanged')) {
+      const parent = path.dirname(target.directory);
+      checkPath(plan.root,parent);
+      fs.mkdirSync(parent,{recursive:true});
+      const staging=fs.mkdtempSync(path.join(parent,'.xyeena-stage-'));
+      prepared.push({target,staging,backup:null});
       for (const file of [...files,{path:MARKER,content:Buffer.from(JSON.stringify(marker,null,2)+'\n')}]) {
-        const output = path.join(staging,...file.path.split('/'));
+        const output=path.join(staging,...file.path.split('/'));
         fs.mkdirSync(path.dirname(output),{recursive:true});
         fs.writeFileSync(output,file.content,{flag:'wx'});
       }
-      // Recheck immediately before commit, including after staging.
-      const current = inspect(target.directory);
-      const expectedStatus = current.status === 'managed'
-        ? current.fingerprint === plan.fingerprint ? 'unchanged' : 'managed-update' : current.status;
-      if (expectedStatus !== target.status) throw new Error('Compact destination changed during setup');
-      if (target.status === 'managed-update') {
+    }
+    // Reject a stale or concurrent mutation before the first commit.
+    for (const {target} of prepared) {
+      checkPath(plan.root,target.directory);
+      const current=inspect(target.directory);
+      const status=current.status==='managed'
+        ? current.fingerprint===plan.fingerprint ? 'unchanged' : 'managed-update' : current.status;
+      if (status!==target.status) throw new Error('Compact destination changed during setup');
+    }
+    for (const item of prepared) {
+      const {target,staging}=item;
+      checkPath(plan.root,target.directory);
+      const current=inspect(target.directory);
+      const status=current.status==='managed'
+        ? current.fingerprint===plan.fingerprint ? 'unchanged' : 'managed-update' : current.status;
+      if (status!==target.status) throw new Error('Compact target changed before commit');
+      if (target.status==='managed-update') {
         const backupRoot=path.join(plan.root,'.xyeena','backups','compact');
         checkPath(plan.root,backupRoot);
         fs.mkdirSync(backupRoot,{recursive:true});
-        backup=path.join(backupRoot,crypto.randomUUID());
-        fs.renameSync(target.directory,backup);
+        item.backup=path.join(backupRoot,crypto.randomUUID());
+        fs.renameSync(target.directory,item.backup);
       }
+      // Track before rename: if this fails, the backup is also rolled back.
+      committed.push(item);
       fs.renameSync(staging,target.directory);
-      modified.push({directory:target.directory,action:target.status,backup});
-    } catch (error) {
-      if (backup && !fs.existsSync(target.directory) && fs.existsSync(backup))
-        fs.renameSync(backup,target.directory);
-      throw error;
-    } finally {
-      if (fs.existsSync(staging)) fs.rmSync(staging,{recursive:true,force:true});
     }
+  } catch(error) {
+    const failures=[];
+    for (const item of committed.reverse()) {
+      const {target,backup}=item;
+      try {
+        if (fs.existsSync(target.directory)) {
+          const actual=inspect(target.directory);
+          if (actual.status!=='managed'||actual.fingerprint!==plan.fingerprint)
+            throw new Error('Cannot undo a compact entry modified during rollback');
+          fs.rmSync(target.directory,{recursive:true});
+        }
+        if (backup && fs.existsSync(backup))
+          fs.renameSync(backup,target.directory);
+      } catch (recoveryError) { failures.push(recoveryError); }
+    }
+    if (failures.length)
+      throw new AggregateError([error,...failures],'Compact install failed; manual recovery required');
+    throw error;
+  } finally {
+    for (const item of prepared)
+      if (fs.existsSync(item.staging)) fs.rmSync(item.staging,{recursive:true,force:true});
   }
-  return {installed:true,layout:'compact',entrySkill:NAME,modified,selectedSkills:plan.selectedSkills};
+  return {installed:true,layout:'compact',entrySkill:NAME,
+    modified:prepared.map(({target,backup})=>({directory:target.directory,action:target.status,backup})),
+    selectedSkills:plan.selectedSkills};
 }
