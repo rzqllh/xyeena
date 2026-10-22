@@ -18,6 +18,7 @@ Evidence status is separate from implementation status.
 | A12 | Core Harness automatically blocks forbidden write actions | Live adapter failure injection | NOT IMPLEMENTED |
 | A13 | Contextual Harness honors user project opt-in | Unit and live host cases | NOT IMPLEMENTED |
 | A14 | Simpul real health, dispatch, cancel, timeout | Live MCP acceptance | NOT IMPLEMENTED |
+| A14a | Caller-supplied healthy adapter execution or inline fallback, no synthetic worker | test/live-backend.test.mjs | PENDING CI |
 | A15 | Native worker health and execution verified | Native smoke | NOT IMPLEMENTED |
 | A16 | No uncontrolled nested delegation or unsafe parallel writes | Adversarial tests | NOT IMPLEMENTED |
 | A17 | Task completion requires independent verification | Existing runner tests + live | PARTIAL |

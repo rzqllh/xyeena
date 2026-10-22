@@ -32,3 +32,7 @@ They are **not** independently host-discovered slash skills. The root directs an
 ## Current execution limits
 
 Existing `orchestrate run --yes` starts a new **read-only one-shot** host call with explicit consent; it is not the active IDE conversation. `buildEnterprisePolicy` describes rather than executes actions. `selectSubagentBackend` requires an explicitly healthy and actionable adapter in the supplied availability input; the planner does not create workers. Plugin identity, live Simpul transport and broad Harness runtime enforcement remain pending.
+
+## Adapter integration contract
+
+`dispatchScopedTask` accepts caller-provided authenticated adapters for Simpul and/or native workers, probes their health and no-nested-delegation capability, and requires executable cancellation. It falls back to a required real inline adapter. `VERIFIED` still requires independent verifier confirmation; task-scoped approvals do not bypass host approvals. This is a reusable API and not evidence that live Simpul transport has been connected.

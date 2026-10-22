@@ -16,7 +16,8 @@ Status means observed repository implementation, not generic product readiness.
 | E05-01 | P0 | Always-core declarative policy, contextual proposals | CODED | src/enterprise-policy.mjs |
 | E05-02 | P0 | Executable Harness pre/post tool enforcement | TODO | One-shot runner currently read-only |
 | E06-01 | P0 | Verified-only Simpul/native backend preference, inline fallback | CODED | src/enterprise-policy.mjs |
-| E06-02 | P0 | Real Simpul MCP transport / recovery / cancellation | TODO | Integration absent |
+| E06-02 | P0 | Real Simpul MCP transport / recovery / cancellation | TODO | Live Simpul connector absent |
+| E06-04 | P0 | Real-adapter-only dispatch contract, bounded execution and independent verification | CODED | src/live-backend.mjs; test/live-backend.test.mjs |
 | E06-03 | P0 | Native IDE subagent live invocation and isolation | TODO | SDK delegation is a separate one-shot |
 | E07-01 | P0 | Independent evidence verification on task graph | PARTIAL | Existing src/task-runner.mjs |
 | E07-02 | P1 | Cross-host checkpoint, replay, loop breaker | PARTIAL | Existing guided + ledger |
