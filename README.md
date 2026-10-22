@@ -48,6 +48,25 @@ Learn more in [Global install and symlink guide](docs/GLOBAL-INSTALL.md), [Windo
 
 ---
 
+## Compact Xyeena skill layout (opt-in)
+
+For a clean Agent Skills directory, install a single host-visible `xyeena-rig/SKILL.md` entry.
+All selected native modules are stored under `xyeena-rig/references/skills/<name>/` and loaded
+on demand; third-party skills are never moved or removed. Compatible with five hosts via a
+host-visible root entry, without relying on undocumented nested skill discovery.
+
+```sh
+xyeena setup compact --runtime "antigravity,codex" --preset complete --dry-run
+xyeena setup compact --runtime "antigravity,codex" --preset complete --yes
+# Explicit, backed-up managed upgrade, only when previous files are unchanged:
+xyeena setup compact --runtime codex --preset complete --update --yes
+```
+
+This migration is opt-in. Legacy individual skill entries remain untouched and may coexist;
+manual cleanup requires inspecting ownership. Project Harness installation remains separately
+opt-in; orchestration always retains core permission/evidence boundaries. See
+[Enterprise Rig roadmap and tracking](docs/xyeena-rig/README.md).
+
 ## Recoverable installation: diff, selective upgrade, rollback, and host check
 
 Installer also supports **reviewing a single conflicting file**, **updating only that conflict**, and a **guarded rollback journal** for new installations:

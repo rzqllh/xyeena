@@ -11,6 +11,7 @@ import { recordOrchestrationRun } from './orchestration-ledger.mjs';
 import { interactiveSetup, previewSetup, applySetup, previewSetupDiff } from './setup.mjs';
 import { listSetupBackups, previewSetupRollback, runSetupRollback } from './setup-rollback.mjs';
 import { setupHealthCheck } from './setup-health.mjs';
+import { previewCompactSetup, applyCompactSetup } from './compact-setup.mjs';
 const help=`Xyeena Rig ${VERSION}
 
 Usage:
@@ -23,6 +24,9 @@ Usage:
   xyeena setup diff --runtime antigravity --preset complete --file .agents/skills/xyeena-orchestrate/SKILL.md
   xyeena setup check --runtime antigravity
   xyeena setup backups
+  xyeena setup compact --runtime "codex,antigravity" --preset complete --dry-run
+  xyeena setup compact --runtime "codex,antigravity" --preset complete --yes
+  xyeena setup compact --runtime codex --preset complete --update --yes
   xyeena setup rollback --id BACKUP_ID [--dry-run|--yes]
   xyeena setup --runtime antigravity --preset complete --harness full --update --yes
   xyeena setup --runtime hermes --preset balanced --harness essential --yes
@@ -61,6 +65,16 @@ export async function main(args){
  if(['version','--version','-v'].includes(cmd)){console.log(VERSION);return}
  if(cmd==='setup'){
     const sub=f._[0];
+    if(sub==='compact'){
+      const allowed=new Set(['_', 'runtime', 'preset', 'scope', 'dir', 'dryRun', 'yes', 'update']);
+      if(f._.length!==1 || !f.runtime || Object.keys(f).some(key=>!allowed.has(key)))
+        throw new Error('Usage: xyeena setup compact --runtime HOST --preset essential|balanced|complete [--scope workspace|global] [--dry-run|--yes] [--update]');
+      const options={cwd:path.resolve(f.dir||process.cwd()),runtime:f.runtime,preset:f.preset||'balanced',
+        scope:f.scope||'workspace',update:f.update===true};
+      if(f.dryRun){console.log(JSON.stringify(previewCompactSetup(options),null,2));return}
+      if(f.yes!==true)throw new Error('Compact setup requires --dry-run preview and explicit --yes');
+      console.log(JSON.stringify(applyCompactSetup({...options,yes:true}),null,2));return;
+    }
     if(sub==='check'){
       if(f._.length!==1||!f.runtime||Object.keys(f).some(key=>!['_','dir','runtime','localOnly'].includes(key)))
         throw new Error('Usage: xyeena setup check --runtime HOST [--local-only]');
