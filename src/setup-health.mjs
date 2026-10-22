@@ -40,7 +40,9 @@ export function setupHealthCheck({cwd=process.cwd(),runtime,includeGlobal=false}
   const root=fs.realpathSync(path.resolve(cwd));
   const host=inspectSetupHosts({cwd:root}).find(x=>x.host===runtime);
   const skills=discoverWorkspaceSkills({cwd:root,runtime,includeGlobal});
-  const orchestrator=skills.find(x=>x.name==='xyeena-orchestrate');
+  const orchestrator=skills.find(x=>x.name==='xyeena-rig' && x.availability==='detected') ||
+    skills.find(x=>x.name==='xyeena-orchestrate' && x.availability==='detected') ||
+    skills.find(x=>['xyeena-rig','xyeena-orchestrate'].includes(x.name));
   let manifest=null;
   try {manifest=JSON.parse(fs.readFileSync(path.join(root,'.xyeena/install.json'),'utf8'));}
   catch {/* missing or invalid manifest is informational */}
@@ -50,12 +52,13 @@ export function setupHealthCheck({cwd=process.cwd(),runtime,includeGlobal=false}
     hostListedInManifest:Array.isArray(manifest?.runtimes)&&manifest.runtimes.includes(runtime),
     installedSkillCount:skills.length,eligibleSkillCount:eligible.length,
     orchestratorFound:!!orchestrator,
+    orchestratorName:orchestrator?.name||null,
     orchestratorEligibility:orchestrator?.availability||'not-found',
     unavailableSkills:skills.filter(x=>x.availability!=='detected')
       .map(x=>({name:x.name,reason:x.availability}))
   },hostDetection:host,
     hostActivationVerified:false,modelCallPerformed:false,
-    next:!orchestrator?'Install the xyeena-orchestrate skill for this runtime':
+    next:!orchestrator?'Install the xyeena-rig compact entry or legacy xyeena-orchestrate skill':
       orchestrator.availability!=='detected'?'Resolve native host trust/platform restrictions':
       'Reload the AI host and confirm native skill activation in an actual session; filesystem checks alone cannot verify this'};
 }

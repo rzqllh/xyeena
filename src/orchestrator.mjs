@@ -6,6 +6,8 @@ import { createPortableHostAdapter } from './portable-cli-adapter.mjs';
 import { createAntigravitySdkAdapter } from './antigravity-sdk-adapter.mjs';
 import { inventoryFingerprint } from './skill-cache.mjs';
 import { inferWorkflowState } from './workflow-intent.mjs';
+import { buildEnterprisePolicy } from './enterprise-policy.mjs';
+import { inspectRigHarness, enforceRigPreflight } from './rig-harness-lifecycle.mjs';
 
 const HOSTS = new Set(supportedSkillHosts());
 const VALID_STATES = new Set(['TRIAGE','DISCOVER','GRILL','RESEARCH','PROTOTYPE','DEFINE','PLAN','EXECUTE','DEBUG','VERIFY','REVIEW','RELEASE','CLOSE','ESCALATE']);
@@ -28,21 +30,25 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
   const inventory = discoverWorkspaceSkills(settings);
   const inventoryRevision = inventoryFingerprint(settings);
   const installed = inventory.filter(s => s.availability === 'detected');
-  const governor = installed.find(s => s.name === 'xyeena-orchestrate');
+  const governor = installed.find(s => s.name === 'xyeena-rig') || installed.find(s => s.name === 'xyeena-orchestrate');
   const route = routeWorkspaceSkills({ ...settings, state: resolvedState, prompt: goal, maxSupporting });
-  const picked = [route.primary, ...route.supporting].filter(s => s && s.name !== 'xyeena-orchestrate');
-  const skills = [...new Set([...(governor ? ['xyeena-orchestrate'] : []), ...picked.map(s => s.name)])].slice(0, 8);
+  const picked = [route.primary, ...route.supporting].filter(s => s && !['xyeena-orchestrate','xyeena-rig'].includes(s.name));
+  const skills = [...new Set([...(governor ? [governor.name] : []), ...picked.map(s => s.name)])].slice(0, 8);
   const sdkSkillPaths = [...new Set(skills.map(name => inventory.find(s => s.name === name && s.availability === 'detected'))
     .filter(Boolean).map(s => path.dirname(s.path)))];
   const hasBridge = EXECUTABLE_HOSTS.has(runtime);
   const ready = !!governor;
+  const enterprise = buildEnterprisePolicy({goal,state:resolvedState,inventory,selectedSkills:skills});
+  const harness = inspectRigHarness({cwd:root,contextualRequested:enterprise.harness.contextualRequested});
   return {
     schema: 1, mode: 'preview-only', executed: false, runtime, goal, cwd: root,
     state: resolvedState, stateSource: inference?.source || 'explicit',
     includeGlobal, maxSupporting, ...(home ? { home } : {}),
     ready, hostExecutionAvailable: hasBridge,
     execution: runtime === 'antigravity' ? 'sdk-one-shot' : 'cli-one-shot',
-    entrypoint: '/xyeena-orchestrate',
+    entrypoint: governor?.name === 'xyeena-rig' ? '/xyeena-rig' : '/xyeena-orchestrate',
+    enterprise,
+    harness,
     selectedSkills: skills, skillPaths: sdkSkillPaths, inventoryRevision,
     missingOrchestrator: !governor,
     unavailable: inventory.filter(s => s.availability !== 'detected').map(s => ({
@@ -50,7 +56,7 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
     })),
     requiresConsent: true,
     requiresManualHost: !hasBridge,
-    reason: !ready ? 'xyeena-orchestrate is missing or not eligible in this runtime' :
+    reason: !ready ? 'xyeena-rig or xyeena-orchestrate is missing or not eligible in this runtime' :
       !hasBridge ? 'Native in-session dispatch must run inside the host; no CLI execution adapter is installed' : null,
     verification: 'NOT_EXECUTED'
   };
@@ -75,6 +81,7 @@ export async function executeOrchestration(plan, {
     throw new Error('Installed skill inventory changed since preview; preview again');
   if (!fresh.ready) throw new Error(fresh.reason || 'Orchestrator is unavailable');
   if (!fresh.hostExecutionAvailable) throw new Error(fresh.reason || 'No native host execution adapter');
+  const harnessPreflight = enforceRigPreflight(fresh,{consent:yes});
   if (typeof delegate !== 'boolean') throw new Error('Invalid delegation flag');
   if (delegate && plan.runtime !== 'antigravity')
     throw new Error('Subagent delegation is not enabled for this host bridge');
@@ -90,7 +97,7 @@ export async function executeOrchestration(plan, {
       scope: { readOnly: true, operationClass: 'safe' }
     });
     return { ...result, verified: false, evidenceRefs: [], status: 'REVIEW_REQUIRED',
-      entrypoint: plan.entrypoint, selectedSkills: plan.selectedSkills };
+      harnessPreflight, entrypoint: plan.entrypoint, selectedSkills: plan.selectedSkills };
   }
   const adapter = antigravityAdapterFactory({
     cwd: plan.cwd, skillPaths: plan.skillPaths, enableSubagents: delegate,
@@ -101,5 +108,5 @@ export async function executeOrchestration(plan, {
     scope: { readOnly: true, operationClass: 'safe' }
   });
   return { ...result, verified: false, evidenceRefs: [], status: 'REVIEW_REQUIRED',
-    entrypoint: plan.entrypoint, selectedSkills: plan.selectedSkills };
+    harnessPreflight, entrypoint: plan.entrypoint, selectedSkills: plan.selectedSkills };
 }

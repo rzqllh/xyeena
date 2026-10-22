@@ -24,3 +24,8 @@ export { setupFileDiff } from './setup-upgrade.mjs';
 export { listSetupBackups, previewSetupRollback, runSetupRollback } from './setup-rollback.mjs';
 export { setupHealthCheck, inspectSetupHosts } from './setup-health.mjs';
 export { portableSkillTarget, previewPortableSetup, applyPortableSetup } from './setup-portable.mjs';
+
+export { previewCompactSetup, applyCompactSetup } from './compact-setup.mjs';
+export { buildEnterprisePolicy, inspectOptionalProviders, selectSubagentBackend } from './enterprise-policy.mjs';
+export { inspectRigHarness, enforceRigPreflight } from './rig-harness-lifecycle.mjs';
+export { dispatchScopedTask } from './live-backend.mjs';
