@@ -13,23 +13,28 @@ function validTask(task) {
     throw new Error('Unsupported task operation class');
   if (typeof task.scope.readOnly!=='boolean') throw new Error('Task must declare readOnly explicitly');
 }
-async function healthyAdapter(adapter) {
+async function healthyAdapter(adapter,probeTimeoutMs=3000) {
   if (!adapter || typeof adapter.probe!=='function' ||
       typeof adapter.executeTask!=='function' || typeof adapter.cancelTask!=='function') return null;
+  let timer;
   try {
-    const capabilities=await adapter.probe();
+    const capabilities=await Promise.race([
+      Promise.resolve().then(()=>adapter.probe()),
+      new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Probe timed out')),probeTimeoutMs);})
+    ]);
     if (capabilities?.healthy!==true || capabilities.noNestedDelegation!==true) return null;
     return {enabled:true,healthy:true,adapterAvailable:true,
       supportsWrites:capabilities.supportsWrites===true,
       supportsParallel:capabilities.supportsParallel===true};
   } catch {return null;}
+  finally {clearTimeout(timer);}
 }
 /**
  * Adapter-only execution boundary. No synthetic agent IDs or provider-side setup.
  * The controller must supply real authenticated and scoped Simpul/native adapters.
  */
 export async function dispatchScopedTask({task,inlineAdapter,backends={},approvedTaskIds=[],
-  verifyEvidence=null,maxParallel=2,timeoutMs=120000,onEvent=null}={}) {
+  verifyEvidence=null,authorizeOperation=null,maxParallel=2,timeoutMs=120000,onEvent=null}={}) {
   validTask(task);
   if (!Number.isInteger(timeoutMs)||timeoutMs<1000||timeoutMs>300000)
     throw new Error('Invalid dispatch timeout');
@@ -40,8 +45,12 @@ export async function dispatchScopedTask({task,inlineAdapter,backends={},approve
   if (!inlineAdapter || typeof inlineAdapter.executeTask!=='function')
     throw new Error('Real inline adapter required for safe fallback');
   const permission=task.scope.operationClass||'safe';
-  if ((task.scope.readOnly!==true||permission!=='safe') && !approvedTaskIds.includes(task.id))
-    throw new Error('Task-scoped authorization required; host approval is separately mandatory');
+  if (task.scope.readOnly!==true||permission!=='safe') {
+    if (!approvedTaskIds.includes(task.id))
+      throw new Error('Task-scoped authorization required; host approval is separately mandatory');
+    if (typeof authorizeOperation!=='function' || await authorizeOperation(clone(task))!=='allow-once')
+      throw new Error('An explicit allow-once host authorization callback is mandatory');
+  }
   const offers={};
   if (task.requiresDelegation===true) {
     for (const backend of ['simpul','native']) {
@@ -67,6 +76,8 @@ export async function dispatchScopedTask({task,inlineAdapter,backends={},approve
       timer=setTimeout(()=>reject(new Error('Scoped task execution timed out')),timeoutMs);
     });
     const result=await Promise.race([invoke,timeout]);
+    if (decision.backend!=='inline' && (typeof result?.workerId!=='string' || !result.workerId.trim()))
+      throw new Error('Subagent adapter did not return a real worker identifier');
     const evidence=safeEvidence(result?.evidenceRefs);
     let verified=false;
     if (result?.verified===true && evidence.length>0 && verifyEvidence) {

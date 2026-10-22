@@ -45,6 +45,7 @@ test('write tasks cannot select read-only backends or parallelize without isolat
   const log=[],scope={readOnly:false,operationClass:'safe'};
   const result=await dispatchScopedTask({task:{...task(scope),isolatedWorktrees:false},
     inlineAdapter:{async executeTask(){log.push('inline');return {};}},approvedTaskIds:['T1'],
+    authorizeOperation:async()=> 'allow-once',
     backends:{simpul:fake(true,log,{supportsWrites:true})}});
   assert.equal(result.backend,'simpul');
   assert.equal(result.parallelism,1);
@@ -56,4 +57,12 @@ test('backend must implement cancellation and disallow nested worker spawning',a
     backends:{simpul:stub}});
   assert.equal(result.backend,'inline');
   assert.equal(log.length,0);
+});
+
+test('write authorization cannot escalate to always-allow or be inferred from task ID',async()=>{
+  const taskWithWrite=task({readOnly:false,operationClass:'safe'});
+  const inline={async executeTask(){throw Error('unapproved dispatch')} };
+  await assert.rejects(dispatchScopedTask({task:taskWithWrite,inlineAdapter:inline,approvedTaskIds:['T1']}),/allow-once/);
+  await assert.rejects(dispatchScopedTask({task:taskWithWrite,inlineAdapter:inline,approvedTaskIds:['T1'],
+    authorizeOperation:async()=> 'always-allow'}),/allow-once/);
 });

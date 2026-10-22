@@ -6,9 +6,11 @@ const WORD = (goal,pattern) => pattern.test(String(goal||'').toLowerCase());
 /** Provider files are hints only; prefix/name is not proof of a trusted plugin installation. */
 export function inspectOptionalProviders(inventory=[]) {
   const eligible=inventory.filter(s=>s && s.availability==='detected');
+  const superior=eligible.filter(s=>s.name.startsWith('superior-')).map(s=>s.name);
+  const superpowers=eligible.filter(s=>SUPERPOWERS.has(s.name)).map(s=>s.name);
   return {
-    superior:{status:'candidate',skills:eligible.filter(s=>s.name.startsWith('superior-')).map(s=>s.name)},
-    superpowers:{status:'candidate',skills:eligible.filter(s=>SUPERPOWERS.has(s.name)).map(s=>s.name)}
+    superior:{status:superior.length?'candidate':'not-detected',skills:superior},
+    superpowers:{status:superpowers.length?'candidate':'not-detected',skills:superpowers}
   };
 }
 /** No simulated workers: a backend is selectable only with an explicit healthy, actionable adapter. */
