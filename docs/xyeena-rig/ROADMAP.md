@@ -6,7 +6,7 @@ Code present does not mean live validated.
 | Phase | Outcome | Dependencies | Current |
 | --- | --- | --- | --- |
 | RIG-E00 | Repository-scoped design, risk, acceptance and evidence tracking | None | DONE |
-| RIG-E01 | Opt-in compact setup, preserved legacy, managed backup upgrade | E00 | CODED; CI pending |
+| RIG-E01 | Opt-in compact setup, preserved legacy, managed backup upgrade | E00 | CI PASS; host acceptance pending |
 | RIG-E02 | Deterministic per-host skill discovery, router, native fallback | E00 | PARTIAL; compact path coded |
 | RIG-E03 | Host-native plugin/extension enumeration, effective trust & disabled state | E02 | TODO |
 | RIG-E04 | Superior/Superpowers workflow arbitration, single controller | E03 | TODO |

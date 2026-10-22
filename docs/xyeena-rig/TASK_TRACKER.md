@@ -21,5 +21,5 @@ Status means observed repository implementation, not generic product readiness.
 | E06-03 | P0 | Native IDE subagent live invocation and isolation | TODO | SDK delegation is a separate one-shot |
 | E07-01 | P0 | Independent evidence verification on task graph | PARTIAL | Existing src/task-runner.mjs |
 | E07-02 | P1 | Cross-host checkpoint, replay, loop breaker | PARTIAL | Existing guided + ledger |
-| E08-01 | P0 | CI test/pack/consumer matrix | PENDING | Await PR CI results |
+| E08-01 | P0 | CI test/pack/consumer matrix | PASS (source head de2deacc) | GitHub Actions run 39867943667: 9/9 jobs green |
 | E08-02 | P0 | Actual five-host reload/activation acceptance | BLOCKED | Needs configured test machines |

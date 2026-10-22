@@ -31,3 +31,11 @@ The first PR CI run had 213 passing unit tests and one macOS failure caused by t
 ## Packed-install regression coverage
 
 CI now includes a Windows npx GitHub tarball smoke for compact preview (no writes), confirmed compact installation, and compact governor detection by `setup check`. This is filesystem/CLI acceptance, not proof of live IDE skill activation.
+
+## CI verification — final source commit de2deacc (2026-10-23)
+
+- [GitHub Actions CI run](https://github.com/rzqllh/xyeena/actions/runs/39867943667) for commit `de2deacca3adc7dc021475a5497acbd5284a66a2`: **9/9 jobs successful**.
+- OS/runtime matrix: Windows, macOS and Ubuntu on Node.js 22.14.0 and Node.js 24.
+- Other jobs: Skills reference validation, standalone SDK worker contract, and Windows GitHub-tarball `npx` consumer smoke (including compact install and health check).
+- CI success covers source/test/packed CLI contracts, **not** live activation in Antigravity/Codex/Claude/Gemini/Hermes, Simpul MCP, or write-capable Harness hooks.
+- Enterprise release gate remains open; PR #17 is draft and not merged/published.
