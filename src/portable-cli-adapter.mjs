@@ -57,7 +57,7 @@ export function previewPortableHost({ cwd = process.cwd(), runtime, goal, state 
   const blocked = !governor;
   return {
     mode: 'headless-one-shot', runtime, cwd: root, goal, state, executed: false,
-    ready: !blocked, reason: blocked ? 'Install and enable xyeena-rig or legacy xyeena-orchestrate in this host; Hermes project skills must be trusted' : null,
+    ready: !blocked, reason: blocked ? 'Install and enable xyeena-orchestrate or compact xyeena-rig in this host; Hermes project skills must be trusted' : null,
     requestedSkills: skills, detectedCount: inventory.length,
     untrustedSkills: inventory.filter(s => s.availability === 'requires-host-trust').map(s => s.name),
     incompatibleSkills: inventory.filter(s => s.availability === 'incompatible-platform').map(s => s.name),
