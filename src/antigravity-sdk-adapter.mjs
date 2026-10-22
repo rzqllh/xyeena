@@ -97,9 +97,11 @@ export function previewAntigravitySdkTask({ cwd = process.cwd(), goal, state = '
     ...(home ? {home} : {}), includeGlobal });
   const discovered = discoverWorkspaceSkills({ cwd: root, runtime: 'antigravity',
     ...(home ? {home} : {}), includeGlobal });
-  const chosen = [routing.primary, ...routing.supporting].filter(Boolean);
-  const allowed = new Set(discovered.map(skill => skill.path));
+  const governor = discovered.find(s => s.availability === 'detected' && s.name === 'xyeena-rig') ||
+    discovered.find(s => s.availability === 'detected' && s.name === 'xyeena-orchestrate');
+  const chosen = [governor, routing.primary, ...routing.supporting].filter(Boolean);
+  const allowed = new Set(discovered.filter(s => s.availability === 'detected').map(skill => skill.path));
   const skillPaths = [...new Set(chosen.map(s => s.path).filter(p => allowed.has(p)))].slice(0, 8).map(p => path.dirname(p));
   return { mode: 'read-only', requiresExplicitExecution: true, goal, cwd: root, skillPaths,
-    selectedSkills: chosen.map(s => s.name), executed: false, tokenCost: 'provider-dependent' };
+    selectedSkills: [...new Set(chosen.map(s => s.name))], executed: false, tokenCost: 'provider-dependent' };
 }

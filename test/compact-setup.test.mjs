@@ -6,6 +6,8 @@ import path from 'node:path';
 import { previewCompactSetup, applyCompactSetup } from '../src/compact-setup.mjs';
 import { discoverWorkspaceSkills } from '../src/workspace-skills.mjs';
 import { previewOrchestration } from '../src/orchestrator.mjs';
+import { previewPortableHost } from '../src/portable-cli-adapter.mjs';
+import { previewAntigravitySdkTask } from '../src/antigravity-sdk-adapter.mjs';
 
 function temp(t) {
   const cwd=fs.mkdtempSync(path.join(os.tmpdir(),'xyeena-compact-'));
@@ -78,4 +80,15 @@ test('global compact setup goes into the selected user home only',t=>{
   applyCompactSetup({cwd,home,scope:'global',runtime:'claude',preset:'essential',yes:true});
   assert.ok(fs.existsSync(path.join(home,'.claude','skills','xyeena-rig','SKILL.md')));
   assert.equal(fs.existsSync(path.join(cwd,'.claude')),false);
+});
+
+test('compact governor also works in standalone portable host and Antigravity SDK previews',t=>{
+  const cwd=temp(t);
+  applyCompactSetup({cwd,runtime:'codex,antigravity',preset:'essential',yes:true});
+  const portable=previewPortableHost({cwd,runtime:'codex',goal:'Review tests',includeGlobal:false});
+  assert.equal(portable.ready,true);
+  assert.ok(portable.requestedSkills.includes('xyeena-rig'));
+  const sdk=previewAntigravitySdkTask({cwd,goal:'Review tests',includeGlobal:false});
+  assert.ok(sdk.selectedSkills.includes('xyeena-rig'));
+  assert.equal(sdk.skillPaths.length,1);
 });

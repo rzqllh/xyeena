@@ -49,14 +49,15 @@ export function previewPortableHost({ cwd = process.cwd(), runtime, goal, state 
   const options = { cwd: root, runtime, ...(home ? { home } : {}), includeGlobal };
   const inventory = discoverWorkspaceSkills(options);
   const eligible = inventory.filter(s => s.availability === 'detected');
-  const governor = eligible.find(s => s.name === 'xyeena-orchestrate');
+  const governor = eligible.find(s => s.name === 'xyeena-rig') ||
+    eligible.find(s => s.name === 'xyeena-orchestrate');
   const routing = routeWorkspaceSkills({ ...options, prompt: goal, state });
-  const skills = [...new Set([...(governor ? ['xyeena-orchestrate'] : []),
+  const skills = [...new Set([...(governor ? [governor.name] : []),
     routing.primary?.name, ...routing.supporting.map(s => s.name)].filter(Boolean))];
   const blocked = !governor;
   return {
     mode: 'headless-one-shot', runtime, cwd: root, goal, state, executed: false,
-    ready: !blocked, reason: blocked ? 'Install and enable xyeena-orchestrate in this host; Hermes project skills must be trusted' : null,
+    ready: !blocked, reason: blocked ? 'Install and enable xyeena-rig or legacy xyeena-orchestrate in this host; Hermes project skills must be trusted' : null,
     requestedSkills: skills, detectedCount: inventory.length,
     untrustedSkills: inventory.filter(s => s.availability === 'requires-host-trust').map(s => s.name),
     incompatibleSkills: inventory.filter(s => s.availability === 'incompatible-platform').map(s => s.name),
@@ -140,7 +141,9 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
         'Do not edit files, execute shell commands, send messages, approve actions or publish.',
         'Return an evidence-aware report and clearly identify any blocked or unknown step.',
         'Preferred skill names (verify they are available in the native host): ' + selectedSkills.join(', '),
-        runtime === 'codex' ? 'If available use $xyeena-orchestrate as the orchestrator skill.' :
+        selectedSkills.includes('xyeena-rig') ?
+          'Load the xyeena-rig compact skill entry and only its relevant reference modules on demand.' :
+          runtime === 'codex' ? 'If available use $xyeena-orchestrate as the orchestrator skill.' :
           'Load xyeena-orchestrate from the already-installed skill inventory when available.',
         'Task:', task.title,
       ].join('\n');
