@@ -1,11 +1,12 @@
 # Xyeena Rig — enterprise orchestration workstream
 
 Owner: Xyeena Rig. Repository: rzqllh/xyeena.
-This directory is the single, versioned source of truth for Rig enterprise integration.
+This directory is the single, versioned source of truth for Rig enterprise integration. The chat backlog R01–R15 must remain synchronized with [requirements traceability](REQUIREMENTS_TRACEABILITY.md), existing E task IDs and A acceptance IDs; a feature is not complete merely because its design is recorded.
 
 | Artifact | Purpose |
 | --- | --- |
 | [ROADMAP.md](ROADMAP.md) | Phase order and dependencies |
+| [REQUIREMENTS_TRACEABILITY.md](REQUIREMENTS_TRACEABILITY.md) | **Chat R01–R15 ↔ task/acceptance crosswalk and omission checklist** |
 | [TASK_TRACKER.md](TASK_TRACKER.md) | Delivery task status and scope |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Workflow, harness, provider and execution boundaries |
 | [ACCEPTANCE_MATRIX.md](ACCEPTANCE_MATRIX.md) | Testable outcome and live-host gate |

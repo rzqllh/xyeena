@@ -26,4 +26,18 @@ Evidence status is separate from implementation status.
 | A19 | Windows/macOS/Linux Node 22+ matrix | GitHub Actions | CI PASS |
 | A20 | No implied merge, publish or trust change | Integration checks | CI PASS |
 
-A12–A19 are blocking gates before declaring enterprise-ready.
+| A21 | Effective per-host plugin/skill inventory with provenance and real trust/disabled status | Five host adapters + untrusted/disabled fixtures | NOT IMPLEMENTED |
+| A22 | Deterministic capability matching, dedup, dependency closure and bounded context load | Collision/missing dependency/no-token scenarios | NOT IMPLEMENTED |
+| A23 | Both Superpowers and Superior enabled without double lifecycle/governor/subagent | Dual-plugin live integration and negative paths | NOT IMPLEMENTED |
+| A24 | Live native parity fallback covers none/one/both unavailable and trust failure cases | Per-host test of actual resulting work | PARTIAL — preview only |
+| A25 | Core Harness gates on every tool and delegated worker, contextual project opt-in | Blocked-write/disabled-guides live failure injection | NOT IMPLEMENTED |
+| A26 | Enforced resource budget: token, cost, concurrency, cancellations and provider fallback | Controlled budget exhaustion/usage ledger tests | NOT IMPLEMENTED |
+| A27 | Crash-safe DAG checkpoint/recovery and idempotent non-destructive resume | Killed worker, repeated request, interrupted write tests | NOT IMPLEMENTED |
+| A28 | Independently verifiable completion and native Allow Once/Deny/Answer Questions policy | Real host permission fixtures and reviewer separation | PARTIAL — adapter policy only |
+| A29 | Owner-aware 19-skill migration retains compatible aliases, user edits and third-party skills | Old version upgraded on five real hosts | NOT IMPLEMENTED |
+| A30 | Automatic uninstaller and rollback reconstruct original state after faults | Multi-target failure/restart/tampering tests | NOT IMPLEMENTED |
+| A31 | Host-native activation and execution on five hosts (not filesystem presence alone) | Recorded five-host acceptance packet | NOT RUN |
+| A32 | Supply-chain, prompt-injection, plugin spoof, symlink, credential and race security suite | Automated negative suite + independent security review | NOT COMPLETE |
+| A33 | Consumer npm release artifact/version/docs verifiable before authorized publication | npm pack/install smoke, release verdict, provenance | NOT IMPLEMENTED |
+
+A12–A18 and A21–A33 (as applicable) are blocking integration/release gates before declaring enterprise-ready. Each R01–R15 is mapped in [REQUIREMENTS_TRACEABILITY.md](REQUIREMENTS_TRACEABILITY.md).

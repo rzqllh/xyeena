@@ -15,3 +15,13 @@
 | Cloud token cost explosion | Medium | Bounded selection, inline default, explicit provider consent | PARTIAL |
 | Interrupted upgrade corrupts host entry | High | Stage then rename, backup restore; failure injection pending | PARTIAL |
 | Host configuration modified implicitly | High | No auth, trust, hooks or unrelated skill edits | CODED |
+
+## Additional release blockers from R01–R15 reconciliation
+
+| Risk | Severity | Mitigation | Status |
+| --- | --- | --- | --- |
+| Native fallback exists on paper but cannot execute without outside plugins | Critical | R04/A24 real host negative-case acceptance | OPEN |
+| Unbounded subagent usage/cost or uncontrolled parallel workers | High | R08/A26 cost, parallelism, cancellation ceilings | OPEN |
+| Cross-host resume replays unauthorized write/destructive tasks | Critical | R09/A27 idempotency, explicit reconfirmation on replay | OPEN |
+| Tool permissions or independent verification not propagated to workers | Critical | R05/R10, A25/A28 end-to-end blocked-action tests | OPEN |
+| npm release marked complete on CI without live five-host acceptance | High | R13/R15, G4 signoff and published artifact smoke | OPEN |

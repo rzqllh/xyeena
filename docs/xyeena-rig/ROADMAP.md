@@ -24,3 +24,7 @@ Code present does not mean live validated.
 - G4 — Release: all OS CI jobs, consumer smoke and real host activation accepted.
 
 Do not accelerate E06 by generating synthetic worker identities, or E05 by equating policy metadata to an installed hook.
+
+## Chat tracking coverage
+
+Every R01–R15 item is mapped to an owner E task, acceptance A gate and status in [REQUIREMENTS_TRACEABILITY.md](REQUIREMENTS_TRACEABILITY.md). Detailed E tasks and their blockers live in [TASK_TRACKER.md](TASK_TRACKER.md). A phase cannot be marked DONE if an associated R item has an unmet release blocker; passing source CI alone does not close host integration tasks.

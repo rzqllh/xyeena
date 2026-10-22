@@ -39,3 +39,7 @@ CI now includes a Windows npx GitHub tarball smoke for compact preview (no write
 - Other jobs: Skills reference validation, standalone SDK worker contract, and Windows GitHub-tarball `npx` consumer smoke (including compact install and health check).
 - CI success covers source/test/packed CLI contracts, **not** live activation in Antigravity/Codex/Claude/Gemini/Hermes, Simpul MCP, or write-capable Harness hooks.
 - Enterprise release gate remains open; PR #17 is draft and not merged/published.
+
+## Requirements mapping audit — 2026-10-23
+
+A comparison of the chat backlog R01–R15 with the existing E task tracker and A acceptance matrix found the **broad phases present**, but no one-to-one crosswalk and missing explicit subtasks for provenance, conflict resolution, native parity, write-capable Harness, cost/resource limits, durable recovery, authorization propagation, legacy compatibility/restore, red-team testing and npm release readiness. The omissions are now tracked in `REQUIREMENTS_TRACEABILITY.md`, added E work items and A acceptance gates. This is **documentation completeness**, not code or runtime completion. Branch CI must be re-evaluated for the new documentation commit; previous 9/9 result applies to source HEAD `c9f1080` only.
