@@ -116,7 +116,7 @@ export function assertWorkspaceBoundary(targetPath, workspaceRoot) {
 export function inspectRigHarness({ cwd = process.cwd(), contextualRequested = [] } = {}) {
   const root = fs.realpathSync(path.resolve(cwd));
   if (!fs.statSync(root).isDirectory()) throw new Error('Harness workspace must be a directory');
-  const required = [...new Set(contextualRequested.map(x => GROUPS[x]).filter(Boolean))];
+  const required = [...new Set(contextualRequested.map(x => GROUPS[x] || (Object.values(GROUPS).includes(x) ? x : null)).filter(Boolean))];
   const installed = required.filter(group => safeInstalledGuide(root, group));
   return {
     schema: 1,
@@ -196,14 +196,14 @@ export class HarnessExecutionGate {
     this.allowOnceTokens = new Set();
     if (Array.isArray(allowOnceTokens)) {
       for (const tok of allowOnceTokens) {
-        this.grantAllowOnce(tok);
+        this.grantAllowOnce(tok, { approver: 'host-user', authority: 'trusted-host' });
       }
     }
     this.recentErrors = new Map();
     this.contextual = inspectRigHarness({ cwd: this.cwd, contextualRequested });
   }
 
-  grantAllowOnce(token, { approver = 'user', authority = 'host-user' } = {}) {
+  grantAllowOnce(token, { approver, authority } = {}) {
     // 1. Delegated workers can NEVER self-issue or grant ALLOW_ONCE
     if (this.inheritedFrom !== null) {
       const err = new Error('Delegated workers cannot self-issue privileged ALLOW_ONCE authorization');
@@ -211,8 +211,15 @@ export class HarnessExecutionGate {
       throw err;
     }
 
-    // 2. Untrusted sources (e.g. agent, model, worker) cannot self-issue
-    const validApprover = approver === 'user' || approver === 'host-user' || approver === 'human-user';
+    // 2. Reject missing credentials or defaults that could be impersonated
+    if (!approver && !authority) {
+      const err = new Error('Privileged authorization requires explicit trusted approver and authority credentials; self-issuance is forbidden');
+      err.code = 'ERR_MISSING_AUTHORIZATION_CREDENTIALS';
+      throw err;
+    }
+
+    // 3. Untrusted sources (e.g. agent, model, worker) cannot self-issue
+    const validApprover = approver === 'host-user' || approver === 'human-user' || approver === 'user';
     const validAuthority = authority === 'host-user' || authority === 'trusted-host';
     if (!validApprover || !validAuthority) {
       const err = new Error(`Privileged authorization requires trusted host user approval; rejected approver "${approver}"`);
@@ -220,13 +227,13 @@ export class HarnessExecutionGate {
       throw err;
     }
 
-    // 3. Token signature validation
+    // 4. Token signature validation
     if (typeof token === 'string' && token.trim()) {
       this.allowOnceTokens.add(token.trim());
       return true;
     }
     if (token && typeof token === 'object' && token.toolName) {
-      if (token.approver && token.approver !== 'user' && token.approver !== 'host-user') {
+      if (token.approver && token.approver !== 'host-user' && token.approver !== 'human-user' && token.approver !== 'user') {
         const err = new Error(`Privileged authorization object contains untrusted approver "${token.approver}"`);
         err.code = 'ERR_UNTRUSTED_AUTHORIZATION_SOURCE';
         throw err;
@@ -244,7 +251,7 @@ export class HarnessExecutionGate {
     const now = new Date().toISOString();
 
     // 1. Scope & Workspace Boundary Enforcement
-    const candidatePath = targetPath || args?.path || args?.targetPath || args?.TargetFile || args?.file || args?.cwd;
+    const candidatePath = targetPath || args?.path || args?.targetPath || args?.TargetFile || args?.file || args?.cwd || args?.Cwd;
     if (candidatePath && typeof candidatePath === 'string') {
       try {
         assertWorkspaceBoundary(candidatePath, this.cwd);
@@ -263,19 +270,55 @@ export class HarnessExecutionGate {
       }
     }
 
-    // 2. Destructive Actions Gate
+    const isShell = toolName === 'run_command' ||
+      toolName === 'execute_command' ||
+      toolName === 'shell' ||
+      Boolean(args?.CommandLine);
+
+    // Shell command scope enforcement: reject path escapes in CommandLine
+    if (isShell && args?.CommandLine && /(?:^|\s)(?:cd\s+\.\.|cd\s+\/|[A-Za-z]:[\\/])/i.test(args.CommandLine)) {
+      const auditEntry = {
+        timestamp: now,
+        workerId: effectiveWorkerId,
+        toolName,
+        decision: 'DENY',
+        rule: 'scope-control',
+        reason: 'Shell command execution attempts filesystem escape outside workspace root',
+        blocked: true
+      };
+      this.auditLog.push(auditEntry);
+      return auditEntry;
+    }
+
+    // 2. Anti-Loop Gate: Enforced before privileged action approval
+    const callSig = `${toolName}:${JSON.stringify(args || {})}`;
+    const errorCount = this.recentErrors.get(callSig) || 0;
+    if (errorCount >= 3) {
+      const auditEntry = {
+        timestamp: now,
+        workerId: effectiveWorkerId,
+        toolName,
+        decision: 'DENY',
+        rule: 'anti-loop',
+        blocked: true,
+        reason: 'Anti-loop: tool call failed 3 times consecutively; approach must be revised'
+      };
+      this.auditLog.push(auditEntry);
+      return auditEntry;
+    }
+
+    // 3. Destructive & External Actions Detection
     const isDestructive = actionType === 'destructive' ||
       ['rm_file', 'delete_file', 'drop_table', 'reset_hard'].includes(toolName) ||
       (args?.CommandLine && /(rm\s+-rf|rmdir\s+\/s|git\s+reset\s+--hard|git\s+clean\s+-fd)/i.test(args.CommandLine));
 
-    // 3. External Actions Gate
     const isExternal = actionType === 'external' ||
       ['publish', 'git_push', 'external_api'].includes(toolName) ||
       (args?.CommandLine && /(git\s+push|npm\s+publish|curl|wget)/i.test(args.CommandLine));
 
-    // Verify runtime enforcement capability for privileged actions
+    // 4. Runtime Enforcement Capability Gate (treat arbitrary shell / privileged actions as untrusted unless runtime intercepts)
     if (this.enforcementRuntime && !this.supportedEnforcementRuntimes.includes(this.enforcementRuntime)) {
-      if (isDestructive || isExternal) {
+      if (isDestructive || isExternal || isShell) {
         const auditEntry = {
           timestamp: now,
           workerId: effectiveWorkerId,
@@ -290,6 +333,7 @@ export class HarnessExecutionGate {
       }
     }
 
+    // 5. Destructive Actions Gate
     if (isDestructive) {
       const actionSig = `destructive:${toolName}:${JSON.stringify(args || {})}`;
       if (this.allowOnceTokens.has(actionSig)) {
@@ -332,6 +376,7 @@ export class HarnessExecutionGate {
       return auditEntry;
     }
 
+    // 6. External Actions Gate
     if (isExternal) {
       const actionSig = `external:${toolName}:${JSON.stringify(args || {})}`;
       if (this.allowOnceTokens.has(actionSig)) {
@@ -374,24 +419,7 @@ export class HarnessExecutionGate {
       return auditEntry;
     }
 
-    // 4. Anti-Loop Gate
-    const callSig = `${toolName}:${JSON.stringify(args || {})}`;
-    const errorCount = this.recentErrors.get(callSig) || 0;
-    if (errorCount >= 3) {
-      const auditEntry = {
-        timestamp: now,
-        workerId: effectiveWorkerId,
-        toolName,
-        decision: 'DENY',
-        rule: 'anti-loop',
-        blocked: true,
-        reason: 'Anti-loop: tool call failed 3 times consecutively; approach must be revised'
-      };
-      this.auditLog.push(auditEntry);
-      return auditEntry;
-    }
-
-    // 5. Default ALLOW with core safety rules active
+    // 7. Default ALLOW with core safety rules active
     const auditEntry = {
       timestamp: now,
       workerId: effectiveWorkerId,
@@ -425,7 +453,33 @@ export class HarnessExecutionGate {
         warning = 'Self-certified success without verifiable independent evidence is invalid';
         verified = false;
       } else if (hasSelfClaim && evidenceRefs.length > 0) {
-        verified = true;
+        let allValid = true;
+        for (const ref of evidenceRefs) {
+          if (!ref || typeof ref !== 'string') {
+            allValid = false;
+            warning = 'Invalid evidence reference: expected non-empty path string';
+            break;
+          }
+          try {
+            const resolvedEvidence = assertWorkspaceBoundary(ref, this.cwd);
+            if (!fs.existsSync(resolvedEvidence)) {
+              allValid = false;
+              warning = `Independent verification failed: evidence artifact "${ref}" does not exist on disk`;
+              break;
+            }
+            const stat = fs.statSync(resolvedEvidence);
+            if (!stat.isFile() || stat.size === 0) {
+              allValid = false;
+              warning = `Independent verification failed: evidence artifact "${ref}" is empty or not a regular file`;
+              break;
+            }
+          } catch (err) {
+            allValid = false;
+            warning = `Independent verification failed: evidence artifact "${ref}" is outside workspace or invalid: ${err.message}`;
+            break;
+          }
+        }
+        verified = allValid;
       }
     }
 
@@ -460,7 +514,7 @@ export class HarnessExecutionGate {
       workerId: childWorkerId,
       inheritedFrom: this.workerId,
       auditLog: this.auditLog,
-      contextualRequested: this.contextual.contextual.requested,
+      contextualRequested: this.contextual?.contextual?.requested || [],
       enforcementRuntime: this.enforcementRuntime
     });
   }

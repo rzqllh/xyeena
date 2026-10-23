@@ -160,7 +160,15 @@ export async function main(args){
       console.log(JSON.stringify(skillAvailabilityMatrix({cwd:directory,includeGlobal:!f.localOnly}),null,2));return;
     }
     if(f._[0]!=='discover')throw new Error('Expected: xyeena skills discover|matrix');
-    console.log(JSON.stringify(discoverWorkspaceSkills({cwd:directory,runtime:f.runtime||'antigravity',includeGlobal:!f.localOnly}),null,2));return;
+    const includeShadowed = f.shadowed === true || f['include-shadowed'] === true || f.all === true;
+    const format = f.format === 'object' || f.json === 'object' ? 'object' : 'array';
+    console.log(JSON.stringify(discoverWorkspaceSkills({
+      cwd: directory,
+      runtime: f.runtime || 'antigravity',
+      includeGlobal: !f.localOnly,
+      includeShadowed,
+      format
+    }), null, 2)); return;
   }
  if(cmd==='route'){
     if(typeof f.prompt!=='string'||!f.prompt.trim())throw new Error('--prompt TEXT is required');
