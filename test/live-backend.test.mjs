@@ -113,15 +113,44 @@ test('write authorization cannot escalate to always-allow or be inferred from ta
   }), /allow-once/);
 });
 
-test('createSimpulMcpAdapter probes health, executes tasks and collects evidence', async () => {
+test('createSimpulMcpAdapter adheres to exact FastMCP signatures and uses server-confirmed run_id', async () => {
   const calls = [];
   const mockMcpClient = {
     async callTool(name, params) {
       calls.push({ name, params });
       if (name === 'get_model_usage') return { tokens: 1500, costMicro: 3000 };
-      if (name === 'submit_goal') return { status: 'submitted' };
-      if (name === 'get_task_evidence') return { evidenceRefs: ['sha256:abc123evidence'] };
-      if (name === 'cancel_run') return { status: 'cancelled' };
+      if (name === 'submit_goal') {
+        assert.ok(params.goal);
+        assert.equal(typeof params.workspace_path, 'string');
+        // Must NOT send invented run_id, project_id, or policy_revision
+        assert.equal(params.run_id, undefined);
+        assert.equal(params.project_id, undefined);
+        return {
+          status: 'SUBMITTED',
+          run_id: 'simpul-server-run-uuid-1234',
+          initial_task_id: 'simpul-task-init-01',
+          goal: params.goal
+        };
+      }
+      if (name === 'get_run') {
+        assert.equal(params.run_id, 'simpul-server-run-uuid-1234');
+        return { run_id: params.run_id, status: 'SUBMITTED', task_count: 1 };
+      }
+      if (name === 'get_task_evidence') {
+        assert.equal(params.run_id, 'simpul-server-run-uuid-1234');
+        assert.equal(params.task_id, 'simpul-task-init-01');
+        return {
+          run_id: params.run_id,
+          task_id: params.task_id,
+          status: 'VERIFIED',
+          verified: true,
+          evidence_ids: ['sha256:abc123evidence']
+        };
+      }
+      if (name === 'cancel_run') {
+        assert.equal(params.run_id, 'simpul-server-run-uuid-1234');
+        return { status: 'CANCELLED', run_id: params.run_id };
+      }
       return {};
     }
   };
@@ -131,25 +160,37 @@ test('createSimpulMcpAdapter probes health, executes tasks and collects evidence
   assert.equal(probe.healthy, true);
   assert.equal(probe.noNestedDelegation, true);
   assert.equal(probe.supportsWrites, true);
+  assert.equal(probe.executionReady, false); // Accurately reflects upstream candidate status
 
   const exec = await adapter.executeTask({ id: 'task-42', title: 'Compile harness' }, { noNestedDelegation: true });
-  assert.ok(exec.workerId.startsWith('simpul-task-42-'));
+  // Worker ID must be the server-confirmed run_id, NOT a locally fabricated string
+  assert.equal(exec.workerId, 'simpul-server-run-uuid-1234');
   assert.equal(exec.verified, true);
   assert.deepEqual(exec.evidenceRefs, ['sha256:abc123evidence']);
 
   await adapter.cancelTask({ taskId: 'task-42', reason: 'user-cancel' });
   assert.ok(calls.some(c => c.name === 'submit_goal'));
   assert.ok(calls.some(c => c.name === 'get_task_evidence'));
+  assert.ok(calls.some(c => c.name === 'cancel_run'));
 });
 
-test('createNativeSubagentAdapter executes via runner with worker identification and cleanup', async () => {
+test('createNativeSubagentAdapter obtains identity exclusively from host runner and handles errors', async () => {
   let cancelledWorker = null;
   const mockRunner = {
-    async status() { return { available: true }; },
+    async status() {
+      return {
+        available: true,
+        capabilities: { supportsWrites: true, supportsParallel: true }
+      };
+    },
     async run(task, options) {
       assert.equal(options.noNestedDelegation, true);
-      assert.ok(options.workerId.startsWith('native-task-native-1-'));
-      return { verified: true, evidenceRefs: ['native-execution-output.log'] };
+      // Host runner assigns worker identity
+      return {
+        workerId: 'host-managed-worker-uuid-999',
+        verified: true,
+        evidenceRefs: ['native-execution-output.log']
+      };
     },
     async cancel({ workerId }) {
       cancelledWorker = workerId;
@@ -159,13 +200,60 @@ test('createNativeSubagentAdapter executes via runner with worker identification
   const adapter = createNativeSubagentAdapter({ runner: mockRunner });
   const probe = await adapter.probe();
   assert.equal(probe.healthy, true);
+  assert.equal(probe.supportsWrites, true);
+  assert.equal(probe.supportsParallel, true);
 
   const exec = await adapter.executeTask({ id: 'task-native-1', title: 'Local audit' }, { noNestedDelegation: true });
+  assert.equal(exec.workerId, 'host-managed-worker-uuid-999');
   assert.equal(exec.verified, true);
   assert.deepEqual(exec.evidenceRefs, ['native-execution-output.log']);
+
+  await adapter.cancelTask({ taskId: 'task-native-1', reason: 'cleanup' });
+  assert.equal(cancelledWorker, 'host-managed-worker-uuid-999');
 });
 
-test('ResourceBudgetLedger enforces token ceilings and concurrency limits', () => {
+test('createNativeSubagentAdapter fails closed on missing status API or fabricated IDs', async () => {
+  // 1. Missing runner.status must not be assumed available
+  const runnerNoStatus = { async run() { return { workerId: 'w1' }; } };
+  const adapterNoStatus = createNativeSubagentAdapter({ runner: runnerNoStatus });
+  const probeNoStatus = await adapterNoStatus.probe();
+  assert.equal(probeNoStatus.healthy, false);
+
+  // 2. Runner returning fabricated or invalid worker ID fails closed
+  const fakeRunner = {
+    async status() { return { available: true }; },
+    async run() { return { workerId: 'fake', verified: true }; }
+  };
+  const fakeAdapter = createNativeSubagentAdapter({ runner: fakeRunner });
+  await assert.rejects(
+    fakeAdapter.executeTask({ id: 't1', title: 'Task' }, { noNestedDelegation: true }),
+    /invalid or fabricated worker identity/
+  );
+
+  // 3. Worker crash fails closed
+  const crashRunner = {
+    async status() { return { available: true }; },
+    async run() { return { workerId: 'real-worker-x', crashed: true, error: 'OOM error' }; }
+  };
+  const crashAdapter = createNativeSubagentAdapter({ runner: crashRunner });
+  await assert.rejects(
+    crashAdapter.executeTask({ id: 't2', title: 'Task' }, { noNestedDelegation: true }),
+    /crashed or encountered error/i
+  );
+
+  // 4. Missing cancellation API fails closed on cancelTask
+  const noCancelRunner = {
+    async status() { return { available: true }; },
+    async run() { return { workerId: 'real-worker-y' }; }
+  };
+  const noCancelAdapter = createNativeSubagentAdapter({ runner: noCancelRunner });
+  await assert.rejects(
+    noCancelAdapter.cancelTask({ taskId: 't3' }),
+    /Runner lacks cancellation API/
+  );
+});
+
+test('ResourceBudgetLedger prevents over-budget operations upfront', () => {
   const ledger = new ResourceBudgetLedger({ tokenLimit: 5000, costLimitMicro: 10000, maxConcurrency: 2 });
 
   ledger.acquireWorker('worker-1');
@@ -175,9 +263,18 @@ test('ResourceBudgetLedger enforces token ceilings and concurrency limits', () =
   ledger.releaseWorker('worker-1');
   assert.equal(ledger.summary.activeWorkers, 1);
 
+  // Initial usage within budget
   ledger.recordUsage({ taskId: 't1', tokens: 3000, costMicro: 4000 });
   assert.equal(ledger.summary.usedTokens, 3000);
 
-  // Exceed token limit
+  // checkBudget passes when within remaining budget
+  assert.equal(ledger.checkBudget({ estimatedTokens: 1000 }), true);
+
+  // checkBudget throws when estimated tokens breach ceiling
+  assert.throws(() => ledger.checkBudget({ estimatedTokens: 2500 }), /Token budget ceiling breached/);
+
+  // recordUsage refuses overspend upfront
   assert.throws(() => ledger.recordUsage({ taskId: 't2', tokens: 2500, costMicro: 1000 }), /Token budget ceiling breached/);
+  // Total tokens must remain uncorrupted at 3000
+  assert.equal(ledger.summary.usedTokens, 3000);
 });
