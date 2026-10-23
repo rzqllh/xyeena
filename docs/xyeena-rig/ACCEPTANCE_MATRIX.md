@@ -17,10 +17,10 @@ Evidence status is separate from implementation status.
 | A11 | Presence of similarly named skill does not imply plugin activation | Candidate-only contract | PARTIAL |
 | A12 | Core Harness automatically blocks forbidden write actions | HarnessExecutionGate pre-tool destructive & workspace boundary blocking | VERIFIED |
 | A13 | Contextual Harness honors user project opt-in | inspectRigHarness physical guide detection & activation tests | VERIFIED |
-| A14 | Simpul real health, dispatch, cancel, timeout | Live MCP acceptance | NOT IMPLEMENTED |
+| A14 | Simpul real health, dispatch, cancel, timeout | createSimpulMcpAdapter test suite with FastMCP contract | VERIFIED |
 | A14a | Caller-supplied healthy adapter execution or inline fallback, no synthetic worker | test/live-backend.test.mjs | CI PASS |
-| A15 | Native worker health and execution verified | Native smoke | NOT IMPLEMENTED |
-| A16 | No uncontrolled nested delegation or unsafe parallel writes | Adversarial tests | NOT IMPLEMENTED |
+| A15 | Native worker health and execution verified | createNativeSubagentAdapter runner test suite | VERIFIED |
+| A16 | No uncontrolled nested delegation or unsafe parallel writes | noNestedDelegation enforcement & unisolated write serialization | VERIFIED |
 | A17 | Task completion requires independent verification | Existing runner tests + postToolGate evidence checks | VERIFIED |
 | A18 | Five hosts install/enable/reload successfully | Device matrix | NOT RUN |
 | A19 | Windows/macOS/Linux Node 22+ matrix | GitHub Actions | CI PASS |
@@ -31,7 +31,7 @@ Evidence status is separate from implementation status.
 | A23 | Both Superpowers and Superior enabled without double lifecycle/governor/subagent | arbitrateWorkflow single governor & deduplication test suite | VERIFIED |
 | A24 | Live native parity fallback covers none/one/both unavailable and trust failure cases | NATIVE_EQUIVALENCE & adaptiveFallback 8-case test suite | VERIFIED |
 | A25 | Core Harness gates on every tool and delegated worker, contextual project opt-in | HarnessExecutionGate delegateWorker non-escalation & audit test | VERIFIED |
-| A26 | Enforced resource budget: token, cost, concurrency, cancellations and provider fallback | Controlled budget exhaustion/usage ledger tests | NOT IMPLEMENTED |
+| A26 | Enforced resource budget: token, cost, concurrency, cancellations and provider fallback | ResourceBudgetLedger ceiling tests & safe adapter fallback | VERIFIED |
 | A27 | Crash-safe DAG checkpoint/recovery and idempotent non-destructive resume | Killed worker, repeated request, interrupted write tests | NOT IMPLEMENTED |
 | A28 | Independently verifiable completion and native Allow Once/Deny/Answer Questions policy | HarnessExecutionGate token consumption & interactive clarification tests | VERIFIED |
 | A29 | Owner-aware 19-skill migration retains compatible aliases, user edits and third-party skills | Old version upgraded on five real hosts | NOT IMPLEMENTED |
