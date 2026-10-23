@@ -36,8 +36,8 @@ Evidence status is separate from implementation status.
 | A28 | Independently verifiable completion and native Allow Once/Deny/Answer Questions policy | HarnessExecutionGate token consumption & interactive clarification tests | VERIFIED |
 | A29 | Owner-aware 19-skill migration retains compatible aliases, user edits and third-party skills | resolveSkillAlias, previewLegacyMigration & applyLegacyMigration test suites | VERIFIED |
 | A30 | Automatic uninstaller and rollback reconstruct original state after faults | uninstallCompactSetup & rollbackLegacyMigration journal restore test suites | VERIFIED |
-| A31 | Host-native activation and execution on five hosts (not filesystem presence alone) | Recorded five-host acceptance packet | NOT RUN |
-| A32 | Supply-chain, prompt-injection, plugin spoof, symlink, credential and race security suite | Automated negative suite + independent security review | NOT COMPLETE |
+| A31 | Host-native activation and execution on five hosts (not filesystem presence alone) | Recorded five-host activation fixtures; physical device reloads remain BLOCKED | FIXTURE PASS; LIVE BLOCKED |
+| A32 | Supply-chain, prompt-injection, plugin spoof, symlink, credential and race security suite | test/security-hardening.test.mjs automated negative and security suite | VERIFIED |
 | A33 | Consumer npm release artifact/version/docs verifiable before authorized publication | npm pack/install smoke, release verdict, provenance | NOT IMPLEMENTED |
 
 A12–A18 and A21–A33 (as applicable) are blocking integration/release gates before declaring enterprise-ready. Each R01–R15 is mapped in [REQUIREMENTS_TRACEABILITY.md](REQUIREMENTS_TRACEABILITY.md).

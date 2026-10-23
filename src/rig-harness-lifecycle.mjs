@@ -38,6 +38,37 @@ export function safeInstalledGuide(root, group) {
   }
 }
 
+const SENSITIVE_PATTERNS = [
+  /ghp_[A-Za-z0-9_]{36,}/g,
+  /gho_[A-Za-z0-9_]{36,}/g,
+  /github_pat_[A-Za-z0-9_]{82}/g,
+  /sk-(?:proj-|ant-)?[A-Za-z0-9_-]{32,}/g,
+  /AKIA[0-9A-Z]{16}/g,
+  /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi,
+  /(?:password|secret|api[_-]?key|token)\s*[:=]\s*["']?([A-Za-z0-9_\-.~+=]{8,})["']?/gi,
+  /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/g
+];
+
+export function sanitizeSecretText(text) {
+  if (typeof text !== 'string') return text;
+  let sanitized = text;
+  for (const pattern of SENSITIVE_PATTERNS) {
+    sanitized = sanitized.replace(pattern, '[REDACTED_SECRET]');
+  }
+  return sanitized;
+}
+
+export function sanitizeAuditData(data) {
+  if (!data || typeof data !== 'object') return data;
+  try {
+    const json = JSON.stringify(data);
+    const cleanJson = sanitizeSecretText(json);
+    return JSON.parse(cleanJson);
+  } catch {
+    return data;
+  }
+}
+
 /**
  * Validates that targetPath is strictly contained within the workspace root.
  * Rejects path traversal, absolute path escape, and symlink escape.
@@ -45,6 +76,11 @@ export function safeInstalledGuide(root, group) {
 export function assertWorkspaceBoundary(targetPath, workspaceRoot) {
   if (!targetPath || typeof targetPath !== 'string') {
     throw new Error('Workspace boundary validation requires a target path string');
+  }
+  if (targetPath.includes('\0')) {
+    const error = new Error('Workspace boundary violation: null-byte injection detected in target path');
+    error.code = 'ERR_WORKSPACE_BOUNDARY_VIOLATION';
+    throw error;
   }
   const root = fs.realpathSync(path.resolve(workspaceRoot));
   const resolvedTarget = path.resolve(root, targetPath);
@@ -139,7 +175,8 @@ export class HarnessExecutionGate {
     workerId = 'governor',
     inheritedFrom = null,
     auditLog = [],
-    contextualRequested = []
+    contextualRequested = [],
+    depth = 0
   } = {}) {
     this.cwd = fs.realpathSync(path.resolve(cwd));
     this.operationClass = operationClass;
@@ -154,6 +191,13 @@ export class HarnessExecutionGate {
     this.allowOnceTokens = new Set();
     this.recentErrors = new Map();
     this.contextual = inspectRigHarness({ cwd: this.cwd, contextualRequested });
+    this.depth = depth;
+  }
+
+  recordAudit(entry) {
+    const clean = sanitizeAuditData(entry);
+    this.auditLog.push(clean);
+    return clean;
   }
 
   grantAllowOnce(token) {
@@ -183,8 +227,7 @@ export class HarnessExecutionGate {
           reason: err.message,
           blocked: true
         };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
+        return this.recordAudit(auditEntry);
       }
     }
 
@@ -204,8 +247,7 @@ export class HarnessExecutionGate {
           rule: 'permission-boundary',
           blocked: false
         };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
+        return this.recordAudit(auditEntry);
       }
       if (this.allowOnceTokens.has(actionSig) || this.allowOnceTokens.has('destructive:*')) {
         this.allowOnceTokens.delete(actionSig);
@@ -219,8 +261,7 @@ export class HarnessExecutionGate {
           blocked: false,
           reason: 'Allowed once by explicit token'
         };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
+        return this.recordAudit(auditEntry);
       }
       if (this.permissions.interactive) {
         const auditEntry = {
@@ -232,8 +273,7 @@ export class HarnessExecutionGate {
           blocked: true,
           prompt: `Destructive action "${toolName}" requires user confirmation before proceeding.`
         };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
+        return this.recordAudit(auditEntry);
       }
       const auditEntry = {
         timestamp: now,
@@ -264,8 +304,7 @@ export class HarnessExecutionGate {
           rule: 'permission-boundary',
           blocked: false
         };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
+        return this.recordAudit(auditEntry);
       }
       if (this.allowOnceTokens.has(actionSig) || this.allowOnceTokens.has('external:*')) {
         this.allowOnceTokens.delete(actionSig);
@@ -279,8 +318,7 @@ export class HarnessExecutionGate {
           blocked: false,
           reason: 'Allowed once by explicit token'
         };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
+        return this.recordAudit(auditEntry);
       }
       if (this.permissions.interactive) {
         const auditEntry = {
@@ -292,8 +330,7 @@ export class HarnessExecutionGate {
           blocked: true,
           prompt: `External operation "${toolName}" requires user authorization before execution.`
         };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
+        return this.recordAudit(auditEntry);
       }
       const auditEntry = {
         timestamp: now,
@@ -304,8 +341,7 @@ export class HarnessExecutionGate {
         blocked: true,
         reason: 'External operation denied: requires explicit authorization'
       };
-      this.auditLog.push(auditEntry);
-      return auditEntry;
+      return this.recordAudit(auditEntry);
     }
 
     // 4. Anti-Loop Gate
@@ -321,8 +357,7 @@ export class HarnessExecutionGate {
         blocked: true,
         reason: 'Anti-loop: tool call failed 3 times consecutively; approach must be revised'
       };
-      this.auditLog.push(auditEntry);
-      return auditEntry;
+      return this.recordAudit(auditEntry);
     }
 
     // 5. Default ALLOW with core safety rules active
@@ -334,8 +369,7 @@ export class HarnessExecutionGate {
       rule: 'core-safety',
       blocked: false
     };
-    this.auditLog.push(auditEntry);
-    return auditEntry;
+    return this.recordAudit(auditEntry);
   }
 
   postToolGate({ toolName, args = {}, result = null, error = null, workerId = null } = {}) {
@@ -372,13 +406,15 @@ export class HarnessExecutionGate {
       warning,
       rule: 'evidence-before-claim'
     };
-    this.auditLog.push(auditEntry);
-    return auditEntry;
+    return this.recordAudit(auditEntry);
   }
 
   delegateWorker(childWorkerId, { delegatedPermissions = {} } = {}) {
     if (!childWorkerId || typeof childWorkerId !== 'string') {
       throw new Error('Worker delegation requires a valid worker ID string');
+    }
+    if (this.depth >= 1) {
+      throw new Error(`Recursive delegation forbidden: worker "${this.workerId}" at depth ${this.depth} cannot spawn sub-workers`);
     }
     // Strict non-escalation: child permissions = parent permissions AND delegatedPermissions
     const effectivePermissions = {
@@ -394,7 +430,8 @@ export class HarnessExecutionGate {
       workerId: childWorkerId,
       inheritedFrom: this.workerId,
       auditLog: this.auditLog,
-      contextualRequested: this.contextual.contextual.requested
+      contextualRequested: this.contextual.contextual.requested,
+      depth: this.depth + 1
     });
   }
 }
