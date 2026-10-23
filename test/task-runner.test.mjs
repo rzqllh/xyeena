@@ -288,3 +288,150 @@ test('cancellation signal marks in-flight and pending tasks as CANCELED', async 
   assert.equal(result.tasks.A.state, 'CANCELED');
   assert.equal(result.tasks.B.state, 'CANCELED');
 });
+
+test('regression P05: validateRunId rejects path traversal characters in runId', t => {
+  const badRunIds = [
+    '../escape',
+    '..\\escape',
+    'dir/sub',
+    'dir\\sub',
+    '/absolute',
+    '.',
+    '..',
+    'run\0evil',
+    '   '
+  ];
+
+  for (const bad of badRunIds) {
+    assert.throws(
+      () => DurableCheckpointStore.validateRunId(bad),
+      /Invalid runId|Run ID must be/
+    );
+  }
+
+  // Valid runId succeeds
+  assert.equal(DurableCheckpointStore.validateRunId('valid-run_123.test'), 'valid-run_123.test');
+});
+
+test('regression P05: exclusive per-run lock blocks concurrent resume on same runId', async t => {
+  const cwd = temp(t);
+  const runId = 'exclusive-run-test';
+
+  // Seed checkpoint
+  DurableCheckpointStore.save(cwd, runId, { tasks: { A: task('A') } });
+
+  // Acquire lock manually
+  const releaseLock = DurableCheckpointStore.acquireRunLock(cwd, runId);
+
+  // Second acquire must throw
+  assert.throws(
+    () => DurableCheckpointStore.acquireRunLock(cwd, runId),
+    /exclusive lease already held/
+  );
+
+  // Resume must fail because lock is held
+  await assert.rejects(
+    runTaskGraph({
+      tasks: { A: task('A') },
+      adapter: { async executeTask() { return { verified: true, evidenceRefs: ['proof'] }; } },
+      runId,
+      cwd,
+      resume: true
+    }),
+    /exclusive lease already held/
+  );
+
+  // Release lock
+  releaseLock();
+
+  // Now resume succeeds
+  const result = await runTaskGraph({
+    tasks: { A: task('A') },
+    adapter: { async executeTask() { return { verified: true, evidenceRefs: ['proof'] }; } },
+    runId,
+    cwd,
+    resume: true,
+    verifyEvidence: independentProof
+  });
+  assert.equal(result.complete, true);
+});
+
+test('regression P05: cancellation signal propagates to active worker and triggers cancelTask', async () => {
+  const controller = new AbortController();
+  let receivedSignal = null;
+  let cancelTaskCalled = false;
+
+  const adapter = {
+    async executeTask(t, options) {
+      receivedSignal = options?.signal;
+      // Trigger abort while task is executing
+      controller.abort();
+      return { verified: true, evidenceRefs: ['proof'] };
+    },
+    async cancelTask({ taskId }) {
+      if (taskId === 'A') cancelTaskCalled = true;
+    }
+  };
+
+  await runTaskGraph({
+    tasks: { A: task('A') },
+    adapter,
+    cancelSignal: controller.signal
+  });
+
+  assert.ok(receivedSignal);
+  assert.equal(receivedSignal.aborted, true);
+  assert.equal(cancelTaskCalled, true);
+});
+
+test('regression P05: non-idempotent or external/destructive tasks are never automatically retried', async () => {
+  let executions = 0;
+  const adapter = {
+    async executeTask() {
+      executions++;
+      throw new Error('Network timeout during external action');
+    }
+  };
+
+  const tasks = {
+    A: { ...task('A'), scope: { operationClass: 'external', idempotent: false } }
+  };
+
+  const result = await runTaskGraph({
+    tasks,
+    adapter,
+    approvedTaskIds: ['A'],
+    maxRetries: 3
+  });
+
+  assert.equal(result.complete, false);
+  assert.equal(result.tasks.A.state, 'FAILED');
+  assert.ok(result.tasks.A.failure_reason.includes('automatic retry prohibited'));
+  // Must execute exactly ONCE (no retries)
+  assert.equal(executions, 1);
+});
+
+test('regression P05: transient errors on safe tasks undergo bounded exponential backoff', async () => {
+  let attempts = 0;
+  const adapter = {
+    async executeTask() {
+      attempts++;
+      if (attempts < 3) throw new Error('Transient I/O failure');
+      return { verified: true, evidenceRefs: ['proof'] };
+    }
+  };
+
+  const startTime = Date.now();
+  const result = await runTaskGraph({
+    tasks: { A: task('A', [], true) },
+    adapter,
+    maxRetries: 3,
+    verifyEvidence: independentProof
+  });
+
+  const durationMs = Date.now() - startTime;
+  assert.equal(result.complete, true);
+  assert.equal(attempts, 3);
+  // Backoff attempts: 1st backoff (20ms), 2nd backoff (40ms) -> total >= 50ms
+  assert.ok(durationMs >= 40, `Expected backoff delay, got ${durationMs}ms`);
+});

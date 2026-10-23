@@ -202,3 +202,25 @@ test('Case 8: nativeFallbackForSkill maps all third-party capabilities to verifi
   assert.equal(nativeFallbackForSkill('superior-delivery'), 'xyeena-release');
   assert.equal(nativeFallbackForSkill('unknown-skill'), 'xyeena-core');
 });
+
+test('regression P02: arbitrateWorkflow computes arbitratedSkills with deduplicated and fallback skills', () => {
+  const inventory = [
+    { name: 'xyeena-rig', availability: 'detected' },
+    { name: 'superior-code-review', availability: 'detected' },
+    { name: 'requesting-code-review', availability: 'detected' },
+    { name: 'blocked-external-skill', availability: 'disabled' }
+  ];
+  const arbitration = arbitrateWorkflow({
+    goal: 'Review code with unified quality',
+    state: 'REVIEW',
+    inventory,
+    selectedSkills: ['xyeena-rig', 'superior-code-review', 'requesting-code-review', 'blocked-external-skill']
+  });
+
+  // Superior is candidate, duplicate requesting-code-review is suppressed, blocked skill is replaced
+  assert.ok(arbitration.arbitratedSkills.includes('xyeena-rig'));
+  assert.ok(arbitration.arbitratedSkills.includes('superior-code-review'));
+  assert.ok(!arbitration.arbitratedSkills.includes('requesting-code-review'));
+  assert.ok(arbitration.arbitratedSkills.includes('xyeena-core')); // fallback for blocked-external-skill
+});
+
