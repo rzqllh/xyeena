@@ -17,6 +17,20 @@ function validTask(task) {
   if (typeof task.scope.readOnly !== 'boolean') throw new Error('Task must declare readOnly explicitly');
 }
 
+function assertValidHostWorkerId(workerId) {
+  if (!workerId || typeof workerId !== 'string') {
+    throw new Error('Host runner returned invalid or fabricated worker identity: identity must be a non-empty string');
+  }
+  const trimmed = workerId.trim();
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]{2,127}$/.test(trimmed)) {
+    throw new Error(`Host runner returned invalid or fabricated worker identity: does not match required format "${trimmed}"`);
+  }
+  if (/^(fake|dummy|mock|placeholder|synthetic|fabricated)([-_.]|$)/i.test(trimmed)) {
+    throw new Error(`Host runner returned invalid or fabricated worker identity: placeholder rejected "${trimmed}"`);
+  }
+  return trimmed;
+}
+
 export async function healthyAdapter(adapter, probeTimeoutMs = 3000) {
   if (!adapter || typeof adapter.probe !== 'function' ||
       typeof adapter.executeTask !== 'function' || typeof adapter.cancelTask !== 'function') return null;
@@ -30,6 +44,8 @@ export async function healthyAdapter(adapter, probeTimeoutMs = 3000) {
     return {
       enabled: true,
       healthy: true,
+      transportHealthy: capabilities.healthy === true,
+      executionReady: capabilities.executionReady === true,
       adapterAvailable: true,
       supportsWrites: capabilities.supportsWrites === true,
       supportsParallel: capabilities.supportsParallel === true
@@ -169,37 +185,54 @@ export function createSimpulMcpAdapter({
       activeRuns.set(task.id, { runId, initialTaskId });
       recentRuns.set(task.id, { runId, initialTaskId });
 
-      // 2. Poll run status using get_run
-      let runStatus = submitRes.status;
-      try {
-        const runInfo = await mcpClient.callTool('get_run', { run_id: runId });
-        if (runInfo?.status) {
-          runStatus = runInfo.status;
+      // 2. Bounded polling for terminal state using get_run
+      let runStatus = submitRes.status || 'SUBMITTED';
+      const maxPollAttempts = options.maxPollAttempts || 3;
+
+      for (let attempt = 0; attempt < maxPollAttempts; attempt++) {
+        if (options.signal?.aborted) {
+          await this.cancelTask({ taskId: task.id, runId, reason: 'signal-aborted' });
+          runStatus = 'CANCELED';
+          break;
         }
-      } catch {
-        // Best effort status query
+
+        try {
+          const runInfo = await mcpClient.callTool('get_run', { run_id: runId });
+          if (runInfo?.status) {
+            runStatus = runInfo.status;
+            if (['COMPLETED', 'FAILED', 'CANCELED'].includes(runStatus)) {
+              break;
+            }
+          }
+        } catch {
+          // Best effort status query
+        }
       }
 
       // 3. Retrieve task evidence with exact signature: get_task_evidence(run_id, task_id)
       let evidenceRefs = [];
       let isVerified = false;
-      try {
-        const evidenceResult = await mcpClient.callTool('get_task_evidence', {
-          run_id: runId,
-          task_id: initialTaskId
-        });
-        if (evidenceResult?.verified === true) {
-          isVerified = true;
+      const isComplete = runStatus === 'COMPLETED';
+
+      if (isComplete) {
+        try {
+          const evidenceResult = await mcpClient.callTool('get_task_evidence', {
+            run_id: runId,
+            task_id: initialTaskId
+          });
+          if (evidenceResult?.verified === true) {
+            isVerified = true;
+          }
+          if (Array.isArray(evidenceResult?.evidence_ids)) {
+            evidenceRefs = safeEvidence(evidenceResult.evidence_ids);
+          } else if (Array.isArray(evidenceResult?.evidenceRefs)) {
+            evidenceRefs = safeEvidence(evidenceResult.evidenceRefs);
+          } else if (Array.isArray(evidenceResult?.refs)) {
+            evidenceRefs = safeEvidence(evidenceResult.refs);
+          }
+        } catch {
+          evidenceRefs = [];
         }
-        if (Array.isArray(evidenceResult?.evidence_ids)) {
-          evidenceRefs = safeEvidence(evidenceResult.evidence_ids);
-        } else if (Array.isArray(evidenceResult?.evidenceRefs)) {
-          evidenceRefs = safeEvidence(evidenceResult.evidenceRefs);
-        } else if (Array.isArray(evidenceResult?.refs)) {
-          evidenceRefs = safeEvidence(evidenceResult.refs);
-        }
-      } catch {
-        evidenceRefs = [];
       }
 
       // 4. Track model usage and account against budget
@@ -218,10 +251,13 @@ export function createSimpulMcpAdapter({
       }
 
       activeRuns.delete(task.id);
+
+      // NEVER interpret SUBMITTED or PENDING as completed or verified execution
       return {
         workerId: runId, // Server-confirmed run identity
         status: runStatus,
-        verified: isVerified && evidenceRefs.length > 0,
+        completed: isComplete,
+        verified: isComplete && isVerified && evidenceRefs.length > 0,
         evidenceRefs
       };
     },
@@ -251,8 +287,8 @@ export function createNativeSubagentAdapter({
   tokenBudget = 100000,
   ledger = null
 } = {}) {
-  if (!runner || typeof runner.run !== 'function') {
-    throw new Error('Native subagent adapter requires a host runner with run()');
+  if (!runner || (typeof runner.run !== 'function' && typeof runner.spawn !== 'function')) {
+    throw new Error('Native subagent adapter requires a host runner with spawn() or run()');
   }
 
   const activeWorkers = new Map();
@@ -262,24 +298,25 @@ export function createNativeSubagentAdapter({
     async probe() {
       // Must NOT interpret absence of runner.status as availability
       if (typeof runner.status !== 'function') {
-        return { healthy: false, noNestedDelegation: true, reason: 'Runner lacks status API' };
+        return { healthy: false, executionReady: false, noNestedDelegation: true, reason: 'Runner lacks status API' };
       }
       try {
         const status = await runner.status();
         if (!status || status.available !== true) {
-          return { healthy: false, noNestedDelegation: true, reason: 'Runner reported unavailable' };
+          return { healthy: false, executionReady: false, noNestedDelegation: true, reason: 'Runner reported unavailable' };
         }
         // Do not assume read/write or parallel capabilities: must be explicitly declared
         const caps = status.capabilities || status.workerCapabilities || {};
         return {
           healthy: true,
+          executionReady: true,
           noNestedDelegation: true,
           supportsWrites: caps.supportsWrites === true,
           supportsParallel: caps.supportsParallel === true,
           provider: 'host-native'
         };
       } catch (err) {
-        return { healthy: false, noNestedDelegation: true, reason: err.message };
+        return { healthy: false, executionReady: false, noNestedDelegation: true, reason: err.message };
       }
     },
 
@@ -304,7 +341,7 @@ export function createNativeSubagentAdapter({
       }
 
       // Obtain worker identity from the real host runner (spawn or run)
-      // The host runner must provide the real worker identity, NEVER fabricated by the adapter
+      // The host runner must provide the real worker identity, validated positively
       let runResult;
       let hostWorkerId = null;
 
@@ -312,15 +349,29 @@ export function createNativeSubagentAdapter({
         if (typeof runner.spawn === 'function') {
           const handle = await runner.spawn(clone(task), {
             noNestedDelegation: true,
-            parallelism: options.parallelism || 1
+            parallelism: options.parallelism || 1,
+            signal: options.signal
           });
-          hostWorkerId = handle?.workerId;
-          if (!hostWorkerId || typeof hostWorkerId !== 'string' || !hostWorkerId.trim() || hostWorkerId === 'fake' || hostWorkerId.startsWith('fabricated-')) {
-            throw new Error('Host runner returned invalid or fabricated worker identity');
+          if (!handle || typeof handle !== 'object') {
+            throw new Error('Host runner spawn() must return an active worker handle object');
           }
+          hostWorkerId = assertValidHostWorkerId(handle.workerId);
           activeWorkers.set(task.id, { workerId: hostWorkerId, handle });
-          recentWorkers.set(task.id, { workerId: hostWorkerId });
-          runResult = typeof handle.wait === 'function' ? await handle.wait() : await handle;
+          recentWorkers.set(task.id, { workerId: hostWorkerId, handle });
+
+          if (options.signal) {
+            options.signal.addEventListener('abort', () => {
+              if (typeof handle.cancel === 'function') {
+                handle.cancel('aborted');
+              } else if (typeof runner.cancel === 'function') {
+                runner.cancel({ workerId: hostWorkerId, taskId: task.id, reason: 'aborted' });
+              }
+            }, { once: true });
+          }
+
+          runResult = typeof handle.wait === 'function'
+            ? await handle.wait()
+            : (typeof handle.then === 'function' ? await handle : handle);
         } else {
           activeWorkers.set(task.id, { workerId: null });
           runResult = await runner.run(clone(task), {
@@ -328,10 +379,7 @@ export function createNativeSubagentAdapter({
             parallelism: options.parallelism || 1,
             signal: options.signal
           });
-          hostWorkerId = runResult?.workerId;
-          if (!hostWorkerId || typeof hostWorkerId !== 'string' || !hostWorkerId.trim() || hostWorkerId === 'fake' || hostWorkerId.startsWith('fabricated-')) {
-            throw new Error('Host runner returned invalid or fabricated worker identity');
-          }
+          hostWorkerId = assertValidHostWorkerId(runResult?.workerId);
           activeWorkers.set(task.id, { workerId: hostWorkerId });
           recentWorkers.set(task.id, { workerId: hostWorkerId });
         }
@@ -359,15 +407,23 @@ export function createNativeSubagentAdapter({
       const effectiveWorkerId = workerId || active?.workerId;
       activeWorkers.delete(taskId);
 
-      if (typeof runner.cancel !== 'function') {
-        throw new Error('Runner lacks cancellation API: unable to cancel active worker safely');
+      if (active?.handle && typeof active.handle.cancel === 'function') {
+        try {
+          await active.handle.cancel(reason);
+          return true;
+        } catch (err) {
+          throw new Error(`Worker handle cancellation failed: ${err.message}`);
+        }
       }
-
-      try {
-        await runner.cancel({ workerId: effectiveWorkerId, taskId, reason });
-      } catch (err) {
-        throw new Error(`Runner cancellation failed: ${err.message}`);
+      if (typeof runner.cancel === 'function') {
+        try {
+          await runner.cancel({ workerId: effectiveWorkerId, taskId, reason });
+          return true;
+        } catch (err) {
+          throw new Error(`Runner cancellation failed: ${err.message}`);
+        }
       }
+      throw new Error('Runner lacks cancellation API: unable to cancel active worker safely');
     }
   };
 }
@@ -384,6 +440,7 @@ export async function dispatchScopedTask({
   verifyEvidence = null,
   authorizeOperation = null,
   budgetLedger = null,
+  harnessGate = null,
   maxParallel = 2,
   timeoutMs = 120000,
   onEvent = null
@@ -444,13 +501,26 @@ export async function dispatchScopedTask({
     ? 1
     : decision.parallelism;
 
+  // Enforce Harness gate check on dispatch if gate is provided
+  if (harnessGate && task.scope?.operationClass && task.scope.operationClass !== 'safe') {
+    const gateDecision = harnessGate.preToolGate({
+      toolName: `dispatch_${decision.backend}`,
+      actionType: task.scope.operationClass,
+      args: { taskId: task.id, title: task.title }
+    });
+    if (gateDecision.blocked) {
+      throw new Error(`Task execution blocked by Harness gate: ${gateDecision.reason || gateDecision.decision}`);
+    }
+  }
+
   onEvent?.({ type: 'task.started', taskId: task.id, backend: decision.backend });
 
   try {
     const invoke = Promise.resolve().then(() => adapter.executeTask(clone(task), {
       signal: controller.signal,
       noNestedDelegation: true,
-      parallelism: effectiveParallelism
+      parallelism: effectiveParallelism,
+      harnessGate
     }));
 
     const timeout = new Promise((_, reject) => {
