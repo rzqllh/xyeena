@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fork } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import { runTaskGraph, DurableCheckpointStore } from '../src/task-runner.mjs';
 
 function temp(t) {
@@ -609,5 +611,143 @@ test('regression P05: lock release enforces strict owner identity and does not d
   assert.equal(fs.existsSync(lockFile), true);
   const surviving = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
   assert.equal(surviving.ownerId, 'different-foreign-owner-uuid');
+});
+
+test('adversarial P05: fencing counter strictly increases across multiple cycles and never resets after lock deletion', t => {
+  const cwd = temp(t);
+  const runId = 'monotonic-counter-test';
+
+  // Cycle 1: Acquire and release
+  const lock1 = DurableCheckpointStore.acquireRunLock(cwd, runId);
+  assert.equal(lock1.fenceToken, 1);
+  lock1();
+
+  // Lock file was deleted upon clean release
+  const runDir = path.join(cwd, '.xyeena', 'runs', runId);
+  const lockFile = path.join(runDir, 'run.lock');
+  assert.equal(fs.existsSync(lockFile), false);
+
+  // Cycle 2: Acquire again -> fenceToken MUST be 2, NOT reset to 1
+  const lock2 = DurableCheckpointStore.acquireRunLock(cwd, runId);
+  assert.equal(lock2.fenceToken, 2);
+  lock2();
+  assert.equal(fs.existsSync(lockFile), false);
+
+  // Cycle 3: Acquire again -> fenceToken MUST be 3
+  const lock3 = DurableCheckpointStore.acquireRunLock(cwd, runId);
+  assert.equal(lock3.fenceToken, 3);
+  lock3();
+});
+
+test('adversarial P05: fencing prevents stale worker from performing side effects', t => {
+  const cwd = temp(t);
+  const runId = 'stale-worker-fencing-test';
+
+  const runDir = path.join(cwd, '.xyeena', 'runs', runId);
+  fs.mkdirSync(runDir, { recursive: true });
+
+  // Worker A acquires lock with fenceToken 1
+  const lockA = DurableCheckpointStore.acquireRunLock(cwd, runId);
+  assert.equal(lockA.fenceToken, 1);
+
+  // Worker A saves checkpoint successfully
+  DurableCheckpointStore.save(cwd, runId, { status: 'PARTIAL' }, {
+    fenceToken: lockA.fenceToken,
+    ownerId: lockA.ownerId
+  });
+
+  const saved1 = DurableCheckpointStore.load(cwd, runId);
+  assert.equal(saved1.fenceToken, 1);
+
+  // Simulate dead PID or external reclamation: lock is reclaimed with fenceToken 2
+  const lockFile = path.join(runDir, 'run.lock');
+  const lockDataB = {
+    ownerId: 'new-owner-uuid-b',
+    pid: process.pid,
+    fenceToken: 2,
+    acquiredAt: new Date().toISOString(),
+    runId,
+    host: 'localhost'
+  };
+  fs.writeFileSync(lockFile, JSON.stringify(lockDataB, null, 2) + '\n');
+
+  // Stale Worker A asserts validity -> throws ERR_STALE_FENCE_TOKEN
+  assert.throws(
+    () => lockA.assertValid(),
+    { code: 'ERR_STALE_FENCE_TOKEN' }
+  );
+
+  // Stale Worker A attempts to save checkpoint with old fenceToken -> throws ERR_STALE_FENCE_TOKEN
+  assert.throws(
+    () => DurableCheckpointStore.save(cwd, runId, { status: 'STALE_MUTATION' }, {
+      fenceToken: lockA.fenceToken,
+      ownerId: lockA.ownerId
+    }),
+    { code: 'ERR_STALE_FENCE_TOKEN' }
+  );
+
+  // Verify checkpoint was NOT corrupted by stale worker
+  const uncorrupted = DurableCheckpointStore.load(cwd, runId);
+  assert.equal(uncorrupted.status, 'PARTIAL');
+  assert.equal(uncorrupted.fenceToken, 1);
+});
+
+test('adversarial P05: real multi-process contention and crash recovery', async t => {
+  const cwd = temp(t);
+  const runId = 'real-multiprocess-lock';
+
+  const runnerPath = path.resolve('src/task-runner.mjs');
+  const workerScriptPath = path.join(cwd, 'worker.mjs');
+
+  fs.writeFileSync(workerScriptPath, `
+import { DurableCheckpointStore } from ${JSON.stringify(pathToFileURL(runnerPath).href)};
+
+const [,, cwd, runId, mode] = process.argv;
+
+try {
+  const lock = DurableCheckpointStore.acquireRunLock(cwd, runId);
+  if (process.send) {
+    process.send({ status: 'ACQUIRED', pid: process.pid, fenceToken: lock.fenceToken });
+  }
+  if (mode === 'HOLD') {
+    const timer = setInterval(() => {}, 1000);
+  } else {
+    lock();
+    if (process.send) process.send({ status: 'RELEASED' });
+    process.exit(0);
+  }
+} catch (err) {
+  if (process.send) {
+    process.send({ status: 'ERROR', message: err.message, code: err.code });
+  }
+  process.exit(1);
+}
+`);
+
+  // 1. Child 1 acquires and holds lock
+  const child1 = fork(workerScriptPath, [cwd, runId, 'HOLD'], { stdio: ['inherit', 'inherit', 'inherit', 'ipc'] });
+  const msg1 = await new Promise(resolve => child1.once('message', resolve));
+  assert.equal(msg1.status, 'ACQUIRED');
+  assert.equal(msg1.pid, child1.pid);
+
+  // 2. Child 2 tries to acquire concurrently while Child 1 is alive -> rejected
+  const child2 = fork(workerScriptPath, [cwd, runId, 'TRY'], { stdio: ['inherit', 'inherit', 'inherit', 'ipc'] });
+  const msg2 = await new Promise(resolve => child2.once('message', resolve));
+  assert.equal(msg2.status, 'ERROR');
+  assert.ok(msg2.message.includes('exclusive lease already held by active process'));
+  await new Promise(resolve => child2.once('exit', resolve));
+
+  // 3. Child 1 is forcefully interrupted (SIGKILL)
+  child1.kill('SIGKILL');
+  await new Promise(resolve => child1.once('exit', resolve));
+  assert.equal(DurableCheckpointStore.isProcessAlive(child1.pid), false);
+
+  // 4. Child 3 acquires lock after crash -> atomic reclamation succeeds with incremented fenceToken
+  const child3 = fork(workerScriptPath, [cwd, runId, 'HOLD'], { stdio: ['inherit', 'inherit', 'inherit', 'ipc'] });
+  const msg3 = await new Promise(resolve => child3.once('message', resolve));
+  assert.equal(msg3.status, 'ACQUIRED');
+  assert.ok(msg3.fenceToken > msg1.fenceToken, 'Reclaimed fenceToken must be strictly greater than crashed owner fenceToken');
+  child3.kill('SIGKILL');
+  await new Promise(resolve => child3.once('exit', resolve));
 });
 
