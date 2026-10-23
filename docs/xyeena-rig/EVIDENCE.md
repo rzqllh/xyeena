@@ -178,6 +178,35 @@ Resolved five independent audit blockers on the stacked PR chain:
 5. **P05 (PR #22, commit `5e6b4fb`):** Implemented PID liveness detection (`process.kill(pid, 0)`) and safe stale/crash recovery in `DurableCheckpointStore.acquireRunLock`. Safely reclaims dead PID and expired leases without permitting concurrent duplicate execution. 293/293 PASS.
 6. **P06 (PR #23, commit `ed2d9c9`):** Forward-merged P05. 297/297 PASS.
 7. **P07 (PR #24, commit `2f5a0db`):** Forward-merged P06 with sanitized audit logging. 303/303 PASS.
-8. **P08 (PR #25, commit `HEAD`):** Complete stack forward-integrated, docs synchronized, full test suite: 303/303 PASS, `npm run check` PASS, `npm run eval` PASS (18/18), `npm run test:harness` PASS (15/15), `npm run test:consumer` PASS, `npm pack --dry-run` PASS (247 files, 201.7 kB).
+8. **P08 (PR #25, commit `1f6be2b`):** Complete stack forward-integrated, docs synchronized.
+
+## Final Security & Correctness Blocker Remediation — Stack P01–P08 (2026-10-23)
+
+Remediated the three critical audit blockers and unhooked host runtime interception:
+1. **P03 Approval Trust Boundary (`6cb7f3c`):**
+   - Eliminated HMAC-only self-issuing approval proofs. `HostApprovalAuthority` now strictly requires an external host approval callback/bridge (`approvalBridge`) and a valid `hostBoundarySecret`.
+   - `HarnessExecutionGate` defaults to `hostAuthority: null`, failing closed with `ERR_NO_HOST_AUTHORITY`. Caller-created untrusted authorities throw `ERR_UNTRUSTED_HOST_AUTHORITY`.
+   - Delegated workers and adversarial callers attempting privilege escalation fail closed. 274/274 PASS.
+2. **P03 Evidence Verification (`6cb7f3c`):**
+   - Replaced accepting nontrivial files and self-reported `VERIFIED` status in `IndependentEvidenceVerifier`.
+   - Now mandates an independent `executionChecker` verifying actual execution provenance (exit code 0, runner verification) and acceptance criteria checking.
+   - Self-authored VERIFIED JSON and long unproven text fail with `REVIEW_REQUIRED`.
+3. **P03 / P07 Live Tool Interception (`6cb7f3c` / `2c0dba2`):**
+   - Verified real host hooks vs unhooked runtimes. Only `harness-gate` or runtimes with verified `hostHooks.interceptToolCall` are `LIVE_ACTIVE`.
+   - Unhooked host runtimes (`antigravity`, `rig-cli`, `simpul`) are classified as `LIVE_PENDING`, and privileged operations (destructive file edits, external connections, shell commands) fail closed with `ERR_HARNESS_BLOCKED`.
+4. **P04 Subagent Integration (`604d86e`):**
+   - Forward-merged P03 remediation into P04. Preserved workspace write-lock lifetime and public API exports. 287/287 PASS.
+5. **P05 Concurrent Run Lease Safety (`d6b9421`):**
+   - In `DurableCheckpointStore.acquireRunLock()`, eliminated age-based lock stealing (`ageMs > 30000`). Active owners (`isProcessAlive(pid) === true`) are strictly protected and NEVER reclaimed solely due to elapsed time.
+   - Implemented crash-safe owner identity (`ownerId: ${process.pid}-${uuid}`) and monotonic `fenceToken` incremented on dead-PID reclamation.
+   - Lock release strictly validates `current.ownerId === ownerId`, preventing stale deletion of reclaimed locks.
+   - Added adversarial tests: runs exceeding lease threshold, concurrent contenders, and dead-PID reclamation. 303/303 PASS.
+6. **P06 Compact Installer (`3ff1ded`):**
+   - Forward-merged P05. 307/307 PASS.
+7. **P07 Hardening & Fixtures (`2c0dba2`):**
+   - Forward-merged P06 with sanitized audit logging. 313/313 PASS.
+8. **P08 Enterprise Release Candidate (`HEAD`):**
+   - Complete stack forward-integrated, documentation synchronized. Full test suite: 313/313 PASS, `npm run check` PASS (19 capabilities), `npm run eval` PASS (18/18), `npm run test:harness` PASS (15/15), `npm run test:consumer` PASS, `npm pack --dry-run` PASS (247 files, 203.8 kB).
+
 
 
