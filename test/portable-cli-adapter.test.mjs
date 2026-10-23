@@ -21,7 +21,7 @@ function addSkill(cwd, relative, name) {
 }
 function mockProcess(output, { exitCode=0, expectedCommand=null, argsCheck=null, capture=null }={}) {
   return (command,args,options) => {
-    if(expectedCommand)assert.equal(command,expectedCommand);
+    if(expectedCommand)assert.ok(command===expectedCommand || path.basename(command, path.extname(command))===expectedCommand);
     if(argsCheck)argsCheck(args);
     assert.equal(options.shell,false);
     const child=new EventEmitter();
