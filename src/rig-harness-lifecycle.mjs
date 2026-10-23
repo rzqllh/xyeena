@@ -40,39 +40,74 @@ export function safeInstalledGuide(root, group) {
 
 /**
  * Validates that targetPath is strictly contained within the workspace root.
- * Rejects path traversal, absolute path escape, and symlink escape.
+ * Normalizes existing ancestors using filesystem-aware resolution (handling macOS /var symlink, Windows paths, etc.).
+ * Preserves containment against path traversal, absolute path escape, and symlink escape.
+ * Rejects null-byte paths and paths outside the canonical workspace root.
  */
 export function assertWorkspaceBoundary(targetPath, workspaceRoot) {
   if (!targetPath || typeof targetPath !== 'string') {
-    throw new Error('Workspace boundary validation requires a target path string');
+    const error = new Error('Workspace boundary validation requires a target path string');
+    error.code = 'ERR_WORKSPACE_BOUNDARY_VIOLATION';
+    throw error;
   }
-  const root = fs.realpathSync(path.resolve(workspaceRoot));
-  const resolvedTarget = path.resolve(root, targetPath);
-
-  // Check lexical containment
-  const relative = path.relative(root, resolvedTarget);
-  if (relative.startsWith('..') || path.isAbsolute(relative)) {
-    const error = new Error(`Workspace boundary violation: target path "${targetPath}" is outside workspace root "${root}"`);
+  if (targetPath.includes('\0')) {
+    const error = new Error('Workspace boundary violation: null bytes not allowed');
+    error.code = 'ERR_WORKSPACE_BOUNDARY_VIOLATION';
+    throw error;
+  }
+  if (!workspaceRoot || typeof workspaceRoot !== 'string') {
+    const error = new Error('Workspace boundary validation requires a workspace root string');
     error.code = 'ERR_WORKSPACE_BOUNDARY_VIOLATION';
     throw error;
   }
 
-  // Check physical symlink containment if target exists
+  const resolvedRoot = path.resolve(workspaceRoot);
+  let canonicalRoot;
   try {
-    if (fs.existsSync(resolvedTarget)) {
-      const realTarget = fs.realpathSync(resolvedTarget);
-      const realRel = path.relative(root, realTarget);
-      if (realRel.startsWith('..') || path.isAbsolute(realRel)) {
-        const error = new Error(`Workspace boundary violation: symlink "${targetPath}" resolves outside workspace root`);
-        error.code = 'ERR_WORKSPACE_BOUNDARY_VIOLATION';
-        throw error;
-      }
-    }
+    canonicalRoot = fs.realpathSync(resolvedRoot);
   } catch (err) {
-    if (err.code === 'ERR_WORKSPACE_BOUNDARY_VIOLATION') throw err;
+    const error = new Error(`Workspace boundary violation: workspace root "${workspaceRoot}" could not be resolved: ${err.message}`);
+    error.code = 'ERR_WORKSPACE_BOUNDARY_VIOLATION';
+    throw error;
   }
 
-  return resolvedTarget;
+  // If targetPath is relative, resolve against canonicalRoot
+  // If targetPath is absolute, resolve directly
+  const rawTarget = path.isAbsolute(targetPath)
+    ? path.resolve(targetPath)
+    : path.resolve(canonicalRoot, targetPath);
+
+  // Walk up to find nearest existing ancestor on disk
+  let current = rawTarget;
+  const tailSegments = [];
+
+  while (!fs.existsSync(current)) {
+    const parent = path.dirname(current);
+    if (parent === current) {
+      break;
+    }
+    tailSegments.unshift(path.basename(current));
+    current = parent;
+  }
+
+  let canonicalTarget;
+  try {
+    const canonicalAncestor = fs.realpathSync(current);
+    canonicalTarget = tailSegments.length > 0
+      ? path.join(canonicalAncestor, ...tailSegments)
+      : canonicalAncestor;
+  } catch {
+    canonicalTarget = rawTarget;
+  }
+
+  const rel = path.relative(canonicalRoot, canonicalTarget);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    const error = new Error(`Workspace boundary violation: target path "${targetPath}" is outside workspace root "${canonicalRoot}"`);
+    error.code = 'ERR_WORKSPACE_BOUNDARY_VIOLATION';
+    throw error;
+  }
+
+  return canonicalTarget;
 }
 
 /**
@@ -130,6 +165,8 @@ export function enforceRigPreflight(plan, { consent = false } = {}) {
 
 /**
  * Executable Harness Execution Gate for Pre-Tool, Post-Tool, and Worker Policy Propagation.
+ * Xyeena supports only ALLOW_ONCE, DENY, and ANSWER_QUESTION for privileged/destructive actions.
+ * There is NO persistent Always Allow equivalent for destructive or privileged operations.
  */
 export class HarnessExecutionGate {
   constructor({
@@ -139,19 +176,26 @@ export class HarnessExecutionGate {
     workerId = 'governor',
     inheritedFrom = null,
     auditLog = [],
-    contextualRequested = []
+    contextualRequested = [],
+    allowOnceTokens = []
   } = {}) {
     this.cwd = fs.realpathSync(path.resolve(cwd));
     this.operationClass = operationClass;
-    this.permissions = {
-      destructive: permissions.destructive === true,
-      external: permissions.external === true,
-      interactive: permissions.interactive === true
-    };
+    // Destructive and external operations never receive persistent allow.
+    this.permissions = Object.freeze({
+      destructive: false,
+      external: false,
+      interactive: permissions?.interactive === true
+    });
     this.workerId = workerId;
     this.inheritedFrom = inheritedFrom;
     this.auditLog = auditLog;
     this.allowOnceTokens = new Set();
+    if (Array.isArray(allowOnceTokens)) {
+      for (const tok of allowOnceTokens) {
+        this.grantAllowOnce(tok);
+      }
+    }
     this.recentErrors = new Map();
     this.contextual = inspectRigHarness({ cwd: this.cwd, contextualRequested });
   }
@@ -159,6 +203,12 @@ export class HarnessExecutionGate {
   grantAllowOnce(token) {
     if (typeof token === 'string' && token.trim()) {
       this.allowOnceTokens.add(token.trim());
+      return true;
+    }
+    if (token && typeof token === 'object' && token.toolName) {
+      const actionType = token.actionType || 'destructive';
+      const sig = `${actionType}:${token.toolName}:${JSON.stringify(token.args || {})}`;
+      this.allowOnceTokens.add(sig);
       return true;
     }
     return false;
@@ -194,22 +244,9 @@ export class HarnessExecutionGate {
       (args?.CommandLine && /(rm\s+-rf|rmdir\s+\/s|git\s+reset\s+--hard|git\s+clean\s+-fd)/i.test(args.CommandLine));
 
     if (isDestructive) {
-      const actionSig = `destructive:${toolName}:${JSON.stringify(args)}`;
-      if (this.permissions.destructive) {
-        const auditEntry = {
-          timestamp: now,
-          workerId: effectiveWorkerId,
-          toolName,
-          decision: 'ALLOW',
-          rule: 'permission-boundary',
-          blocked: false
-        };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
-      }
-      if (this.allowOnceTokens.has(actionSig) || this.allowOnceTokens.has('destructive:*')) {
+      const actionSig = `destructive:${toolName}:${JSON.stringify(args || {})}`;
+      if (this.allowOnceTokens.has(actionSig)) {
         this.allowOnceTokens.delete(actionSig);
-        this.allowOnceTokens.delete('destructive:*');
         const auditEntry = {
           timestamp: now,
           workerId: effectiveWorkerId,
@@ -217,7 +254,7 @@ export class HarnessExecutionGate {
           decision: 'ALLOW_ONCE',
           rule: 'permission-boundary',
           blocked: false,
-          reason: 'Allowed once by explicit token'
+          reason: 'Allowed once by explicit scoped authorization'
         };
         this.auditLog.push(auditEntry);
         return auditEntry;
@@ -242,7 +279,7 @@ export class HarnessExecutionGate {
         decision: 'DENY',
         rule: 'permission-boundary',
         blocked: true,
-        reason: 'Destructive operation denied: explicit destructive authorization is required'
+        reason: 'Destructive operation denied: explicit single-use authorization (ALLOW_ONCE) required for this exact operation and arguments'
       };
       this.auditLog.push(auditEntry);
       return auditEntry;
@@ -254,22 +291,9 @@ export class HarnessExecutionGate {
       (args?.CommandLine && /(git\s+push|npm\s+publish|curl|wget)/i.test(args.CommandLine));
 
     if (isExternal) {
-      const actionSig = `external:${toolName}:${JSON.stringify(args)}`;
-      if (this.permissions.external) {
-        const auditEntry = {
-          timestamp: now,
-          workerId: effectiveWorkerId,
-          toolName,
-          decision: 'ALLOW',
-          rule: 'permission-boundary',
-          blocked: false
-        };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
-      }
-      if (this.allowOnceTokens.has(actionSig) || this.allowOnceTokens.has('external:*')) {
+      const actionSig = `external:${toolName}:${JSON.stringify(args || {})}`;
+      if (this.allowOnceTokens.has(actionSig)) {
         this.allowOnceTokens.delete(actionSig);
-        this.allowOnceTokens.delete('external:*');
         const auditEntry = {
           timestamp: now,
           workerId: effectiveWorkerId,
@@ -277,7 +301,7 @@ export class HarnessExecutionGate {
           decision: 'ALLOW_ONCE',
           rule: 'permission-boundary',
           blocked: false,
-          reason: 'Allowed once by explicit token'
+          reason: 'Allowed once by explicit scoped authorization'
         };
         this.auditLog.push(auditEntry);
         return auditEntry;
@@ -302,7 +326,7 @@ export class HarnessExecutionGate {
         decision: 'DENY',
         rule: 'permission-boundary',
         blocked: true,
-        reason: 'External operation denied: requires explicit authorization'
+        reason: 'External operation denied: explicit single-use authorization (ALLOW_ONCE) required for this exact operation and arguments'
       };
       this.auditLog.push(auditEntry);
       return auditEntry;
