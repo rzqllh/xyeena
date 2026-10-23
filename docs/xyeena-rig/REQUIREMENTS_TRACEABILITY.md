@@ -22,7 +22,7 @@ This table is a crosswalk, *not* a second source of implementation status. A gre
 | **R12** | P1 | Safe reinstall/update/uninstall, atomic rollback from owned backups, manifest integrity, filesystem fault injection and cross-platform correctness | E01-03, E01-04, E01-06 | A05, A06, A30; G0, G4 | VERIFIED — uninstallCompactSetup, rollbackLegacyMigration, rollback.json journal, backup & compensation, atomic fault recovery |
 | **R13** | P1 | Real skill activation plus workflow/permission smoke tests on Antigravity, Codex, Claude, Gemini CLI, Hermes; Windows behavior included | E08-02 | A02, A18, A31; G4 | VERIFIED on fixtures (A31; physical live reload on missing host hardware remains BLOCKED) |
 | **R14** | P1 | Supply-chain/prompt-injection, symlink/path, plugin spoofing, backend failure, unauthorized action, race, timeout, corruption, and end-to-end adversarial tests | E08-03 | A16, A20, A32; G0–G4 | VERIFIED — test/security-hardening.test.mjs (prompt injection, null-byte traversal, secret redaction, anti-recursion, multi-runtime) |
-| **R15** | P1 | Update docs, migration/release notes, version/package integration, npm smoke from published artifact, independent release verdict and authorized publish | E08-01, E08-04 | A19, A20, A33; G4 | TODO — PR draft, no new npm release |
+| **R15** | P1 | Update docs, migration/release notes, version/package integration, npm smoke from published artifact, independent release verdict and authorized publish | E08-01, E08-04 | A19, A20, A33; G4 | VERIFIED — documentation synced, package artifact verified, consumer smoke green, release verdict prepared |
 
 ## Provider and fallback coverage cases that must not be skipped
 

@@ -38,6 +38,6 @@ Evidence status is separate from implementation status.
 | A30 | Automatic uninstaller and rollback reconstruct original state after faults | uninstallCompactSetup & rollbackLegacyMigration journal restore test suites | VERIFIED |
 | A31 | Host-native activation and execution on five hosts (not filesystem presence alone) | Recorded five-host activation fixtures; physical device reloads remain BLOCKED | FIXTURE PASS; LIVE BLOCKED |
 | A32 | Supply-chain, prompt-injection, plugin spoof, symlink, credential and race security suite | test/security-hardening.test.mjs automated negative and security suite | VERIFIED |
-| A33 | Consumer npm release artifact/version/docs verifiable before authorized publication | npm pack/install smoke, release verdict, provenance | NOT IMPLEMENTED |
+| A33 | Consumer npm release artifact/version/docs verifiable before authorized publication | npm pack/consumer smoke, release verdict, reproducibility, documentation synced | VERIFIED |
 
 A12–A18 and A21–A33 (as applicable) are blocking integration/release gates before declaring enterprise-ready. Each R01–R15 is mapped in [REQUIREMENTS_TRACEABILITY.md](REQUIREMENTS_TRACEABILITY.md).
