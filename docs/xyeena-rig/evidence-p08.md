@@ -2,7 +2,7 @@
 
 **Phase ID:** P08  
 **Scope:** R15 — Enterprise Release Candidate, Complete R01–R15 Reconciliation, Package Build & Artifact Smoke, Release Runbook & Independent QA Verdict  
-**Base Branch:** `feat/rig-enterprise-p07-hardening` (commit `0614cb3`)  
+**Base Branch:** `feat/rig-enterprise-p07-hardening` (commit `2f5a0db`)  
 **Feature Branch:** `feat/rig-enterprise-p08-release`  
 **Target PR Base:** `feat/rig-enterprise-p07-hardening`  
 **Date:** 2026-10-23  
@@ -17,22 +17,22 @@
    - Updated `ROADMAP.md`, `TASK_TRACKER.md`, `REQUIREMENTS_TRACEABILITY.md`, and `ACCEPTANCE_MATRIX.md`.
    - Verified that every claim in the matrix maps to concrete source code and automated tests.
 
-2. **Final Code Review Remediation (P01–P05 Forward-Integrated):**
-   - **P01 — Skill Discovery (commit `4b46610`):** Transitive missing dependencies resolved to a fixed point; required dependencies included in routed selection regardless of optional supporting budget; `extension.json` included in inventory fingerprinting; collision-shadowed records accessible in serialized results.
-   - **P02 — Orchestration (commit `ac84bce`):** Superpowers/Superior arbitration applied directly to the effective skill selection passed to host adapters; adaptive fallback provides active replacement skills and file paths; changed skill/governor content rejected after preview via content hashing unless reauthorized.
-   - **P03 — Harness (commit `77d37c8`):** Wired `HarnessExecutionGate` into orchestrator execution paths; arbitrary shell commands gated against filesystem path escapes; independent on-disk evidence verification enforced; contextual Harness policies preserved across worker delegation; anti-loop check enforced before privileged action approval; rejected default or self-issued authorization credentials.
-   - **P04 — Subagents (commit `8085c0a`):** Propagated task scope and permissions into Simpul (refusing write-capable delegation when unsupported); mandatory executionReady check and real worker status; budget violations treated as hard failures; shared workspace write serialization enforced across concurrent dispatch calls; exported public backend APIs tested via package imports.
-   - **P05 — Recovery (commit `4223944`):** Path traversal validation on `runId`; exclusive per-run lock (`run.lock`) preventing concurrent resume; cancellation signal propagation to active worker operations; refusal to automatically retry non-idempotent or external/destructive tasks; bounded exponential backoff on transient errors.
+2. **Independent Source Audit Remediations (P03–P05 Forward-Integrated):**
+   - **P03 — Harness Host Approval & Interception (commit `5c4019f`):** Replaced string-based approver/authority assertions and constructor injection with `HostApprovalAuthority` (HMAC-SHA256 signature verification). Delegated workers barred via `ERR_UNAUTHORIZED_ALLOW_ONCE`. Runtime task interception in `src/orchestrator.mjs` with boundary checks (`ERR_HARNESS_BLOCKED`). Implemented `IndependentEvidenceVerifier` in `src/rig-harness-lifecycle.mjs` requiring file existence, minimum content length (>= 8 chars), placeholder rejection ('ok', 'done', 'test', '{}', '[]'), and JSON `status === 'VERIFIED'`.
+   - **P04 — Subagent Write-Lock Lifetime (commit `4ad48eb`):** Wrapped workspace write-lock acquisition in early `try ... finally` block so any Harness denial, argument failure, callback error, or execution timeout releases the acquired write lock. Added rejection handler in write-lock queue and concurrent dispatch regression tests.
+   - **P05 — Safe Crash Recovery for Run Lock (commit `5e6b4fb`):** Implemented PID liveness detection (`process.kill(pid, 0)`) and safe stale/crash recovery in `DurableCheckpointStore.acquireRunLock`. Reclaims dead PID or expired leases (> 30s) atomically without permitting duplicate concurrent execution for live active processes.
+   - **P06 — Installer (commit `ed2d9c9`):** Forward-merged P01–P05 fixes.
+   - **P07 — Hardening (commit `2f5a0db`):** Forward-merged P01–P06 fixes with audit sanitization.
 
 3. **Stacked PR Registry (`docs/xyeena-rig/PR_INDEX.md`):**
    - Documented the exact 8-phase stacked pull request dependency graph:
      - PR #18 (P01: Unified Skill Discovery, `4b46610`) -> `main`
      - PR #19 (P02: Provider Orchestration & Parity, `ac84bce`) -> P01
-     - PR #20 (P03: Automatic Harness Enforcement, `77d37c8`) -> P02
-     - PR #21 (P04: Simpul & Native Subagents, `8085c0a`) -> P03
-     - PR #22 (P05: Reliability, DAG & Recovery, `4223944`) -> P04
-     - PR #23 (P06: Compact Installer Lifecycle, `341345a`) -> P05
-     - PR #24 (P07: Security Hardening & Fixtures, `0614cb3`) -> P06
+     - PR #20 (P03: Automatic Harness Enforcement, `5c4019f`) -> P02
+     - PR #21 (P04: Simpul & Native Subagents, `4ad48eb`) -> P03
+     - PR #22 (P05: Reliability, DAG & Recovery, `5e6b4fb`) -> P04
+     - PR #23 (P06: Compact Installer Lifecycle, `ed2d9c9`) -> P05
+     - PR #24 (P07: Security Hardening & Fixtures, `2f5a0db`) -> P06
      - PR #25 (P08: Enterprise Release Candidate, `HEAD`) -> P07
 
 4. **Enterprise Architecture & Operator Runbook Synchronization:**
@@ -40,7 +40,7 @@
    - Updated `RUNBOOK.md` with exact procedures for verification, compact setup, legacy migration, migration rollback, safe uninstallation, and release publication.
 
 5. **Package Build & Artifact Verification:**
-   - Validated npm packed tarball (`xyeena-agent-0.4.1.tgz`, 247 files, 199.0 kB).
+   - Validated npm packed tarball (`xyeena-agent-0.4.1.tgz`, 247 files, 201.7 kB).
    - Confirmed consumer tarball smoke test passes: workspace copy + user-global symlink installs successfully from the packed npm artifact.
 
 6. **Semantic Version Recommendation:**
@@ -53,12 +53,12 @@
 
 | Test Script | Actual Result | Command Executed |
 | --- | --- | --- |
-| `npm test` | **297 / 297 PASS** (0 failed, 0 skipped) | `node --test test/*.test.mjs` |
+| `npm test` | **303 / 303 PASS** (0 failed, 0 skipped) | `node --test test/*.test.mjs` |
 | `npm run check` | **PASS** (19 capabilities + runtime manifests verified) | `node ./bin/xyeena.mjs check --source .` |
 | `npm run eval` | **PASS** (18/18 scenarios evaluated) | `node ./bin/xyeena.mjs eval` |
 | `npm run test:harness` | **PASS** (15/15 harness contracts verified) | `node scripts/run-vendored-tests.mjs` |
 | `npm run test:consumer` | **PASS** (packed tarball consumer smoke test) | `node scripts/consumer-smoke.mjs` |
-| `npm pack --dry-run` | **PASS** (247 files, 199.0 kB package size) | `npm pack --dry-run` |
+| `npm pack --dry-run` | **PASS** (247 files, 201.7 kB package size) | `npm pack --dry-run` |
 
 ---
 

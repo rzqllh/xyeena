@@ -166,5 +166,18 @@ A comparison of the chat backlog R01–R15 with the existing E task tracker and 
 - **P05 (PR #22, commit `4223944`):** Path traversal validation for `runId`; exclusive per-run lock (`run.lock`) preventing concurrent resume; cancellation signal propagation to active worker operations; refusal to automatically retry non-idempotent or external/destructive tasks; bounded exponential backoff on transient errors. 287/287 PASS.
 - **P06 (PR #23, commit `341345a`):** Forward-merged P01–P05. 291/291 PASS.
 - **P07 (PR #24, commit `0614cb3`):** Forward-merged P01–P06 with sanitized audit logging. 297/297 PASS.
-- **P08 (PR #25, commit `HEAD`):** Complete stack forward-integrated and verified. 297/297 PASS, 18/18 eval PASS, 15/15 test:harness PASS, packed consumer smoke PASS.
+- **P08 (PR #25, commit `1d516de`):** Complete stack forward-integrated and verified. 297/297 PASS, 18/18 eval PASS, 15/15 test:harness PASS, packed consumer smoke PASS.
+
+## Independent Audit Blockers Remediation Verification — Stack P01–P08 (2026-10-23)
+
+Resolved five independent audit blockers on the stacked PR chain:
+1. **P03 (PR #20, commit `5c4019f`):** Replaced string-based approver/authority assertions and constructor-injected approval tokens with unforgeable `HostApprovalAuthority` (HMAC-SHA256 signature verification). Delegated workers strictly forbidden via `ERR_UNAUTHORIZED_ALLOW_ONCE`.
+2. **P03 (PR #20, commit `5c4019f`):** Wired `harnessGate.preToolGate` and `postToolGate` to intercept runtime tool tasks in `src/orchestrator.mjs` (`ERR_HARNESS_BLOCKED`), replacing heuristic shell regex with boundary enforcement.
+3. **P03 (PR #20, commit `5c4019f`):** Added `IndependentEvidenceVerifier` requiring verified on-disk files (>= 8 chars), placeholder rejection ('ok', 'done', 'test', '{}', '[]'), and JSON `status === 'VERIFIED'`. 267/267 PASS.
+4. **P04 (PR #21, commit `4ad48eb`):** Wrapped workspace write-lock acquisition in early `try ... finally` block ensuring any Harness denial, argument failure, callback error, or execution timeout releases the acquired write lock. Added rejection handler in queue and concurrent dispatch regression tests. 280/280 PASS.
+5. **P05 (PR #22, commit `5e6b4fb`):** Implemented PID liveness detection (`process.kill(pid, 0)`) and safe stale/crash recovery in `DurableCheckpointStore.acquireRunLock`. Safely reclaims dead PID and expired leases without permitting concurrent duplicate execution. 293/293 PASS.
+6. **P06 (PR #23, commit `ed2d9c9`):** Forward-merged P05. 297/297 PASS.
+7. **P07 (PR #24, commit `2f5a0db`):** Forward-merged P06 with sanitized audit logging. 303/303 PASS.
+8. **P08 (PR #25, commit `HEAD`):** Complete stack forward-integrated, docs synchronized, full test suite: 303/303 PASS, `npm run check` PASS, `npm run eval` PASS (18/18), `npm run test:harness` PASS (15/15), `npm run test:consumer` PASS, `npm pack --dry-run` PASS (247 files, 201.7 kB).
+
 
