@@ -311,3 +311,53 @@ test('worker delegation propagates policy strictly without permission escalation
   assert.equal(childEntry.workerId, 'child-subagent');
   assert.equal(childEntry.decision, 'DENY');
 });
+
+test('adversarial: delegated child worker cannot self-issue ALLOW_ONCE tokens', t => {
+  const cwd = temp(t);
+  const parentGate = createHarnessExecutionGate({ cwd });
+  const childGate = parentGate.delegateWorker('untrusted-child-worker');
+
+  assert.throws(
+    () => childGate.grantAllowOnce({ toolName: 'delete_file', actionType: 'destructive' }),
+    { code: 'ERR_UNAUTHORIZED_ALLOW_ONCE' }
+  );
+});
+
+test('adversarial: untrusted approver (agent/model/worker) cannot self-issue privileged authorization', t => {
+  const cwd = temp(t);
+  const gate = createHarnessExecutionGate({ cwd });
+
+  // Approver specified as agent or model must fail closed
+  assert.throws(
+    () => gate.grantAllowOnce({ toolName: 'delete_file', actionType: 'destructive' }, { approver: 'agent' }),
+    { code: 'ERR_UNTRUSTED_AUTHORIZATION_SOURCE' }
+  );
+  assert.throws(
+    () => gate.grantAllowOnce({ toolName: 'delete_file', actionType: 'destructive' }, { approver: 'model' }),
+    { code: 'ERR_UNTRUSTED_AUTHORIZATION_SOURCE' }
+  );
+});
+
+test('adversarial: host runtime without verified live tool interception fails closed on privileged operations', t => {
+  const cwd = temp(t);
+  const gate = createHarnessExecutionGate({ cwd, enforcementRuntime: 'unsupported-headless-runtime' });
+
+  const destructiveDecision = gate.preToolGate({
+    toolName: 'delete_file',
+    args: { path: path.join(cwd, 'test.txt') },
+    actionType: 'destructive'
+  });
+  assert.equal(destructiveDecision.decision, 'DENY');
+  assert.equal(destructiveDecision.rule, 'runtime-enforcement');
+  assert.equal(destructiveDecision.blocked, true);
+
+  const externalDecision = gate.preToolGate({
+    toolName: 'git_push',
+    args: { CommandLine: 'git push origin main' },
+    actionType: 'external'
+  });
+  assert.equal(externalDecision.decision, 'DENY');
+  assert.equal(externalDecision.rule, 'runtime-enforcement');
+  assert.equal(externalDecision.blocked, true);
+});
+
