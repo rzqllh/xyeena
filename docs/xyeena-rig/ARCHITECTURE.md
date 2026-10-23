@@ -1,38 +1,90 @@
-# Architecture — capability discovery to verified outcome
+# Architecture — Enterprise Xyeena Rig
 
-## Layers
+**Current Verified Baseline:** `0.4.1`  
+**Target Release Candidate:** `0.5.0`  
+**Governing Component:** `xyeena-rig`  
 
-- **Host:** Antigravity, Codex, Claude Code, Gemini CLI, Hermes. Owns authentication, tool permissions and effective skill loading.
-- **Governor:** Xyeena Rig. One controller, one task DAG, one permission/evidence policy.
-- **Optional skill providers:** Superior (specialist quality, design), Superpowers (workflow methodology). Skills are not by themselves worker runtimes.
-- **Optional worker backend:** Simpul (formerly SubagentBridge) or the host's native subagent system, but only with proved healthy execution adapters. Otherwise inline.
-- **Harness:** Core Rig operation boundary must always hold. More project Harness guides remain opt-in; metadata alone is not proof of hook execution.
+---
 
-## Full target flow
+## 1. System Overview & Layer Architecture
 
-1. Resolve runtime, working root, trust and scoped authorization.
-2. Discover only host-registered skill/plugin roots (never entire disks).
-3. Classify actual availability, disabled state, trust, platform and execution eligibility; unknown does not become enabled.
-4. Infer task intent, choose one workflow owner, lazily select smallest relevant specialist set, resolve dependencies and conflicting bootstraps.
-5. Apply core Harness gates; activate contextual installed project policy for the task risk.
-6. Route inline or to real Simpul/native backend after health and permission checks. Parallelize only safe independent work; writes require proven separate worktree isolation.
-7. Dispatch real bounded task context, capture real identifiers/status/cost.
-8. Verify tests and evidence independently; no result self-assertions.
-9. Commit run ledger and checkpoint; bounded repair or escalation. External actions remain consent-gated.
+```mermaid
+graph TD
+  User["Operator / Developer"] --> Host["Host Runtime (Antigravity / Codex / Claude / Gemini / Hermes)"]
+  Host --> Governor["Single Workflow Governor: xyeena-rig"]
+  
+  subgraph "Discovery & Arbitration Layer"
+    Governor --> Disc["Unified Skill & Plugin Discovery (src/workspace-skills.mjs, src/skill-hosts.mjs)"]
+    Disc --> Arb["Provider Arbitrator (src/enterprise-policy.mjs)"]
+    Arb --> ExtSP["Superpowers (Methodology)"]
+    Arb --> ExtSup["Superior (Specialist Quality)"]
+    Arb --> Native["Native Parity Fallback (NATIVE_EQUIVALENCE)"]
+  end
 
-## Compact layout
+  subgraph "Harness Enforcement Layer"
+    Governor --> Gate["HarnessExecutionGate (src/rig-harness-lifecycle.mjs)"]
+    Gate --> Pre["Pre-Tool Gate: Scope Boundary, Destructive & External Permission, Anti-Loop"]
+    Gate --> Post["Post-Tool Gate: Independent Verification & Secret Sanitization"]
+    Gate --> WorkerPol["Worker Policy Propagation (Strict Non-Escalation & Anti-Recursion)"]
+  end
 
-Host-visible: `<skills-root>/xyeena-rig/SKILL.md`.
+  subgraph "Execution & Reliability Layer"
+    Governor --> Runner["Task Graph Runner (src/task-runner.mjs)"]
+    Runner --> Checkpoint["DurableCheckpointStore (Atomic Checkpoints & Smart Resume)"]
+    Runner --> Budget["ResourceBudgetLedger (Token, Cost & Concurrency Ceilings)"]
+    Runner --> Dispatcher["Subagent Dispatcher (src/live-backend.mjs)"]
+    Dispatcher --> Simpul["Simpul FastMCP Adapter"]
+    Dispatcher --> NativeWorker["Host-Native Subagent Adapter"]
+    Dispatcher --> Inline["Safe Inline Executor"]
+  end
+```
 
-Native modules are nested reference resources under `xyeena-rig/references/skills/xyeena-*/`.
-They are **not** independently host-discovered slash skills. The root directs an eligible host to load selected references lazily.
+---
 
-`xyeena setup compact` is opt-in because defaulting this layout, removing old aliases and migrating existing managed installs requires cross-host acceptance. Old flat folders remain untouched.
+## 2. Core Architectural Pillars
 
-## Current execution limits
+### A. Single Workflow Governor
+- `xyeena-rig` retains absolute controller authority over workflow state, task graphs, permission gates, and verification claims.
+- Superpowers supplies compatible software-development methodologies (`using-git-worktrees`, `writing-plans`, `subagent-driven-development`).
+- Superior supplies specialized engineering quality capabilities (`superior-logic`, `superior-code-review`, `superior-testing`).
+- If either external provider is absent, untrusted, disabled, or fails mid-run, Xyeena Native automatically takes over with zero disruption (`NATIVE_EQUIVALENCE`).
 
-Existing `orchestrate run --yes` starts a new **read-only one-shot** host call with explicit consent; it is not the active IDE conversation. `buildEnterprisePolicy` describes rather than executes actions. `selectSubagentBackend` requires an explicitly healthy and actionable adapter in the supplied availability input; the planner does not create workers. Plugin identity, live Simpul transport and broad Harness runtime enforcement remain pending.
+### B. Executable Harness Enforcement
+- Replaces passive declarative guidance with an active execution boundary via `HarnessExecutionGate`.
+- **Pre-Tool Gate:**
+  - Lexical and physical workspace boundary containment (`assertWorkspaceBoundary`).
+  - Null-byte path injection protection (`\0`).
+  - Destructive operations (`rm -rf`, `reset --hard`) blocked with `DENY` or interactive `ANSWER_QUESTION`.
+  - External operations (`git push`, `npm publish`) require explicit authorization or single-use `ALLOW_ONCE` tokens.
+  - Anti-loop detector halts after 3 consecutive identical tool failures.
+- **Post-Tool Gate:**
+  - Self-certified model completion (`status: PASS`) without independent verifier proof is marked invalid.
+  - Secret credentials (PATs, API keys, private keys, Bearer tokens) are redacted from all audit entries.
+- **Worker Policy Propagation:**
+  - Child workers inherit only a subset of parent permissions (`parent && delegated`).
+  - Strict anti-recursion guard prevents workers at depth >= 1 from creating nested sub-workers (`noNestedDelegation`).
 
-## Adapter integration contract
+### C. Live Backend Dispatching & Resource Budgets
+- **Simpul FastMCP Contract:**
+  - Connects to `SubagentBridge` over FastMCP transport (`submit_goal`, `get_task_evidence`, `get_model_usage`, `cancel_run`).
+  - Probes health and non-nested execution boundaries before dispatch.
+- **Host-Native Subagents:**
+  - Dispatches isolated workers with real worker IDs and clean abort signal propagation.
+- **Resource Budget Ledger:**
+  - Tracks token count, micro-dollar cost, and concurrency ceilings per orchestration run.
+  - Serializes unisolated writes to avoid race conditions and file collisions.
 
-`dispatchScopedTask` accepts caller-provided authenticated adapters for Simpul and/or native workers, probes their health and no-nested-delegation capability, and requires executable cancellation. It falls back to a required real inline adapter. `VERIFIED` still requires independent verifier confirmation; task-scoped approvals do not bypass host approvals. This is a reusable API and not evidence that live Simpul transport has been connected.
+### D. Durable Checkpoints & Crash Recovery
+- Task DAG checkpoints are atomically saved to `.xyeena/runs/<runId>/dag-checkpoint.json` on every state transition.
+- **Smart Resume Suggestion:** Formats structured human-readable recommendations showing completed tasks, pending work, and exact continuation commands.
+- **Unconsumed Worker Result Reclaiming:** If an orchestrator process is killed after a worker completes, the runner recovers the worker's evidence artifact from disk without re-dispatching.
+- **Anti-Loop Review Cycle Breaker:** Bounded review/repair iterations terminate oscillating reviews after 3 cycles, marking the task `BLOCKED` with actionable remediation.
+
+### E. Compact Single-Root Installer Layout
+- Host-visible layout: exposes one single root skill: `<skills-root>/xyeena-rig/SKILL.md`.
+- All 19 native Xyeena modules are organized as internal reference documents under `references/skills/xyeena-*/SKILL.md`.
+- **Legacy Migration & Compatibility:**
+  - `resolveSkillAlias`: automatically maps legacy slash commands (`/xyeena-orchestrate`, `/xyeena-debug`) to their compact reference file.
+  - Ownership-aware migration checks `.xyeena-managed.json` markers and SHA-256 byte fingerprints.
+  - User notes, modified skills, and third-party skills are strictly preserved in place.
+  - Timestamped backups and `rollback.json` journals ensure atomic rollback to original flat layouts if desired.

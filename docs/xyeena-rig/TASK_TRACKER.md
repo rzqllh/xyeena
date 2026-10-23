@@ -15,14 +15,14 @@ Status means observed repository implementation, not generic product readiness.
 | E04-01 | P0 | Superpowers bootstrap/lifecycle arbitration | VERIFIED | src/enterprise-policy.mjs, arbitrateWorkflow |
 | E05-01 | P0 | Always-core declarative policy, contextual proposals | VERIFIED | src/enterprise-policy.mjs, src/rig-harness-lifecycle.mjs |
 | E05-02 | P0 | Executable Harness pre/post tool enforcement | VERIFIED | HarnessExecutionGate, preToolGate, postToolGate |
-| E06-01 | P0 | Verified-only Simpul/native backend preference, inline fallback | VERIFIED | src/enterprise-policy.mjs, selectSubagentBackend |
-| E06-02 | P0 | Real Simpul MCP transport / recovery / cancellation | VERIFIED | createSimpulMcpAdapter, submit_goal, get_task_evidence |
-| E06-04 | P0 | Real-adapter-only dispatch contract, bounded execution and independent verification | VERIFIED | src/live-backend.mjs; test/live-backend.test.mjs |
-| E06-03 | P0 | Native IDE subagent live invocation and isolation | VERIFIED | createNativeSubagentAdapter, real workerId, non-nested |
-| E07-01 | P0 | Independent evidence verification on task graph | VERIFIED | src/task-runner.mjs, postToolGate evidence checks |
-| E07-02 | P1 | Cross-host checkpoint, replay, loop breaker | VERIFIED | DurableCheckpointStore, autoRetryReview, cancelSignal |
-| E08-01 | P0 | CI test/pack/consumer matrix | PASS (source head de2deacc) | GitHub Actions run 39867943667: 9/9 jobs green |
-| E08-02 | P0 | Actual five-host reload/activation acceptance | BLOCKED | Needs configured test machines |
+| E06-01 | P0 | Verified-only Simpul/native backend preference, inline fallback | CI_PASS | src/enterprise-policy.mjs, selectSubagentBackend |
+| E06-02 | P0 | Real Simpul MCP transport / recovery / cancellation | INTEGRATION_VERIFIED; LIVE_BLOCKED | createSimpulMcpAdapter, FastMCP candidate signatures submit_goal, get_run, get_task_evidence, cancel_run |
+| E06-04 | P0 | Real-adapter-only dispatch contract, bounded execution and independent verification | CI_PASS | src/live-backend.mjs; test/live-backend.test.mjs |
+| E06-03 | P0 | Native IDE subagent live invocation and isolation | INTEGRATION_VERIFIED | createNativeSubagentAdapter, real host workerId, non-nested, cancellation API |
+| E07-01 | P0 | Independent evidence verification on task graph | CI_PASS | src/task-runner.mjs, postToolGate evidence checks |
+| E07-02 | P1 | Cross-host checkpoint, replay, loop breaker | CI_PASS | DurableCheckpointStore, autoRetryReview, cancelSignal |
+| E08-01 | P0 | CI test/pack/consumer matrix | CI_PASS | GitHub Actions matrix: Windows, macOS, Ubuntu on Node 22.14 & 24 all pass |
+| E08-02 | P0 | Actual five-host reload/activation acceptance | LIVE_BLOCKED | Needs configured physical test machines for live reloads |
 
 ## Chat-to-engineering reconciliation (R01–R15)
 
@@ -41,6 +41,6 @@ The full 1:1 status and acceptance crosswalk lives in [REQUIREMENTS_TRACEABILITY
 | E07-03 | P0 | Durable task DAG checkpoints, idempotent resume/lease, bounded retry, crash cleanup across hosts | VERIFIED | R09 / A27 — DurableCheckpointStore, crash-safe resume, unconsumed result recovery |
 | E07-04 | P0 | Real host permission/verification evidence chain with independent auditor | VERIFIED | R10 / A28 — Allow Once/Deny/Answer Questions and boundary tests |
 | E08-03 | P1 | Full red-team/security, plugin spoofing and multi-runtime end-to-end test suite | VERIFIED | test/security-hardening.test.mjs (prompt injection, null-byte traversal, secret redaction, anti-recursion, multi-runtime) |
-| E08-04 | P1 | Release notes, npm artifact verification, version bump, signed verdict, authorized publish | TODO | R15 / A33 — no release without signoff |
+| E08-04 | P1 | Release notes, npm artifact verification, version bump, signed verdict, authorized publish | INTEGRATION_VERIFIED | evidence-p08.md, PR_INDEX.md, consumer smoke, tarball inspection, QA verdict CONDITIONAL GO |
 
 The CI PASS in E08-01 covers repository source and packed smoke only; E08-02, E08-03 and E08-04 remain distinct release gates. Never mark an E item COMPLETE from an R checkbox alone.

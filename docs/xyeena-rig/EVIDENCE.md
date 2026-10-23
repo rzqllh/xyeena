@@ -141,3 +141,96 @@ A comparison of the chat backlog R01–R15 with the existing E task tracker and 
   - `npm run test:consumer`: PASS.
   - `npm pack --dry-run`: PASS.
 - Verdict: VERIFIED. Full phase evidence recorded in `docs/xyeena-rig/evidence-p07.md`.
+
+## Phase P08 verification — Enterprise Release Candidate & Verification (2026-10-23)
+
+- Branch: `feat/rig-enterprise-p08-release`, Base: `feat/rig-enterprise-p07-hardening` (0614cb3).
+- Scope: R15; Acceptance A19, A20, A33; Task E08-04.
+- Changes: `docs/xyeena-rig/PR_INDEX.md`, `docs/xyeena-rig/ROADMAP.md`, `docs/xyeena-rig/ARCHITECTURE.md`, `docs/xyeena-rig/RUNBOOK.md`, `docs/xyeena-rig/evidence-p08.md`.
+- Results:
+  - `npm test`: 297/297 PASS (all 20 regression tests for code review findings passing).
+  - `npm run check`: PASS (19 capabilities + runtime manifests).
+  - `npm run eval`: PASS (18/18).
+  - `npm run test:harness`: PASS (15/15).
+  - `npm run test:consumer`: PASS.
+  - `npm pack --dry-run`: PASS (247 files, 199.0 kB).
+- Recommended Version: `0.5.0`.
+- Release Decision: CONDITIONAL GO (ready for sequential PR merge). Full phase evidence recorded in `docs/xyeena-rig/evidence-p08.md`.
+
+## Final Code Review Remediation Verification — Stack P01–P08 (2026-10-23)
+
+- **P01 (PR #18, commit `4b46610`):** Transitive missing dependencies resolved to fixed point; required dependencies included in routed selection regardless of budget; `extension.json` fingerprinted in inventory cache; collision-shadowed records exposed. 236/236 PASS.
+- **P02 (PR #19, commit `ac84bce`):** Arbitrated skills passed into host adapters; active replacement skills/paths in adaptive fallback; skill/governor content hashing prevents unreviewed edits. 247/247 PASS.
+- **P03 (PR #20, commit `77d37c8`):** Wired `HarnessExecutionGate` into orchestrator; shell commands gated against filesystem escapes; independent on-disk evidence verification; contextual policy preservation across delegation; anti-loop check enforced before privileged actions; rejected default/self-issued credentials. 265/265 PASS.
+- **P04 (PR #21, commit `8085c0a`):** Task scope and permission propagation into Simpul (refusing write delegation when unsupported); mandatory executionReady check and real worker status; budget violations treated as hard failures; shared workspace write lock across concurrent dispatch; public backend APIs exported from `src/index.mjs`. 277/277 PASS.
+- **P05 (PR #22, commit `4223944`):** Path traversal validation for `runId`; exclusive per-run lock (`run.lock`) preventing concurrent resume; cancellation signal propagation to active worker operations; refusal to automatically retry non-idempotent or external/destructive tasks; bounded exponential backoff on transient errors. 287/287 PASS.
+- **P06 (PR #23, commit `341345a`):** Forward-merged P01–P05. 291/291 PASS.
+- **P07 (PR #24, commit `0614cb3`):** Forward-merged P01–P06 with sanitized audit logging. 297/297 PASS.
+- **P08 (PR #25, commit `1d516de`):** Complete stack forward-integrated and verified. 297/297 PASS, 18/18 eval PASS, 15/15 test:harness PASS, packed consumer smoke PASS.
+
+## Independent Audit Blockers Remediation Verification — Stack P01–P08 (2026-10-23)
+
+Resolved five independent audit blockers on the stacked PR chain:
+1. **P03 (PR #20, commit `5c4019f`):** Replaced string-based approver/authority assertions and constructor-injected approval tokens with unforgeable `HostApprovalAuthority` (HMAC-SHA256 signature verification). Delegated workers strictly forbidden via `ERR_UNAUTHORIZED_ALLOW_ONCE`.
+2. **P03 (PR #20, commit `5c4019f`):** Wired `harnessGate.preToolGate` and `postToolGate` to intercept runtime tool tasks in `src/orchestrator.mjs` (`ERR_HARNESS_BLOCKED`), replacing heuristic shell regex with boundary enforcement.
+3. **P03 (PR #20, commit `5c4019f`):** Added `IndependentEvidenceVerifier` requiring verified on-disk files (>= 8 chars), placeholder rejection ('ok', 'done', 'test', '{}', '[]'), and JSON `status === 'VERIFIED'`. 267/267 PASS.
+4. **P04 (PR #21, commit `4ad48eb`):** Wrapped workspace write-lock acquisition in early `try ... finally` block ensuring any Harness denial, argument failure, callback error, or execution timeout releases the acquired write lock. Added rejection handler in queue and concurrent dispatch regression tests. 280/280 PASS.
+5. **P05 (PR #22, commit `5e6b4fb`):** Implemented PID liveness detection (`process.kill(pid, 0)`) and safe stale/crash recovery in `DurableCheckpointStore.acquireRunLock`. Safely reclaims dead PID and expired leases without permitting concurrent duplicate execution. 293/293 PASS.
+6. **P06 (PR #23, commit `ed2d9c9`):** Forward-merged P05. 297/297 PASS.
+7. **P07 (PR #24, commit `2f5a0db`):** Forward-merged P06 with sanitized audit logging. 303/303 PASS.
+8. **P08 (PR #25, commit `1f6be2b`):** Complete stack forward-integrated, docs synchronized.
+
+## Final Security & Correctness Blocker Remediation — Stack P01–P08 (2026-10-23)
+
+Remediated the three critical audit blockers and unhooked host runtime interception:
+1. **P03 Approval Trust Boundary (`6cb7f3c`):**
+   - Eliminated HMAC-only self-issuing approval proofs. `HostApprovalAuthority` now strictly requires an external host approval callback/bridge (`approvalBridge`) and a valid `hostBoundarySecret`.
+   - `HarnessExecutionGate` defaults to `hostAuthority: null`, failing closed with `ERR_NO_HOST_AUTHORITY`. Caller-created untrusted authorities throw `ERR_UNTRUSTED_HOST_AUTHORITY`.
+   - Delegated workers and adversarial callers attempting privilege escalation fail closed. 274/274 PASS.
+2. **P03 Evidence Verification (`6cb7f3c`):**
+   - Replaced accepting nontrivial files and self-reported `VERIFIED` status in `IndependentEvidenceVerifier`.
+   - Now mandates an independent `executionChecker` verifying actual execution provenance (exit code 0, runner verification) and acceptance criteria checking.
+   - Self-authored VERIFIED JSON and long unproven text fail with `REVIEW_REQUIRED`.
+3. **P03 / P07 Live Tool Interception (`6cb7f3c` / `2c0dba2`):**
+   - Verified real host hooks vs unhooked runtimes. Only `harness-gate` or runtimes with verified `hostHooks.interceptToolCall` are `LIVE_ACTIVE`.
+   - Unhooked host runtimes (`antigravity`, `rig-cli`, `simpul`) are classified as `LIVE_PENDING`, and privileged operations (destructive file edits, external connections, shell commands) fail closed with `ERR_HARNESS_BLOCKED`.
+4. **P04 Subagent Integration (`604d86e`):**
+   - Forward-merged P03 remediation into P04. Preserved workspace write-lock lifetime and public API exports. 287/287 PASS.
+5. **P05 Concurrent Run Lease Safety (`d6b9421`):**
+   - In `DurableCheckpointStore.acquireRunLock()`, eliminated age-based lock stealing (`ageMs > 30000`). Active owners (`isProcessAlive(pid) === true`) are strictly protected and NEVER reclaimed solely due to elapsed time.
+   - Implemented crash-safe owner identity (`ownerId: ${process.pid}-${uuid}`) and monotonic `fenceToken` incremented on dead-PID reclamation.
+   - Lock release strictly validates `current.ownerId === ownerId`, preventing stale deletion of reclaimed locks.
+   - Added adversarial tests: runs exceeding lease threshold, concurrent contenders, and dead-PID reclamation. 303/303 PASS.
+6. **P06 Compact Installer (`3ff1ded`):**
+   - Forward-merged P05. 307/307 PASS.
+7. **P07 Hardening & Fixtures (`2c0dba2`):**
+   - Forward-merged P06 with sanitized audit logging. 313/313 PASS.
+8. **P08 Enterprise Release Candidate (`1102449`):**
+   - Complete stack forward-integrated, documentation synchronized. Full test suite: 313/313 PASS.
+
+## Final Security Boundary Remediation — Stack P01–P08 (2026-10-23 Round 2)
+
+Remediated the two independently confirmed security boundary blockers on P08 HEAD:
+1. **P03 Approval Authority Boundary (`4c664d5`):**
+   - Strictly separated authority issuance from untrusted agent-callable code.
+   - `createTrustedHostApprovalAuthority()` requires verified host credentials matching `process.env.XYEENA_HOST_BOUNDARY_SECRET`; no longer generates fallback random secrets.
+   - Caller-supplied callbacks (such as `approvalBridge: () => ({ approved: true })`) without verified host boundary authentication are untrusted (`isTrusted() === false`, authorization marked `BLOCKED`).
+   - `HarnessExecutionGate` throws `ERR_UNTRUSTED_HOST_AUTHORITY` on untrusted authorities; default gate fails closed on privileged operations.
+   - Added negative test verifying that a caller-supplied always-approve callback cannot grant privilege. 275/275 PASS.
+2. **P04 Subagent Integration (`8baf547`):**
+   - Forward-merged P03 remediation. 288/288 PASS.
+3. **P05 Atomic Lock Reclamation & Monotonic Fencing (`473df27`):**
+   - Eliminated the race between concurrent contenders reclaiming a dead owner's lock using `reclaim.lock` mutual exclusion.
+   - Monotonic fencing sequence is stored in `fence.seq` and strictly increases (`nextSeq = max(fenceSeq, lockFence) + 1`); never resets to 1 after lock deletion or clean release.
+   - Fencing prevents stale workers from performing side effects: `DurableCheckpointStore.save()` and `lockHandle.assertValid()` reject stale fence tokens with `ERR_STALE_FENCE_TOKEN`.
+   - Added real multi-process tests spawning child processes verifying single-winner contention, live PID blocking, and crash recovery (`SIGKILL`) with incremented fencing. 307/307 PASS.
+4. **P06 Compact Installer (`28db291`):**
+   - Forward-merged P05. 311/311 PASS.
+5. **P07 Hardening & Fixtures (`1fcb8a6`):**
+   - Forward-merged P06 with sanitized audit logging. 317/317 PASS.
+6. **P08 Enterprise Release Candidate (`HEAD`):**
+   - Complete stack forward-integrated, documentation synchronized. Full test suite: 317/317 PASS, `npm run check` PASS (19 capabilities), `npm run eval` PASS (18/18), `npm run test:harness` PASS (15/15), `npm run test:consumer` PASS, `npm pack --dry-run` PASS (247 files, 206.3 kB).
+
+
+
+
