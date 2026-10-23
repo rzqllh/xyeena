@@ -8,7 +8,10 @@ import {
   enforceRigPreflight,
   assertWorkspaceBoundary,
   createHarnessExecutionGate,
-  HarnessExecutionGate
+  HarnessExecutionGate,
+  HostApprovalAuthority,
+  createHostApprovalAuthority,
+  IndependentEvidenceVerifier
 } from '../src/rig-harness-lifecycle.mjs';
 import { applyCompactSetup } from '../src/compact-setup.mjs';
 import { previewOrchestration } from '../src/orchestrator.mjs';
@@ -108,10 +111,10 @@ test('pre-tool gate blocks unauthorized destructive actions with DENY (fails clo
 
 test('pre-tool gate enforces single-use consumable authorization (ALLOW_ONCE, no reuse)', t => {
   const cwd = temp(t);
-  const gate = createHarnessExecutionGate({ cwd });
+  const hostAuthority = new HostApprovalAuthority();
+  const gate = createHarnessExecutionGate({ cwd, hostAuthority });
 
   const actionArgs = { path: path.join(cwd, 'temp.txt') };
-  const actionSig = `destructive:delete_file:${JSON.stringify(actionArgs)}`;
 
   // Missing approval fails closed
   const deniedFirst = gate.preToolGate({
@@ -122,8 +125,9 @@ test('pre-tool gate enforces single-use consumable authorization (ALLOW_ONCE, no
   assert.equal(deniedFirst.decision, 'DENY');
   assert.equal(deniedFirst.blocked, true);
 
-  // Grant single-use consumable token
-  gate.grantAllowOnce(actionSig, { approver: 'host-user', authority: 'trusted-host' });
+  // Grant single-use consumable token using unforgeable host authority proof
+  const proof = hostAuthority.issueApproval({ toolName: 'delete_file', args: actionArgs, actionType: 'destructive' });
+  gate.grantAllowOnce(proof);
 
   // Approved action executes once
   const allowed = gate.preToolGate({
@@ -146,13 +150,15 @@ test('pre-tool gate enforces single-use consumable authorization (ALLOW_ONCE, no
 
 test('pre-tool gate requires separate authorization for different arguments', t => {
   const cwd = temp(t);
-  const gate = createHarnessExecutionGate({ cwd });
+  const hostAuthority = new HostApprovalAuthority();
+  const gate = createHarnessExecutionGate({ cwd, hostAuthority });
 
   const authorizedArgs = { CommandLine: 'git clean -fd' };
   const differentArgs = { CommandLine: 'git reset --hard' };
 
   // Grant token only for git clean
-  gate.grantAllowOnce({ toolName: 'run_command', args: authorizedArgs, actionType: 'destructive' }, { approver: 'host-user', authority: 'trusted-host' });
+  const proof = hostAuthority.issueApproval({ toolName: 'run_command', args: authorizedArgs, actionType: 'destructive' });
+  gate.grantAllowOnce(proof);
 
   // Different arguments fail closed
   const denied = gate.preToolGate({
@@ -175,10 +181,12 @@ test('pre-tool gate requires separate authorization for different arguments', t 
 
 test('pre-tool gate rejects destructive action outside workspace boundary even if token was granted', t => {
   const cwd = temp(t);
-  const gate = createHarnessExecutionGate({ cwd });
+  const hostAuthority = new HostApprovalAuthority();
+  const gate = createHarnessExecutionGate({ cwd, hostAuthority });
 
   const outsideArgs = { path: path.join(os.tmpdir(), 'outside-secret.txt') };
-  gate.grantAllowOnce({ toolName: 'delete_file', args: outsideArgs, actionType: 'destructive' }, { approver: 'host-user', authority: 'trusted-host' });
+  const proof = hostAuthority.issueApproval({ toolName: 'delete_file', args: outsideArgs, actionType: 'destructive' });
+  gate.grantAllowOnce(proof);
 
   const decision = gate.preToolGate({
     toolName: 'delete_file',
@@ -208,7 +216,8 @@ test('pre-tool gate interactive mode yields ANSWER_QUESTION', t => {
 
 test('pre-tool gate blocks unauthorized external operations (push, publish)', t => {
   const cwd = temp(t);
-  const gate = createHarnessExecutionGate({ cwd });
+  const hostAuthority = new HostApprovalAuthority();
+  const gate = createHarnessExecutionGate({ cwd, hostAuthority });
 
   const decision = gate.preToolGate({
     toolName: 'run_command',
@@ -222,7 +231,8 @@ test('pre-tool gate blocks unauthorized external operations (push, publish)', t 
 
   // Authorize single-use external action
   const actionArgs = { CommandLine: 'git push origin main' };
-  gate.grantAllowOnce({ toolName: 'run_command', args: actionArgs, actionType: 'external' }, { approver: 'host-user', authority: 'trusted-host' });
+  const proof = hostAuthority.issueApproval({ toolName: 'run_command', args: actionArgs, actionType: 'external' });
+  gate.grantAllowOnce(proof);
 
   const allowed = gate.preToolGate({
     toolName: 'run_command',
@@ -345,16 +355,21 @@ test('adversarial: delegated child worker cannot self-issue ALLOW_ONCE tokens', 
 
 test('adversarial: untrusted approver (agent/model/worker) cannot self-issue privileged authorization', t => {
   const cwd = temp(t);
-  const gate = createHarnessExecutionGate({ cwd });
+  const hostAuthority = new HostApprovalAuthority();
+  const gate = createHarnessExecutionGate({ cwd, hostAuthority });
 
-  // Approver specified as agent or model must fail closed
+  // Raw string, unsigned object, or self-issued proof must fail closed
   assert.throws(
     () => gate.grantAllowOnce({ toolName: 'delete_file', actionType: 'destructive' }, { approver: 'agent' }),
     { code: 'ERR_UNTRUSTED_AUTHORIZATION_SOURCE' }
   );
   assert.throws(
-    () => gate.grantAllowOnce({ toolName: 'delete_file', actionType: 'destructive' }, { approver: 'model' }),
+    () => gate.grantAllowOnce({ toolName: 'delete_file', actionType: 'destructive', signature: 'bad-hmac' }),
     { code: 'ERR_UNTRUSTED_AUTHORIZATION_SOURCE' }
+  );
+  assert.throws(
+    () => gate.grantAllowOnce('destructive:rm_file:{}'),
+    { code: 'ERR_MISSING_AUTHORIZATION_CREDENTIALS' }
   );
 });
 
@@ -381,29 +396,32 @@ test('adversarial: host runtime without verified live tool interception fails cl
   assert.equal(externalDecision.blocked, true);
 });
 
-test('regression P03: grantAllowOnce rejects missing credentials (no default self-issuance)', t => {
+test('regression P03: constructor injection of unverified approval tokens is rejected', t => {
   const cwd = temp(t);
-  const gate = createHarnessExecutionGate({ cwd });
+  // Attempting to bypass authorization by constructor injection
+  const gate = new HarnessExecutionGate({
+    cwd,
+    allowOnceTokens: [
+      'destructive:delete_file:{}',
+      { toolName: 'delete_file', actionType: 'destructive', approver: 'host-user' }
+    ]
+  });
 
-  // Calling without credentials must throw ERR_MISSING_AUTHORIZATION_CREDENTIALS
-  assert.throws(
-    () => gate.grantAllowOnce('destructive:rm_file:{}'),
-    { code: 'ERR_MISSING_AUTHORIZATION_CREDENTIALS' }
-  );
-  assert.throws(
-    () => gate.grantAllowOnce('destructive:rm_file:{}', {}),
-    { code: 'ERR_MISSING_AUTHORIZATION_CREDENTIALS' }
-  );
+  // Action must still be denied because injected tokens lacked cryptographic host verification
+  const decision = gate.preToolGate({ toolName: 'delete_file', actionType: 'destructive' });
+  assert.equal(decision.decision, 'DENY');
+  assert.equal(decision.blocked, true);
 });
 
 test('regression P03: anti-loop gate blocks repeated failures before checking ALLOW_ONCE token', t => {
   const cwd = temp(t);
-  const gate = createHarnessExecutionGate({ cwd });
+  const hostAuthority = new HostApprovalAuthority();
+  const gate = createHarnessExecutionGate({ cwd, hostAuthority });
   const toolArgs = { path: path.join(cwd, 'broken-target.txt') };
-  const actionSig = `destructive:delete_file:${JSON.stringify(toolArgs)}`;
 
-  // Grant an ALLOW_ONCE token
-  gate.grantAllowOnce(actionSig, { approver: 'host-user', authority: 'trusted-host' });
+  // Grant an ALLOW_ONCE token with valid host authority
+  const proof = hostAuthority.issueApproval({ toolName: 'delete_file', args: toolArgs, actionType: 'destructive' });
+  gate.grantAllowOnce(proof);
 
   // Simulate 3 prior consecutive errors
   for (let i = 0; i < 3; i++) {
@@ -470,4 +488,66 @@ test('regression P03: shell command execution with filesystem escape or uncontai
   assert.equal(unsupportedDecision.rule, 'runtime-enforcement');
   assert.equal(unsupportedDecision.blocked, true);
 });
+
+test('regression P03: postToolGate requires independent evidence verifier and rejects dummy/placeholder files', t => {
+  const cwd = temp(t);
+  const gate = createHarnessExecutionGate({ cwd });
+
+  // 1. Placeholder string 'ok' is rejected even if file is non-empty
+  const dummyLog = path.join(cwd, 'dummy.log');
+  fs.writeFileSync(dummyLog, 'ok\n');
+  const dummyPost = gate.postToolGate({
+    toolName: 'verify_module',
+    result: { verified: true, status: 'PASS', evidenceRefs: ['dummy.log'] }
+  });
+  assert.equal(dummyPost.verified, false);
+  assert.ok(dummyPost.warning.includes('placeholder') || dummyPost.warning.includes('trivial'));
+
+  // 2. Empty JSON object '{}' is rejected
+  const emptyJson = path.join(cwd, 'empty.json');
+  fs.writeFileSync(emptyJson, '{}\n');
+  const emptyJsonPost = gate.postToolGate({
+    toolName: 'verify_module',
+    result: { verified: true, status: 'PASS', evidenceRefs: ['empty.json'] }
+  });
+  assert.equal(emptyJsonPost.verified, false);
+  assert.ok(emptyJsonPost.warning.includes('placeholder') || emptyJsonPost.warning.includes('trivial'));
+
+  // 3. JSON artifact with non-VERIFIED status is rejected
+  const failedJson = path.join(cwd, 'failed-evidence.json');
+  fs.writeFileSync(failedJson, JSON.stringify({ id: 'task-1', statement: 'ran tests', status: 'INFERRED', freshness: 'CURRENT' }) + '\n');
+  const failedJsonPost = gate.postToolGate({
+    toolName: 'verify_module',
+    result: { verified: true, status: 'PASS', evidenceRefs: ['failed-evidence.json'] }
+  });
+  assert.equal(failedJsonPost.verified, false);
+  assert.ok(failedJsonPost.warning.includes('expected "VERIFIED"'));
+
+  // 4. Genuine structured evidence artifact is verified
+  const validJson = path.join(cwd, 'valid-evidence.json');
+  fs.writeFileSync(validJson, JSON.stringify({ id: 'task-1', statement: 'verified 15/15 checks', status: 'VERIFIED', freshness: 'CURRENT' }) + '\n');
+  const validJsonPost = gate.postToolGate({
+    toolName: 'verify_module',
+    result: { verified: true, status: 'PASS', evidenceRefs: ['valid-evidence.json'] }
+  });
+  assert.equal(validJsonPost.verified, true);
+  assert.equal(validJsonPost.warning, null);
+});
+
+test('regression P03: delegated worker cannot grant ALLOW_ONCE even with valid host proof', t => {
+  const cwd = temp(t);
+  const hostAuthority = new HostApprovalAuthority();
+  const parentGate = createHarnessExecutionGate({ cwd, hostAuthority });
+  const childGate = parentGate.delegateWorker('child-worker-1');
+
+  const actionArgs = { path: path.join(cwd, 'child-target.txt') };
+  const proof = hostAuthority.issueApproval({ toolName: 'delete_file', args: actionArgs, actionType: 'destructive' });
+
+  // Delegated worker must fail with ERR_UNAUTHORIZED_ALLOW_ONCE
+  assert.throws(
+    () => childGate.grantAllowOnce(proof),
+    { code: 'ERR_UNAUTHORIZED_ALLOW_ONCE' }
+  );
+});
+
 
