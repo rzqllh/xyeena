@@ -13,7 +13,7 @@ Run full suite from repository root:
 # 1. Clean installation of dependencies
 npm ci
 
-# 2. Comprehensive test suite (267 unit/integration tests)
+# 2. Comprehensive test suite (277 unit/integration tests)
 npm test
 
 # 3. Capability inventory and runtime manifests check

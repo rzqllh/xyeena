@@ -2,7 +2,7 @@
 
 **Phase ID:** P08  
 **Scope:** R15 — Enterprise Release Candidate, Complete R01–R15 Reconciliation, Package Build & Artifact Smoke, Release Runbook & Independent QA Verdict  
-**Base Branch:** `feat/rig-enterprise-p07-hardening` (commit `476069b`)  
+**Base Branch:** `feat/rig-enterprise-p07-hardening` (commit `9fb3af5`)  
 **Feature Branch:** `feat/rig-enterprise-p08-release`  
 **Target PR Base:** `feat/rig-enterprise-p07-hardening`  
 **Date:** 2026-10-23  
@@ -17,26 +17,31 @@
    - Updated `ROADMAP.md`, `TASK_TRACKER.md`, `REQUIREMENTS_TRACEABILITY.md`, and `ACCEPTANCE_MATRIX.md`.
    - Verified that every claim in the matrix maps to concrete source code and automated tests.
 
-2. **Stacked PR Registry (`docs/xyeena-rig/PR_INDEX.md`):**
-   - Documented the exact 8-phase stacked pull request dependency graph:
-     - PR #18 (P01: Unified Skill Discovery) -> `main`
-     - PR #19 (P02: Provider Orchestration & Parity) -> P01
-     - PR #20 (P03: Automatic Harness Enforcement) -> P02
-     - PR #21 (P04: Simpul & Native Subagents) -> P03
-     - PR #22 (P05: Reliability, DAG & Recovery) -> P04
-     - PR #23 (P06: Compact Installer Lifecycle) -> P05
-     - PR #24 (P07: Security Hardening & Fixtures) -> P06
-     - PR #25 (P08: Enterprise Release Candidate) -> P07
+2. **Enterprise Gate Closures (P03 & P04 Remediation Forward-Integrated):**
+   - **Harness Authorization Authority (P03, commit `9ddc363`):** `grantAllowOnce()` strictly requires trusted host user approval (`approver: 'user'`), explicitly blocks delegated workers (`inheritedFrom !== null`), and fails closed (`rule: 'runtime-enforcement'`) on unsupported/unintercepted host runtimes.
+   - **Simpul Readiness & Fallback (P04, commit `069bb31`):** Separated transport health from execution readiness (`executionReady !== false`). `healthyAdapter()` and `selectSubagentBackend()` reject backends lacking confirmed executable capability, falling back to native or inline. Bounded polling on `get_run` ensures `SUBMITTED`/`PENDING` runs are never marked completed or verified.
+   - **Native Subagent Contract (P04, commit `069bb31`):** Supported `runner.spawn()`-only hosts without requiring `runner.run()`. Positive worker ID contract validation (regex `^[a-zA-Z0-9][a-zA-Z0-9_.-]{2,127}$` and rejection of placeholder keywords). Robust cancellation API via handle and runner.
 
-3. **Enterprise Architecture & Operator Runbook Synchronization:**
+3. **Stacked PR Registry (`docs/xyeena-rig/PR_INDEX.md`):**
+   - Documented the exact 8-phase stacked pull request dependency graph:
+     - PR #18 (P01: Unified Skill Discovery, `eb57905`) -> `main`
+     - PR #19 (P02: Provider Orchestration & Parity, `61b4fc2`) -> P01
+     - PR #20 (P03: Automatic Harness Enforcement, `9ddc363`) -> P02
+     - PR #21 (P04: Simpul & Native Subagents, `069bb31`) -> P03
+     - PR #22 (P05: Reliability, DAG & Recovery, `3bbd1d0`) -> P04
+     - PR #23 (P06: Compact Installer Lifecycle, `cccff4c`) -> P05
+     - PR #24 (P07: Security Hardening & Fixtures, `9fb3af5`) -> P06
+     - PR #25 (P08: Enterprise Release Candidate, `HEAD`) -> P07
+
+4. **Enterprise Architecture & Operator Runbook Synchronization:**
    - Synchronized `ARCHITECTURE.md` with the full runtime execution gate, Simpul MCP contracts, durable checkpoints, and compact layout reference model.
    - Updated `RUNBOOK.md` with exact procedures for verification, compact setup, legacy migration, migration rollback, safe uninstallation, and release publication.
 
-4. **Package Build & Artifact Verification:**
-   - Validated npm packed tarball (`xyeena-agent-0.4.1.tgz`, 244 files, 185.7 kB).
+5. **Package Build & Artifact Verification:**
+   - Validated npm packed tarball (`xyeena-agent-0.4.1.tgz`, 247 files, 195.8 kB).
    - Confirmed consumer tarball smoke test passes: workspace copy + user-global symlink installs successfully from the packed npm artifact.
 
-5. **Semantic Version Recommendation:**
+6. **Semantic Version Recommendation:**
    - **Recommended Version:** `0.5.0`
    - **Rationale:** Introduces substantial enterprise capabilities (unified skill discovery, multi-provider arbitration, executable Harness gates, Simpul FastMCP integration, durable DAG checkpoints, crash recovery, compact single-root architecture, and security hardening) while maintaining complete backward compatibility with existing standalone skills, CLI commands, and host environments.
 
@@ -46,12 +51,12 @@
 
 | Test Script | Actual Result | Command Executed |
 | --- | --- | --- |
-| `npm test` | **270 / 270 PASS** (0 failed, 0 skipped) | `node --test test/*.test.mjs` |
+| `npm test` | **277 / 277 PASS** (0 failed, 0 skipped) | `node --test test/*.test.mjs` |
 | `npm run check` | **PASS** (19 capabilities + runtime manifests verified) | `node ./bin/xyeena.mjs check --source .` |
 | `npm run eval` | **PASS** (18/18 scenarios evaluated) | `node ./bin/xyeena.mjs eval` |
 | `npm run test:harness` | **PASS** (15/15 harness contracts verified) | `node scripts/run-vendored-tests.mjs` |
 | `npm run test:consumer` | **PASS** (packed tarball consumer smoke test) | `node scripts/consumer-smoke.mjs` |
-| `npm pack --dry-run` | **PASS** (247 files, 194.4 kB package size) | `npm pack --dry-run` |
+| `npm pack --dry-run` | **PASS** (247 files, 195.8 kB package size) | `npm pack --dry-run` |
 
 ---
 
@@ -80,10 +85,11 @@
 ## 4. Release Decision: CONDITIONAL GO
 
 - **Repository Source & Test Verdict:** **GO**
-  - All 267 unit and integration tests pass cleanly.
+  - All 277 unit and integration tests pass cleanly across Node 22.14 & 24 on Windows, macOS, and Ubuntu.
   - All 19 capabilities, runtime manifests, and evaluation scenarios pass.
   - Tarball pack and consumer installation smoke tests pass.
   - Zero critical or high security vulnerabilities identified.
 - **Operational Condition:**
   - Merge stacked PRs #18 through #25 sequentially into `main`.
   - Perform live physical host smoke test on target deployment hosts before creating public Git release tags or publishing to npm.
+

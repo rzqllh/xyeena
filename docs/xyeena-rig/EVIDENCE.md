@@ -144,15 +144,15 @@ A comparison of the chat backlog R01–R15 with the existing E task tracker and 
 
 ## Phase P08 verification — Enterprise Release Candidate & Verification (2026-10-23)
 
-- Branch: `feat/rig-enterprise-p08-release`, Base: `feat/rig-enterprise-p07-hardening` (476069b).
+- Branch: `feat/rig-enterprise-p08-release`, Base: `feat/rig-enterprise-p07-hardening` (9fb3af5).
 - Scope: R15; Acceptance A19, A20, A33; Task E08-04.
 - Changes: `docs/xyeena-rig/PR_INDEX.md`, `docs/xyeena-rig/ROADMAP.md`, `docs/xyeena-rig/ARCHITECTURE.md`, `docs/xyeena-rig/RUNBOOK.md`, `docs/xyeena-rig/evidence-p08.md`.
 - Results:
-  - `npm test`: 267/267 PASS.
+  - `npm test`: 277/277 PASS (including P03 Harness authority & unintercepted fail-closed tests, and P04 subagent executionReady & spawn-only runner tests).
   - `npm run check`: PASS.
   - `npm run eval`: PASS (18/18).
   - `npm run test:harness`: PASS (15/15).
   - `npm run test:consumer`: PASS.
-  - `npm pack --dry-run`: PASS (244 files, 185.7 kB).
+  - `npm pack --dry-run`: PASS (247 files, 195.8 kB).
 - Recommended Version: `0.5.0`.
 - Release Decision: CONDITIONAL GO (ready for sequential PR merge). Full phase evidence recorded in `docs/xyeena-rig/evidence-p08.md`.
