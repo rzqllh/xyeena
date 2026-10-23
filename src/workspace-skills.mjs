@@ -97,7 +97,7 @@ function readPluginManifest(pluginDir) {
 
 /** Discover installed Agent Skills and plugins. Only Xyeena-managed links to its immutable home store are followed. */
 export function discoverWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigravity',
-  home = os.homedir(), includeGlobal = true, env = process.env } = {}) {
+  home = os.homedir(), includeGlobal = true, env = process.env, format = 'array', includeShadowed = false } = {}) {
   requireSkillHost(runtime);
   const locations = skillLocations({ cwd, runtime, home, includeGlobal, env });
   const plugins = pluginLocations({ cwd, runtime, home, includeGlobal, env });
@@ -260,21 +260,31 @@ export function discoverWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigr
     }
   }
 
-  // 3. Resolve dependency closure
-  const detectedSkillNames = new Set([...found.values()].filter(s => s.availability === 'detected').map(s => s.name));
-  for (const skill of found.values()) {
-    if (skill.dependencies && skill.dependencies.length > 0) {
-      const missing = skill.dependencies.filter(dep => !detectedSkillNames.has(dep));
-      if (missing.length > 0) {
-        skill.missingDependencies = missing;
-        skill.executable = false;
-        skill.eligible = false;
-        if (skill.availability === 'detected') skill.availability = 'missing-dependency';
+  // 3. Resolve dependency closure to a fixed point
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const detectedSkillNames = new Set([...found.values()]
+      .filter(s => s.availability === 'detected' && s.executable !== false && s.eligible !== false)
+      .map(s => s.name));
+    for (const skill of found.values()) {
+      if (skill.availability === 'detected' && skill.dependencies && skill.dependencies.length > 0) {
+        const missing = skill.dependencies.filter(dep => !detectedSkillNames.has(dep));
+        if (missing.length > 0) {
+          skill.missingDependencies = [...new Set([...(skill.missingDependencies || []), ...missing])];
+          skill.executable = false;
+          skill.eligible = false;
+          skill.availability = 'missing-dependency';
+          changed = true;
+        }
       }
     }
   }
 
-  const result = [...found.values()];
+  if (format === 'object') {
+    return { skills: [...found.values()], shadowed };
+  }
+  const result = includeShadowed ? [...found.values(), ...shadowed] : [...found.values()];
   result.shadowed = shadowed;
   return result;
 }
@@ -315,8 +325,30 @@ export function routeWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigravi
   const primarySkill = primary ? installedByName.get(primary.name) : null;
   const primaryDeps = new Set(primarySkill?.dependencies || []);
   const allowed = new Set([...(primaryContract?.chain?.allowed || []), ...primaryDeps]);
-  const supporting = primary ? candidates.slice(1).filter(item => allowed.has(item.name) || item.score >= 30)
+
+  // Required dependencies must always be included for execution regardless of optional budget
+  const requiredDeps = [];
+  const visitedDeps = new Set(primary ? [primary.name] : []);
+  const queue = [...(primarySkill?.dependencies || [])];
+  while (queue.length > 0) {
+    const depName = queue.shift();
+    if (visitedDeps.has(depName)) continue;
+    visitedDeps.add(depName);
+    const depSkill = installedByName.get(depName);
+    if (depSkill) {
+      requiredDeps.push({ name: depName, score: 100, reasons: ['required-dependency'] });
+      if (Array.isArray(depSkill.dependencies)) {
+        queue.push(...depSkill.dependencies);
+      }
+    }
+  }
+
+  const requiredNames = new Set(requiredDeps.map(d => d.name));
+  const optionalSupporting = primary ? candidates.slice(1)
+    .filter(item => !requiredNames.has(item.name) && (allowed.has(item.name) || item.score >= 30))
     .slice(0, maxSupporting) : [];
+
+  const supporting = [...requiredDeps, ...optionalSupporting];
   const detail = value => value ? { ...value, path: installedByName.get(value.name).path,
     runtime: installedByName.get(value.name).runtime, scope: installedByName.get(value.name).scope,
     source: builtinNames.has(value.name) ? 'xyeena' : (installedByName.get(value.name).source || 'external') } : null;
