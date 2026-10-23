@@ -4,10 +4,10 @@ Status means observed repository implementation, not generic product readiness.
 
 | ID | Priority | Task | State | Source/evidence |
 | --- | --- | --- | --- | --- |
-| E01-01 | P0 | Compact single root skill with internal Xyeena modules | CODED | src/compact-setup.mjs |
-| E01-02 | P0 | Dry-run, explicit confirmation, duplicate host path handling | CODED | test/compact-setup.test.mjs |
-| E01-03 | P0 | Ownership, tamper protection, idempotent backup upgrade | CODED | test/compact-setup.test.mjs |
-| E01-04 | P1 | Automatic legacy migration + restore/uninstall CLI | TODO | Requires migration journal and safety tests |
+| E01-01 | P0 | Compact single root skill with internal Xyeena modules | VERIFIED | src/compact-setup.mjs, test/compact-setup.test.mjs |
+| E01-02 | P0 | Dry-run, explicit confirmation, duplicate host path handling | VERIFIED | test/compact-setup.test.mjs |
+| E01-03 | P0 | Ownership, tamper protection, idempotent backup upgrade | VERIFIED | test/compact-setup.test.mjs |
+| E01-04 | P1 | Automatic legacy migration + restore/uninstall CLI | VERIFIED | applyLegacyMigration, rollbackLegacyMigration, test/compact-setup.test.mjs |
 | E02-01 | P0 | Compact native orchestrator fallback | CODED | src/orchestrator.mjs |
 | E02-02 | P1 | Superior/Superpowers candidate detection | VERIFIED | src/enterprise-policy.mjs, test/enterprise-policy.test.mjs |
 | E02-03 | P0 | Host-native plugin/extension inventory and verification | VERIFIED | src/skill-hosts.mjs, src/workspace-skills.mjs |
@@ -30,8 +30,8 @@ The full 1:1 status and acceptance crosswalk lives in [REQUIREMENTS_TRACEABILITY
 
 | ID | Priority | Additional tracked work | State | Why open |
 | --- | --- | --- | --- | --- |
-| E01-05 | P1 | Legacy slash aliases/skill-ID compatibility after compact migration; collision-safe cutover | TODO | R11 / A29 — live host compatibility |
-| E01-06 | P1 | Owned uninstaller and automated rollback/restore with fault-injection tests | TODO | R12 / A30 — rollback journal, recovery |
+| E01-05 | P1 | Legacy slash aliases/skill-ID compatibility after compact migration; collision-safe cutover | VERIFIED | resolveSkillAlias, command aliases in SKILL.md, test/compact-setup.test.mjs |
+| E01-06 | P1 | Owned uninstaller and automated rollback/restore with fault-injection tests | VERIFIED | uninstallCompactSetup, rollbackLegacyMigration journal & safety backup tests |
 | E02-05 | P0 | Enumerate plugin/extension registries and effective host trust, enablement, provenance, platform, precedence | VERIFIED | R01 / A21 — pluginLocations & workspace-skills discovery |
 | E02-06 | P0 | Capability dedup, dependency composition, conflict resolver, deterministic minimal skill load | VERIFIED | R02 / A22 — closure check, collision precedence & shadowed list |
 | E04-02 | P0 | Superior specialist policy vs Superpowers lifecycle/bootstrap; no overlapping workflow owners | VERIFIED | R03 / A23 — arbitrateWorkflow single-governor and deduplication tests |

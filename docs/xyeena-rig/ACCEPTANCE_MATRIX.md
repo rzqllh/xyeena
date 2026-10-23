@@ -34,8 +34,8 @@ Evidence status is separate from implementation status.
 | A26 | Enforced resource budget: token, cost, concurrency, cancellations and provider fallback | ResourceBudgetLedger ceiling tests & safe adapter fallback | VERIFIED |
 | A27 | Crash-safe DAG checkpoint/recovery and idempotent non-destructive resume | DurableCheckpointStore resume test suite & unconsumed result reclaiming | VERIFIED |
 | A28 | Independently verifiable completion and native Allow Once/Deny/Answer Questions policy | HarnessExecutionGate token consumption & interactive clarification tests | VERIFIED |
-| A29 | Owner-aware 19-skill migration retains compatible aliases, user edits and third-party skills | Old version upgraded on five real hosts | NOT IMPLEMENTED |
-| A30 | Automatic uninstaller and rollback reconstruct original state after faults | Multi-target failure/restart/tampering tests | NOT IMPLEMENTED |
+| A29 | Owner-aware 19-skill migration retains compatible aliases, user edits and third-party skills | resolveSkillAlias, previewLegacyMigration & applyLegacyMigration test suites | VERIFIED |
+| A30 | Automatic uninstaller and rollback reconstruct original state after faults | uninstallCompactSetup & rollbackLegacyMigration journal restore test suites | VERIFIED |
 | A31 | Host-native activation and execution on five hosts (not filesystem presence alone) | Recorded five-host acceptance packet | NOT RUN |
 | A32 | Supply-chain, prompt-injection, plugin spoof, symlink, credential and race security suite | Automated negative suite + independent security review | NOT COMPLETE |
 | A33 | Consumer npm release artifact/version/docs verifiable before authorized publication | npm pack/install smoke, release verdict, provenance | NOT IMPLEMENTED |

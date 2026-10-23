@@ -114,6 +114,16 @@ A comparison of the chat backlog R01–R15 with the existing E task tracker and 
   - `npm pack --dry-run`: PASS.
 - Verdict: VERIFIED. Full phase evidence recorded in `docs/xyeena-rig/evidence-p05.md`.
 
+## Phase P06 verification — Compact Installer & Safe Migration (2026-10-23)
 
-
-
+- Branch: `feat/rig-enterprise-p06-installer`, Base: `feat/rig-enterprise-p05-recovery` (acb8e5b).
+- Scope: R11, R12; Acceptance A05, A06, A08, A29, A30; Tasks E01-04, E01-05, E01-06.
+- Changes: `src/compact-setup.mjs`, `test/compact-setup.test.mjs`, `docs/xyeena-rig/evidence-p06.md`.
+- Results:
+  - `npm test`: 261/261 PASS (10 unit tests in compact-setup, +4 installer/migration tests).
+  - `npm run check`: PASS.
+  - `npm run eval`: PASS (18/18).
+  - `npm run test:harness`: PASS (15/15).
+  - `npm run test:consumer`: PASS.
+  - `npm pack --dry-run`: PASS.
+- Verdict: VERIFIED. Full phase evidence recorded in `docs/xyeena-rig/evidence-p06.md`.
