@@ -124,10 +124,37 @@ export async function executeOrchestration(plan, {
       cwd: plan.cwd, runtime: plan.runtime, selectedSkills: effectiveSkills,
       ...(command ? { command } : {}), ...(timeoutMs !== undefined ? { timeoutMs } : {})
     });
-    const result = await adapter.executeTask({
+    const taskPayload = {
       id: 'orchestrator-one-shot', title: plan.goal, state: 'READY', depends_on: [],
       scope: { readOnly: true, operationClass: 'safe' }
+    };
+    const preDecision = harnessGate.preToolGate({
+      toolName: `execute_task:${plan.runtime}`,
+      args: { id: taskPayload.id, title: taskPayload.title, cwd: plan.cwd },
+      actionType: 'read',
+      workerId: 'governor'
     });
+    if (preDecision.blocked) {
+      const err = new Error(`Task execution blocked by Harness gate: ${preDecision.reason || preDecision.decision}`);
+      err.code = 'ERR_HARNESS_BLOCKED';
+      err.decision = preDecision;
+      throw err;
+    }
+    let result = null, executionError = null;
+    try {
+      result = await adapter.executeTask(taskPayload);
+    } catch (err) {
+      executionError = err;
+      throw err;
+    } finally {
+      harnessGate.postToolGate({
+        toolName: `execute_task:${plan.runtime}`,
+        args: { id: taskPayload.id, title: taskPayload.title },
+        result,
+        error: executionError,
+        workerId: 'governor'
+      });
+    }
     return { ...result, verified: false, evidenceRefs: [], status: 'REVIEW_REQUIRED',
       harnessPreflight, harnessGate, entrypoint: plan.entrypoint, selectedSkills: effectiveSkills, skillPaths: effectiveSkillPaths };
   }
@@ -135,10 +162,37 @@ export async function executeOrchestration(plan, {
     cwd: plan.cwd, skillPaths: effectiveSkillPaths, enableSubagents: delegate,
     ...(python ? { python } : {}), ...(timeoutMs !== undefined ? { timeoutMs } : {})
   });
-  const result = await adapter.executeTask({
+  const taskPayload = {
     id: 'orchestrator-one-shot', title: plan.goal, state: 'READY', depends_on: [],
     scope: { readOnly: true, operationClass: 'safe' }
+  };
+  const preDecision = harnessGate.preToolGate({
+    toolName: `execute_task:${plan.runtime}`,
+    args: { id: taskPayload.id, title: taskPayload.title, cwd: plan.cwd },
+    actionType: 'read',
+    workerId: 'governor'
   });
+  if (preDecision.blocked) {
+    const err = new Error(`Task execution blocked by Harness gate: ${preDecision.reason || preDecision.decision}`);
+    err.code = 'ERR_HARNESS_BLOCKED';
+    err.decision = preDecision;
+    throw err;
+  }
+  let result = null, executionError = null;
+  try {
+    result = await adapter.executeTask(taskPayload);
+  } catch (err) {
+    executionError = err;
+    throw err;
+  } finally {
+    harnessGate.postToolGate({
+      toolName: `execute_task:${plan.runtime}`,
+      args: { id: taskPayload.id, title: taskPayload.title },
+      result,
+      error: executionError,
+      workerId: 'governor'
+    });
+  }
   return { ...result, verified: false, evidenceRefs: [], status: 'REVIEW_REQUIRED',
     harnessPreflight, harnessGate, entrypoint: plan.entrypoint, selectedSkills: effectiveSkills, skillPaths: effectiveSkillPaths };
 }

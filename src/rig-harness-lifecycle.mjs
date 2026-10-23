@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 
 export const CORE = Object.freeze([
   'permission-boundary',
@@ -195,11 +196,163 @@ export function enforceRigPreflight(plan, { consent = false } = {}) {
 }
 
 /**
+ * Trusted Host Approval Authority.
+ * Generates and verifies unforgeable, cryptographically signed ALLOW_ONCE proofs.
+ * Held strictly by the host environment or test harness outside the agent boundary.
+ */
+export class HostApprovalAuthority {
+  #secret;
+
+  constructor({ hostId = 'trusted-host', secret = null } = {}) {
+    this.hostId = hostId;
+    this.#secret = secret || crypto.randomBytes(32).toString('hex');
+  }
+
+  issueApproval({ toolName, args = {}, actionType = 'destructive', approver = 'host-user' } = {}) {
+    if (!toolName || typeof toolName !== 'string') {
+      throw new Error('Approval requires a valid toolName string');
+    }
+    const validApprovers = ['host-user', 'human-user', 'operator', 'user'];
+    if (!validApprovers.includes(approver)) {
+      throw new Error(`Untrusted approver "${approver}": must be verified host authority`);
+    }
+    const canonicalAction = actionType || 'destructive';
+    const payload = JSON.stringify({
+      actionType: canonicalAction,
+      toolName,
+      args: args || {},
+      approver,
+      hostId: this.hostId
+    });
+    const hmac = crypto.createHmac('sha256', this.#secret).update(payload).digest('hex');
+    return Object.freeze({
+      tokenType: 'host-allow-once-proof',
+      actionType: canonicalAction,
+      toolName,
+      args: args || {},
+      approver,
+      hostId: this.hostId,
+      signature: hmac
+    });
+  }
+
+  verifyApproval(proof) {
+    if (!proof || typeof proof !== 'object' || proof.tokenType !== 'host-allow-once-proof') {
+      return false;
+    }
+    if (!proof.signature || typeof proof.signature !== 'string') {
+      return false;
+    }
+    const payload = JSON.stringify({
+      actionType: proof.actionType,
+      toolName: proof.toolName,
+      args: proof.args || {},
+      approver: proof.approver,
+      hostId: proof.hostId
+    });
+    const expected = crypto.createHmac('sha256', this.#secret).update(payload).digest('hex');
+    if (proof.signature.length !== expected.length) return false;
+    try {
+      return crypto.timingSafeEqual(Buffer.from(proof.signature, 'hex'), Buffer.from(expected, 'hex'));
+    } catch {
+      return false;
+    }
+  }
+}
+
+export function createHostApprovalAuthority(options = {}) {
+  return new HostApprovalAuthority(options);
+}
+
+/**
+ * Independent Evidence Verifier.
+ * Inspects physical evidence artifacts on disk for authentic verification content,
+ * structural compliance, and prevents self-reported success with dummy/placeholder files.
+ */
+export class IndependentEvidenceVerifier {
+  constructor({ cwd = process.cwd(), customVerifier = null } = {}) {
+    this.cwd = fs.realpathSync(path.resolve(cwd));
+    this.customVerifier = typeof customVerifier === 'function' ? customVerifier : null;
+  }
+
+  verifyArtifact(ref, { result = null } = {}) {
+    if (!ref || typeof ref !== 'string' || !ref.trim()) {
+      return { valid: false, warning: 'Invalid evidence reference: expected non-empty path string' };
+    }
+    let resolved;
+    try {
+      resolved = assertWorkspaceBoundary(ref, this.cwd);
+    } catch (err) {
+      return { valid: false, warning: `Independent verification failed: evidence artifact "${ref}" is outside workspace or invalid: ${err.message}` };
+    }
+
+    if (!fs.existsSync(resolved)) {
+      return { valid: false, warning: `Independent verification failed: evidence artifact "${ref}" does not exist on disk` };
+    }
+
+    const stat = fs.statSync(resolved);
+    if (!stat.isFile() || stat.size === 0) {
+      return { valid: false, warning: `Independent verification failed: evidence artifact "${ref}" is empty or not a regular file` };
+    }
+
+    let content;
+    try {
+      content = fs.readFileSync(resolved, 'utf8');
+    } catch (err) {
+      return { valid: false, warning: `Independent verification failed: unable to read evidence artifact "${ref}": ${err.message}` };
+    }
+
+    const trimmed = content.trim();
+    if (!trimmed || trimmed.length < 8) {
+      return { valid: false, warning: `Independent verification failed: evidence artifact "${ref}" content is too trivial to substantiate completion` };
+    }
+
+    const placeholderPatterns = [
+      /^(test|placeholder|dummy|foo|bar|done|all good|verified|ok)$/i,
+      /^\s*\{\s*\}\s*$/,
+      /^\s*\[\s*\]\s*$/
+    ];
+    if (placeholderPatterns.some(p => p.test(trimmed))) {
+      return { valid: false, warning: `Independent verification failed: evidence artifact "${ref}" contains placeholder content` };
+    }
+
+    if (ref.endsWith('.json')) {
+      try {
+        const parsed = JSON.parse(content);
+        if (typeof parsed !== 'object' || parsed === null) {
+          return { valid: false, warning: `Independent verification failed: evidence artifact "${ref}" is not a valid JSON object` };
+        }
+        if (parsed.status && parsed.status !== 'VERIFIED') {
+          return { valid: false, warning: `Independent verification failed: evidence artifact status is "${parsed.status}", expected "VERIFIED"` };
+        }
+      } catch (err) {
+        return { valid: false, warning: `Independent verification failed: evidence artifact "${ref}" contains invalid JSON: ${err.message}` };
+      }
+    }
+
+    if (this.customVerifier) {
+      try {
+        const customOk = this.customVerifier(ref, { resolvedPath: resolved, content, result });
+        if (customOk !== true) {
+          return { valid: false, warning: `Custom independent evidence verifier rejected artifact "${ref}"` };
+        }
+      } catch (err) {
+        return { valid: false, warning: `Custom independent evidence verifier error: ${err.message}` };
+      }
+    }
+
+    return { valid: true, warning: null };
+  }
+}
+
+/**
  * Executable Harness Execution Gate for Pre-Tool, Post-Tool, and Worker Policy Propagation.
  * Xyeena supports only ALLOW_ONCE, DENY, and ANSWER_QUESTION for privileged/destructive actions.
  * There is NO persistent Always Allow equivalent for destructive or privileged operations.
  */
 export class HarnessExecutionGate {
+  #hostAuthority;
+
   constructor({
     cwd = process.cwd(),
     operationClass = 'standard',
@@ -210,6 +363,8 @@ export class HarnessExecutionGate {
     contextualRequested = [],
     depth = 0,
     allowOnceTokens = [],
+    hostAuthority = null,
+    evidenceVerifier = null,
     enforcementRuntime = 'antigravity'
   } = {}) {
     this.cwd = fs.realpathSync(path.resolve(cwd));
@@ -223,12 +378,25 @@ export class HarnessExecutionGate {
     this.workerId = workerId;
     this.inheritedFrom = inheritedFrom;
     this.auditLog = auditLog;
+    this.depth = depth;
     this.enforcementRuntime = enforcementRuntime;
     this.supportedEnforcementRuntimes = Object.freeze(['antigravity', 'rig-cli', 'harness-gate']);
+    this.#hostAuthority = hostAuthority instanceof HostApprovalAuthority
+      ? hostAuthority
+      : (inheritedFrom === null ? new HostApprovalAuthority() : null);
+    this.evidenceVerifier = evidenceVerifier instanceof IndependentEvidenceVerifier
+      ? evidenceVerifier
+      : new IndependentEvidenceVerifier({
+          cwd: this.cwd,
+          customVerifier: typeof evidenceVerifier === 'function' ? evidenceVerifier : null
+        });
     this.allowOnceTokens = new Set();
-    if (Array.isArray(allowOnceTokens)) {
+    // Constructor strictly refuses unverified injected tokens to prevent agent self-authorization
+    if (Array.isArray(allowOnceTokens) && allowOnceTokens.length > 0) {
       for (const tok of allowOnceTokens) {
-        this.grantAllowOnce(tok, { approver: 'host-user', authority: 'trusted-host' });
+        if (this.#hostAuthority && tok && typeof tok === 'object' && tok.signature) {
+          try { this.grantAllowOnce(tok); } catch {}
+        }
       }
     }
     this.recentErrors = new Map();
@@ -242,7 +410,7 @@ export class HarnessExecutionGate {
     return clean;
   }
 
-  grantAllowOnce(token, { approver, authority } = {}) {
+  grantAllowOnce(proof, { approver, authority } = {}) {
     // 1. Delegated workers can NEVER self-issue or grant ALLOW_ONCE
     if (this.inheritedFrom !== null) {
       const err = new Error('Delegated workers cannot self-issue privileged ALLOW_ONCE authorization');
@@ -251,38 +419,35 @@ export class HarnessExecutionGate {
     }
 
     // 2. Reject missing credentials or defaults that could be impersonated
-    if (!approver && !authority) {
+    if (!proof || typeof proof !== 'object') {
       const err = new Error('Privileged authorization requires explicit trusted approver and authority credentials; self-issuance is forbidden');
       err.code = 'ERR_MISSING_AUTHORIZATION_CREDENTIALS';
       throw err;
     }
 
-    // 3. Untrusted sources (e.g. agent, model, worker) cannot self-issue
-    const validApprover = approver === 'host-user' || approver === 'human-user' || approver === 'user';
-    const validAuthority = authority === 'host-user' || authority === 'trusted-host';
-    if (!validApprover || !validAuthority) {
-      const err = new Error(`Privileged authorization requires trusted host user approval; rejected approver "${approver}"`);
+    // 3. Cryptographic host approval verification: reject plain objects without signature
+    if (!proof.signature) {
+      const err = new Error('Privileged authorization requires unforgeable host approval proof with cryptographic signature; self-issuance is forbidden');
       err.code = 'ERR_UNTRUSTED_AUTHORIZATION_SOURCE';
       throw err;
     }
 
-    // 4. Token signature validation
-    if (typeof token === 'string' && token.trim()) {
-      this.allowOnceTokens.add(token.trim());
-      return true;
+    if (!this.#hostAuthority || typeof this.#hostAuthority.verifyApproval !== 'function') {
+      const err = new Error('No trusted host approval authority configured for this gate; cannot verify privileged approvals');
+      err.code = 'ERR_NO_HOST_AUTHORITY';
+      throw err;
     }
-    if (token && typeof token === 'object' && token.toolName) {
-      if (token.approver && token.approver !== 'host-user' && token.approver !== 'human-user' && token.approver !== 'user') {
-        const err = new Error(`Privileged authorization object contains untrusted approver "${token.approver}"`);
-        err.code = 'ERR_UNTRUSTED_AUTHORIZATION_SOURCE';
-        throw err;
-      }
-      const actionType = token.actionType || 'destructive';
-      const sig = `${actionType}:${token.toolName}:${JSON.stringify(token.args || {})}`;
-      this.allowOnceTokens.add(sig);
-      return true;
+
+    if (!this.#hostAuthority.verifyApproval(proof)) {
+      const err = new Error('Privileged authorization requires trusted host user approval; rejected untrusted or unverified signature');
+      err.code = 'ERR_UNTRUSTED_AUTHORIZATION_SOURCE';
+      throw err;
     }
-    return false;
+
+    const actionType = proof.actionType || 'destructive';
+    const sig = `${actionType}:${proof.toolName}:${JSON.stringify(proof.args || {})}`;
+    this.allowOnceTokens.add(sig);
+    return true;
   }
 
   preToolGate({ toolName, args = {}, targetPath = null, actionType = 'read', workerId = null } = {}) {
@@ -483,27 +648,10 @@ export class HarnessExecutionGate {
       } else if (hasSelfClaim && evidenceRefs.length > 0) {
         let allValid = true;
         for (const ref of evidenceRefs) {
-          if (!ref || typeof ref !== 'string') {
+          const check = this.evidenceVerifier.verifyArtifact(ref, { result });
+          if (!check.valid) {
             allValid = false;
-            warning = 'Invalid evidence reference: expected non-empty path string';
-            break;
-          }
-          try {
-            const resolvedEvidence = assertWorkspaceBoundary(ref, this.cwd);
-            if (!fs.existsSync(resolvedEvidence)) {
-              allValid = false;
-              warning = `Independent verification failed: evidence artifact "${ref}" does not exist on disk`;
-              break;
-            }
-            const stat = fs.statSync(resolvedEvidence);
-            if (!stat.isFile() || stat.size === 0) {
-              allValid = false;
-              warning = `Independent verification failed: evidence artifact "${ref}" is empty or not a regular file`;
-              break;
-            }
-          } catch (err) {
-            allValid = false;
-            warning = `Independent verification failed: evidence artifact "${ref}" is outside workspace or invalid: ${err.message}`;
+            warning = check.warning;
             break;
           }
         }
@@ -546,7 +694,9 @@ export class HarnessExecutionGate {
       auditLog: this.auditLog,
       contextualRequested: this.contextual?.contextual?.requested || [],
       depth: this.depth + 1,
-      enforcementRuntime: this.enforcementRuntime
+      enforcementRuntime: this.enforcementRuntime,
+      hostAuthority: null, // Delegated workers NEVER receive host authority
+      evidenceVerifier: this.evidenceVerifier
     });
   }
 }
