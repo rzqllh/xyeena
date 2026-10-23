@@ -1,27 +1,27 @@
-# Orchestration Protocol
+# Orchestration protocol
 
-## Manager controlled DAG
+Xyeena Rig maintains a single workflow governor. Workers cannot create uncontrolled subagent trees or increase the permissions delegated to them.
 
-Only the Governor owns topology. Workers cannot recursively construct an agent mesh.
+## Task model
 
-Supported coordination message types are intentionally small:
+Tasks have bounded scope, explicit dependencies, execution eligibility and acceptance conditions. Supported coordination types include `ASSIGN`, `STATUS`, `QUESTION`, `RESULT`, `FINDING`, `CHALLENGE`, `RESPONSE`, `EVIDENCE`, `BLOCKED`, `FAILED`, `CANCEL` and `CAPABILITY_REQUEST`.
 
-`ASSIGN`, `STATUS`, `QUESTION`, `RESULT`, `FINDING`, `CHALLENGE`, `RESPONSE`, `EVIDENCE`, `BLOCKED`, `FAILED`, `CANCEL`, `CAPABILITY_REQUEST`.
+Large results should be stored as artifacts referenced by identifier, not duplicated across all workers.
 
-Large output belongs in artifacts and is referenced by ID/path rather than pasted into every parent message.
+## Execution selection
 
-## Challenge loop
+The governor may select an eligible inline executor, a native host worker or an optional Simpul backend. Selecting a backend requires more than transport connectivity: actual execution readiness, host permission authority, cancellation capability and available budgets must be verified. If unavailable, delegate safely elsewhere or return BLOCKED.
 
-Auditor finding -> Governor -> Executor response/evidence -> Governor adjudication. The Governor can accept, reject, request discriminating evidence or escalate. Findings are not settled by confidence or majority vote.
+Independent read-only tasks may run concurrently. Shared writes require serialization or demonstrably separate worktree isolation.
 
-## Parallelism
+## Review and verification
 
-Independent read/research/review tasks may run concurrently. Shared-write tasks are serialized unless isolated workspaces/worktrees make their write sets independent.
+The reviewer evaluates evidence against acceptance criteria. A model status label or locally written JSON is not sufficient. Independent verification failures result in REVIEW_REQUIRED or BLOCKED, not a fabricated success.
 
 ## Recovery
 
-Agent state and task state are separate. If a worker fails, its non-terminal task can return to `READY` and be dispatched to a new worker with the same context pack.
+Task state is distinct from worker process state. Checkpoints and per-run locking prevent competing resume operations. Idempotent tasks may be retried with bounded backoff; uncertain non-idempotent writes and external operations require explicit reconciliation rather than automatic replay.
 
-## Breakers
+Anti-loop safeguards stop repeated failing execution/review cycles and return control to the operator when authorization or new evidence is required.
 
-Repeated findings or excessive review cycles trip the Governor breaker. The system then re-diagnoses, replans, escalates the model/role, asks the user when authority is required, or aborts when no defensible route remains.
+See [Architecture](ARCHITECTURE.md), [Orchestration routing](INTELLIGENT-ROUTING.md) and [Operational acceptance](xyeena-rig/ACCEPTANCE_MATRIX.md).

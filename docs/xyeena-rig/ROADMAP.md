@@ -1,31 +1,24 @@
-# Roadmap — Unified Enterprise Rig
+# Capability roadmap
 
-**Baseline:** `origin/main` commit `4f0fa5e`, `v0.4.1` (2026-10-23).  
-**Target:** Enterprise-Ready Xyeena Rig, independently verified and ready for authorized release (`0.5.0`).  
-**Status:** All engineering phases P01–P08 completed and verified.
+The eight engineering phases are integrated into `main`. Source implementation and automated verification are distinct from operational release acceptance.
 
----
+| Phase | Requirements | Delivered capability | Acceptance state |
+| --- | --- | --- | --- |
+| P01 — Discovery | R01–R02 | Host skill/plugin inventory, provenance, collisions and dependency closure | CI validated |
+| P02 — Routing | R03–R04 | Single governor, external skills arbitration and native fallback | CI validated |
+| P03 — Harness | R05, R10 | Execution gates, scope checks, consent contracts and verifier interfaces | CI validated; host interception pending |
+| P04 — Delegation | R06–R08 | Simpul/native adapter contracts, readiness probing, resource budgets | CI validated; Simpul supervisor blocked |
+| P05 — Recovery | R09–R10 | Checkpoints, guarded resume, concurrency control and bounded retries | CI validated |
+| P06 — Packaging | R11–R12 | Compact install, legacy migration, managed backups and rollback | CI validated |
+| P07 — Hardening | R13–R14 | Cross-platform tests, negative cases and multi-host fixtures | CI validated; live host acceptance pending |
+| P08 — Release | R15 | Packaging and release-readiness documentation | Candidate only; no public release |
 
-## 1. Enterprise Phase Roadmap
+## Operational release gates
 
-| Phase | Branch | Objective & Key Capabilities | Requirements | Acceptance | Status |
-| --- | --- | --- | --- | --- | --- |
-| **P01** | `feat/rig-enterprise-p01-discovery` | Unified skill discovery across 5 runtimes, plugin enumeration, provenance, collision precedence, and dependency closure | R01, R02 | A11, A18, A21, A22 | **CI_PASS** ([PR #18](https://github.com/rzqllh/xyeena/pull/18)) |
-| **P02** | `feat/rig-enterprise-p02-skill-orchestration` | Superpowers & Superior arbitration, single governor (`xyeena-rig`), deduplicated roles, 8-case native parity fallback | R03, R04 | A10, A23, A24 | **CI_PASS** ([PR #19](https://github.com/rzqllh/xyeena/pull/19)) |
-| **P03** | `feat/rig-enterprise-p03-harness` | Executable Harness enforcement, `HarnessExecutionGate`, workspace containment, non-escalation, Allow Once / Deny / Question | R05, R10 | A12, A13, A25, A28 | **CI_PASS** ([PR #20](https://github.com/rzqllh/xyeena/pull/20)) |
-| **P04** | `feat/rig-enterprise-p04-subagents` | Simpul FastMCP adapter, host-native subagent adapter, `ResourceBudgetLedger`, unisolated write serialization, fallback priority | R06, R07, R08 | A14, A14a, A15, A16, A26 | **INTEGRATION_VERIFIED; LIVE_BLOCKED** ([PR #21](https://github.com/rzqllh/xyeena/pull/21)) |
-| **P05** | `feat/rig-enterprise-p05-recovery` | `DurableCheckpointStore` atomic save/load, smart resume suggestion, unconsumed worker result reclaiming, anti-loop breaker | R08, R09, R10 | A16, A17, A26, A27, A28 | **CI_PASS** ([PR #22](https://github.com/rzqllh/xyeena/pull/22)) |
-| **P06** | `feat/rig-enterprise-p06-installer` | Compact installer lifecycle, ownership-aware 19-skill migration, user notes preservation, slash aliases index, rollback journal | R11, R12 | A05, A06, A08, A29, A30 | **CI_PASS** ([PR #23](https://github.com/rzqllh/xyeena/pull/23)) |
-| **P07** | `feat/rig-enterprise-p07-hardening` | Adversarial prompt-injection resistance, null-byte path defense, secret credential sanitization, anti-recursion depth guard | R13, R14 | A18, A19, A20, A31, A32 | **FIXTURE_PASS; LIVE_BLOCKED** ([PR #24](https://github.com/rzqllh/xyeena/pull/24)) |
-| **P08** | `feat/rig-enterprise-p08-release` | Enterprise release candidate, documentation sync, package verification, independent QA verdict, and release runbook | R15 | A19, A20, A33 | **CONDITIONAL_GO** ([PR #25](https://github.com/rzqllh/xyeena/pull/25)) |
+1. **Host acceptance:** exercise installation, reload, actual invocation, authorization and safe failure on each declared host. Track unsupported host capabilities explicitly.
+2. **Simpul:** validate a deployed, authenticated supervisor that actually executes a task from submission through terminal status and cancellation; protocol-only coverage is insufficient.
+3. **Approval and interception:** verify host-sourced human approval and the actual interception boundary for privileged actions, or keep those actions disabled.
+4. **Release qualification:** reconcile acceptance criteria, security review and package provenance for the exact release commit.
+5. **Publication:** authorize a semantic version, tag/release and npm Trusted Publisher workflow only after preceding gates close.
 
----
-
-## 2. Release Gates Summary
-
-- **G0 — Scope:** Explicit runtime, workspace, consent, dry run, and third-party preservation -> **MET** (P01, P06).
-- **G1 — Inventory:** Observed and enabled/trusted states distinct; provenance tracked -> **MET** (P01).
-- **G2 — Execution:** Verified adapter, capabilities, and non-escalating worker boundaries -> **MET** (P03, P04).
-- **G3 — Reliability:** Durable checkpoints, unconsumed result reclaiming, anti-loop breakers -> **MET** (P05).
-- **G4 — Security & Hardening:** Red-team tests, path traversal defense, secret sanitization -> **MET** (P07).
-- **G5 — Release Packaging:** Tarball smoke, consumer install, reproducibility, and release candidate verdict -> **MET** (P08).
+No numeric completion percentage is assigned to pending live gates. See [Task tracker](TASK_TRACKER.md), [Acceptance](ACCEPTANCE_MATRIX.md) and [Validation](EVIDENCE.md).

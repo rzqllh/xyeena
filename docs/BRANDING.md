@@ -1,34 +1,15 @@
-# Xyeena product naming
+# Xyeena product names
 
-Xyeena is the umbrella brand. Each product has a distinct name and scope.
+**Xyeena** is the parent brand. **Xyeena Rig** is the developer-tooling package in this repository, distributed through npm as `xyeena-agent`. **Xyeena Notch** and mascot components are separate projects and are not bundled in Rig.
 
-| Name | Role | Code/distribution |
-| --- | --- | --- |
-| **Xyeena Rig** | Developer toolkit: selectable Agent Skills and opt-in project Harness | `rzqllh/xyeena`, npm `xyeena-agent` |
-| **Xyeena Notch** | Desktop companion with its Island interface | Separate repo `rzqllh/xyeena-notch`; not bundled in Rig |
-| **Xyn: The Lion Guardian** | Original Xyeena mascot identity | Mascot assets/components are managed separately from Rig |
+## Stable identifiers
 
-**Rig positioning:** Equip your agent. Guard your project.
+- npm name: `xyeena-agent`
+- CLI aliases: `xyeena`, `xyeena-agent`
+- Existing skill identifiers: `xyeena-*`
+- Plugin identifier: `xyeena`
+- Project state: `.xyeena/` and host-specific skill roots
 
-## Stable technical identifiers
+Brand descriptions must not imply that current repository source is available in the published package. The latest published baseline is `0.4.1`; later source changes are awaiting a separate release. Historical npm releases and Git tags are immutable.
 
-The rebrand changes product presentation, **not APIs or installation paths**:
-
-- npm name: `xyeena-agent` (do not rename to `xyeena-rig` or publish a duplicate package).
-- CLI commands: `xyeena` and `xyeena-agent`.
-- Existing Skill IDs: `xyeena-*` (e.g. `xyeena-core`), not `rig-*`.
-- Plugin IDs: `xyeena`; marketplace display names may say **Xyeena Rig**.
-- Installed project state: `.xyeena/`, `.agents/skills/`, and `.claude/skills/`.
-- Harness runtime, filenames and config keys stay unchanged.
-
-Refer to the product as **Xyeena Rig** in marketing, README and human-facing UI. Use `xyeena-agent` in exact npm commands, package links, migration instructions and release evidence. Use **Xyeena** alone for the parent brand only when speaking about the full product family.
-
-## Published npm versus current source
-
-[`xyeena-agent@0.2.0`](https://www.npmjs.com/package/xyeena-agent/v/0.2.0) was published before [the Rig branding PR #4](https://github.com/rzqllh/xyeena/pull/4). GitHub source carries the updated product identity. Version `0.2.1` shipped Rig branding in npm metadata, npm README and CLI help. The existing `0.2.0` tarball stays immutable, and the package identifier remains `xyeena-agent`.
-
-## Release policy
-
-`xyeena-agent@0.2.0` and GitHub tag `v0.2.0` are published, immutable historical release artifacts. The separate `0.2.1` patch was published after verification; historical releases and tags are never rewritten. Pure documentation changes alone do not warrant further npm version bumps.
-
-Do not import Notch, Island, or Xyn binaries/assets into the Rig package. They have separate delivery and licensing concerns.
+For product scope, see the [README](../README.md). For distribution policy, see [the release record](xyeena-rig/EVIDENCE.md).

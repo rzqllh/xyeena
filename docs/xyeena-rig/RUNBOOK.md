@@ -1,115 +1,56 @@
-# Enterprise Operator Runbook
+# Operations runbook
 
-**Environment:** Node.js >=22.14.0  
-**Scope:** Xyeena Rig enterprise operations, deployment, migration, rollback, and verification.
+Requirements: Node.js 22.14+, a Git checkout for source-only capabilities, and appropriate host permissions. Use isolated workspaces for migration or acceptance testing.
 
----
+## Validate source
 
-## 1. Automated Verification Suite
-
-Run full suite from repository root:
-
-```bash
-# 1. Clean installation of dependencies
+```sh
 npm ci
-
-# 2. Comprehensive test suite (277 unit/integration tests)
 npm test
-
-# 3. Capability inventory and runtime manifests check
 npm run check
-
-# 4. Scenario intent evaluations (18 scenarios)
 npm run eval
-
-# 5. Core Harness contract tests (15 tests)
 npm run test:harness
-
-# 6. Packed consumer artifact smoke test
 npm run test:consumer
-
-# 7. Package build dry-run inspection
 npm pack --dry-run
 ```
 
-All 7 checks must exit with code 0 before any deployment or merge.
+Review the full CI result on the **exact commit** being approved. Do not treat a local or fixture result as live-host acceptance.
 
----
+## Install compact skills from source
 
-## 2. Compact Workspace Installation
-
-Exposes a single host-visible `xyeena-rig/SKILL.md` entry:
-
-```bash
-# Dry-run inspection (read-only, no disk changes)
+```sh
 node bin/xyeena.mjs setup compact --runtime "codex,antigravity" --preset complete --dry-run
-
-# Apply compact setup
 node bin/xyeena.mjs setup compact --runtime "codex,antigravity" --preset complete --yes
+node bin/xyeena.mjs setup check --runtime codex
 ```
 
----
+This affects only the selected skill roots and leaves third-party skills in place. Host activation must be checked separately. Global scope changes user-owned paths; preview before accepting.
 
-## 3. Legacy 19-Skill Migration & Compatibility
+## Migrating existing Xyeena skills
 
-Migrates existing loose standalone skills to the compact layout while preserving user modifications:
+Use the source library's `previewLegacyMigration` before `applyLegacyMigration`. Migrate only demonstrably owned and unmodified items, inspect the backup journal, and preserve unknown user files.
 
-```bash
-# Preview legacy migration
-node -e "import('./src/compact-setup.mjs').then(m => console.log(m.previewLegacyMigration({ runtime: 'all' })))"
+Before performing any restore, inspect its migration ID and the current files. `rollbackLegacyMigration` and `uninstallCompactSetup` refuse unowned targets. Prefer the documented CLI for supported workflows; direct library entry points are advanced APIs that may evolve between releases.
 
-# Apply migration (backs up owned skills to .xyeena/backups/legacy-migration/<id>/)
-node -e "import('./src/compact-setup.mjs').then(m => console.log(m.applyLegacyMigration({ runtime: 'all', yes: true })))"
-```
+Never remove a host's entire `.agents`, `.gemini`, `.claude`, or `.hermes` directory.
 
-### Rollback Legacy Migration
-Restores original standalone skills from the timestamped migration journal:
+## Running checks and agents
 
-```bash
-node -e "import('./src/compact-setup.mjs').then(m => console.log(m.rollbackLegacyMigration({ migrationId: '<migration-id>', yes: true })))"
-```
+`verify` runs project-defined scripts; `audit` and `scan` inspect project state. `orchestrate preview` is read-only; `orchestrate run --yes` starts a new restricted one-shot model session rather than changing the active IDE conversation.
 
----
+Privileged actions remain disabled if host approval or interception cannot be validated. Use the host's real permissions. Do not manufacture approvals, worker identities or evidence.
 
-## 4. Safe Compact Uninstallation
+## Recovery
 
-Safely removes `xyeena-rig` after verifying package ownership, saving a safety backup:
+Check the local `.xyeena/runs/` journal for an interrupted run. Inspect task status and evidence before a resume. A previous write, external API call or destructive action must not be automatically replayed solely because its result was not recorded. Protect backup, session and evidence files from source control.
 
-```bash
-node -e "import('./src/compact-setup.mjs').then(m => console.log(m.uninstallCompactSetup({ runtime: 'all', yes: true })))"
-```
+## Release
 
----
+1. Verify all automated checks and recorded approval gates on the intended release commit.
+2. Complete configured-host live acceptance and dependent Simpul supervisor verification, or document a restricted release scope.
+3. Inspect `npm pack --dry-run` and verify the package contents.
+4. Update the package and lockfile version together; validate plugin metadata consistency.
+5. Obtain separate authorization for GitHub Release/tag and npm publication.
+6. Use the repository's Trusted Publisher pipeline and verify the published artifact against source.
 
-## 5. DAG Crash Recovery & Smart Resume
-
-If an orchestration process is interrupted mid-run:
-
-```bash
-# Inspect checkpoint and get smart resume suggestion
-node -e "import('./src/task-runner.mjs').then(m => {
-  const store = new m.DurableCheckpointStore({ runId: '<runId>' });
-  const cp = store.loadCheckpoint();
-  console.log(m.formatResumeSuggestion(cp));
-})"
-```
-
-Resume execution by re-running with the saved `runId`. Completed `VERIFIED` tasks will not be re-executed, and completed worker evidence on disk will be reclaimed without re-dispatching.
-
----
-
-## 6. Enterprise Release & Publication Procedure
-
-1. Verify all 8 stacked PRs (PR #18 through PR #25) are reviewed.
-2. Merge PRs sequentially into `main` starting from PR #18.
-3. Validate `main` baseline passes all 7 validation scripts.
-4. Obtain explicit operator authorization for publication.
-5. Create release tag:
-   ```bash
-   git tag -a v0.5.0 -m "Release v0.5.0: Enterprise Xyeena Rig"
-   git push origin v0.5.0
-   ```
-6. Publish to npm:
-   ```bash
-   npm publish
-   ```
+**Current status:** `0.5.0` is not published. No release tag or npm command is implied by this runbook. See [Task tracker](TASK_TRACKER.md).
