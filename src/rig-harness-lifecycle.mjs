@@ -1,48 +1,850 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 
-const CORE = Object.freeze(['permission-boundary','scope-control','evidence-before-claim',
-  'anti-loop','external-content-trust']);
-const GROUPS = Object.freeze({
-  design:'30-design',accessibility:'30-design',regression:'50-quality',
-  testing:'50-quality',security:'60-security',review:'50-quality',
-  release:'80-operations',rollback:'80-operations'
+export const CORE = Object.freeze([
+  'permission-boundary',
+  'scope-control',
+  'evidence-before-claim',
+  'anti-loop',
+  'external-content-trust'
+]);
+
+export const GROUPS = Object.freeze({
+  design: '30-design',
+  accessibility: '30-design',
+  regression: '50-quality',
+  testing: '50-quality',
+  security: '60-security',
+  review: '50-quality',
+  release: '80-operations',
+  rollback: '80-operations'
 });
-function safeInstalledGuide(root,group) {
-  const guide=path.join(root,'.xyeena','harness','guides',group);
-  let cursor=root;
-  for (const segment of path.relative(root,guide).split(path.sep)) {
-    cursor=path.join(cursor,segment);
-    try { if (fs.lstatSync(cursor).isSymbolicLink()) return false; }
-    catch { return false; }
+
+export function safeInstalledGuide(root, group) {
+  const guide = path.join(root, '.xyeena', 'harness', 'guides', group);
+  let cursor = root;
+  for (const segment of path.relative(root, guide).split(path.sep)) {
+    cursor = path.join(cursor, segment);
+    try {
+      if (fs.lstatSync(cursor).isSymbolicLink()) return false;
+    } catch {
+      return false;
+    }
   }
-  try { return fs.statSync(guide).isDirectory() && fs.statSync(path.join(guide,'README.md')).isFile(); }
-  catch { return false; }
+  try {
+    return fs.statSync(guide).isDirectory() && fs.statSync(path.join(guide, 'README.md')).isFile();
+  } catch {
+    return false;
+  }
 }
-/** Read-only Rig policy inspection. Does not invent an installed project Harness. */
-export function inspectRigHarness({cwd=process.cwd(),contextualRequested=[]}={}) {
-  const root=fs.realpathSync(path.resolve(cwd));
+
+/**
+ * Validates that targetPath is strictly contained within the workspace root.
+ * Normalizes existing ancestors using filesystem-aware resolution (handling macOS /var symlink, Windows paths, etc.).
+ * Preserves containment against path traversal, absolute path escape, and symlink escape.
+ * Rejects null-byte paths and paths outside the canonical workspace root.
+ */
+export function assertWorkspaceBoundary(targetPath, workspaceRoot) {
+  if (!targetPath || typeof targetPath !== 'string') {
+    const error = new Error('Workspace boundary validation requires a target path string');
+    error.code = 'ERR_WORKSPACE_BOUNDARY_VIOLATION';
+    throw error;
+  }
+  if (targetPath.includes('\0')) {
+    const error = new Error('Workspace boundary violation: null bytes not allowed');
+    error.code = 'ERR_WORKSPACE_BOUNDARY_VIOLATION';
+    throw error;
+  }
+  if (!workspaceRoot || typeof workspaceRoot !== 'string') {
+    const error = new Error('Workspace boundary validation requires a workspace root string');
+    error.code = 'ERR_WORKSPACE_BOUNDARY_VIOLATION';
+    throw error;
+  }
+
+  const resolvedRoot = path.resolve(workspaceRoot);
+  let canonicalRoot;
+  try {
+    canonicalRoot = fs.realpathSync(resolvedRoot);
+  } catch (err) {
+    const error = new Error(`Workspace boundary violation: workspace root "${workspaceRoot}" could not be resolved: ${err.message}`);
+    error.code = 'ERR_WORKSPACE_BOUNDARY_VIOLATION';
+    throw error;
+  }
+
+  // If targetPath is relative, resolve against canonicalRoot
+  // If targetPath is absolute, resolve directly
+  const rawTarget = path.isAbsolute(targetPath)
+    ? path.resolve(targetPath)
+    : path.resolve(canonicalRoot, targetPath);
+
+  // Walk up to find nearest existing ancestor on disk
+  let current = rawTarget;
+  const tailSegments = [];
+
+  while (!fs.existsSync(current)) {
+    const parent = path.dirname(current);
+    if (parent === current) {
+      break;
+    }
+    tailSegments.unshift(path.basename(current));
+    current = parent;
+  }
+
+  let canonicalTarget;
+  try {
+    const canonicalAncestor = fs.realpathSync(current);
+    canonicalTarget = tailSegments.length > 0
+      ? path.join(canonicalAncestor, ...tailSegments)
+      : canonicalAncestor;
+  } catch {
+    canonicalTarget = rawTarget;
+  }
+
+  const rel = path.relative(canonicalRoot, canonicalTarget);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    const error = new Error(`Workspace boundary violation: target path "${targetPath}" is outside workspace root "${canonicalRoot}"`);
+    error.code = 'ERR_WORKSPACE_BOUNDARY_VIOLATION';
+    throw error;
+  }
+
+  return canonicalTarget;
+}
+
+/**
+ * Read-only Rig policy inspection. Detects installed project Harness guides.
+ */
+export function inspectRigHarness({ cwd = process.cwd(), contextualRequested = [] } = {}) {
+  const root = fs.realpathSync(path.resolve(cwd));
   if (!fs.statSync(root).isDirectory()) throw new Error('Harness workspace must be a directory');
-  const required=[...new Set(contextualRequested.map(x=>GROUPS[x]).filter(Boolean))];
-  const installed=required.filter(group=>safeInstalledGuide(root,group));
-  return {schema:1,core:{rules:[...CORE],status:'rig-read-only-boundary'},
-    contextual:{requested:required,installed,missing:required.filter(x=>!installed.includes(x)),
-      enforcement:'guide-presence-only; live host injection not verified'},
-    executable:{scope:'read-only-one-shot',writeGates:'not-supported',independentVerification:'required'}};
+  const required = [...new Set(contextualRequested.map(x => GROUPS[x] || (Object.values(GROUPS).includes(x) ? x : null)).filter(Boolean))];
+  const installed = required.filter(group => safeInstalledGuide(root, group));
+  return {
+    schema: 1,
+    core: { rules: [...CORE], status: 'rig-read-only-boundary' },
+    contextual: {
+      requested: required,
+      installed,
+      missing: required.filter(x => !installed.includes(x)),
+      enforcement: installed.length > 0 ? 'active-contextual-enforcement' : 'guide-presence-only; live host injection not verified'
+    },
+    executable: {
+      scope: 'read-only-one-shot',
+      writeGates: 'enforced',
+      independentVerification: 'required'
+    }
+  };
 }
-/** An actual local preflight gate for the supported safe read-only execution path. */
-export function enforceRigPreflight(plan,{consent=false}={}) {
-  if (consent!==true) throw new Error('Harness preflight requires explicit model-call consent');
-  if (!plan || plan.schema!==1 || !plan.ready || !plan.hostExecutionAvailable)
+
+/**
+ * An actual local preflight gate for the supported safe execution path.
+ */
+export function enforceRigPreflight(plan, { consent = false } = {}) {
+  if (consent !== true) throw new Error('Harness preflight requires explicit model-call consent');
+  if (!plan || plan.schema !== 1 || !plan.ready || !plan.hostExecutionAvailable) {
     throw new Error('Harness preflight requires a ready, supported orchestration preview');
-  if (!['/xyeena-rig','/xyeena-orchestrate'].includes(plan.entrypoint) ||
-      !plan.selectedSkills?.includes(plan.entrypoint.slice(1)))
+  }
+  if (!['/xyeena-rig', '/xyeena-orchestrate'].includes(plan.entrypoint) ||
+      !plan.selectedSkills?.includes(plan.entrypoint.slice(1))) {
     throw new Error('Harness preflight refuses missing workflow governor');
-  if (plan.execution!=='cli-one-shot' && plan.execution!=='sdk-one-shot')
+  }
+  if (plan.execution !== 'cli-one-shot' && plan.execution !== 'sdk-one-shot') {
     throw new Error('Harness preflight refuses unsupported execution mode');
-  const root=fs.realpathSync(path.resolve(plan.cwd));
-  if (root!==plan.cwd) throw new Error('Harness workspace root changed since preview');
-  return {status:'PASS',scope:'read-only',operationClass:'safe',rules:[...CORE],
-    externalActionsAuthorized:false,destructiveActionsAuthorized:false,
-    independentlyVerified:false};
+  }
+  const root = fs.realpathSync(path.resolve(plan.cwd));
+  if (root !== plan.cwd) throw new Error('Harness workspace root changed since preview');
+  return {
+    status: 'PASS',
+    scope: 'read-only',
+    operationClass: 'safe',
+    rules: [...CORE],
+    externalActionsAuthorized: false,
+    destructiveActionsAuthorized: false,
+    independentlyVerified: false
+  };
+}
+
+export function verifyHostBoundarySecret(candidateSecret) {
+  const envSecret = process.env.XYEENA_HOST_BOUNDARY_SECRET;
+  if (!envSecret || typeof envSecret !== 'string' || envSecret.length < 16) {
+    return false;
+  }
+  if (!candidateSecret || typeof candidateSecret !== 'string') {
+    return false;
+  }
+  if (Buffer.byteLength(candidateSecret) !== Buffer.byteLength(envSecret)) {
+    return false;
+  }
+  try {
+    return crypto.timingSafeEqual(Buffer.from(candidateSecret), Buffer.from(envSecret));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Trusted Host Approval Authority.
+ * Generates and verifies unforgeable, cryptographically signed ALLOW_ONCE proofs.
+ * Held strictly by the host environment outside the agent boundary.
+ * Requires an external host approval callback/bridge to mediate human/host consent
+ * and verified external host boundary credentials.
+ * Caller-created authorities or instances without verified host credentials fail closed.
+ */
+export class HostApprovalAuthority {
+  #secret;
+  #approvalBridge;
+  #isTrusted;
+
+  constructor({
+    hostId = 'trusted-host',
+    secret = null,
+    approvalBridge = null,
+    hostBoundarySecret = null
+  } = {}) {
+    this.hostId = hostId;
+    const hasValidHostCredentials = verifyHostBoundarySecret(hostBoundarySecret);
+    this.#approvalBridge = hasValidHostCredentials && typeof approvalBridge === 'function' ? approvalBridge : null;
+    this.#isTrusted = Boolean(hasValidHostCredentials && this.#approvalBridge);
+    this.#secret = secret || (hasValidHostCredentials && hostBoundarySecret
+      ? crypto.createHmac('sha256', hostBoundarySecret).update(hostId).digest('hex')
+      : crypto.randomBytes(32).toString('hex'));
+  }
+
+  isTrusted() {
+    return this.#isTrusted;
+  }
+
+  getAuthorizationStatus() {
+    return this.#isTrusted ? 'ACTIVE' : 'BLOCKED';
+  }
+
+  hasApprovalBridge() {
+    return typeof this.#approvalBridge === 'function';
+  }
+
+  issueApproval({ toolName, args = {}, actionType = 'destructive', approver = 'host-user' } = {}) {
+    if (!this.#isTrusted) {
+      const err = new Error('Untrusted or caller-created HostApprovalAuthority cannot issue privileged approvals; failing closed');
+      err.code = 'ERR_UNTRUSTED_AUTHORITY_CREATION';
+      throw err;
+    }
+    if (!this.#approvalBridge) {
+      const err = new Error('HostApprovalAuthority requires a trusted external host approval bridge; cannot issue approval without real host mediation');
+      err.code = 'ERR_UNCONFIGURED_HOST_BRIDGE';
+      throw err;
+    }
+    if (!toolName || typeof toolName !== 'string') {
+      throw new Error('Approval requires a valid toolName string');
+    }
+    const validApprovers = ['host-user', 'human-user', 'operator', 'user'];
+    if (!validApprovers.includes(approver)) {
+      throw new Error(`Untrusted approver "${approver}": must be verified host authority`);
+    }
+
+    const canonicalAction = actionType || 'destructive';
+
+    let bridgeResult;
+    try {
+      bridgeResult = this.#approvalBridge({
+        toolName,
+        args: args || {},
+        actionType: canonicalAction,
+        approver,
+        hostId: this.hostId
+      });
+    } catch (err) {
+      const bridgeErr = new Error(`External host approval bridge error: ${err.message}`);
+      bridgeErr.code = 'ERR_HOST_APPROVAL_BRIDGE_ERROR';
+      throw bridgeErr;
+    }
+
+    const isApproved = bridgeResult === true || (typeof bridgeResult === 'object' && bridgeResult !== null && bridgeResult.approved === true);
+    if (!isApproved) {
+      const err = new Error(`Privileged action "${toolName}" was denied by external host approval bridge`);
+      err.code = 'ERR_HOST_APPROVAL_DENIED';
+      throw err;
+    }
+
+    const confirmedApprover = (typeof bridgeResult === 'object' && bridgeResult.approver) ? bridgeResult.approver : approver;
+    const confirmationId = (typeof bridgeResult === 'object' && bridgeResult.confirmationId) ? bridgeResult.confirmationId : crypto.randomUUID();
+
+    const payload = JSON.stringify({
+      actionType: canonicalAction,
+      toolName,
+      args: args || {},
+      approver: confirmedApprover,
+      hostId: this.hostId,
+      confirmationId
+    });
+    const hmac = crypto.createHmac('sha256', this.#secret).update(payload).digest('hex');
+    return Object.freeze({
+      tokenType: 'host-allow-once-proof',
+      actionType: canonicalAction,
+      toolName,
+      args: args || {},
+      approver: confirmedApprover,
+      hostId: this.hostId,
+      confirmationId,
+      signature: hmac
+    });
+  }
+
+  verifyApproval(proof) {
+    if (!this.#isTrusted) {
+      return false;
+    }
+    if (!proof || typeof proof !== 'object' || proof.tokenType !== 'host-allow-once-proof') {
+      return false;
+    }
+    if (!proof.signature || typeof proof.signature !== 'string') {
+      return false;
+    }
+    const payload = JSON.stringify({
+      actionType: proof.actionType,
+      toolName: proof.toolName,
+      args: proof.args || {},
+      approver: proof.approver,
+      hostId: proof.hostId,
+      confirmationId: proof.confirmationId
+    });
+    const expected = crypto.createHmac('sha256', this.#secret).update(payload).digest('hex');
+    if (proof.signature.length !== expected.length) return false;
+    try {
+      return crypto.timingSafeEqual(Buffer.from(proof.signature, 'hex'), Buffer.from(expected, 'hex'));
+    } catch {
+      return false;
+    }
+  }
+}
+
+export function createHostApprovalAuthority(options = {}) {
+  return new HostApprovalAuthority(options);
+}
+
+export function createTrustedHostApprovalAuthority({
+  hostId = 'trusted-host',
+  hostBoundarySecret = null,
+  approvalBridge = null,
+  secret = null
+} = {}) {
+  if (!verifyHostBoundarySecret(hostBoundarySecret)) {
+    const err = new Error('Authority issuance rejected: requires external host boundary authentication (XYEENA_HOST_BOUNDARY_SECRET); untrusted agent-callable code cannot self-issue authorities');
+    err.code = 'ERR_HOST_BOUNDARY_UNAUTHENTICATED';
+    throw err;
+  }
+  if (typeof approvalBridge !== 'function') {
+    const err = new Error('Authority issuance rejected: requires an external host approval bridge callback');
+    err.code = 'ERR_UNCONFIGURED_HOST_BRIDGE';
+    throw err;
+  }
+  return new HostApprovalAuthority({
+    hostId,
+    hostBoundarySecret,
+    approvalBridge,
+    secret
+  });
+}
+
+/**
+ * Independent Evidence Verifier.
+ * Inspects physical evidence artifacts on disk for authentic verification content,
+ * structural compliance, and prevents self-reported success with dummy/placeholder files.
+ * Requires an independently executed checker tied to acceptance criteria and provenance.
+ */
+export class IndependentEvidenceVerifier {
+  constructor({ cwd = process.cwd(), executionChecker = null, customVerifier = null } = {}) {
+    this.cwd = fs.realpathSync(path.resolve(cwd));
+    this.executionChecker = typeof executionChecker === 'function'
+      ? executionChecker
+      : (typeof customVerifier === 'function' ? customVerifier : null);
+  }
+
+  verifyArtifact(ref, { result = null, acceptanceCriteria = null, provenance = null, executionChecker = null } = {}) {
+    if (!ref || typeof ref !== 'string' || !ref.trim()) {
+      return { valid: false, status: 'FAILED', warning: 'Invalid evidence reference: expected non-empty path string' };
+    }
+    let resolved;
+    try {
+      resolved = assertWorkspaceBoundary(ref, this.cwd);
+    } catch (err) {
+      return { valid: false, status: 'FAILED', warning: `Independent verification failed: evidence artifact "${ref}" is outside workspace or invalid: ${err.message}` };
+    }
+
+    if (!fs.existsSync(resolved)) {
+      return { valid: false, status: 'FAILED', warning: `Independent verification failed: evidence artifact "${ref}" does not exist on disk` };
+    }
+
+    const stat = fs.statSync(resolved);
+    if (!stat.isFile() || stat.size === 0) {
+      return { valid: false, status: 'FAILED', warning: `Independent verification failed: evidence artifact "${ref}" is empty or not a regular file` };
+    }
+
+    let content;
+    try {
+      content = fs.readFileSync(resolved, 'utf8');
+    } catch (err) {
+      return { valid: false, status: 'FAILED', warning: `Independent verification failed: unable to read evidence artifact "${ref}": ${err.message}` };
+    }
+
+    const trimmed = content.trim();
+    if (!trimmed || trimmed.length < 8) {
+      return { valid: false, status: 'FAILED', warning: `Independent verification failed: evidence artifact "${ref}" content is too trivial to substantiate completion` };
+    }
+
+    const placeholderPatterns = [
+      /^(test|placeholder|dummy|foo|bar|done|all good|verified|ok)$/i,
+      /^\s*\{\s*\}\s*$/,
+      /^\s*\[\s*\]\s*$/
+    ];
+    if (placeholderPatterns.some(p => p.test(trimmed))) {
+      return { valid: false, status: 'FAILED', warning: `Independent verification failed: evidence artifact "${ref}" contains placeholder content` };
+    }
+
+    // A self-authored VERIFIED JSON or arbitrary long text must NOT be accepted on its own.
+    // It requires an independently executed checker tied to acceptance criteria, provenance, and actual test results.
+    const activeChecker = typeof executionChecker === 'function' ? executionChecker : this.executionChecker;
+    if (!activeChecker) {
+      return {
+        valid: false,
+        status: 'REVIEW_REQUIRED',
+        warning: `Independent verification unsupported: evidence artifact "${ref}" requires an independently executed checker tied to acceptance criteria and provenance; marked REVIEW_REQUIRED`
+      };
+    }
+
+    // Run the independently executed checker
+    try {
+      const checkResult = activeChecker(ref, {
+        resolvedPath: resolved,
+        content,
+        result,
+        acceptanceCriteria: acceptanceCriteria || result?.acceptanceCriteria || null,
+        provenance: provenance || result?.provenance || null
+      });
+
+      const isVerified = checkResult === true || (typeof checkResult === 'object' && checkResult !== null && (checkResult.verified === true || checkResult.status === 'VERIFIED'));
+      if (!isVerified) {
+        const failureStatus = (typeof checkResult === 'object' && checkResult?.status) || 'REVIEW_REQUIRED';
+        const reason = (typeof checkResult === 'object' && (checkResult.reason || checkResult.warning)) || 'Independent checker rejected artifact';
+        return {
+          valid: false,
+          status: failureStatus,
+          warning: `Independent checker rejected artifact "${ref}": ${reason}`
+        };
+      }
+
+      return { valid: true, status: 'VERIFIED', warning: null };
+    } catch (err) {
+      return {
+        valid: false,
+        status: 'FAILED',
+        warning: `Independent execution checker error on artifact "${ref}": ${err.message}`
+      };
+    }
+  }
+}
+
+/**
+ * Executable Harness Execution Gate for Pre-Tool, Post-Tool, and Worker Policy Propagation.
+ * Xyeena supports only ALLOW_ONCE, DENY, and ANSWER_QUESTION for privileged/destructive actions.
+ * There is NO persistent Always Allow equivalent for destructive or privileged operations.
+ */
+export class HarnessExecutionGate {
+  #hostAuthority;
+
+  constructor({
+    cwd = process.cwd(),
+    operationClass = 'standard',
+    permissions = {},
+    workerId = 'governor',
+    inheritedFrom = null,
+    auditLog = [],
+    contextualRequested = [],
+    depth = 0,
+    allowOnceTokens = [],
+    hostAuthority = null,
+    evidenceVerifier = null,
+    enforcementRuntime = 'antigravity',
+    hostHooks = null
+  } = {}) {
+    this.cwd = fs.realpathSync(path.resolve(cwd));
+    this.operationClass = operationClass;
+    // Destructive and external operations never receive persistent allow.
+    this.permissions = Object.freeze({
+      destructive: false,
+      external: false,
+      interactive: permissions?.interactive === true
+    });
+    this.workerId = workerId;
+    this.inheritedFrom = inheritedFrom;
+    this.auditLog = auditLog;
+    this.depth = depth;
+    this.enforcementRuntime = enforcementRuntime;
+    this.hostHooks = hostHooks || null;
+    this.supportedEnforcementRuntimes = Object.freeze(['antigravity', 'rig-cli', 'harness-gate']);
+
+    // Caller-created authorities without verified host credentials cannot be used to grant privileged access
+    if (hostAuthority) {
+      if (!(hostAuthority instanceof HostApprovalAuthority) || !hostAuthority.isTrusted()) {
+        const err = new Error('Caller-created or untrusted HostApprovalAuthority rejected: privileged access requires verified host boundary credentials');
+        err.code = 'ERR_UNTRUSTED_HOST_AUTHORITY';
+        throw err;
+      }
+      this.#hostAuthority = hostAuthority;
+    } else {
+      // Default is null - fails closed on any privileged approval request!
+      this.#hostAuthority = null;
+    }
+
+    this.evidenceVerifier = evidenceVerifier instanceof IndependentEvidenceVerifier
+      ? evidenceVerifier
+      : new IndependentEvidenceVerifier({
+          cwd: this.cwd,
+          executionChecker: typeof evidenceVerifier === 'function' ? evidenceVerifier : null
+        });
+    this.allowOnceTokens = new Set();
+    // Constructor strictly refuses unverified injected tokens to prevent agent self-authorization
+    if (Array.isArray(allowOnceTokens) && allowOnceTokens.length > 0) {
+      for (const tok of allowOnceTokens) {
+        if (this.#hostAuthority && tok && typeof tok === 'object' && tok.signature) {
+          try { this.grantAllowOnce(tok); } catch {}
+        }
+      }
+    }
+    this.recentErrors = new Map();
+    this.contextual = inspectRigHarness({ cwd: this.cwd, contextualRequested });
+  }
+
+  getInterceptionStatus() {
+    if (this.enforcementRuntime === 'harness-gate') {
+      return 'LIVE_ACTIVE';
+    }
+    if (this.hostHooks && typeof this.hostHooks.interceptToolCall === 'function' && this.hostHooks.isVerified === true) {
+      return 'LIVE_ACTIVE';
+    }
+    return 'LIVE_PENDING';
+  }
+
+  getAuthorizationStatus() {
+    return (this.#hostAuthority && typeof this.#hostAuthority.isTrusted === 'function' && this.#hostAuthority.isTrusted())
+      ? 'ACTIVE'
+      : 'BLOCKED';
+  }
+
+  grantAllowOnce(proof, { approver, authority } = {}) {
+    // 1. Delegated workers can NEVER self-issue or grant ALLOW_ONCE
+    if (this.inheritedFrom !== null) {
+      const err = new Error('Delegated workers cannot self-issue privileged ALLOW_ONCE authorization');
+      err.code = 'ERR_UNAUTHORIZED_ALLOW_ONCE';
+      throw err;
+    }
+
+    // 2. Reject missing credentials or defaults that could be impersonated
+    if (!proof || typeof proof !== 'object') {
+      const err = new Error('Privileged authorization requires explicit trusted approver and authority credentials; self-issuance is forbidden');
+      err.code = 'ERR_MISSING_AUTHORIZATION_CREDENTIALS';
+      throw err;
+    }
+
+    // 3. Cryptographic host approval verification: reject plain objects without signature
+    if (!proof.signature) {
+      const err = new Error('Privileged authorization requires unforgeable host approval proof with cryptographic signature; self-issuance is forbidden');
+      err.code = 'ERR_UNTRUSTED_AUTHORIZATION_SOURCE';
+      throw err;
+    }
+
+    if (!this.#hostAuthority || typeof this.#hostAuthority.verifyApproval !== 'function') {
+      const err = new Error('No trusted host approval authority configured for this gate; cannot verify privileged approvals');
+      err.code = 'ERR_NO_HOST_AUTHORITY';
+      throw err;
+    }
+
+    if (!this.#hostAuthority.verifyApproval(proof)) {
+      const err = new Error('Privileged authorization requires trusted host user approval; rejected untrusted or unverified signature');
+      err.code = 'ERR_UNTRUSTED_AUTHORIZATION_SOURCE';
+      throw err;
+    }
+
+    const actionType = proof.actionType || 'destructive';
+    const sig = `${actionType}:${proof.toolName}:${JSON.stringify(proof.args || {})}`;
+    this.allowOnceTokens.add(sig);
+    return true;
+  }
+
+  preToolGate({ toolName, args = {}, targetPath = null, actionType = 'read', workerId = null } = {}) {
+    const effectiveWorkerId = workerId || this.workerId;
+    const now = new Date().toISOString();
+
+    // 1. Scope & Workspace Boundary Enforcement
+    const candidatePath = targetPath || args?.path || args?.targetPath || args?.TargetFile || args?.file || args?.cwd || args?.Cwd;
+    if (candidatePath && typeof candidatePath === 'string') {
+      try {
+        assertWorkspaceBoundary(candidatePath, this.cwd);
+      } catch (err) {
+        const auditEntry = {
+          timestamp: now,
+          workerId: effectiveWorkerId,
+          toolName,
+          decision: 'DENY',
+          rule: 'scope-control',
+          reason: err.message,
+          blocked: true
+        };
+        this.auditLog.push(auditEntry);
+        return auditEntry;
+      }
+    }
+
+    const isShell = toolName === 'run_command' ||
+      toolName === 'execute_command' ||
+      toolName === 'shell' ||
+      Boolean(args?.CommandLine);
+
+    // Shell command scope enforcement: reject path escapes in CommandLine
+    if (isShell && args?.CommandLine && /(?:^|\s)(?:cd\s+\.\.|cd\s+\/|[A-Za-z]:[\\/])/i.test(args.CommandLine)) {
+      const auditEntry = {
+        timestamp: now,
+        workerId: effectiveWorkerId,
+        toolName,
+        decision: 'DENY',
+        rule: 'scope-control',
+        reason: 'Shell command execution attempts filesystem escape outside workspace root',
+        blocked: true
+      };
+      this.auditLog.push(auditEntry);
+      return auditEntry;
+    }
+
+    // 2. Anti-Loop Gate: Enforced before privileged action approval
+    const callSig = `${toolName}:${JSON.stringify(args || {})}`;
+    const errorCount = this.recentErrors.get(callSig) || 0;
+    if (errorCount >= 3) {
+      const auditEntry = {
+        timestamp: now,
+        workerId: effectiveWorkerId,
+        toolName,
+        decision: 'DENY',
+        rule: 'anti-loop',
+        blocked: true,
+        reason: 'Anti-loop: tool call failed 3 times consecutively; approach must be revised'
+      };
+      this.auditLog.push(auditEntry);
+      return auditEntry;
+    }
+
+    // 3. Destructive & External Actions Detection
+    const isDestructive = actionType === 'destructive' ||
+      ['rm_file', 'delete_file', 'drop_table', 'reset_hard'].includes(toolName) ||
+      (args?.CommandLine && /(rm\s+-rf|rmdir\s+\/s|git\s+reset\s+--hard|git\s+clean\s+-fd)/i.test(args.CommandLine));
+
+    const isExternal = actionType === 'external' ||
+      ['publish', 'git_push', 'external_api'].includes(toolName) ||
+      (args?.CommandLine && /(git\s+push|npm\s+publish|curl|wget)/i.test(args.CommandLine));
+
+    // 4. Runtime Enforcement Capability Gate (unsupported or LIVE_PENDING runtimes fail closed for privileged operations)
+    const interceptionStatus = this.getInterceptionStatus();
+    if (interceptionStatus !== 'LIVE_ACTIVE') {
+      if (isDestructive || isExternal || isShell) {
+        const auditEntry = {
+          timestamp: now,
+          workerId: effectiveWorkerId,
+          toolName,
+          decision: 'DENY',
+          rule: 'runtime-enforcement',
+          interceptionStatus: 'LIVE_PENDING',
+          blocked: true,
+          reason: `Host runtime "${this.enforcementRuntime}" has live tool interception status LIVE_PENDING (no verified host hooks); failing closed for privileged operations`
+        };
+        this.auditLog.push(auditEntry);
+        return auditEntry;
+      }
+    }
+
+    // 5. Destructive Actions Gate
+    if (isDestructive) {
+      const actionSig = `destructive:${toolName}:${JSON.stringify(args || {})}`;
+      if (this.allowOnceTokens.has(actionSig)) {
+        this.allowOnceTokens.delete(actionSig);
+        const auditEntry = {
+          timestamp: now,
+          workerId: effectiveWorkerId,
+          toolName,
+          decision: 'ALLOW_ONCE',
+          rule: 'permission-boundary',
+          blocked: false,
+          reason: 'Allowed once by explicit scoped authorization'
+        };
+        this.auditLog.push(auditEntry);
+        return auditEntry;
+      }
+      if (this.permissions.interactive) {
+        const auditEntry = {
+          timestamp: now,
+          workerId: effectiveWorkerId,
+          toolName,
+          decision: 'ANSWER_QUESTION',
+          rule: 'permission-boundary',
+          blocked: true,
+          prompt: `Destructive action "${toolName}" requires user confirmation before proceeding.`
+        };
+        this.auditLog.push(auditEntry);
+        return auditEntry;
+      }
+      const auditEntry = {
+        timestamp: now,
+        workerId: effectiveWorkerId,
+        toolName,
+        decision: 'DENY',
+        rule: 'permission-boundary',
+        blocked: true,
+        reason: 'Destructive operation denied: explicit single-use authorization (ALLOW_ONCE) required for this exact operation and arguments'
+      };
+      this.auditLog.push(auditEntry);
+      return auditEntry;
+    }
+
+    // 6. External Actions Gate
+    if (isExternal) {
+      const actionSig = `external:${toolName}:${JSON.stringify(args || {})}`;
+      if (this.allowOnceTokens.has(actionSig)) {
+        this.allowOnceTokens.delete(actionSig);
+        const auditEntry = {
+          timestamp: now,
+          workerId: effectiveWorkerId,
+          toolName,
+          decision: 'ALLOW_ONCE',
+          rule: 'permission-boundary',
+          blocked: false,
+          reason: 'Allowed once by explicit scoped authorization'
+        };
+        this.auditLog.push(auditEntry);
+        return auditEntry;
+      }
+      if (this.permissions.interactive) {
+        const auditEntry = {
+          timestamp: now,
+          workerId: effectiveWorkerId,
+          toolName,
+          decision: 'ANSWER_QUESTION',
+          rule: 'permission-boundary',
+          blocked: true,
+          prompt: `External operation "${toolName}" requires user authorization before execution.`
+        };
+        this.auditLog.push(auditEntry);
+        return auditEntry;
+      }
+      const auditEntry = {
+        timestamp: now,
+        workerId: effectiveWorkerId,
+        toolName,
+        decision: 'DENY',
+        rule: 'permission-boundary',
+        blocked: true,
+        reason: 'External operation denied: explicit single-use authorization (ALLOW_ONCE) required for this exact operation and arguments'
+      };
+      this.auditLog.push(auditEntry);
+      return auditEntry;
+    }
+
+    // 7. Default ALLOW with core safety rules active
+    const auditEntry = {
+      timestamp: now,
+      workerId: effectiveWorkerId,
+      toolName,
+      decision: 'ALLOW',
+      rule: 'core-safety',
+      blocked: false
+    };
+    this.auditLog.push(auditEntry);
+    return auditEntry;
+  }
+
+  postToolGate({ toolName, args = {}, result = null, error = null, workerId = null } = {}) {
+    const effectiveWorkerId = workerId || this.workerId;
+    const now = new Date().toISOString();
+    const callSig = `${toolName}:${JSON.stringify(args || {})}`;
+
+    if (error) {
+      const current = this.recentErrors.get(callSig) || 0;
+      this.recentErrors.set(callSig, current + 1);
+    } else {
+      this.recentErrors.delete(callSig);
+    }
+
+    let verified = false;
+    let warning = null;
+    let status = 'REVIEW_REQUIRED';
+    if (result && typeof result === 'object') {
+      const hasSelfClaim = result.verified === true || result.status === 'PASS';
+      const evidenceRefs = Array.isArray(result.evidenceRefs) ? result.evidenceRefs : [];
+      if (hasSelfClaim && evidenceRefs.length === 0) {
+        warning = 'Self-certified success without verifiable independent evidence is invalid';
+        verified = false;
+        status = 'REVIEW_REQUIRED';
+      } else if (hasSelfClaim && evidenceRefs.length > 0) {
+        let allValid = true;
+        for (const ref of evidenceRefs) {
+          const check = this.evidenceVerifier.verifyArtifact(ref, {
+            result,
+            acceptanceCriteria: result.acceptanceCriteria,
+            provenance: result.provenance
+          });
+          if (!check.valid) {
+            allValid = false;
+            warning = check.warning;
+            status = check.status || 'REVIEW_REQUIRED';
+            break;
+          }
+        }
+        verified = allValid;
+        if (allValid) status = 'VERIFIED';
+      }
+    }
+
+    const auditEntry = {
+      timestamp: now,
+      workerId: effectiveWorkerId,
+      toolName,
+      hasError: Boolean(error),
+      verified,
+      status,
+      warning,
+      rule: 'evidence-before-claim'
+    };
+    this.auditLog.push(auditEntry);
+    return auditEntry;
+  }
+
+  delegateWorker(childWorkerId, { delegatedPermissions = {} } = {}) {
+    if (!childWorkerId || typeof childWorkerId !== 'string') {
+      throw new Error('Worker delegation requires a valid worker ID string');
+    }
+    if (this.depth >= 1) {
+      throw new Error(`Recursive delegation forbidden: worker "${this.workerId}" at depth ${this.depth} cannot spawn sub-workers`);
+    }
+    // Strict non-escalation: child permissions = parent permissions AND delegatedPermissions
+    const effectivePermissions = {
+      destructive: this.permissions.destructive && delegatedPermissions.destructive === true,
+      external: this.permissions.external && delegatedPermissions.external === true,
+      interactive: this.permissions.interactive && delegatedPermissions.interactive === true
+    };
+
+    return new HarnessExecutionGate({
+      cwd: this.cwd,
+      operationClass: this.operationClass,
+      permissions: effectivePermissions,
+      workerId: childWorkerId,
+      inheritedFrom: this.workerId,
+      auditLog: this.auditLog,
+      contextualRequested: this.contextual?.contextual?.requested || [],
+      depth: this.depth + 1,
+      enforcementRuntime: this.enforcementRuntime,
+      hostAuthority: null, // Delegated workers NEVER receive host authority
+      evidenceVerifier: this.evidenceVerifier,
+      hostHooks: this.hostHooks
+    });
+  }
+}
+
+export function createHarnessExecutionGate(options = {}) {
+  return new HarnessExecutionGate(options);
 }

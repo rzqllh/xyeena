@@ -7,7 +7,7 @@ import { createAntigravitySdkAdapter } from './antigravity-sdk-adapter.mjs';
 import { inventoryFingerprint } from './skill-cache.mjs';
 import { inferWorkflowState } from './workflow-intent.mjs';
 import { buildEnterprisePolicy, nativeFallbackForSkill } from './enterprise-policy.mjs';
-import { inspectRigHarness, enforceRigPreflight } from './rig-harness-lifecycle.mjs';
+import { inspectRigHarness, enforceRigPreflight, createHarnessExecutionGate } from './rig-harness-lifecycle.mjs';
 
 const HOSTS = new Set(supportedSkillHosts());
 const VALID_STATES = new Set(['TRIAGE','DISCOVER','GRILL','RESEARCH','PROTOTYPE','DEFINE','PLAN','EXECUTE','DEBUG','VERIFY','REVIEW','RELEASE','CLOSE','ESCALATE']);
@@ -109,6 +109,11 @@ export async function executeOrchestration(plan, {
   if (!fresh.ready) throw new Error(fresh.reason || 'Orchestrator is unavailable');
   if (!fresh.hostExecutionAvailable) throw new Error(fresh.reason || 'No native host execution adapter');
   const harnessPreflight = enforceRigPreflight(fresh,{consent:yes});
+  const harnessGate = createHarnessExecutionGate({
+    cwd: plan.cwd,
+    operationClass: 'safe',
+    enforcementRuntime: plan.runtime
+  });
   if (typeof delegate !== 'boolean') throw new Error('Invalid delegation flag');
   if (delegate && plan.runtime !== 'antigravity')
     throw new Error('Subagent delegation is not enabled for this host bridge');
@@ -119,21 +124,75 @@ export async function executeOrchestration(plan, {
       cwd: plan.cwd, runtime: plan.runtime, selectedSkills: effectiveSkills,
       ...(command ? { command } : {}), ...(timeoutMs !== undefined ? { timeoutMs } : {})
     });
-    const result = await adapter.executeTask({
+    const taskPayload = {
       id: 'orchestrator-one-shot', title: plan.goal, state: 'READY', depends_on: [],
       scope: { readOnly: true, operationClass: 'safe' }
+    };
+    const preDecision = harnessGate.preToolGate({
+      toolName: `execute_task:${plan.runtime}`,
+      args: { id: taskPayload.id, title: taskPayload.title, cwd: plan.cwd },
+      actionType: 'read',
+      workerId: 'governor'
     });
+    if (preDecision.blocked) {
+      const err = new Error(`Task execution blocked by Harness gate: ${preDecision.reason || preDecision.decision}`);
+      err.code = 'ERR_HARNESS_BLOCKED';
+      err.decision = preDecision;
+      throw err;
+    }
+    let result = null, executionError = null;
+    try {
+      result = await adapter.executeTask(taskPayload);
+    } catch (err) {
+      executionError = err;
+      throw err;
+    } finally {
+      harnessGate.postToolGate({
+        toolName: `execute_task:${plan.runtime}`,
+        args: { id: taskPayload.id, title: taskPayload.title },
+        result,
+        error: executionError,
+        workerId: 'governor'
+      });
+    }
     return { ...result, verified: false, evidenceRefs: [], status: 'REVIEW_REQUIRED',
-      harnessPreflight, entrypoint: plan.entrypoint, selectedSkills: effectiveSkills, skillPaths: effectiveSkillPaths };
+      harnessPreflight, harnessGate, entrypoint: plan.entrypoint, selectedSkills: effectiveSkills, skillPaths: effectiveSkillPaths };
   }
   const adapter = antigravityAdapterFactory({
     cwd: plan.cwd, skillPaths: effectiveSkillPaths, enableSubagents: delegate,
     ...(python ? { python } : {}), ...(timeoutMs !== undefined ? { timeoutMs } : {})
   });
-  const result = await adapter.executeTask({
+  const taskPayload = {
     id: 'orchestrator-one-shot', title: plan.goal, state: 'READY', depends_on: [],
     scope: { readOnly: true, operationClass: 'safe' }
+  };
+  const preDecision = harnessGate.preToolGate({
+    toolName: `execute_task:${plan.runtime}`,
+    args: { id: taskPayload.id, title: taskPayload.title, cwd: plan.cwd },
+    actionType: 'read',
+    workerId: 'governor'
   });
+  if (preDecision.blocked) {
+    const err = new Error(`Task execution blocked by Harness gate: ${preDecision.reason || preDecision.decision}`);
+    err.code = 'ERR_HARNESS_BLOCKED';
+    err.decision = preDecision;
+    throw err;
+  }
+  let result = null, executionError = null;
+  try {
+    result = await adapter.executeTask(taskPayload);
+  } catch (err) {
+    executionError = err;
+    throw err;
+  } finally {
+    harnessGate.postToolGate({
+      toolName: `execute_task:${plan.runtime}`,
+      args: { id: taskPayload.id, title: taskPayload.title },
+      result,
+      error: executionError,
+      workerId: 'governor'
+    });
+  }
   return { ...result, verified: false, evidenceRefs: [], status: 'REVIEW_REQUIRED',
-    harnessPreflight, entrypoint: plan.entrypoint, selectedSkills: effectiveSkills, skillPaths: effectiveSkillPaths };
+    harnessPreflight, harnessGate, entrypoint: plan.entrypoint, selectedSkills: effectiveSkills, skillPaths: effectiveSkillPaths };
 }
