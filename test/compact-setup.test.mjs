@@ -3,7 +3,16 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { previewCompactSetup, applyCompactSetup } from '../src/compact-setup.mjs';
+import {
+  previewCompactSetup,
+  applyCompactSetup,
+  resolveSkillAlias,
+  verifySkillOwnership,
+  previewLegacyMigration,
+  applyLegacyMigration,
+  rollbackLegacyMigration,
+  uninstallCompactSetup
+} from '../src/compact-setup.mjs';
 import { discoverWorkspaceSkills } from '../src/workspace-skills.mjs';
 import { previewOrchestration } from '../src/orchestrator.mjs';
 import { previewPortableHost } from '../src/portable-cli-adapter.mjs';
@@ -92,3 +101,81 @@ test('compact governor also works in standalone portable host and Antigravity SD
   assert.ok(sdk.selectedSkills.includes('xyeena-rig'));
   assert.equal(sdk.skillPaths.length,1);
 });
+
+test('resolveSkillAlias correctly maps legacy commands and skill names', () => {
+  assert.equal(resolveSkillAlias('/xyeena-rig'), 'SKILL.md');
+  assert.equal(resolveSkillAlias('xyeena-rig'), 'SKILL.md');
+  assert.equal(resolveSkillAlias('/xyeena-orchestrate'), 'references/skills/xyeena-orchestrate/SKILL.md');
+  assert.equal(resolveSkillAlias('xyeena-debug'), 'references/skills/xyeena-debug/SKILL.md');
+  assert.equal(resolveSkillAlias('unknown-skill'), null);
+  assert.equal(resolveSkillAlias(''), null);
+  assert.equal(resolveSkillAlias(null), null);
+});
+
+test('verifySkillOwnership detects managed markers and source matches', t => {
+  const cwd = temp(t);
+  const skillDir = path.join(cwd, 'xyeena-custom');
+  fs.mkdirSync(skillDir, { recursive: true });
+  fs.writeFileSync(path.join(skillDir, 'SKILL.md'), 'custom');
+  assert.equal(verifySkillOwnership(skillDir, 'xyeena-custom'), false);
+
+  fs.writeFileSync(path.join(skillDir, '.xyeena-managed.json'), JSON.stringify({ managedBy: 'xyeena-agent' }));
+  assert.equal(verifySkillOwnership(skillDir, 'xyeena-custom'), true);
+});
+
+test('legacy migration previews, backs up, migrates owned skills, preserves user edits, and rolls back cleanly', t => {
+  const cwd = temp(t);
+  const skillsBase = path.join(cwd, '.agents', 'skills');
+  const ownedSkill = path.join(skillsBase, 'xyeena-orchestrate');
+  const userSkill = path.join(skillsBase, 'xyeena-custom-notes');
+  const thirdPartySkill = path.join(skillsBase, 'superior-ux');
+
+  fs.mkdirSync(ownedSkill, { recursive: true });
+  fs.writeFileSync(path.join(ownedSkill, 'SKILL.md'), '---\nname: xyeena-orchestrate\n---');
+  fs.writeFileSync(path.join(ownedSkill, '.xyeena-managed.json'), JSON.stringify({ managedBy: 'xyeena-agent' }));
+
+  fs.mkdirSync(userSkill, { recursive: true });
+  fs.writeFileSync(path.join(userSkill, 'SKILL.md'), 'my personal notes');
+
+  fs.mkdirSync(thirdPartySkill, { recursive: true });
+  fs.writeFileSync(path.join(thirdPartySkill, 'SKILL.md'), 'third party skill');
+
+  const preview = previewLegacyMigration({ cwd, runtime: 'codex' });
+  assert.equal(preview.migratable.length, 1);
+  assert.equal(preview.migratable[0].name, 'xyeena-orchestrate');
+  assert.ok(preview.preservedUserSkills.some(s => s.name === 'xyeena-custom-notes'));
+  assert.ok(preview.preservedUserSkills.some(s => s.name === 'superior-ux'));
+
+  const migrated = applyLegacyMigration({ cwd, runtime: 'codex', yes: true });
+  assert.equal(migrated.migrated, true);
+  assert.deepEqual(migrated.migratedSkills, ['xyeena-orchestrate']);
+  assert.equal(fs.existsSync(ownedSkill), false);
+  assert.equal(fs.existsSync(userSkill), true);
+  assert.equal(fs.existsSync(thirdPartySkill), true);
+  assert.equal(fs.existsSync(path.join(skillsBase, 'xyeena-rig', 'SKILL.md')), true);
+
+  const rollback = rollbackLegacyMigration({ cwd, migrationId: migrated.migrationId, yes: true });
+  assert.equal(rollback.rolledBack, true);
+  assert.deepEqual(rollback.restoredSkills, ['xyeena-orchestrate']);
+  assert.equal(fs.existsSync(ownedSkill), true);
+  assert.equal(fs.readFileSync(path.join(ownedSkill, 'SKILL.md'), 'utf8'), '---\nname: xyeena-orchestrate\n---');
+});
+
+test('uninstallCompactSetup fails on unowned targets and safely uninstalls owned installations with backup', t => {
+  const cwd = temp(t);
+  const targetDir = path.join(cwd, '.agents', 'skills', 'xyeena-rig');
+  fs.mkdirSync(targetDir, { recursive: true });
+  fs.writeFileSync(path.join(targetDir, 'SKILL.md'), 'unowned content');
+
+  assert.throws(() => uninstallCompactSetup({ cwd, runtime: 'codex', yes: true }), /Refusing to uninstall unowned/);
+
+  fs.rmSync(targetDir, { recursive: true, force: true });
+  applyCompactSetup({ cwd, runtime: 'codex', preset: 'essential', yes: true });
+  assert.equal(fs.existsSync(targetDir), true);
+
+  const uninstalled = uninstallCompactSetup({ cwd, runtime: 'codex', yes: true });
+  assert.equal(uninstalled.uninstalled, true);
+  assert.equal(fs.existsSync(targetDir), false);
+  assert.ok(fs.existsSync(uninstalled.removedTargets[0].backup));
+});
+
