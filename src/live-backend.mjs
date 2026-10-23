@@ -124,6 +124,23 @@ export class ResourceBudgetLedger {
   }
 }
 
+const workspaceWriteQueues = new Map();
+
+export async function acquireWorkspaceWriteLock(workspaceKey) {
+  const key = workspaceKey || 'default-workspace';
+  let release;
+  const waitPromise = new Promise(resolve => { release = resolve; });
+  const prev = workspaceWriteQueues.get(key) || Promise.resolve();
+  workspaceWriteQueues.set(key, prev.then(() => waitPromise));
+  await prev;
+  return () => {
+    release();
+    if (workspaceWriteQueues.get(key) === waitPromise) {
+      workspaceWriteQueues.delete(key);
+    }
+  };
+}
+
 /**
  * Simpul MCP Adapter Contract
  * Wraps communication with Simpul (SubagentBridge) FastMCP control plane.
@@ -169,12 +186,27 @@ export function createSimpulMcpAdapter({
         ledger.checkBudget();
       }
 
+      // Propagate bounded task scope and permission restrictions into Simpul,
+      // or refuse write-capable delegation when the protocol cannot enforce them
+      if (task.scope && task.scope.readOnly === false) {
+        if (options.supportsPermissionEnforcement !== true && options.enforceWriteScope !== true) {
+          throw new Error('Refusing write-capable delegation to Simpul: protocol cannot enforce bounded task scope and permission restrictions');
+        }
+      }
+
       // 1. Submit goal to Simpul with exact FastMCP candidate signature:
       // submit_goal(goal, workspace_path, model)
-      const submitRes = await mcpClient.callTool('submit_goal', {
+      const submitParams = {
         goal: task.title,
         workspace_path: options.cwd || ''
-      });
+      };
+      if (task.scope) {
+        submitParams.scope = clone(task.scope);
+      }
+      if (options.permissions) {
+        submitParams.permissions = clone(options.permissions);
+      }
+      const submitRes = await mcpClient.callTool('submit_goal', submitParams);
 
       if (!submitRes || submitRes.status === 'ERROR' || !submitRes.run_id) {
         throw new Error(`Simpul goal submission failed: ${submitRes?.error || 'No run_id returned'}`);
@@ -235,19 +267,21 @@ export function createSimpulMcpAdapter({
         }
       }
 
-      // 4. Track model usage and account against budget
+      // 4. Track model usage and account against budget (fail on budget violation)
       try {
         const usage = await mcpClient.callTool('get_model_usage', {});
-        if (usage && typeof usage === 'object') {
-          ledger?.recordUsage({
+        if (usage && typeof usage === 'object' && ledger) {
+          ledger.recordUsage({
             taskId: task.id,
             backend: 'simpul',
             tokens: usage.tokens || 0,
             costMicro: usage.costMicro || 0
           });
         }
-      } catch {
-        // Usage reporting is best-effort accounting
+      } catch (err) {
+        if (err.message && err.message.includes('ceiling breached')) {
+          throw err;
+        }
       }
 
       activeRuns.delete(task.id);
@@ -476,7 +510,7 @@ export async function dispatchScopedTask({
   if (task.requiresDelegation === true) {
     for (const backend of ['simpul', 'native']) {
       const capabilities = await healthyAdapter(backends[backend]);
-      if (capabilities) offers[backend] = capabilities;
+      if (capabilities && capabilities.executionReady === true) offers[backend] = capabilities;
     }
   }
 
@@ -500,6 +534,11 @@ export async function dispatchScopedTask({
   const effectiveParallelism = (task.scope.readOnly === false && task.isolatedWorktrees !== true)
     ? 1
     : decision.parallelism;
+
+  let releaseWriteLock = null;
+  if (task.scope.readOnly === false && task.isolatedWorktrees !== true) {
+    releaseWriteLock = await acquireWorkspaceWriteLock(task.cwd || 'default-workspace');
+  }
 
   // Enforce Harness gate check on dispatch if gate is provided
   if (harnessGate && task.scope?.operationClass && task.scope.operationClass !== 'safe') {
@@ -573,5 +612,6 @@ export async function dispatchScopedTask({
     throw error;
   } finally {
     clearTimeout(timer);
+    releaseWriteLock?.();
   }
 }
