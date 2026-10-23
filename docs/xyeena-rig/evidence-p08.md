@@ -46,12 +46,12 @@
 
 | Test Script | Actual Result | Command Executed |
 | --- | --- | --- |
-| `npm test` | **267 / 267 PASS** (0 failed, 0 skipped) | `node --test test/*.test.mjs` |
+| `npm test` | **270 / 270 PASS** (0 failed, 0 skipped) | `node --test test/*.test.mjs` |
 | `npm run check` | **PASS** (19 capabilities + runtime manifests verified) | `node ./bin/xyeena.mjs check --source .` |
 | `npm run eval` | **PASS** (18/18 scenarios evaluated) | `node ./bin/xyeena.mjs eval` |
 | `npm run test:harness` | **PASS** (15/15 harness contracts verified) | `node scripts/run-vendored-tests.mjs` |
 | `npm run test:consumer` | **PASS** (packed tarball consumer smoke test) | `node scripts/consumer-smoke.mjs` |
-| `npm pack --dry-run` | **PASS** (244 files, 185.7 kB package size) | `npm pack --dry-run` |
+| `npm pack --dry-run` | **PASS** (247 files, 194.4 kB package size) | `npm pack --dry-run` |
 
 ---
 
@@ -59,21 +59,21 @@
 
 | Requirement | Description | Phase | Status |
 | --- | --- | --- | --- |
-| **R01** | Unified Skill & Plugin Discovery | P01 | **VERIFIED** |
-| **R02** | Capability Matching & Dependency Closure | P01 | **VERIFIED** |
-| **R03** | Superpowers & Superior Coordination | P02 | **VERIFIED** |
-| **R04** | Native Parity Fallback (8 cases) | P02 | **VERIFIED** |
-| **R05** | Core Harness Enforcement & Scope Boundary | P03 | **VERIFIED** |
-| **R06** | Simpul FastMCP Transport Adapter | P04 | **VERIFIED** |
-| **R07** | Host-Native Subagent Adapter & Isolation | P04 | **VERIFIED** |
-| **R08** | Resource Budget Ledger & Fallback Priority | P04 | **VERIFIED** |
-| **R09** | Durable Task DAG Checkpoint & Recovery | P05 | **VERIFIED** |
-| **R10** | Independent Verification & Consent Semantics | P03, P05 | **VERIFIED** |
-| **R11** | Legacy 19-Skill Migration & Compatibility | P06 | **VERIFIED** |
-| **R12** | Safe Installer, Uninstaller & Rollback | P06 | **VERIFIED** |
-| **R13** | Multi-Runtime Activation | P07 | **VERIFIED on fixtures** (Live hardware reload BLOCKED) |
-| **R14** | Adversarial & Security Hardening | P07 | **VERIFIED** |
-| **R15** | Enterprise Release Candidate & Verification | P08 | **VERIFIED** |
+| **R01** | Unified Skill & Plugin Discovery | P01 | **CI_PASS** |
+| **R02** | Capability Matching & Dependency Closure | P01 | **CI_PASS** |
+| **R03** | Superpowers & Superior Coordination | P02 | **CI_PASS** |
+| **R04** | Native Parity Fallback (8 cases) | P02 | **CI_PASS** |
+| **R05** | Core Harness Enforcement & Scope Boundary | P03 | **CI_PASS** |
+| **R06** | Simpul FastMCP Transport Adapter | P04 | **INTEGRATION_VERIFIED; LIVE_BLOCKED** (upstream execution supervisor pending) |
+| **R07** | Host-Native Subagent Adapter & Isolation | P04 | **INTEGRATION_VERIFIED** |
+| **R08** | Resource Budget Ledger & Fallback Priority | P04 | **CI_PASS** |
+| **R09** | Durable Task DAG Checkpoint & Recovery | P05 | **CI_PASS** |
+| **R10** | Independent Verification & Consent Semantics | P03, P05 | **CI_PASS** |
+| **R11** | Legacy 19-Skill Migration & Compatibility | P06 | **CI_PASS** |
+| **R12** | Safe Installer, Uninstaller & Rollback | P06 | **CI_PASS** |
+| **R13** | Multi-Runtime Activation | P07 | **FIXTURE_PASS; LIVE_BLOCKED** (physical multi-host live reload remains blocked) |
+| **R14** | Adversarial & Security Hardening | P07 | **CI_PASS** |
+| **R15** | Enterprise Release Candidate & Verification | P08 | **CONDITIONAL_GO** (internal staging only; public release blocked pending live acceptance) |
 
 ---
 

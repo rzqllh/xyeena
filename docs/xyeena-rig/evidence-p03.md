@@ -57,5 +57,14 @@
 
 ## 3. Requirements & Acceptance Matrix Status
 
-- **R05:** VERIFIED (E05-01, E05-02, E05-03; A12, A13, A25) — Pre/post execution gates enforce workspace boundary, block unauthorized destructive/external operations, propagate to delegated workers, and activate contextual guardrails.
-- **R10:** VERIFIED (E07-01, E07-04; A17, A20, A28) — ALLOW_ONCE / DENY / ANSWER_QUESTION semantics implemented; self-certified claims without evidence rejected.
+- **R05:** CI_PASS (E05-01, E05-02, E05-03; A12, A13, A25) — Pre/post execution gates enforce workspace boundary, block unauthorized destructive/external operations, propagate to delegated workers, and activate contextual guardrails.
+- **R10:** CI_PASS (E07-01, E07-04; A17, A20, A28) — ALLOW_ONCE / DENY / ANSWER_QUESTION semantics implemented; self-certified claims without evidence rejected.
+
+---
+
+## 4. Remediation Record (Commit 67d9282)
+
+- **F1 (macOS canonical path mismatch):** Resolved in `assertWorkspaceBoundary` by resolving the closest existing ancestor via `fs.realpathSync` and reattaching the non-existent tail. Added null-byte path rejection.
+- **F2 (Destructive permission semantics):** Removed persistent `permissions.destructive: true` authorization. Destructive and external operations strictly require single-use consumable `ALLOW_ONCE` tokens keyed by exact action signature; second attempts fail closed with `DENY`.
+- **CI Verification:** GitHub Actions run [39891272828](https://github.com/rzqllh/xyeena/actions/runs/39891272828) — **9/9 jobs PASS** across Windows, macOS, Ubuntu on Node 22.14 & 24.
+
