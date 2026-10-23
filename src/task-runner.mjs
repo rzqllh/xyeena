@@ -38,43 +38,45 @@ export class DurableCheckpointStore {
     }
   }
 
-  static acquireRunLock(cwd, runId, { staleThresholdMs = 30000 } = {}) {
+  static getNextFenceToken(runDir, fallbackToken = 0) {
+    const fenceSeqFile = path.join(runDir, 'fence.seq');
+    let currentSeq = fallbackToken;
+    try {
+      if (fs.existsSync(fenceSeqFile)) {
+        const val = parseInt(fs.readFileSync(fenceSeqFile, 'utf8').trim(), 10);
+        if (Number.isInteger(val) && val > currentSeq) {
+          currentSeq = val;
+        }
+      }
+    } catch {}
+    const nextSeq = currentSeq + 1;
+    const tmp = `${fenceSeqFile}.${crypto.randomUUID()}.tmp`;
+    try {
+      fs.writeFileSync(tmp, String(nextSeq) + '\n');
+      fs.renameSync(tmp, fenceSeqFile);
+    } catch {
+      try { fs.writeFileSync(fenceSeqFile, String(nextSeq) + '\n'); } catch {}
+    }
+    return nextSeq;
+  }
+
+  static acquireRunLock(cwd, runId, { staleThresholdMs = 30000, maxAttempts = 10 } = {}) {
     const validId = this.validateRunId(runId);
     const root = fs.realpathSync(path.resolve(cwd));
     const runDir = path.join(root, '.xyeena', 'runs', validId);
     fs.mkdirSync(runDir, { recursive: true });
     const lockFile = path.join(runDir, 'run.lock');
+    const reclaimLock = path.join(runDir, 'reclaim.lock');
 
     const ownerId = `${process.pid}-${crypto.randomUUID()}`;
     const host = os.hostname ? os.hostname() : 'localhost';
     let fenceToken = 1;
 
     let acquired = false;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      let existingFence = 0;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      // 1. Try initial clean creation if lockFile doesn't exist
       try {
-        if (fs.existsSync(lockFile)) {
-          let existing = null;
-          try {
-            existing = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
-          } catch {
-            existing = null;
-          }
-          if (existing) {
-            existingFence = Number(existing.fenceToken) || 0;
-            const isAlive = existing.pid ? this.isProcessAlive(existing.pid) : false;
-            if (isAlive) {
-              // Active owner is NEVER reclaimed solely due to elapsed time
-              throw new Error(`Cannot resume or execute run "${validId}": exclusive lease already held by active process (PID ${existing.pid}, owner ${existing.ownerId || 'unknown'})`);
-            }
-            // Stale or dead process lock detected: safely reclaim with incremented fencing token
-            try {
-              fs.rmSync(lockFile, { force: true });
-            } catch {}
-          }
-        }
-
-        fenceToken = existingFence + 1;
+        fenceToken = this.getNextFenceToken(runDir);
         const lockData = {
           ownerId,
           pid: process.pid,
@@ -83,29 +85,90 @@ export class DurableCheckpointStore {
           runId: validId,
           host
         };
-
         const fd = fs.openSync(lockFile, 'wx');
-        fs.writeSync(fd, JSON.stringify(lockData) + '\n');
+        fs.writeSync(fd, JSON.stringify(lockData, null, 2) + '\n');
         fs.closeSync(fd);
         acquired = true;
         break;
       } catch (err) {
-        if (err.message && err.message.includes('exclusive lease already held by active process')) {
-          throw err;
-        }
         if (err.code !== 'EEXIST') throw err;
+      }
 
-        // If EEXIST occurred because of a race with another contender, inspect on next loop
+      // 2. Lock file exists: inspect owner
+      let existing = null;
+      try {
+        existing = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+      } catch {
+        existing = null;
+      }
+
+      if (existing?.pid) {
+        const isAlive = this.isProcessAlive(existing.pid);
+        if (isAlive) {
+          // Active owner is NEVER reclaimed solely due to elapsed time
+          throw new Error(`Cannot resume or execute run "${validId}": exclusive lease already held by active process (PID ${existing.pid}, owner ${existing.ownerId || 'unknown'})`);
+        }
+      }
+
+      // 3. Dead owner detected: attempt atomic reclamation guarded by reclaim.lock
+      let holdsReclaim = false;
+      try {
+        const rfd = fs.openSync(reclaimLock, 'wx');
+        fs.writeSync(rfd, JSON.stringify({ pid: process.pid, ownerId, at: new Date().toISOString() }) + '\n');
+        fs.closeSync(rfd);
+        holdsReclaim = true;
+      } catch (rErr) {
+        if (rErr.code === 'EEXIST') {
+          // Another contender is reclaiming right now; check if that contender crashed
+          try {
+            const rData = JSON.parse(fs.readFileSync(reclaimLock, 'utf8'));
+            if (rData?.pid && !this.isProcessAlive(rData.pid)) {
+              fs.rmSync(reclaimLock, { force: true });
+            }
+          } catch {}
+          const waitTime = 5 + Math.floor(Math.random() * 20);
+          const start = Date.now();
+          while (Date.now() - start < waitTime) {}
+          continue;
+        }
+        throw rErr;
+      }
+
+      if (holdsReclaim) {
         try {
-          const content = fs.readFileSync(lockFile, 'utf8');
-          const raced = JSON.parse(content);
-          if (raced?.pid && this.isProcessAlive(raced.pid)) {
-            throw new Error(`Cannot resume or execute run "${validId}": exclusive lease already held by active process (PID ${raced.pid}, owner ${raced.ownerId || 'unknown'})`);
+          // Re-check lockFile state under reclaim.lock protection
+          let recheck = null;
+          try {
+            recheck = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+          } catch {
+            recheck = null;
           }
-        } catch (innerErr) {
-          if (innerErr.message && innerErr.message.includes('exclusive lease already held by active process')) {
-            throw innerErr;
+          if (recheck?.pid && this.isProcessAlive(recheck.pid)) {
+            throw new Error(`Cannot resume or execute run "${validId}": exclusive lease already held by active process (PID ${recheck.pid}, owner ${recheck.ownerId || 'unknown'})`);
           }
+
+          // Safe to reclaim: get next monotonic fenceToken (never resets!)
+          const existingFence = Number(recheck?.fenceToken) || Number(existing?.fenceToken) || 0;
+          fenceToken = this.getNextFenceToken(runDir, existingFence);
+          const newLockData = {
+            ownerId,
+            pid: process.pid,
+            fenceToken,
+            acquiredAt: new Date().toISOString(),
+            runId: validId,
+            host
+          };
+
+          const tmpFile = `${lockFile}.${ownerId}.tmp`;
+          fs.writeFileSync(tmpFile, JSON.stringify(newLockData, null, 2) + '\n');
+          try {
+            fs.rmSync(lockFile, { force: true });
+          } catch {}
+          fs.renameSync(tmpFile, lockFile);
+          acquired = true;
+          break;
+        } finally {
+          try { fs.rmSync(reclaimLock, { force: true }); } catch {}
         }
       }
     }
@@ -114,7 +177,7 @@ export class DurableCheckpointStore {
       throw new Error(`Cannot resume or execute run "${validId}": exclusive lease contention prevented lock acquisition`);
     }
 
-    return () => {
+    const release = () => {
       try {
         if (fs.existsSync(lockFile)) {
           try {
@@ -128,11 +191,64 @@ export class DurableCheckpointStore {
         }
       } catch {}
     };
+
+    const assertValid = () => {
+      if (!fs.existsSync(lockFile)) {
+        const err = new Error(`Fencing violation for run "${validId}": lock file no longer exists; worker has lost lease`);
+        err.code = 'ERR_STALE_FENCE_TOKEN';
+        throw err;
+      }
+      let current;
+      try {
+        current = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+      } catch (readErr) {
+        const err = new Error(`Fencing violation for run "${validId}": unable to read lock file: ${readErr.message}`);
+        err.code = 'ERR_STALE_FENCE_TOKEN';
+        throw err;
+      }
+      if (current?.ownerId !== ownerId || current?.fenceToken !== fenceToken) {
+        const err = new Error(`Fencing violation for run "${validId}": lock reclaimed by newer owner (current fenceToken ${current?.fenceToken}, worker fenceToken ${fenceToken}); worker is stale and prohibited from performing side effects`);
+        err.code = 'ERR_STALE_FENCE_TOKEN';
+        throw err;
+      }
+      return true;
+    };
+
+    release.fenceToken = fenceToken;
+    release.ownerId = ownerId;
+    release.assertValid = assertValid;
+    release.release = release;
+    return release;
   }
 
-  static save(cwd, runId, payload) {
+  static save(cwd, runId, payload, { fenceToken = null, ownerId = null } = {}) {
     if (!runId || typeof runId !== 'string') return;
     const validId = this.validateRunId(runId);
+    const root = fs.realpathSync(path.resolve(cwd));
+    const runDir = path.join(root, '.xyeena', 'runs', validId);
+    const lockFile = path.join(runDir, 'run.lock');
+
+    // If fencing credentials provided, verify against current lock
+    if (fenceToken !== null || ownerId !== null) {
+      if (fs.existsSync(lockFile)) {
+        try {
+          const currentLock = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+          if (ownerId && currentLock?.ownerId !== ownerId) {
+            const err = new Error(`Fencing violation: checkpoint save rejected because lock owner changed (held by ${currentLock?.ownerId}, writer is ${ownerId})`);
+            err.code = 'ERR_STALE_FENCE_TOKEN';
+            throw err;
+          }
+          if (fenceToken !== null && currentLock?.fenceToken > fenceToken) {
+            const err = new Error(`Fencing violation: checkpoint save rejected because lock fenceToken was incremented (current ${currentLock?.fenceToken}, writer has stale ${fenceToken})`);
+            err.code = 'ERR_STALE_FENCE_TOKEN';
+            throw err;
+          }
+        } catch (readErr) {
+          if (readErr.code === 'ERR_STALE_FENCE_TOKEN') throw readErr;
+        }
+      }
+    }
+
     const file = this.checkpointPath(cwd, validId);
     fs.mkdirSync(path.dirname(file), { recursive: true });
     const tmp = file + '.' + crypto.randomUUID() + '.tmp';
@@ -140,6 +256,8 @@ export class DurableCheckpointStore {
       fs.writeFileSync(tmp, JSON.stringify({
         schema: 1,
         runId: validId,
+        fenceToken,
+        ownerId,
         savedAt: new Date().toISOString(),
         ...payload
       }, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
@@ -270,6 +388,9 @@ export async function runTaskGraph({
         DurableCheckpointStore.save(cwd, runId, {
           tasks: states,
           attemptsCount: attempts.length
+        }, {
+          fenceToken: releaseRunLock?.fenceToken,
+          ownerId: releaseRunLock?.ownerId
         });
       }
     };
