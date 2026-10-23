@@ -56,13 +56,21 @@ test('read-only execution gate requires actual selected governor and explicit co
 
 test('workspace boundary enforcement allows paths within root and blocks external escapes', t => {
   const cwd = temp(t);
+  const canonicalCwd = fs.realpathSync(cwd);
   const validPath = path.join(cwd, 'src', 'index.js');
-  assert.equal(assertWorkspaceBoundary(validPath, cwd), path.resolve(validPath));
-  assert.equal(assertWorkspaceBoundary('src/index.js', cwd), path.resolve(cwd, 'src/index.js'));
+  assert.equal(assertWorkspaceBoundary(validPath, cwd), path.join(canonicalCwd, 'src', 'index.js'));
+  assert.equal(assertWorkspaceBoundary('src/index.js', cwd), path.join(canonicalCwd, 'src', 'index.js'));
+
+  // Non-existent nested target path inside workspace resolves correctly
+  const nonExistentNested = path.join(cwd, 'deep', 'nested', 'target.js');
+  assert.equal(assertWorkspaceBoundary(nonExistentNested, cwd), path.join(canonicalCwd, 'deep', 'nested', 'target.js'));
 
   // Traversal outside cwd
   assert.throws(() => assertWorkspaceBoundary('../outside.txt', cwd), /boundary violation/);
   assert.throws(() => assertWorkspaceBoundary(path.join(os.tmpdir(), 'other.txt'), cwd), /boundary violation/);
+
+  // Null byte injection rejected
+  assert.throws(() => assertWorkspaceBoundary('src/\0evil.js', cwd), /boundary violation/);
 });
 
 test('workspace boundary blocks escaping symlinks', t => {
@@ -82,9 +90,9 @@ test('workspace boundary blocks escaping symlinks', t => {
   assert.throws(() => assertWorkspaceBoundary(linkPath, cwd), /boundary violation/);
 });
 
-test('pre-tool gate blocks unauthorized destructive actions with DENY', t => {
+test('pre-tool gate blocks unauthorized destructive actions with DENY (fails closed)', t => {
   const cwd = temp(t);
-  const gate = createHarnessExecutionGate({ cwd, permissions: { destructive: false } });
+  const gate = createHarnessExecutionGate({ cwd });
 
   const decision = gate.preToolGate({
     toolName: 'run_command',
@@ -95,53 +103,112 @@ test('pre-tool gate blocks unauthorized destructive actions with DENY', t => {
   assert.equal(decision.decision, 'DENY');
   assert.equal(decision.rule, 'permission-boundary');
   assert.equal(decision.blocked, true);
+  assert.ok(decision.reason.includes('ALLOW_ONCE'));
 });
 
-test('pre-tool gate allows destructive action when explicit permission is granted', t => {
+test('pre-tool gate enforces single-use consumable authorization (ALLOW_ONCE, no reuse)', t => {
   const cwd = temp(t);
-  const gate = createHarnessExecutionGate({ cwd, permissions: { destructive: true } });
+  const gate = createHarnessExecutionGate({ cwd });
+
+  const actionArgs = { path: path.join(cwd, 'temp.txt') };
+  const actionSig = `destructive:delete_file:${JSON.stringify(actionArgs)}`;
+
+  // Missing approval fails closed
+  const deniedFirst = gate.preToolGate({
+    toolName: 'delete_file',
+    args: actionArgs,
+    actionType: 'destructive'
+  });
+  assert.equal(deniedFirst.decision, 'DENY');
+  assert.equal(deniedFirst.blocked, true);
+
+  // Grant single-use consumable token
+  gate.grantAllowOnce(actionSig);
+
+  // Approved action executes once
+  const allowed = gate.preToolGate({
+    toolName: 'delete_file',
+    args: actionArgs,
+    actionType: 'destructive'
+  });
+  assert.equal(allowed.decision, 'ALLOW_ONCE');
+  assert.equal(allowed.blocked, false);
+
+  // Approval cannot be reused -> fails closed on second attempt
+  const deniedSecond = gate.preToolGate({
+    toolName: 'delete_file',
+    args: actionArgs,
+    actionType: 'destructive'
+  });
+  assert.equal(deniedSecond.decision, 'DENY');
+  assert.equal(deniedSecond.blocked, true);
+});
+
+test('pre-tool gate requires separate authorization for different arguments', t => {
+  const cwd = temp(t);
+  const gate = createHarnessExecutionGate({ cwd });
+
+  const authorizedArgs = { CommandLine: 'git clean -fd' };
+  const differentArgs = { CommandLine: 'git reset --hard' };
+
+  // Grant token only for git clean
+  gate.grantAllowOnce({ toolName: 'run_command', args: authorizedArgs, actionType: 'destructive' });
+
+  // Different arguments fail closed
+  const denied = gate.preToolGate({
+    toolName: 'run_command',
+    args: differentArgs,
+    actionType: 'destructive'
+  });
+  assert.equal(denied.decision, 'DENY');
+  assert.equal(denied.blocked, true);
+
+  // Authorized arguments succeed once
+  const allowed = gate.preToolGate({
+    toolName: 'run_command',
+    args: authorizedArgs,
+    actionType: 'destructive'
+  });
+  assert.equal(allowed.decision, 'ALLOW_ONCE');
+  assert.equal(allowed.blocked, false);
+});
+
+test('pre-tool gate rejects destructive action outside workspace boundary even if token was granted', t => {
+  const cwd = temp(t);
+  const gate = createHarnessExecutionGate({ cwd });
+
+  const outsideArgs = { path: path.join(os.tmpdir(), 'outside-secret.txt') };
+  gate.grantAllowOnce({ toolName: 'delete_file', args: outsideArgs, actionType: 'destructive' });
 
   const decision = gate.preToolGate({
     toolName: 'delete_file',
-    args: { path: path.join(cwd, 'temp.txt') },
+    args: outsideArgs,
     actionType: 'destructive'
   });
 
-  assert.equal(decision.decision, 'ALLOW');
-  assert.equal(decision.blocked, false);
+  // Scope control takes precedence over permission token
+  assert.equal(decision.decision, 'DENY');
+  assert.equal(decision.rule, 'scope-control');
+  assert.equal(decision.blocked, true);
 });
 
-test('pre-tool gate supports explicit ALLOW_ONCE token and ANSWER_QUESTION semantics', t => {
+test('pre-tool gate interactive mode yields ANSWER_QUESTION', t => {
   const cwd = temp(t);
-  const gate = createHarnessExecutionGate({ cwd, permissions: { destructive: false, interactive: false } });
+  const gate = createHarnessExecutionGate({ cwd, permissions: { interactive: true } });
 
-  const actionArgs = { CommandLine: 'git clean -fd' };
-  const actionSig = `destructive:run_command:${JSON.stringify(actionArgs)}`;
-
-  // First check without token -> DENY
-  const denDecision = gate.preToolGate({ toolName: 'run_command', args: actionArgs, actionType: 'destructive' });
-  assert.equal(denDecision.decision, 'DENY');
-
-  // Grant one-time token
-  gate.grantAllowOnce(actionSig);
-  const allowOnceDecision = gate.preToolGate({ toolName: 'run_command', args: actionArgs, actionType: 'destructive' });
-  assert.equal(allowOnceDecision.decision, 'ALLOW_ONCE');
-  assert.equal(allowOnceDecision.blocked, false);
-
-  // Subsequent check should fail again because token was consumed
-  const nextDecision = gate.preToolGate({ toolName: 'run_command', args: actionArgs, actionType: 'destructive' });
-  assert.equal(nextDecision.decision, 'DENY');
-
-  // Interactive mode yields ANSWER_QUESTION
-  const interactiveGate = createHarnessExecutionGate({ cwd, permissions: { interactive: true } });
-  const questionDecision = interactiveGate.preToolGate({ toolName: 'run_command', args: actionArgs, actionType: 'destructive' });
-  assert.equal(questionDecision.decision, 'ANSWER_QUESTION');
-  assert.ok(questionDecision.prompt);
+  const decision = gate.preToolGate({
+    toolName: 'run_command',
+    args: { CommandLine: 'git clean -fd' },
+    actionType: 'destructive'
+  });
+  assert.equal(decision.decision, 'ANSWER_QUESTION');
+  assert.equal(decision.blocked, true);
+  assert.ok(decision.prompt);
 });
 
 test('pre-tool gate blocks unauthorized external operations (push, publish)', t => {
   const cwd = temp(t);
-  const gate = createHarnessExecutionGate({ cwd, permissions: { external: false } });
+  const gate = createHarnessExecutionGate({ cwd });
 
   const decision = gate.preToolGate({
     toolName: 'run_command',
@@ -151,6 +218,27 @@ test('pre-tool gate blocks unauthorized external operations (push, publish)', t 
 
   assert.equal(decision.decision, 'DENY');
   assert.equal(decision.rule, 'permission-boundary');
+  assert.equal(decision.blocked, true);
+
+  // Authorize single-use external action
+  const actionArgs = { CommandLine: 'git push origin main' };
+  gate.grantAllowOnce({ toolName: 'run_command', args: actionArgs, actionType: 'external' });
+
+  const allowed = gate.preToolGate({
+    toolName: 'run_command',
+    args: actionArgs,
+    actionType: 'external'
+  });
+  assert.equal(allowed.decision, 'ALLOW_ONCE');
+  assert.equal(allowed.blocked, false);
+
+  // Cannot reuse
+  const deniedAgain = gate.preToolGate({
+    toolName: 'run_command',
+    args: actionArgs,
+    actionType: 'external'
+  });
+  assert.equal(deniedAgain.decision, 'DENY');
 });
 
 test('anti-loop gate triggers after consecutive failures on identical tool calls', t => {
