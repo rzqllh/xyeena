@@ -498,3 +498,66 @@ test('regression P04: public backend APIs are exported and importable from index
   assert.equal(typeof indexExports.selectSubagentBackend, 'function');
 });
 
+test('regression P04: write-lock is released on Harness denial, execution failure, or timeout allowing subsequent writes', async () => {
+  // Scenario 1: Rejection by Harness gate releases lock so second dispatch succeeds
+  const blockingGate = {
+    preToolGate() {
+      return { blocked: true, decision: 'DENY', reason: 'Blocked by policy' };
+    }
+  };
+
+  const failingDispatch = dispatchScopedTask({
+    task: { id: 'blocked-w1', title: 'blocked write', scope: { readOnly: false, operationClass: 'destructive' } },
+    inlineAdapter: { async executeTask() { return { workerId: 'w-fail' }; } },
+    harnessGate: blockingGate,
+    approvedTaskIds: ['blocked-w1'],
+    authorizeOperation: async () => 'allow-once'
+  });
+
+  await assert.rejects(failingDispatch, /Task execution blocked by Harness gate/);
+
+  // Subsequent write dispatch on same workspace must not deadlock and must acquire lock cleanly
+  let secondRan = false;
+  const subsequentDispatch = await dispatchScopedTask({
+    task: { id: 'allowed-w2', title: 'allowed write', scope: { readOnly: false, operationClass: 'safe' } },
+    inlineAdapter: {
+      async executeTask() {
+        secondRan = true;
+        return { workerId: 'w-success' };
+      }
+    },
+    approvedTaskIds: ['allowed-w2'],
+    authorizeOperation: async () => 'allow-once'
+  });
+
+  assert.equal(secondRan, true);
+  assert.equal(subsequentDispatch.taskId, 'allowed-w2');
+
+  // Scenario 2: Adapter throwing error releases lock so third dispatch succeeds
+  const throwingDispatch = dispatchScopedTask({
+    task: { id: 'throwing-w3', title: 'throwing write', scope: { readOnly: false, operationClass: 'safe' } },
+    inlineAdapter: { async executeTask() { throw new Error('Simulated adapter crash'); } },
+    approvedTaskIds: ['throwing-w3'],
+    authorizeOperation: async () => 'allow-once'
+  });
+
+  await assert.rejects(throwingDispatch, /Simulated adapter crash/);
+
+  let thirdRan = false;
+  const thirdDispatch = await dispatchScopedTask({
+    task: { id: 'allowed-w4', title: 'allowed write after crash', scope: { readOnly: false, operationClass: 'safe' } },
+    inlineAdapter: {
+      async executeTask() {
+        thirdRan = true;
+        return { workerId: 'w-success-3' };
+      }
+    },
+    approvedTaskIds: ['allowed-w4'],
+    authorizeOperation: async () => 'allow-once'
+  });
+
+  assert.equal(thirdRan, true);
+  assert.equal(thirdDispatch.taskId, 'allowed-w4');
+});
+
+

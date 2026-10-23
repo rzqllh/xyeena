@@ -131,9 +131,14 @@ export async function acquireWorkspaceWriteLock(workspaceKey) {
   let release;
   const waitPromise = new Promise(resolve => { release = resolve; });
   const prev = workspaceWriteQueues.get(key) || Promise.resolve();
-  workspaceWriteQueues.set(key, prev.then(() => waitPromise));
-  await prev;
+  workspaceWriteQueues.set(key, prev.then(() => waitPromise, () => waitPromise));
+  try {
+    await prev;
+  } catch {}
+  let released = false;
   return () => {
+    if (released) return;
+    released = true;
     release();
     if (workspaceWriteQueues.get(key) === waitPromise) {
       workspaceWriteQueues.delete(key);
@@ -540,21 +545,20 @@ export async function dispatchScopedTask({
     releaseWriteLock = await acquireWorkspaceWriteLock(task.cwd || 'default-workspace');
   }
 
-  // Enforce Harness gate check on dispatch if gate is provided
-  if (harnessGate && task.scope?.operationClass && task.scope.operationClass !== 'safe') {
-    const gateDecision = harnessGate.preToolGate({
-      toolName: `dispatch_${decision.backend}`,
-      actionType: task.scope.operationClass,
-      args: { taskId: task.id, title: task.title }
-    });
-    if (gateDecision.blocked) {
-      throw new Error(`Task execution blocked by Harness gate: ${gateDecision.reason || gateDecision.decision}`);
-    }
-  }
-
-  onEvent?.({ type: 'task.started', taskId: task.id, backend: decision.backend });
-
   try {
+    // Enforce Harness gate check on dispatch if gate is provided
+    if (harnessGate && task.scope?.operationClass && task.scope.operationClass !== 'safe') {
+      const gateDecision = harnessGate.preToolGate({
+        toolName: `dispatch_${decision.backend}`,
+        actionType: task.scope.operationClass,
+        args: { taskId: task.id, title: task.title }
+      });
+      if (gateDecision.blocked) {
+        throw new Error(`Task execution blocked by Harness gate: ${gateDecision.reason || gateDecision.decision}`);
+      }
+    }
+
+    onEvent?.({ type: 'task.started', taskId: task.id, backend: decision.backend });
     const invoke = Promise.resolve().then(() => adapter.executeTask(clone(task), {
       signal: controller.signal,
       noNestedDelegation: true,
