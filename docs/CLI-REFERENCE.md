@@ -7,7 +7,7 @@ Commands can be invoked with `npx --yes xyeena-agent@0.4.1` for the published pa
 | Command | Effect |
 | --- | --- |
 | `setup` | Interactive installation wizard |
-| `setup --scope workspace|global --runtime HOST --preset PRESET --dry-run` | Read-only installation preview |
+| `setup --scope SCOPE --runtime HOST --preset PRESET --dry-run` | Read-only installation preview |
 | `setup ... --yes` | Confirm the proposed installation |
 | `setup check --runtime HOST` | Inspect installed host-visible skills; not proof of live activation |
 | `setup diff --runtime HOST --preset PRESET --file PATH` | Preview a bounded managed-file conflict |
