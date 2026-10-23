@@ -20,7 +20,7 @@ Status means observed repository implementation, not generic product readiness.
 | E06-04 | P0 | Real-adapter-only dispatch contract, bounded execution and independent verification | VERIFIED | src/live-backend.mjs; test/live-backend.test.mjs |
 | E06-03 | P0 | Native IDE subagent live invocation and isolation | VERIFIED | createNativeSubagentAdapter, real workerId, non-nested |
 | E07-01 | P0 | Independent evidence verification on task graph | VERIFIED | src/task-runner.mjs, postToolGate evidence checks |
-| E07-02 | P1 | Cross-host checkpoint, replay, loop breaker | PARTIAL | Existing guided + ledger |
+| E07-02 | P1 | Cross-host checkpoint, replay, loop breaker | VERIFIED | DurableCheckpointStore, autoRetryReview, cancelSignal |
 | E08-01 | P0 | CI test/pack/consumer matrix | PASS (source head de2deacc) | GitHub Actions run 39867943667: 9/9 jobs green |
 | E08-02 | P0 | Actual five-host reload/activation acceptance | BLOCKED | Needs configured test machines |
 
@@ -38,7 +38,7 @@ The full 1:1 status and acceptance crosswalk lives in [REQUIREMENTS_TRACEABILITY
 | E04-03 | P0 | Native parity fallback when third-party provider missing, disabled, unhealthy or untrusted | VERIFIED | R04 / A24 — NATIVE_EQUIVALENCE, nativeFallbackForSkill, all 8 provider cases |
 | E05-03 | P0 | Harness gates propagate to workers and revalidate before each write/tool action | VERIFIED | R05 / A25 — delegateWorker non-escalation & audit test |
 | E06-05 | P0 | Hard per-run token/cost/concurrency limits and provider usage accounting | VERIFIED | R08 / A26 — ResourceBudgetLedger limit enforcement tests |
-| E07-03 | P0 | Durable task DAG checkpoints, idempotent resume/lease, bounded retry, crash cleanup across hosts | TODO | R09 / A27 — kill/restart/fault injection |
+| E07-03 | P0 | Durable task DAG checkpoints, idempotent resume/lease, bounded retry, crash cleanup across hosts | VERIFIED | R09 / A27 — DurableCheckpointStore, crash-safe resume, unconsumed result recovery |
 | E07-04 | P0 | Real host permission/verification evidence chain with independent auditor | VERIFIED | R10 / A28 — Allow Once/Deny/Answer Questions and boundary tests |
 | E08-03 | P1 | Full red-team/security, plugin spoofing and multi-runtime end-to-end test suite | TODO | R14 / A32 — threat/test matrix |
 | E08-04 | P1 | Release notes, npm artifact verification, version bump, signed verdict, authorized publish | TODO | R15 / A33 — no release without signoff |
