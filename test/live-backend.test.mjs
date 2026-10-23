@@ -18,7 +18,13 @@ const task = (scope = { readOnly: true, operationClass: 'safe' }) => ({
 const fake = (healthy, log, cap = {}) => ({
   async probe() {
     log.push('probe');
-    return { healthy, noNestedDelegation: true, supportsParallel: true, ...cap };
+    return {
+      healthy,
+      executionReady: cap.executionReady ?? (healthy === true),
+      noNestedDelegation: true,
+      supportsParallel: true,
+      ...cap
+    };
   },
   async executeTask(_task, opts) {
     log.push('execute');
@@ -134,7 +140,7 @@ test('createSimpulMcpAdapter adheres to exact FastMCP signatures and uses server
       }
       if (name === 'get_run') {
         assert.equal(params.run_id, 'simpul-server-run-uuid-1234');
-        return { run_id: params.run_id, status: 'SUBMITTED', task_count: 1 };
+        return { run_id: params.run_id, status: 'COMPLETED', task_count: 1 };
       }
       if (name === 'get_task_evidence') {
         assert.equal(params.run_id, 'simpul-server-run-uuid-1234');
@@ -278,3 +284,132 @@ test('ResourceBudgetLedger prevents over-budget operations upfront', () => {
   // Total tokens must remain uncorrupted at 3000
   assert.equal(ledger.summary.usedTokens, 3000);
 });
+
+test('regression: healthy transport with unavailable executor (executionReady: false) falls back to native or inline', async () => {
+  const log = [];
+  // Simpul is transport-healthy but NOT execution-ready
+  const simpulBackend = fake(true, log, { executionReady: false });
+  // Native is execution-ready
+  const nativeBackend = fake(true, log, { executionReady: true });
+  const inline = { async executeTask() { log.push('inline'); return { report: 'fallback' }; } };
+
+  const result1 = await dispatchScopedTask({
+    task: task(),
+    inlineAdapter: inline,
+    backends: { simpul: simpulBackend, native: nativeBackend }
+  });
+  assert.equal(result1.backend, 'native');
+
+  // When native is also unavailable or not execution-ready, falls back to inline
+  const result2 = await dispatchScopedTask({
+    task: task(),
+    inlineAdapter: inline,
+    backends: { simpul: simpulBackend }
+  });
+  assert.equal(result2.backend, 'inline');
+});
+
+test('createNativeSubagentAdapter supports spawn-only host runners without requiring run()', async () => {
+  let cancelled = false;
+  const mockSpawnOnlyRunner = {
+    async status() {
+      return { available: true, capabilities: { supportsWrites: true, supportsParallel: true } };
+    },
+    async spawn(task, options) {
+      assert.equal(options.noNestedDelegation, true);
+      return {
+        workerId: 'worker-host-proc-42',
+        async wait() {
+          return { verified: true, evidenceRefs: ['spawn-output.log'] };
+        },
+        async cancel() {
+          cancelled = true;
+        }
+      };
+    }
+  };
+
+  const adapter = createNativeSubagentAdapter({ runner: mockSpawnOnlyRunner });
+  const probe = await adapter.probe();
+  assert.equal(probe.healthy, true);
+  assert.equal(probe.executionReady, true);
+
+  const exec = await adapter.executeTask({ id: 't-spawn', title: 'Spawn test' }, { noNestedDelegation: true });
+  assert.equal(exec.workerId, 'worker-host-proc-42');
+  assert.equal(exec.verified, true);
+  assert.deepEqual(exec.evidenceRefs, ['spawn-output.log']);
+
+  await adapter.cancelTask({ taskId: 't-spawn' });
+  assert.equal(cancelled, true);
+});
+
+test('positive worker contract validation rejects invalid formats and placeholder identities', async () => {
+  const testCases = [
+    '',
+    '   ',
+    'a',
+    'inv@lid!ch@rs',
+    'fake',
+    'fake-worker-1',
+    'dummy-runner',
+    'mock-worker-handle',
+    'synthetic-agent-0',
+    'fabricated-123'
+  ];
+
+  for (const badId of testCases) {
+    const badRunner = {
+      async status() { return { available: true }; },
+      async run() { return { workerId: badId }; }
+    };
+    const adapter = createNativeSubagentAdapter({ runner: badRunner });
+    await assert.rejects(
+      adapter.executeTask({ id: 't-id', title: 'Test ID' }, { noNestedDelegation: true }),
+      /invalid|placeholder|format/i
+    );
+  }
+
+  // Valid positive format succeeds
+  const validRunner = {
+    async status() { return { available: true }; },
+    async run() { return { workerId: 'worker-srv-01-node', verified: true, evidenceRefs: ['ok.log'] }; }
+  };
+  const validAdapter = createNativeSubagentAdapter({ runner: validRunner });
+  const okExec = await validAdapter.executeTask({ id: 't-ok', title: 'Test OK' }, { noNestedDelegation: true });
+  assert.equal(okExec.workerId, 'worker-srv-01-node');
+  assert.equal(okExec.verified, true);
+});
+
+test('Simpul MCP adapter bounded polling never interprets SUBMITTED or PENDING as completed', async () => {
+  const mockMcpClient = {
+    async callTool(tool, args) {
+      if (tool === 'submit_goal') {
+        return { run_id: 'simpul-run-xyz', status: 'SUBMITTED', initial_task_id: 't-init' };
+      }
+      if (tool === 'get_run') {
+        return { run_id: 'simpul-run-xyz', status: 'PENDING' };
+      }
+      if (tool === 'get_task_evidence') {
+        // Even if mock returns evidence, pending run cannot be verified
+        return { verified: true, evidence_ids: ['some-ev'] };
+      }
+      if (tool === 'get_model_usage') {
+        return { tokens: 100, costMicro: 50 };
+      }
+      return {};
+    }
+  };
+
+  const adapter = createSimpulMcpAdapter({ mcpClient: mockMcpClient });
+  const execResult = await adapter.executeTask({ id: 't-simpul-pending', title: 'Pending task' }, {
+    noNestedDelegation: true,
+    maxPollAttempts: 2
+  });
+
+  assert.equal(execResult.workerId, 'simpul-run-xyz');
+  assert.equal(execResult.status, 'PENDING');
+  assert.equal(execResult.completed, false);
+  assert.equal(execResult.verified, false);
+  assert.deepEqual(execResult.evidenceRefs, []);
+});
+
