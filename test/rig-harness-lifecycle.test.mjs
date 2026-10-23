@@ -11,6 +11,7 @@ import {
   HarnessExecutionGate,
   HostApprovalAuthority,
   createHostApprovalAuthority,
+  createTrustedHostApprovalAuthority,
   IndependentEvidenceVerifier
 } from '../src/rig-harness-lifecycle.mjs';
 import { applyCompactSetup } from '../src/compact-setup.mjs';
@@ -21,6 +22,14 @@ function temp(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'xyeena-gate-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   return dir;
+}
+
+function testTrustedAuthority({ approved = true, hostBoundarySecret = 'test-host-secret-xyz', approver = 'host-user' } = {}) {
+  return createTrustedHostApprovalAuthority({
+    hostId: 'trusted-host',
+    hostBoundarySecret,
+    approvalBridge: () => ({ approved, approver, confirmationId: `conf-${Date.now()}` })
+  });
 }
 
 test('core Harness is available for every Rig preview without project opt-in', t => {
@@ -95,7 +104,7 @@ test('workspace boundary blocks escaping symlinks', t => {
 
 test('pre-tool gate blocks unauthorized destructive actions with DENY (fails closed)', t => {
   const cwd = temp(t);
-  const gate = createHarnessExecutionGate({ cwd });
+  const gate = createHarnessExecutionGate({ cwd, enforcementRuntime: 'harness-gate' });
 
   const decision = gate.preToolGate({
     toolName: 'run_command',
@@ -111,8 +120,8 @@ test('pre-tool gate blocks unauthorized destructive actions with DENY (fails clo
 
 test('pre-tool gate enforces single-use consumable authorization (ALLOW_ONCE, no reuse)', t => {
   const cwd = temp(t);
-  const hostAuthority = new HostApprovalAuthority();
-  const gate = createHarnessExecutionGate({ cwd, hostAuthority });
+  const hostAuthority = testTrustedAuthority();
+  const gate = createHarnessExecutionGate({ cwd, hostAuthority, enforcementRuntime: 'harness-gate' });
 
   const actionArgs = { path: path.join(cwd, 'temp.txt') };
 
@@ -150,8 +159,8 @@ test('pre-tool gate enforces single-use consumable authorization (ALLOW_ONCE, no
 
 test('pre-tool gate requires separate authorization for different arguments', t => {
   const cwd = temp(t);
-  const hostAuthority = new HostApprovalAuthority();
-  const gate = createHarnessExecutionGate({ cwd, hostAuthority });
+  const hostAuthority = testTrustedAuthority();
+  const gate = createHarnessExecutionGate({ cwd, hostAuthority, enforcementRuntime: 'harness-gate' });
 
   const authorizedArgs = { CommandLine: 'git clean -fd' };
   const differentArgs = { CommandLine: 'git reset --hard' };
@@ -181,8 +190,8 @@ test('pre-tool gate requires separate authorization for different arguments', t 
 
 test('pre-tool gate rejects destructive action outside workspace boundary even if token was granted', t => {
   const cwd = temp(t);
-  const hostAuthority = new HostApprovalAuthority();
-  const gate = createHarnessExecutionGate({ cwd, hostAuthority });
+  const hostAuthority = testTrustedAuthority();
+  const gate = createHarnessExecutionGate({ cwd, hostAuthority, enforcementRuntime: 'harness-gate' });
 
   const outsideArgs = { path: path.join(os.tmpdir(), 'outside-secret.txt') };
   const proof = hostAuthority.issueApproval({ toolName: 'delete_file', args: outsideArgs, actionType: 'destructive' });
@@ -202,7 +211,7 @@ test('pre-tool gate rejects destructive action outside workspace boundary even i
 
 test('pre-tool gate interactive mode yields ANSWER_QUESTION', t => {
   const cwd = temp(t);
-  const gate = createHarnessExecutionGate({ cwd, permissions: { interactive: true } });
+  const gate = createHarnessExecutionGate({ cwd, permissions: { interactive: true }, enforcementRuntime: 'harness-gate' });
 
   const decision = gate.preToolGate({
     toolName: 'run_command',
@@ -216,8 +225,8 @@ test('pre-tool gate interactive mode yields ANSWER_QUESTION', t => {
 
 test('pre-tool gate blocks unauthorized external operations (push, publish)', t => {
   const cwd = temp(t);
-  const hostAuthority = new HostApprovalAuthority();
-  const gate = createHarnessExecutionGate({ cwd, hostAuthority });
+  const hostAuthority = testTrustedAuthority();
+  const gate = createHarnessExecutionGate({ cwd, hostAuthority, enforcementRuntime: 'harness-gate' });
 
   const decision = gate.preToolGate({
     toolName: 'run_command',
@@ -269,11 +278,11 @@ test('anti-loop gate triggers after consecutive failures on identical tool calls
   assert.ok(blockedDecision.reason.includes('failed 3 times'));
 });
 
-test('post-tool gate rejects self-certified completion without independent evidence', t => {
+test('postToolGate rejects self-certified completion without independent evidence', t => {
   const cwd = temp(t);
   const gate = createHarnessExecutionGate({ cwd });
 
-  // Self-certified claim without evidenceRefs
+  // 1. Self-certified claim without evidenceRefs fails
   const unverifiedPost = gate.postToolGate({
     toolName: 'verify_module',
     result: { verified: true, status: 'PASS' }
@@ -281,30 +290,49 @@ test('post-tool gate rejects self-certified completion without independent evide
   assert.equal(unverifiedPost.verified, false);
   assert.ok(unverifiedPost.warning.includes('Self-certified'));
 
-  // Verified claim with physical evidenceRefs existing and non-empty
+  // 2. Self-authored evidence artifact without independent execution checker fails
   const logPath = path.join(cwd, 'test-run-123.log');
   fs.writeFileSync(logPath, '12/12 passing');
-  const verifiedPost = gate.postToolGate({
+  const unprovenPost = gate.postToolGate({
     toolName: 'verify_module',
     result: { verified: true, status: 'PASS', evidenceRefs: ['test-run-123.log'] }
   });
+  assert.equal(unprovenPost.verified, false);
+  assert.equal(unprovenPost.status, 'REVIEW_REQUIRED');
+  assert.ok(unprovenPost.warning.includes('requires an independently executed checker'));
+
+  // 3. Verified claim with independently executed checker passing acceptance criteria
+  const verifiedGate = createHarnessExecutionGate({
+    cwd,
+    evidenceVerifier: new IndependentEvidenceVerifier({
+      cwd,
+      executionChecker: (ref, { content, acceptanceCriteria }) => {
+        return content.includes('12/12 passing') && acceptanceCriteria === 'full-pass';
+      }
+    })
+  });
+  const verifiedPost = verifiedGate.postToolGate({
+    toolName: 'verify_module',
+    result: { verified: true, status: 'PASS', evidenceRefs: ['test-run-123.log'], acceptanceCriteria: 'full-pass' }
+  });
   assert.equal(verifiedPost.verified, true);
+  assert.equal(verifiedPost.status, 'VERIFIED');
   assert.equal(verifiedPost.warning, null);
 
-  // Non-existent evidence file fails independent verification
-  const missingPost = gate.postToolGate({
+  // 4. Non-existent evidence file fails independent verification
+  const missingPost = verifiedGate.postToolGate({
     toolName: 'verify_module',
-    result: { verified: true, status: 'PASS', evidenceRefs: ['non-existent.log'] }
+    result: { verified: true, status: 'PASS', evidenceRefs: ['non-existent.log'], acceptanceCriteria: 'full-pass' }
   });
   assert.equal(missingPost.verified, false);
   assert.ok(missingPost.warning.includes('does not exist'));
 
-  // Empty evidence file (0 bytes) fails independent verification
+  // 5. Empty evidence file (0 bytes) fails independent verification
   const emptyPath = path.join(cwd, 'empty.log');
   fs.writeFileSync(emptyPath, '');
-  const emptyPost = gate.postToolGate({
+  const emptyPost = verifiedGate.postToolGate({
     toolName: 'verify_module',
-    result: { verified: true, status: 'PASS', evidenceRefs: ['empty.log'] }
+    result: { verified: true, status: 'PASS', evidenceRefs: ['empty.log'], acceptanceCriteria: 'full-pass' }
   });
   assert.equal(emptyPost.verified, false);
   assert.ok(emptyPost.warning.includes('empty'));
@@ -355,8 +383,8 @@ test('adversarial: delegated child worker cannot self-issue ALLOW_ONCE tokens', 
 
 test('adversarial: untrusted approver (agent/model/worker) cannot self-issue privileged authorization', t => {
   const cwd = temp(t);
-  const hostAuthority = new HostApprovalAuthority();
-  const gate = createHarnessExecutionGate({ cwd, hostAuthority });
+  const hostAuthority = testTrustedAuthority();
+  const gate = createHarnessExecutionGate({ cwd, hostAuthority, enforcementRuntime: 'harness-gate' });
 
   // Raw string, unsigned object, or self-issued proof must fail closed
   assert.throws(
@@ -415,8 +443,8 @@ test('regression P03: constructor injection of unverified approval tokens is rej
 
 test('regression P03: anti-loop gate blocks repeated failures before checking ALLOW_ONCE token', t => {
   const cwd = temp(t);
-  const hostAuthority = new HostApprovalAuthority();
-  const gate = createHarnessExecutionGate({ cwd, hostAuthority });
+  const hostAuthority = testTrustedAuthority();
+  const gate = createHarnessExecutionGate({ cwd, hostAuthority, enforcementRuntime: 'harness-gate' });
   const toolArgs = { path: path.join(cwd, 'broken-target.txt') };
 
   // Grant an ALLOW_ONCE token with valid host authority
@@ -513,31 +541,47 @@ test('regression P03: postToolGate requires independent evidence verifier and re
   assert.equal(emptyJsonPost.verified, false);
   assert.ok(emptyJsonPost.warning.includes('placeholder') || emptyJsonPost.warning.includes('trivial'));
 
-  // 3. JSON artifact with non-VERIFIED status is rejected
-  const failedJson = path.join(cwd, 'failed-evidence.json');
-  fs.writeFileSync(failedJson, JSON.stringify({ id: 'task-1', statement: 'ran tests', status: 'INFERRED', freshness: 'CURRENT' }) + '\n');
-  const failedJsonPost = gate.postToolGate({
+  // 3. Self-authored JSON artifact with VERIFIED status is rejected without independent execution checker
+  const selfAuthoredJson = path.join(cwd, 'self-authored-evidence.json');
+  fs.writeFileSync(selfAuthoredJson, JSON.stringify({ id: 'task-1', statement: 'verified 15/15 checks', status: 'VERIFIED', freshness: 'CURRENT' }) + '\n');
+  const selfAuthoredPost = gate.postToolGate({
     toolName: 'verify_module',
-    result: { verified: true, status: 'PASS', evidenceRefs: ['failed-evidence.json'] }
+    result: { verified: true, status: 'PASS', evidenceRefs: ['self-authored-evidence.json'] }
   });
-  assert.equal(failedJsonPost.verified, false);
-  assert.ok(failedJsonPost.warning.includes('expected "VERIFIED"'));
+  assert.equal(selfAuthoredPost.verified, false);
+  assert.equal(selfAuthoredPost.status, 'REVIEW_REQUIRED');
+  assert.ok(selfAuthoredPost.warning.includes('requires an independently executed checker'));
 
-  // 4. Genuine structured evidence artifact is verified
-  const validJson = path.join(cwd, 'valid-evidence.json');
-  fs.writeFileSync(validJson, JSON.stringify({ id: 'task-1', statement: 'verified 15/15 checks', status: 'VERIFIED', freshness: 'CURRENT' }) + '\n');
-  const validJsonPost = gate.postToolGate({
+  // 4. Genuine structured evidence artifact with independent execution checker is verified
+  const verifiedGate = createHarnessExecutionGate({
+    cwd,
+    evidenceVerifier: new IndependentEvidenceVerifier({
+      cwd,
+      executionChecker: (ref, { content, acceptanceCriteria, provenance }) => {
+        const parsed = JSON.parse(content);
+        return parsed.status === 'VERIFIED' && provenance?.exitCode === 0 && acceptanceCriteria === 'all-pass';
+      }
+    })
+  });
+  const validJsonPost = verifiedGate.postToolGate({
     toolName: 'verify_module',
-    result: { verified: true, status: 'PASS', evidenceRefs: ['valid-evidence.json'] }
+    result: {
+      verified: true,
+      status: 'PASS',
+      evidenceRefs: ['self-authored-evidence.json'],
+      acceptanceCriteria: 'all-pass',
+      provenance: { exitCode: 0, runner: 'node:test' }
+    }
   });
   assert.equal(validJsonPost.verified, true);
+  assert.equal(validJsonPost.status, 'VERIFIED');
   assert.equal(validJsonPost.warning, null);
 });
 
 test('regression P03: delegated worker cannot grant ALLOW_ONCE even with valid host proof', t => {
   const cwd = temp(t);
-  const hostAuthority = new HostApprovalAuthority();
-  const parentGate = createHarnessExecutionGate({ cwd, hostAuthority });
+  const hostAuthority = testTrustedAuthority();
+  const parentGate = createHarnessExecutionGate({ cwd, hostAuthority, enforcementRuntime: 'harness-gate' });
   const childGate = parentGate.delegateWorker('child-worker-1');
 
   const actionArgs = { path: path.join(cwd, 'child-target.txt') };
@@ -548,6 +592,145 @@ test('regression P03: delegated worker cannot grant ALLOW_ONCE even with valid h
     () => childGate.grantAllowOnce(proof),
     { code: 'ERR_UNAUTHORIZED_ALLOW_ONCE' }
   );
+});
+
+test('adversarial P03: caller-created HostApprovalAuthority without host boundary credentials cannot issue approvals', t => {
+  // Public construction without boundary credentials fails closed
+  const callerAuth = new HostApprovalAuthority();
+  assert.equal(callerAuth.isTrusted(), false);
+  assert.throws(
+    () => callerAuth.issueApproval({ toolName: 'delete_file', actionType: 'destructive' }),
+    { code: 'ERR_UNTRUSTED_AUTHORITY_CREATION' }
+  );
+
+  // Construction with caller callback but without host boundary secret also fails closed
+  const dummyAuth = new HostApprovalAuthority({
+    approvalBridge: () => true
+  });
+  assert.equal(dummyAuth.isTrusted(), false);
+  assert.throws(
+    () => dummyAuth.issueApproval({ toolName: 'delete_file', actionType: 'destructive' }),
+    { code: 'ERR_UNTRUSTED_AUTHORITY_CREATION' }
+  );
+});
+
+test('adversarial P03: caller-created authority passed to HarnessExecutionGate is rejected', t => {
+  const cwd = temp(t);
+  const callerAuth = new HostApprovalAuthority({ approvalBridge: () => true });
+
+  assert.throws(
+    () => createHarnessExecutionGate({ cwd, hostAuthority: callerAuth }),
+    { code: 'ERR_UNTRUSTED_HOST_AUTHORITY' }
+  );
+});
+
+test('adversarial P03: default HarnessExecutionGate has null hostAuthority and fails closed on privileged operations', t => {
+  const cwd = temp(t);
+  const defaultGate = createHarnessExecutionGate({ cwd, enforcementRuntime: 'harness-gate' });
+
+  // Calling grantAllowOnce on default gate without hostAuthority throws ERR_NO_HOST_AUTHORITY
+  assert.throws(
+    () => defaultGate.grantAllowOnce({
+      tokenType: 'host-allow-once-proof',
+      toolName: 'delete_file',
+      actionType: 'destructive',
+      signature: 'dummy'
+    }),
+    { code: 'ERR_NO_HOST_AUTHORITY' }
+  );
+
+  // Destructive operation without valid authority fails closed
+  const decision = defaultGate.preToolGate({
+    toolName: 'delete_file',
+    args: { path: path.join(cwd, 'test.txt') },
+    actionType: 'destructive'
+  });
+  assert.equal(decision.decision, 'DENY');
+  assert.equal(decision.blocked, true);
+});
+
+test('adversarial P03: host approval bridge denial fails closed without issuing proof', t => {
+  const denyingAuth = createTrustedHostApprovalAuthority({
+    hostBoundarySecret: 'test-secret',
+    approvalBridge: () => false // Explicit host denial
+  });
+
+  assert.throws(
+    () => denyingAuth.issueApproval({ toolName: 'delete_file', actionType: 'destructive' }),
+    { code: 'ERR_HOST_APPROVAL_DENIED' }
+  );
+});
+
+test('adversarial P03: rogue authority proof is rejected by trusted gate signature check', t => {
+  const cwd = temp(t);
+  const trustedAuth = createTrustedHostApprovalAuthority({
+    hostBoundarySecret: 'trusted-boundary-secret-1',
+    approvalBridge: () => true
+  });
+  const rogueAuth = createTrustedHostApprovalAuthority({
+    hostBoundarySecret: 'different-rogue-secret-2',
+    approvalBridge: () => true
+  });
+
+  const gate = createHarnessExecutionGate({ cwd, hostAuthority: trustedAuth, enforcementRuntime: 'harness-gate' });
+  const rogueProof = rogueAuth.issueApproval({ toolName: 'delete_file', actionType: 'destructive' });
+
+  assert.throws(
+    () => gate.grantAllowOnce(rogueProof),
+    { code: 'ERR_UNTRUSTED_AUTHORIZATION_SOURCE' }
+  );
+});
+
+test('adversarial P03: arbitrary long self-authored text fails independent evidence verification', t => {
+  const cwd = temp(t);
+  const gate = createHarnessExecutionGate({ cwd });
+
+  const fakeLog = path.join(cwd, 'fake-large.log');
+  fs.writeFileSync(fakeLog, 'PASS: ALL CHECKS PASSED. SYSTEM IS COMPLETELY SECURE AND VERIFIED. NO ERRORS DETECTED.\n'.repeat(20));
+
+  const post = gate.postToolGate({
+    toolName: 'verify_module',
+    result: { verified: true, status: 'PASS', evidenceRefs: ['fake-large.log'] }
+  });
+  assert.equal(post.verified, false);
+  assert.equal(post.status, 'REVIEW_REQUIRED');
+  assert.ok(post.warning.includes('requires an independently executed checker'));
+});
+
+test('adversarial P03: host runtime without verified live tool hooks has LIVE_PENDING status and fails closed', t => {
+  const cwd = temp(t);
+  const unhookedGate = createHarnessExecutionGate({ cwd, enforcementRuntime: 'antigravity' });
+
+  assert.equal(unhookedGate.getInterceptionStatus(), 'LIVE_PENDING');
+
+  const shellDecision = unhookedGate.preToolGate({
+    toolName: 'run_command',
+    args: { CommandLine: 'node -v' },
+    actionType: 'read'
+  });
+  assert.equal(shellDecision.decision, 'DENY');
+  assert.equal(shellDecision.rule, 'runtime-enforcement');
+  assert.equal(shellDecision.interceptionStatus, 'LIVE_PENDING');
+  assert.equal(shellDecision.blocked, true);
+
+  // When verified live host hooks are attached, status becomes LIVE_ACTIVE
+  const hookedGate = createHarnessExecutionGate({
+    cwd,
+    enforcementRuntime: 'antigravity',
+    hostHooks: {
+      interceptToolCall: () => ({ allow: true }),
+      isVerified: true
+    }
+  });
+  assert.equal(hookedGate.getInterceptionStatus(), 'LIVE_ACTIVE');
+
+  const hookedDecision = hookedGate.preToolGate({
+    toolName: 'run_command',
+    args: { CommandLine: 'node -v' },
+    actionType: 'read'
+  });
+  assert.equal(hookedDecision.decision, 'ALLOW');
+  assert.equal(hookedDecision.blocked, false);
 });
 
 

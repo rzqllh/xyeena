@@ -485,28 +485,129 @@ test('regression P05: active live PID in run.lock strictly blocks concurrent dup
   // Must strictly block concurrent execution
   assert.throws(
     () => DurableCheckpointStore.acquireRunLock(cwd, runId),
-    new RegExp(`exclusive lease already held by active process \\(PID ${process.pid}\\)`)
+    new RegExp(`exclusive lease already held by active process \\(PID ${process.pid}`)
   );
 });
 
-test('regression P05: expired stale lock is safely reclaimed', t => {
+test('regression P05: active owner exceeding lease threshold is NEVER reclaimed solely due to elapsed time', t => {
   const cwd = temp(t);
-  const runId = 'expired-lock-test';
+  const runId = 'active-exceeding-threshold-test';
 
   const runDir = path.join(cwd, '.xyeena', 'runs', runId);
   fs.mkdirSync(runDir, { recursive: true });
   const lockFile = path.join(runDir, 'run.lock');
 
-  // Write lock from 1 hour ago
+  // Write lock held by active PID from 1 hour ago
   const oldTime = new Date(Date.now() - 3600000).toISOString();
-  fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid, acquiredAt: oldTime }) + '\n');
+  fs.writeFileSync(lockFile, JSON.stringify({
+    ownerId: `${process.pid}-old-lease`,
+    pid: process.pid,
+    fenceToken: 1,
+    acquiredAt: oldTime
+  }) + '\n');
 
-  // With a 1000ms stale threshold, this expired lock must be reclaimed
-  const release = DurableCheckpointStore.acquireRunLock(cwd, runId, { staleThresholdMs: 1000 });
+  // With a small staleThresholdMs, an active process must NEVER be reclaimed solely due to elapsed time
+  assert.throws(
+    () => DurableCheckpointStore.acquireRunLock(cwd, runId, { staleThresholdMs: 1000 }),
+    new RegExp(`exclusive lease already held by active process \\(PID ${process.pid}`)
+  );
+
+  // Lock file must still be intact and held by original owner
+  const current = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+  assert.equal(current.ownerId, `${process.pid}-old-lease`);
+});
+
+test('regression P05: concurrent contenders compete safely for exclusive run lock with single winner', async t => {
+  const cwd = temp(t);
+  const runId = 'concurrent-contenders-test';
+
+  let successCount = 0;
+  let contentionCount = 0;
+  let releaseFn = null;
+
+  const attempts = Array.from({ length: 8 }, async () => {
+    try {
+      const release = DurableCheckpointStore.acquireRunLock(cwd, runId);
+      successCount++;
+      releaseFn = release;
+    } catch (err) {
+      if (err.message.includes('exclusive lease')) {
+        contentionCount++;
+      } else {
+        throw err;
+      }
+    }
+  });
+
+  await Promise.all(attempts);
+
+  // Exactly one contender must have succeeded in acquiring the exclusive lease
+  assert.equal(successCount, 1);
+  assert.equal(contentionCount, 7);
+
+  if (releaseFn) releaseFn();
+});
+
+test('regression P05: crash recovery safely reclaims dead PID with incremented monotonic fenceToken', t => {
+  const cwd = temp(t);
+  const runId = 'crash-recovery-fence-test';
+
+  const runDir = path.join(cwd, '.xyeena', 'runs', runId);
+  fs.mkdirSync(runDir, { recursive: true });
+  const lockFile = path.join(runDir, 'run.lock');
+
+  // Find a verified dead PID
+  let deadPid = 999990;
+  while (DurableCheckpointStore.isProcessAlive(deadPid)) {
+    deadPid++;
+  }
+
+  // Write orphaned lock from crashed process with fenceToken 5
+  fs.writeFileSync(lockFile, JSON.stringify({
+    ownerId: `${deadPid}-crashed`,
+    pid: deadPid,
+    fenceToken: 5,
+    acquiredAt: new Date(Date.now() - 60000).toISOString()
+  }) + '\n');
+
+  // Contender reclaims crashed lock
+  const release = DurableCheckpointStore.acquireRunLock(cwd, runId);
   assert.equal(typeof release, 'function');
 
+  // Lock must have incremented fenceToken to 6 and new active PID
   const current = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
-  assert.notEqual(current.acquiredAt, oldTime);
+  assert.equal(current.pid, process.pid);
+  assert.equal(current.fenceToken, 6);
+
   release();
+  assert.equal(fs.existsSync(lockFile), false);
+});
+
+test('regression P05: lock release enforces strict owner identity and does not delete stolen or reclaimed lock', t => {
+  const cwd = temp(t);
+  const runId = 'owner-identity-release-test';
+
+  const runDir = path.join(cwd, '.xyeena', 'runs', runId);
+  fs.mkdirSync(runDir, { recursive: true });
+  const lockFile = path.join(runDir, 'run.lock');
+
+  // Process acquires lock
+  const releaseOwnerA = DurableCheckpointStore.acquireRunLock(cwd, runId);
+
+  // Simulate external reclamation or foreign owner write with different ownerId
+  const foreignOwnerData = {
+    ownerId: 'different-foreign-owner-uuid',
+    pid: process.pid,
+    fenceToken: 2,
+    acquiredAt: new Date().toISOString()
+  };
+  fs.writeFileSync(lockFile, JSON.stringify(foreignOwnerData) + '\n');
+
+  // Owner A calling release must NOT delete Owner B's lock
+  releaseOwnerA();
+
+  assert.equal(fs.existsSync(lockFile), true);
+  const surviving = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+  assert.equal(surviving.ownerId, 'different-foreign-owner-uuid');
 });
 

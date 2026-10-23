@@ -45,45 +45,68 @@ export class DurableCheckpointStore {
     fs.mkdirSync(runDir, { recursive: true });
     const lockFile = path.join(runDir, 'run.lock');
 
-    const lockData = {
-      pid: process.pid,
-      acquiredAt: new Date().toISOString(),
-      runId: validId,
-      host: os.hostname ? os.hostname() : 'localhost'
-    };
+    const ownerId = `${process.pid}-${crypto.randomUUID()}`;
+    const host = os.hostname ? os.hostname() : 'localhost';
+    let fenceToken = 1;
 
     let acquired = false;
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      let existingFence = 0;
       try {
+        if (fs.existsSync(lockFile)) {
+          let existing = null;
+          try {
+            existing = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+          } catch {
+            existing = null;
+          }
+          if (existing) {
+            existingFence = Number(existing.fenceToken) || 0;
+            const isAlive = existing.pid ? this.isProcessAlive(existing.pid) : false;
+            if (isAlive) {
+              // Active owner is NEVER reclaimed solely due to elapsed time
+              throw new Error(`Cannot resume or execute run "${validId}": exclusive lease already held by active process (PID ${existing.pid}, owner ${existing.ownerId || 'unknown'})`);
+            }
+            // Stale or dead process lock detected: safely reclaim with incremented fencing token
+            try {
+              fs.rmSync(lockFile, { force: true });
+            } catch {}
+          }
+        }
+
+        fenceToken = existingFence + 1;
+        const lockData = {
+          ownerId,
+          pid: process.pid,
+          fenceToken,
+          acquiredAt: new Date().toISOString(),
+          runId: validId,
+          host
+        };
+
         const fd = fs.openSync(lockFile, 'wx');
         fs.writeSync(fd, JSON.stringify(lockData) + '\n');
         fs.closeSync(fd);
         acquired = true;
         break;
       } catch (err) {
+        if (err.message && err.message.includes('exclusive lease already held by active process')) {
+          throw err;
+        }
         if (err.code !== 'EEXIST') throw err;
 
-        // Inspect existing lockfile to detect crashed or stale process lease
-        let existing = null;
+        // If EEXIST occurred because of a race with another contender, inspect on next loop
         try {
           const content = fs.readFileSync(lockFile, 'utf8');
-          existing = JSON.parse(content);
-        } catch {
-          existing = null;
+          const raced = JSON.parse(content);
+          if (raced?.pid && this.isProcessAlive(raced.pid)) {
+            throw new Error(`Cannot resume or execute run "${validId}": exclusive lease already held by active process (PID ${raced.pid}, owner ${raced.ownerId || 'unknown'})`);
+          }
+        } catch (innerErr) {
+          if (innerErr.message && innerErr.message.includes('exclusive lease already held by active process')) {
+            throw innerErr;
+          }
         }
-
-        const isAlive = existing?.pid ? this.isProcessAlive(existing.pid) : false;
-        const ageMs = existing?.acquiredAt ? (Date.now() - new Date(existing.acquiredAt).getTime()) : Infinity;
-        const isStale = !isAlive || (staleThresholdMs > 0 && ageMs > staleThresholdMs);
-
-        if (!isStale && isAlive) {
-          throw new Error(`Cannot resume or execute run "${validId}": exclusive lease already held by active process (PID ${existing.pid})`);
-        }
-
-        // Stale or dead process lock detected: safely reclaim and retry once
-        try {
-          fs.rmSync(lockFile, { force: true });
-        } catch {}
       }
     }
 
@@ -96,7 +119,7 @@ export class DurableCheckpointStore {
         if (fs.existsSync(lockFile)) {
           try {
             const current = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
-            if (current?.pid === process.pid) {
+            if (current?.ownerId === ownerId) {
               fs.rmSync(lockFile, { force: true });
             }
           } catch {
