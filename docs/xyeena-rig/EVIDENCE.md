@@ -72,3 +72,18 @@ A comparison of the chat backlog R01–R15 with the existing E task tracker and 
   - `npm pack --dry-run`: PASS.
 - Verdict: VERIFIED. Full phase evidence recorded in `docs/xyeena-rig/evidence-p02.md`.
 
+## Phase P03 verification — Automatic Harness Enforcement (2026-10-23)
+
+- Branch: `feat/rig-enterprise-p03-harness`, Base: `feat/rig-enterprise-p02-skill-orchestration` (61b4fc2).
+- Scope: R05, R10; Acceptance A12, A13, A25, A28; Tasks E05-01, E05-02, E05-03, E07-01, E07-04.
+- Changes: `src/rig-harness-lifecycle.mjs`, `test/rig-harness-lifecycle.test.mjs`.
+- Results:
+  - `npm test`: 249/249 PASS (12 unit tests in harness lifecycle, +9 executable enforcement tests).
+  - `npm run check`: PASS.
+  - `npm run eval`: PASS (18/18).
+  - `npm run test:harness`: PASS (15/15).
+  - `npm run test:consumer`: PASS.
+  - `npm pack --dry-run`: PASS.
+- Verdict: VERIFIED. Full phase evidence recorded in `docs/xyeena-rig/evidence-p03.md`.
+
+
