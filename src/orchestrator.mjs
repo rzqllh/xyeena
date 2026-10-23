@@ -34,11 +34,14 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
   const route = routeWorkspaceSkills({ ...settings, state: resolvedState, prompt: goal, maxSupporting });
   const picked = [route.primary, ...route.supporting].filter(s => s && !['xyeena-orchestrate','xyeena-rig'].includes(s.name));
   const skills = [...new Set([...(governor ? [governor.name] : []), ...picked.map(s => s.name)])].slice(0, 8);
-  const sdkSkillPaths = [...new Set(skills.map(name => inventory.find(s => s.name === name && s.availability === 'detected'))
+  const enterprise = buildEnterprisePolicy({goal,state:resolvedState,inventory,selectedSkills:skills});
+  const arbitratedSkills = (enterprise.arbitration?.arbitratedSkills?.length > 0)
+    ? enterprise.arbitration.arbitratedSkills
+    : skills;
+  const sdkSkillPaths = [...new Set(arbitratedSkills.map(name => inventory.find(s => s.name === name && s.availability === 'detected'))
     .filter(Boolean).map(s => path.dirname(s.path)))];
   const hasBridge = EXECUTABLE_HOSTS.has(runtime);
   const ready = !!governor;
-  const enterprise = buildEnterprisePolicy({goal,state:resolvedState,inventory,selectedSkills:skills});
   const harness = inspectRigHarness({cwd:root,contextualRequested:enterprise.harness.contextualRequested});
   return {
     schema: 1, mode: 'preview-only', executed: false, runtime, goal, cwd: root,
@@ -50,7 +53,8 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
     enterprise,
     arbitration: enterprise.arbitration,
     harness,
-    selectedSkills: skills, skillPaths: sdkSkillPaths, inventoryRevision,
+    inventory,
+    selectedSkills: arbitratedSkills, skillPaths: sdkSkillPaths, inventoryRevision,
     missingOrchestrator: !governor,
     unavailable: inventory.filter(s => s.availability !== 'detected').map(s => ({
       name: s.name, reason: s.availability
@@ -83,13 +87,20 @@ export async function executeOrchestration(plan, {
   if (fresh.inventoryRevision !== plan.inventoryRevision ||
       JSON.stringify(fresh.selectedSkills) !== JSON.stringify(plan.selectedSkills) ||
       JSON.stringify(fresh.skillPaths) !== JSON.stringify(plan.skillPaths)) {
+    const freshInstalledNames = new Set(fresh.selectedSkills);
+    const missingSkills = plan.selectedSkills.filter(name => !freshInstalledNames.has(name));
+
+    // Reject content/governor modifications in-place unless skills were genuinely removed
+    if (fresh.inventoryRevision !== plan.inventoryRevision && missingSkills.length === 0) {
+      throw new Error('Installed skill inventory changed: skill or governor contents were modified after preview; preview again to reauthorize');
+    }
+
     if (adaptiveFallback) {
       // Adaptive fallback: map any missing skills to their native equivalents
-      const freshInstalledNames = new Set(fresh.selectedSkills);
       effectiveSkills = plan.selectedSkills.map(name => freshInstalledNames.has(name) ? name : nativeFallbackForSkill(name));
       effectiveSkillPaths = [...new Set(effectiveSkills.map(name => {
-        const found = fresh.selectedSkills.find(s => s === name);
-        return found ? name : null;
+        const found = fresh.inventory?.find(s => s.name === name && s.availability === 'detected');
+        return found ? path.dirname(found.path) : null;
       }).filter(Boolean))];
     } else {
       throw new Error('Installed skill inventory changed since preview; preview again');
@@ -101,11 +112,11 @@ export async function executeOrchestration(plan, {
   if (typeof delegate !== 'boolean') throw new Error('Invalid delegation flag');
   if (delegate && plan.runtime !== 'antigravity')
     throw new Error('Subagent delegation is not enabled for this host bridge');
-  if (plan.selectedSkills.some(name => !VALID_SKILL.test(name)))
+  if (effectiveSkills.some(name => !VALID_SKILL.test(name)))
     throw new Error('Invalid selected skill');
   if (plan.runtime !== 'antigravity') {
     const adapter = portableAdapterFactory({
-      cwd: plan.cwd, runtime: plan.runtime, selectedSkills: plan.selectedSkills,
+      cwd: plan.cwd, runtime: plan.runtime, selectedSkills: effectiveSkills,
       ...(command ? { command } : {}), ...(timeoutMs !== undefined ? { timeoutMs } : {})
     });
     const result = await adapter.executeTask({
@@ -113,10 +124,10 @@ export async function executeOrchestration(plan, {
       scope: { readOnly: true, operationClass: 'safe' }
     });
     return { ...result, verified: false, evidenceRefs: [], status: 'REVIEW_REQUIRED',
-      harnessPreflight, entrypoint: plan.entrypoint, selectedSkills: plan.selectedSkills };
+      harnessPreflight, entrypoint: plan.entrypoint, selectedSkills: effectiveSkills, skillPaths: effectiveSkillPaths };
   }
   const adapter = antigravityAdapterFactory({
-    cwd: plan.cwd, skillPaths: plan.skillPaths, enableSubagents: delegate,
+    cwd: plan.cwd, skillPaths: effectiveSkillPaths, enableSubagents: delegate,
     ...(python ? { python } : {}), ...(timeoutMs !== undefined ? { timeoutMs } : {})
   });
   const result = await adapter.executeTask({
@@ -124,5 +135,5 @@ export async function executeOrchestration(plan, {
     scope: { readOnly: true, operationClass: 'safe' }
   });
   return { ...result, verified: false, evidenceRefs: [], status: 'REVIEW_REQUIRED',
-    harnessPreflight, entrypoint: plan.entrypoint, selectedSkills: plan.selectedSkills };
+    harnessPreflight, entrypoint: plan.entrypoint, selectedSkills: effectiveSkills, skillPaths: effectiveSkillPaths };
 }

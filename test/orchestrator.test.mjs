@@ -114,3 +114,42 @@ test('manifest content change invalidates preview even when selected skill names
   }}),/inventory changed/);
   assert.equal(called,false);
 });
+
+test('regression P02: content change is rejected even when adaptiveFallback is true', async t => {
+  const cwd = workspace(t);
+  add(cwd, '.gemini/skills', 'xyeena-orchestrate');
+  const plan = previewOrchestration({ cwd, runtime: 'gemini', goal: 'review tests', includeGlobal: false });
+  const file = path.join(cwd, '.gemini', 'skills', 'xyeena-orchestrate', 'SKILL.md');
+  fs.appendFileSync(file, '\n# Altered skill instructions\n');
+  let called = false;
+  await assert.rejects(executeOrchestration(plan, {
+    yes: true,
+    adaptiveFallback: true,
+    portableAdapterFactory: () => { called = true; return { executeTask: async () => ({}) }; }
+  }), /contents were modified/);
+  assert.equal(called, false);
+});
+
+test('regression P02: adaptive fallback passes effective fallback skills and paths to adapter', async t => {
+  const cwd = workspace(t);
+  add(cwd, '.gemini/skills', 'xyeena-orchestrate');
+  add(cwd, '.gemini/skills', 'systematic-debugging');
+  const plan = previewOrchestration({ cwd, runtime: 'gemini', goal: 'debug regression', includeGlobal: false });
+  // Remove systematic-debugging to simulate missing external skill
+  fs.rmSync(path.join(cwd, '.gemini/skills/systematic-debugging'), { recursive: true });
+
+  let passedSkills = null;
+  const result = await executeOrchestration(plan, {
+    yes: true,
+    adaptiveFallback: true,
+    portableAdapterFactory: (opts) => {
+      passedSkills = opts.selectedSkills;
+      return { executeTask: async () => ({ output: 'ok' }) };
+    }
+  });
+
+  // Must have passed xyeena-debug (the fallback for systematic-debugging)
+  assert.ok(passedSkills.includes('xyeena-debug'));
+  assert.ok(!passedSkills.includes('systematic-debugging'));
+  assert.deepEqual(result.selectedSkills, passedSkills);
+});
