@@ -205,8 +205,32 @@ Remediated the three critical audit blockers and unhooked host runtime intercept
    - Forward-merged P05. 307/307 PASS.
 7. **P07 Hardening & Fixtures (`2c0dba2`):**
    - Forward-merged P06 with sanitized audit logging. 313/313 PASS.
-8. **P08 Enterprise Release Candidate (`HEAD`):**
-   - Complete stack forward-integrated, documentation synchronized. Full test suite: 313/313 PASS, `npm run check` PASS (19 capabilities), `npm run eval` PASS (18/18), `npm run test:harness` PASS (15/15), `npm run test:consumer` PASS, `npm pack --dry-run` PASS (247 files, 203.8 kB).
+8. **P08 Enterprise Release Candidate (`1102449`):**
+   - Complete stack forward-integrated, documentation synchronized. Full test suite: 313/313 PASS.
+
+## Final Security Boundary Remediation — Stack P01–P08 (2026-10-23 Round 2)
+
+Remediated the two independently confirmed security boundary blockers on P08 HEAD:
+1. **P03 Approval Authority Boundary (`4c664d5`):**
+   - Strictly separated authority issuance from untrusted agent-callable code.
+   - `createTrustedHostApprovalAuthority()` requires verified host credentials matching `process.env.XYEENA_HOST_BOUNDARY_SECRET`; no longer generates fallback random secrets.
+   - Caller-supplied callbacks (such as `approvalBridge: () => ({ approved: true })`) without verified host boundary authentication are untrusted (`isTrusted() === false`, authorization marked `BLOCKED`).
+   - `HarnessExecutionGate` throws `ERR_UNTRUSTED_HOST_AUTHORITY` on untrusted authorities; default gate fails closed on privileged operations.
+   - Added negative test verifying that a caller-supplied always-approve callback cannot grant privilege. 275/275 PASS.
+2. **P04 Subagent Integration (`8baf547`):**
+   - Forward-merged P03 remediation. 288/288 PASS.
+3. **P05 Atomic Lock Reclamation & Monotonic Fencing (`473df27`):**
+   - Eliminated the race between concurrent contenders reclaiming a dead owner's lock using `reclaim.lock` mutual exclusion.
+   - Monotonic fencing sequence is stored in `fence.seq` and strictly increases (`nextSeq = max(fenceSeq, lockFence) + 1`); never resets to 1 after lock deletion or clean release.
+   - Fencing prevents stale workers from performing side effects: `DurableCheckpointStore.save()` and `lockHandle.assertValid()` reject stale fence tokens with `ERR_STALE_FENCE_TOKEN`.
+   - Added real multi-process tests spawning child processes verifying single-winner contention, live PID blocking, and crash recovery (`SIGKILL`) with incremented fencing. 307/307 PASS.
+4. **P06 Compact Installer (`28db291`):**
+   - Forward-merged P05. 311/311 PASS.
+5. **P07 Hardening & Fixtures (`1fcb8a6`):**
+   - Forward-merged P06 with sanitized audit logging. 317/317 PASS.
+6. **P08 Enterprise Release Candidate (`HEAD`):**
+   - Complete stack forward-integrated, documentation synchronized. Full test suite: 317/317 PASS, `npm run check` PASS (19 capabilities), `npm run eval` PASS (18/18), `npm run test:harness` PASS (15/15), `npm run test:consumer` PASS, `npm pack --dry-run` PASS (247 files, 206.3 kB).
+
 
 
 

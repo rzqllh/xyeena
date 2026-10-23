@@ -2,7 +2,7 @@
 
 **Phase ID:** P08  
 **Scope:** R15 — Enterprise Release Candidate, Complete R01–R15 Reconciliation, Package Build & Artifact Smoke, Release Runbook & Independent QA Verdict  
-**Base Branch:** `feat/rig-enterprise-p07-hardening` (commit `2c0dba2`)  
+**Base Branch:** `feat/rig-enterprise-p07-hardening` (commit `1fcb8a6`)  
 **Feature Branch:** `feat/rig-enterprise-p08-release`  
 **Target PR Base:** `feat/rig-enterprise-p07-hardening`  
 **Date:** 2026-10-23  
@@ -18,28 +18,30 @@
    - Verified that every claim in the matrix maps to concrete source code and automated tests.
 
 2. **Independent Source Audit Remediations (P03–P05 Forward-Integrated):**
-   - **P03 — Host Approval Trust Boundary & Evidence Verification (commit `6cb7f3c`):**
-     - *Trust Boundary:* HMAC alone does not constitute user consent. `HostApprovalAuthority` requires a trusted host approval callback/bridge (`approvalBridge`) and `hostBoundarySecret`. `HarnessExecutionGate` defaults to `hostAuthority: null` and fails closed (`ERR_NO_HOST_AUTHORITY`). Caller-created untrusted authorities throw `ERR_UNTRUSTED_HOST_AUTHORITY`.
+   - **P03 — Host Approval Trust Boundary & Evidence Verification (commit `4c664d5`):**
+     - *Authority Issuance Separation:* Authority issuance is strictly separated from untrusted agent-callable code. `createTrustedHostApprovalAuthority()` requires verified host boundary credentials matching `process.env.XYEENA_HOST_BOUNDARY_SECRET` and refuses to invent random boundary secrets. Unauthenticated caller issuance throws `ERR_HOST_BOUNDARY_UNAUTHENTICATED`.
+     - *Caller-Supplied Bridge Invalidation:* A caller-supplied always-approve callback `() => ({ approved: true })` without verified external host authentication cannot grant privilege: `isTrusted()` is `false`, live authorization is marked `BLOCKED`, and `HarnessExecutionGate` throws `ERR_UNTRUSTED_HOST_AUTHORITY` or fails closed with `DENY`.
+     - *Negative Test:* Added negative test verifying caller-supplied always-approve callback fails closed across all authority and gate entrypoints.
      - *Evidence Verification:* `IndependentEvidenceVerifier` rejects self-authored VERIFIED JSON or arbitrary long text. Demands an independent `executionChecker` with provenance (exit code 0, runner verification) and acceptance criteria checking. Unproven verifications return `REVIEW_REQUIRED`.
-     - *Live Tool Interception:* Corrected unverified interception claims; real host hooks or `harness-gate` runtime are `LIVE_ACTIVE`, while unhooked host runtimes (`antigravity`, `rig-cli`, etc.) are designated `LIVE_PENDING` and fail closed on destructive, external, and shell operations.
-   - **P04 — Subagent Write-Lock Lifetime (commit `604d86e`):** Wrapped workspace write-lock acquisition in early `try ... finally` block so any Harness denial, argument failure, callback error, or execution timeout releases the acquired write lock. Forward-merged P03.
-   - **P05 — Concurrent Run Lease Safety (commit `d6b9421`):**
-     - In `DurableCheckpointStore.acquireRunLock`, eliminated the `ageMs > 30000` stale reclamation for active processes. Active owners (`isProcessAlive(pid) === true`) are strictly protected and NEVER reclaimed solely due to elapsed time.
-     - Implemented crash-safe owner identity (`ownerId: ${process.pid}-${uuid}`) and monotonic `fenceToken` incremented on dead-PID reclamation.
-     - Enforced strictly scoped lock release (`current.ownerId === ownerId`), preventing stale deletion of reclaimed locks.
-     - Added adversarial test suite covering long runs exceeding lease threshold, concurrent contenders, and dead-PID reclamation.
-   - **P06 — Compact Installer (commit `3ff1ded`):** Forward-merged P01–P05 fixes.
-   - **P07 — Hardening & Fixtures (commit `2c0dba2`):** Forward-merged P01–P06 fixes with audit sanitization.
+     - *Live Tool Interception:* Real host hooks or `harness-gate` runtime are `LIVE_ACTIVE`, while unhooked host runtimes (`antigravity`, `rig-cli`, etc.) are designated `LIVE_PENDING` and fail closed on destructive, external, and shell operations.
+   - **P04 — Subagent Write-Lock Lifetime (commit `8baf547`):** Wrapped workspace write-lock acquisition in early `try ... finally` block so any Harness denial, argument failure, callback error, or execution timeout releases the acquired write lock. Forward-merged P03.
+   - **P05 — Atomic Lock Reclamation & Monotonic Fencing (commit `473df27`):**
+     - *Atomic Reclamation:* Solved the race condition between concurrent contenders reclaiming a dead owner's lock using `reclaim.lock` mutual exclusion. Contenders safely back off and re-check, preventing simultaneous unlink and recreate collisions.
+     - *Monotonic Fence Ledger:* Fencing sequence is persisted in `fence.seq` and strictly monotonically increases (`nextSeq = max(fenceSeq, lockFence) + 1`). It is never deleted or reset to 1 across clean releases or crashes.
+     - *Stale Worker Fencing:* Lock handle returns `fenceToken`, `ownerId`, and `assertValid()`. Checkpoint persistence via `DurableCheckpointStore.save()` validates `fenceToken` and `ownerId`; stale workers whose lease has been reclaimed are blocked from performing side effects with `ERR_STALE_FENCE_TOKEN`.
+     - *Real Multi-Process Tests:* Added multi-process tests with real spawned child processes verifying single-winner contention, live PID blocking, and crash recovery (`SIGKILL`) with incremented fencing.
+   - **P06 — Compact Installer (commit `28db291`):** Forward-merged P01–P05 fixes.
+   - **P07 — Hardening & Fixtures (commit `1fcb8a6`):** Forward-merged P01–P06 fixes with audit sanitization.
 
 3. **Stacked PR Registry (`docs/xyeena-rig/PR_INDEX.md`):**
    - Documented the exact 8-phase stacked pull request dependency graph:
      - PR #18 (P01: Unified Skill Discovery, `4b46610`) -> `main`
      - PR #19 (P02: Provider Orchestration & Parity, `ac84bce`) -> P01
-     - PR #20 (P03: Automatic Harness Enforcement, `6cb7f3c`) -> P02
-     - PR #21 (P04: Simpul & Native Subagents, `604d86e`) -> P03
-     - PR #22 (P05: Reliability, DAG & Recovery, `d6b9421`) -> P04
-     - PR #23 (P06: Compact Installer Lifecycle, `3ff1ded`) -> P05
-     - PR #24 (P07: Security Hardening & Fixtures, `2c0dba2`) -> P06
+     - PR #20 (P03: Automatic Harness Enforcement, `4c664d5`) -> P02
+     - PR #21 (P04: Simpul & Native Subagents, `8baf547`) -> P03
+     - PR #22 (P05: Reliability, DAG & Recovery, `473df27`) -> P04
+     - PR #23 (P06: Compact Installer Lifecycle, `28db291`) -> P05
+     - PR #24 (P07: Security Hardening & Fixtures, `1fcb8a6`) -> P06
      - PR #25 (P08: Enterprise Release Candidate, `HEAD`) -> P07
 
 4. **Enterprise Architecture & Operator Runbook Synchronization:**
@@ -47,7 +49,7 @@
    - Updated `RUNBOOK.md` with exact procedures for verification, compact setup, legacy migration, migration rollback, safe uninstallation, and release publication.
 
 5. **Package Build & Artifact Verification:**
-   - Validated npm packed tarball (`xyeena-agent-0.4.1.tgz`, 247 files, 203.8 kB).
+   - Validated npm packed tarball (`xyeena-agent-0.4.1.tgz`, 247 files, 206.3 kB).
    - Confirmed consumer tarball smoke test passes: workspace copy + user-global symlink installs successfully from the packed npm artifact.
 
 6. **Semantic Version Recommendation:**
@@ -60,12 +62,12 @@
 
 | Test Script | Actual Result | Command Executed |
 | --- | --- | --- |
-| `npm test` | **313 / 313 PASS** (0 failed, 0 skipped) | `node --test test/*.test.mjs` |
+| `npm test` | **317 / 317 PASS** (0 failed, 0 skipped) | `node --test test/*.test.mjs` |
 | `npm run check` | **PASS** (19 capabilities + runtime manifests verified) | `node ./bin/xyeena.mjs check --source .` |
 | `npm run eval` | **PASS** (18/18 scenarios evaluated) | `node ./bin/xyeena.mjs eval` |
 | `npm run test:harness` | **PASS** (15/15 harness contracts verified) | `node scripts/run-vendored-tests.mjs` |
 | `npm run test:consumer` | **PASS** (packed tarball consumer smoke test) | `node scripts/consumer-smoke.mjs` |
-| `npm pack --dry-run` | **PASS** (247 files, 203.8 kB package size) | `npm pack --dry-run` |
+| `npm pack --dry-run` | **PASS** (247 files, 206.3 kB package size) | `npm pack --dry-run` |
 
 ---
 
