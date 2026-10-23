@@ -7,7 +7,7 @@ import { createAntigravitySdkAdapter } from './antigravity-sdk-adapter.mjs';
 import { inventoryFingerprint } from './skill-cache.mjs';
 import { inferWorkflowState } from './workflow-intent.mjs';
 import { buildEnterprisePolicy, nativeFallbackForSkill } from './enterprise-policy.mjs';
-import { inspectRigHarness, enforceRigPreflight } from './rig-harness-lifecycle.mjs';
+import { inspectRigHarness, enforceRigPreflight, createHarnessExecutionGate } from './rig-harness-lifecycle.mjs';
 
 const HOSTS = new Set(supportedSkillHosts());
 const VALID_STATES = new Set(['TRIAGE','DISCOVER','GRILL','RESEARCH','PROTOTYPE','DEFINE','PLAN','EXECUTE','DEBUG','VERIFY','REVIEW','RELEASE','CLOSE','ESCALATE']);
@@ -109,6 +109,11 @@ export async function executeOrchestration(plan, {
   if (!fresh.ready) throw new Error(fresh.reason || 'Orchestrator is unavailable');
   if (!fresh.hostExecutionAvailable) throw new Error(fresh.reason || 'No native host execution adapter');
   const harnessPreflight = enforceRigPreflight(fresh,{consent:yes});
+  const harnessGate = createHarnessExecutionGate({
+    cwd: plan.cwd,
+    operationClass: 'safe',
+    enforcementRuntime: plan.runtime
+  });
   if (typeof delegate !== 'boolean') throw new Error('Invalid delegation flag');
   if (delegate && plan.runtime !== 'antigravity')
     throw new Error('Subagent delegation is not enabled for this host bridge');
@@ -124,7 +129,7 @@ export async function executeOrchestration(plan, {
       scope: { readOnly: true, operationClass: 'safe' }
     });
     return { ...result, verified: false, evidenceRefs: [], status: 'REVIEW_REQUIRED',
-      harnessPreflight, entrypoint: plan.entrypoint, selectedSkills: effectiveSkills, skillPaths: effectiveSkillPaths };
+      harnessPreflight, harnessGate, entrypoint: plan.entrypoint, selectedSkills: effectiveSkills, skillPaths: effectiveSkillPaths };
   }
   const adapter = antigravityAdapterFactory({
     cwd: plan.cwd, skillPaths: effectiveSkillPaths, enableSubagents: delegate,
@@ -135,5 +140,5 @@ export async function executeOrchestration(plan, {
     scope: { readOnly: true, operationClass: 'safe' }
   });
   return { ...result, verified: false, evidenceRefs: [], status: 'REVIEW_REQUIRED',
-    harnessPreflight, entrypoint: plan.entrypoint, selectedSkills: effectiveSkills, skillPaths: effectiveSkillPaths };
+    harnessPreflight, harnessGate, entrypoint: plan.entrypoint, selectedSkills: effectiveSkills, skillPaths: effectiveSkillPaths };
 }
