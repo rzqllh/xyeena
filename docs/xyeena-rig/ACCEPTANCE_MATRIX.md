@@ -32,7 +32,7 @@ Evidence status is separate from implementation status.
 | A24 | Live native parity fallback covers none/one/both unavailable and trust failure cases | NATIVE_EQUIVALENCE & adaptiveFallback 8-case test suite | VERIFIED |
 | A25 | Core Harness gates on every tool and delegated worker, contextual project opt-in | HarnessExecutionGate delegateWorker non-escalation & audit test | VERIFIED |
 | A26 | Enforced resource budget: token, cost, concurrency, cancellations and provider fallback | ResourceBudgetLedger ceiling tests & safe adapter fallback | VERIFIED |
-| A27 | Crash-safe DAG checkpoint/recovery and idempotent non-destructive resume | Killed worker, repeated request, interrupted write tests | NOT IMPLEMENTED |
+| A27 | Crash-safe DAG checkpoint/recovery and idempotent non-destructive resume | DurableCheckpointStore resume test suite & unconsumed result reclaiming | VERIFIED |
 | A28 | Independently verifiable completion and native Allow Once/Deny/Answer Questions policy | HarnessExecutionGate token consumption & interactive clarification tests | VERIFIED |
 | A29 | Owner-aware 19-skill migration retains compatible aliases, user edits and third-party skills | Old version upgraded on five real hosts | NOT IMPLEMENTED |
 | A30 | Automatic uninstaller and rollback reconstruct original state after faults | Multi-target failure/restart/tampering tests | NOT IMPLEMENTED |

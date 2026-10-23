@@ -100,5 +100,20 @@ A comparison of the chat backlog R01–R15 with the existing E task tracker and 
   - `npm pack --dry-run`: PASS.
 - Verdict: VERIFIED. Full phase evidence recorded in `docs/xyeena-rig/evidence-p04.md`.
 
+## Phase P05 verification — Reliability, DAG, Recovery & Budget (2026-10-23)
+
+- Branch: `feat/rig-enterprise-p05-recovery`, Base: `feat/rig-enterprise-p04-subagents` (8babeca).
+- Scope: R08, R09, R10; Acceptance A16, A17, A26, A27, A28; Tasks E07-02, E07-03.
+- Changes: `src/task-runner.mjs`, `test/task-runner.test.mjs`.
+- Results:
+  - `npm test`: 257/257 PASS (16 unit tests in task-runner, +5 recovery/anti-loop tests).
+  - `npm run check`: PASS.
+  - `npm run eval`: PASS (18/18).
+  - `npm run test:harness`: PASS (15/15).
+  - `npm run test:consumer`: PASS.
+  - `npm pack --dry-run`: PASS.
+- Verdict: VERIFIED. Full phase evidence recorded in `docs/xyeena-rig/evidence-p05.md`.
+
+
 
 
