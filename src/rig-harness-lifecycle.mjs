@@ -177,7 +177,8 @@ export class HarnessExecutionGate {
     inheritedFrom = null,
     auditLog = [],
     contextualRequested = [],
-    allowOnceTokens = []
+    allowOnceTokens = [],
+    enforcementRuntime = 'antigravity'
   } = {}) {
     this.cwd = fs.realpathSync(path.resolve(cwd));
     this.operationClass = operationClass;
@@ -190,6 +191,8 @@ export class HarnessExecutionGate {
     this.workerId = workerId;
     this.inheritedFrom = inheritedFrom;
     this.auditLog = auditLog;
+    this.enforcementRuntime = enforcementRuntime;
+    this.supportedEnforcementRuntimes = Object.freeze(['antigravity', 'rig-cli', 'harness-gate']);
     this.allowOnceTokens = new Set();
     if (Array.isArray(allowOnceTokens)) {
       for (const tok of allowOnceTokens) {
@@ -200,12 +203,34 @@ export class HarnessExecutionGate {
     this.contextual = inspectRigHarness({ cwd: this.cwd, contextualRequested });
   }
 
-  grantAllowOnce(token) {
+  grantAllowOnce(token, { approver = 'user', authority = 'host-user' } = {}) {
+    // 1. Delegated workers can NEVER self-issue or grant ALLOW_ONCE
+    if (this.inheritedFrom !== null) {
+      const err = new Error('Delegated workers cannot self-issue privileged ALLOW_ONCE authorization');
+      err.code = 'ERR_UNAUTHORIZED_ALLOW_ONCE';
+      throw err;
+    }
+
+    // 2. Untrusted sources (e.g. agent, model, worker) cannot self-issue
+    const validApprover = approver === 'user' || approver === 'host-user' || approver === 'human-user';
+    const validAuthority = authority === 'host-user' || authority === 'trusted-host';
+    if (!validApprover || !validAuthority) {
+      const err = new Error(`Privileged authorization requires trusted host user approval; rejected approver "${approver}"`);
+      err.code = 'ERR_UNTRUSTED_AUTHORIZATION_SOURCE';
+      throw err;
+    }
+
+    // 3. Token signature validation
     if (typeof token === 'string' && token.trim()) {
       this.allowOnceTokens.add(token.trim());
       return true;
     }
     if (token && typeof token === 'object' && token.toolName) {
+      if (token.approver && token.approver !== 'user' && token.approver !== 'host-user') {
+        const err = new Error(`Privileged authorization object contains untrusted approver "${token.approver}"`);
+        err.code = 'ERR_UNTRUSTED_AUTHORIZATION_SOURCE';
+        throw err;
+      }
       const actionType = token.actionType || 'destructive';
       const sig = `${actionType}:${token.toolName}:${JSON.stringify(token.args || {})}`;
       this.allowOnceTokens.add(sig);
@@ -242,6 +267,28 @@ export class HarnessExecutionGate {
     const isDestructive = actionType === 'destructive' ||
       ['rm_file', 'delete_file', 'drop_table', 'reset_hard'].includes(toolName) ||
       (args?.CommandLine && /(rm\s+-rf|rmdir\s+\/s|git\s+reset\s+--hard|git\s+clean\s+-fd)/i.test(args.CommandLine));
+
+    // 3. External Actions Gate
+    const isExternal = actionType === 'external' ||
+      ['publish', 'git_push', 'external_api'].includes(toolName) ||
+      (args?.CommandLine && /(git\s+push|npm\s+publish|curl|wget)/i.test(args.CommandLine));
+
+    // Verify runtime enforcement capability for privileged actions
+    if (this.enforcementRuntime && !this.supportedEnforcementRuntimes.includes(this.enforcementRuntime)) {
+      if (isDestructive || isExternal) {
+        const auditEntry = {
+          timestamp: now,
+          workerId: effectiveWorkerId,
+          toolName,
+          decision: 'DENY',
+          rule: 'runtime-enforcement',
+          blocked: true,
+          reason: `Host runtime "${this.enforcementRuntime}" does not support verified live tool interception; failing closed for privileged operations`
+        };
+        this.auditLog.push(auditEntry);
+        return auditEntry;
+      }
+    }
 
     if (isDestructive) {
       const actionSig = `destructive:${toolName}:${JSON.stringify(args || {})}`;
@@ -284,11 +331,6 @@ export class HarnessExecutionGate {
       this.auditLog.push(auditEntry);
       return auditEntry;
     }
-
-    // 3. External Actions Gate
-    const isExternal = actionType === 'external' ||
-      ['publish', 'git_push', 'external_api'].includes(toolName) ||
-      (args?.CommandLine && /(git\s+push|npm\s+publish|curl|wget)/i.test(args.CommandLine));
 
     if (isExternal) {
       const actionSig = `external:${toolName}:${JSON.stringify(args || {})}`;
@@ -418,7 +460,8 @@ export class HarnessExecutionGate {
       workerId: childWorkerId,
       inheritedFrom: this.workerId,
       auditLog: this.auditLog,
-      contextualRequested: this.contextual.contextual.requested
+      contextualRequested: this.contextual.contextual.requested,
+      enforcementRuntime: this.enforcementRuntime
     });
   }
 }
