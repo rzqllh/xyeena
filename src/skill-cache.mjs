@@ -48,6 +48,7 @@ export function inventoryFingerprint(options = {}) {
       const pluginDir = path.join(directory, name);
       parts.push(name, stamp(pluginDir),
         stamp(path.join(pluginDir, 'plugin.json')),
+        stamp(path.join(pluginDir, 'extension.json')),
         stamp(path.join(pluginDir, 'gemini-extension.json')),
         stamp(path.join(pluginDir, 'package.json')),
         stamp(path.join(pluginDir, 'SKILL.md')));
