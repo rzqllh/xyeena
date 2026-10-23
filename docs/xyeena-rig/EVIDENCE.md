@@ -127,3 +127,17 @@ A comparison of the chat backlog R01–R15 with the existing E task tracker and 
   - `npm run test:consumer`: PASS.
   - `npm pack --dry-run`: PASS.
 - Verdict: VERIFIED. Full phase evidence recorded in `docs/xyeena-rig/evidence-p06.md`.
+
+## Phase P07 verification — Security, Hardening & Live Acceptance Fixtures (2026-10-23)
+
+- Branch: `feat/rig-enterprise-p07-hardening`, Base: `feat/rig-enterprise-p06-installer` (931ac54).
+- Scope: R13, R14; Acceptance A18, A19, A20, A31, A32; Tasks E08-02, E08-03.
+- Changes: `src/rig-harness-lifecycle.mjs`, `test/security-hardening.test.mjs`, `docs/xyeena-rig/evidence-p07.md`.
+- Results:
+  - `npm test`: 267/267 PASS (6 unit tests in security-hardening, +6 adversarial/hardening tests).
+  - `npm run check`: PASS.
+  - `npm run eval`: PASS (18/18).
+  - `npm run test:harness`: PASS (15/15).
+  - `npm run test:consumer`: PASS.
+  - `npm pack --dry-run`: PASS.
+- Verdict: VERIFIED. Full phase evidence recorded in `docs/xyeena-rig/evidence-p07.md`.

@@ -40,7 +40,7 @@ The full 1:1 status and acceptance crosswalk lives in [REQUIREMENTS_TRACEABILITY
 | E06-05 | P0 | Hard per-run token/cost/concurrency limits and provider usage accounting | VERIFIED | R08 / A26 — ResourceBudgetLedger limit enforcement tests |
 | E07-03 | P0 | Durable task DAG checkpoints, idempotent resume/lease, bounded retry, crash cleanup across hosts | VERIFIED | R09 / A27 — DurableCheckpointStore, crash-safe resume, unconsumed result recovery |
 | E07-04 | P0 | Real host permission/verification evidence chain with independent auditor | VERIFIED | R10 / A28 — Allow Once/Deny/Answer Questions and boundary tests |
-| E08-03 | P1 | Full red-team/security, plugin spoofing and multi-runtime end-to-end test suite | TODO | R14 / A32 — threat/test matrix |
+| E08-03 | P1 | Full red-team/security, plugin spoofing and multi-runtime end-to-end test suite | VERIFIED | test/security-hardening.test.mjs (prompt injection, null-byte traversal, secret redaction, anti-recursion, multi-runtime) |
 | E08-04 | P1 | Release notes, npm artifact verification, version bump, signed verdict, authorized publish | TODO | R15 / A33 — no release without signoff |
 
 The CI PASS in E08-01 covers repository source and packed smoke only; E08-02, E08-03 and E08-04 remain distinct release gates. Never mark an E item COMPLETE from an R checkbox alone.

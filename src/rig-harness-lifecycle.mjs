@@ -39,6 +39,37 @@ export function safeInstalledGuide(root, group) {
   }
 }
 
+const SENSITIVE_PATTERNS = [
+  /ghp_[A-Za-z0-9_]{36,}/g,
+  /gho_[A-Za-z0-9_]{36,}/g,
+  /github_pat_[A-Za-z0-9_]{82}/g,
+  /sk-(?:proj-|ant-)?[A-Za-z0-9_-]{32,}/g,
+  /AKIA[0-9A-Z]{16}/g,
+  /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi,
+  /(?:password|secret|api[_-]?key|token)\s*[:=]\s*["']?([A-Za-z0-9_\-.~+=]{8,})["']?/gi,
+  /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/g
+];
+
+export function sanitizeSecretText(text) {
+  if (typeof text !== 'string') return text;
+  let sanitized = text;
+  for (const pattern of SENSITIVE_PATTERNS) {
+    sanitized = sanitized.replace(pattern, '[REDACTED_SECRET]');
+  }
+  return sanitized;
+}
+
+export function sanitizeAuditData(data) {
+  if (!data || typeof data !== 'object') return data;
+  try {
+    const json = JSON.stringify(data);
+    const cleanJson = sanitizeSecretText(json);
+    return JSON.parse(cleanJson);
+  } catch {
+    return data;
+  }
+}
+
 /**
  * Validates that targetPath is strictly contained within the workspace root.
  * Normalizes existing ancestors using filesystem-aware resolution (handling macOS /var symlink, Windows paths, etc.).
@@ -52,7 +83,7 @@ export function assertWorkspaceBoundary(targetPath, workspaceRoot) {
     throw error;
   }
   if (targetPath.includes('\0')) {
-    const error = new Error('Workspace boundary violation: null bytes not allowed');
+    const error = new Error('Workspace boundary violation: null-byte injection detected in target path');
     error.code = 'ERR_WORKSPACE_BOUNDARY_VIOLATION';
     throw error;
   }
@@ -512,6 +543,13 @@ export class HarnessExecutionGate {
     }
     this.recentErrors = new Map();
     this.contextual = inspectRigHarness({ cwd: this.cwd, contextualRequested });
+    this.depth = depth;
+  }
+
+  recordAudit(entry) {
+    const clean = sanitizeAuditData(entry);
+    this.auditLog.push(clean);
+    return clean;
   }
 
   getInterceptionStatus() {
@@ -589,8 +627,7 @@ export class HarnessExecutionGate {
           reason: err.message,
           blocked: true
         };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
+        return this.recordAudit(auditEntry);
       }
     }
 
@@ -610,8 +647,7 @@ export class HarnessExecutionGate {
         reason: 'Shell command execution attempts filesystem escape outside workspace root',
         blocked: true
       };
-      this.auditLog.push(auditEntry);
-      return auditEntry;
+      return this.recordAudit(auditEntry);
     }
 
     // 2. Anti-Loop Gate: Enforced before privileged action approval
@@ -627,8 +663,7 @@ export class HarnessExecutionGate {
         blocked: true,
         reason: 'Anti-loop: tool call failed 3 times consecutively; approach must be revised'
       };
-      this.auditLog.push(auditEntry);
-      return auditEntry;
+      return this.recordAudit(auditEntry);
     }
 
     // 3. Destructive & External Actions Detection
@@ -654,8 +689,7 @@ export class HarnessExecutionGate {
           blocked: true,
           reason: `Host runtime "${this.enforcementRuntime}" has live tool interception status LIVE_PENDING (no verified host hooks); failing closed for privileged operations`
         };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
+        return this.recordAudit(auditEntry);
       }
     }
 
@@ -673,8 +707,7 @@ export class HarnessExecutionGate {
           blocked: false,
           reason: 'Allowed once by explicit scoped authorization'
         };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
+        return this.recordAudit(auditEntry);
       }
       if (this.permissions.interactive) {
         const auditEntry = {
@@ -686,8 +719,7 @@ export class HarnessExecutionGate {
           blocked: true,
           prompt: `Destructive action "${toolName}" requires user confirmation before proceeding.`
         };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
+        return this.recordAudit(auditEntry);
       }
       const auditEntry = {
         timestamp: now,
@@ -698,8 +730,7 @@ export class HarnessExecutionGate {
         blocked: true,
         reason: 'Destructive operation denied: explicit single-use authorization (ALLOW_ONCE) required for this exact operation and arguments'
       };
-      this.auditLog.push(auditEntry);
-      return auditEntry;
+      return this.recordAudit(auditEntry);
     }
 
     // 6. External Actions Gate
@@ -716,8 +747,7 @@ export class HarnessExecutionGate {
           blocked: false,
           reason: 'Allowed once by explicit scoped authorization'
         };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
+        return this.recordAudit(auditEntry);
       }
       if (this.permissions.interactive) {
         const auditEntry = {
@@ -729,8 +759,7 @@ export class HarnessExecutionGate {
           blocked: true,
           prompt: `External operation "${toolName}" requires user authorization before execution.`
         };
-        this.auditLog.push(auditEntry);
-        return auditEntry;
+        return this.recordAudit(auditEntry);
       }
       const auditEntry = {
         timestamp: now,
@@ -741,8 +770,7 @@ export class HarnessExecutionGate {
         blocked: true,
         reason: 'External operation denied: explicit single-use authorization (ALLOW_ONCE) required for this exact operation and arguments'
       };
-      this.auditLog.push(auditEntry);
-      return auditEntry;
+      return this.recordAudit(auditEntry);
     }
 
     // 7. Default ALLOW with core safety rules active
@@ -754,8 +782,7 @@ export class HarnessExecutionGate {
       rule: 'core-safety',
       blocked: false
     };
-    this.auditLog.push(auditEntry);
-    return auditEntry;
+    return this.recordAudit(auditEntry);
   }
 
   postToolGate({ toolName, args = {}, result = null, error = null, workerId = null } = {}) {
@@ -810,8 +837,7 @@ export class HarnessExecutionGate {
       warning,
       rule: 'evidence-before-claim'
     };
-    this.auditLog.push(auditEntry);
-    return auditEntry;
+    return this.recordAudit(auditEntry);
   }
 
   delegateWorker(childWorkerId, { delegatedPermissions = {} } = {}) {
