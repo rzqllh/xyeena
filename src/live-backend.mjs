@@ -55,7 +55,18 @@ export class ResourceBudgetLedger {
     this.records = [];
   }
 
+  checkBudget({ estimatedTokens = 0, estimatedCostMicro = 0 } = {}) {
+    if (this.usedTokens + estimatedTokens > this.tokenLimit) {
+      throw new Error(`Token budget ceiling breached: ${this.usedTokens + estimatedTokens} > ${this.tokenLimit}`);
+    }
+    if (this.usedCostMicro + estimatedCostMicro > this.costLimitMicro) {
+      throw new Error(`Cost budget ceiling breached: ${this.usedCostMicro + estimatedCostMicro} > ${this.costLimitMicro}`);
+    }
+    return true;
+  }
+
   recordUsage({ taskId, backend, tokens = 0, costMicro = 0 } = {}) {
+    this.checkBudget({ estimatedTokens: tokens, estimatedCostMicro: costMicro });
     this.usedTokens += tokens;
     this.usedCostMicro += costMicro;
     this.records.push({
@@ -67,7 +78,6 @@ export class ResourceBudgetLedger {
       totalTokens: this.usedTokens,
       totalCostMicro: this.usedCostMicro
     });
-    this.assertBudget();
   }
 
   acquireWorker(workerId) {
@@ -82,12 +92,7 @@ export class ResourceBudgetLedger {
   }
 
   assertBudget() {
-    if (this.usedTokens > this.tokenLimit) {
-      throw new Error(`Token budget ceiling breached: ${this.usedTokens} > ${this.tokenLimit}`);
-    }
-    if (this.usedCostMicro > this.costLimitMicro) {
-      throw new Error(`Cost budget ceiling breached: ${this.usedCostMicro} > ${this.costLimitMicro}`);
-    }
+    this.checkBudget();
   }
 
   get summary() {
@@ -106,6 +111,7 @@ export class ResourceBudgetLedger {
 /**
  * Simpul MCP Adapter Contract
  * Wraps communication with Simpul (SubagentBridge) FastMCP control plane.
+ * Follows exact candidate signatures from rzqllh/SubagentBridge PR #2 / PR #3.
  */
 export function createSimpulMcpAdapter({
   mcpClient,
@@ -119,17 +125,20 @@ export function createSimpulMcpAdapter({
   }
 
   const activeRuns = new Map();
+  const recentRuns = new Map();
 
   return {
     async probe() {
       try {
         const ping = await mcpClient.callTool('get_model_usage', {});
         return {
-          healthy: ping !== null,
+          healthy: ping !== null && typeof ping === 'object',
           noNestedDelegation: true,
           supportsWrites: true,
           supportsParallel: true,
-          provider: 'simpul-mcp'
+          provider: 'simpul-mcp',
+          executionReady: false, // Upstream SubagentBridge candidate creates SUBMITTED/PENDING states; supervised execution pending
+          upstreamStatus: 'SUBAGENT_BRIDGE_PR3_CANDIDATE'
         };
       } catch {
         return { healthy: false, noNestedDelegation: true };
@@ -140,22 +149,51 @@ export function createSimpulMcpAdapter({
       if (options.noNestedDelegation !== true) {
         throw new Error('Nested delegation prohibited');
       }
-      const runId = `simpul-${task.id}-${Date.now()}`;
-      activeRuns.set(task.id, runId);
+      if (ledger) {
+        ledger.checkBudget();
+      }
 
-      // 1. Submit goal to Simpul
-      await mcpClient.callTool('submit_goal', {
+      // 1. Submit goal to Simpul with exact FastMCP candidate signature:
+      // submit_goal(goal, workspace_path, model)
+      const submitRes = await mcpClient.callTool('submit_goal', {
         goal: task.title,
-        run_id: runId,
-        project_id: projectId,
-        policy_revision: policyRevision
+        workspace_path: options.cwd || ''
       });
 
-      // 2. Retrieve task evidence from Simpul
-      let evidenceRefs = [];
+      if (!submitRes || submitRes.status === 'ERROR' || !submitRes.run_id) {
+        throw new Error(`Simpul goal submission failed: ${submitRes?.error || 'No run_id returned'}`);
+      }
+
+      const runId = submitRes.run_id;
+      const initialTaskId = submitRes.initial_task_id || task.id;
+      activeRuns.set(task.id, { runId, initialTaskId });
+      recentRuns.set(task.id, { runId, initialTaskId });
+
+      // 2. Poll run status using get_run
+      let runStatus = submitRes.status;
       try {
-        const evidenceResult = await mcpClient.callTool('get_task_evidence', { task_id: task.id });
-        if (Array.isArray(evidenceResult?.evidenceRefs)) {
+        const runInfo = await mcpClient.callTool('get_run', { run_id: runId });
+        if (runInfo?.status) {
+          runStatus = runInfo.status;
+        }
+      } catch {
+        // Best effort status query
+      }
+
+      // 3. Retrieve task evidence with exact signature: get_task_evidence(run_id, task_id)
+      let evidenceRefs = [];
+      let isVerified = false;
+      try {
+        const evidenceResult = await mcpClient.callTool('get_task_evidence', {
+          run_id: runId,
+          task_id: initialTaskId
+        });
+        if (evidenceResult?.verified === true) {
+          isVerified = true;
+        }
+        if (Array.isArray(evidenceResult?.evidence_ids)) {
+          evidenceRefs = safeEvidence(evidenceResult.evidence_ids);
+        } else if (Array.isArray(evidenceResult?.evidenceRefs)) {
           evidenceRefs = safeEvidence(evidenceResult.evidenceRefs);
         } else if (Array.isArray(evidenceResult?.refs)) {
           evidenceRefs = safeEvidence(evidenceResult.refs);
@@ -164,7 +202,7 @@ export function createSimpulMcpAdapter({
         evidenceRefs = [];
       }
 
-      // 3. Track model usage and account against budget
+      // 4. Track model usage and account against budget
       try {
         const usage = await mcpClient.callTool('get_model_usage', {});
         if (usage && typeof usage === 'object') {
@@ -181,18 +219,20 @@ export function createSimpulMcpAdapter({
 
       activeRuns.delete(task.id);
       return {
-        workerId: runId,
-        verified: evidenceRefs.length > 0,
+        workerId: runId, // Server-confirmed run identity
+        status: runStatus,
+        verified: isVerified && evidenceRefs.length > 0,
         evidenceRefs
       };
     },
 
-    async cancelTask({ taskId, reason = 'canceled' } = {}) {
-      const runId = activeRuns.get(taskId);
-      if (runId) {
-        activeRuns.delete(taskId);
+    async cancelTask({ taskId, runId = null, reason = 'canceled' } = {}) {
+      const active = activeRuns.get(taskId) || recentRuns.get(taskId);
+      const effectiveRunId = runId || active?.runId;
+      activeRuns.delete(taskId);
+      if (effectiveRunId) {
         try {
-          await mcpClient.callTool('cancel_run', { run_id: runId });
+          await mcpClient.callTool('cancel_run', { run_id: effectiveRunId, reason });
         } catch {
           // Best effort
         }
@@ -203,6 +243,8 @@ export function createSimpulMcpAdapter({
 
 /**
  * Host-Native Subagent Adapter Contract
+ * Obtains worker identity exclusively from the real host runner.
+ * Never invents fabricated worker IDs.
  */
 export function createNativeSubagentAdapter({
   runner,
@@ -214,20 +256,30 @@ export function createNativeSubagentAdapter({
   }
 
   const activeWorkers = new Map();
+  const recentWorkers = new Map();
 
   return {
     async probe() {
+      // Must NOT interpret absence of runner.status as availability
+      if (typeof runner.status !== 'function') {
+        return { healthy: false, noNestedDelegation: true, reason: 'Runner lacks status API' };
+      }
       try {
-        const status = typeof runner.status === 'function' ? await runner.status() : { available: true };
+        const status = await runner.status();
+        if (!status || status.available !== true) {
+          return { healthy: false, noNestedDelegation: true, reason: 'Runner reported unavailable' };
+        }
+        // Do not assume read/write or parallel capabilities: must be explicitly declared
+        const caps = status.capabilities || status.workerCapabilities || {};
         return {
-          healthy: status.available === true,
+          healthy: true,
           noNestedDelegation: true,
-          supportsWrites: true,
-          supportsParallel: true,
+          supportsWrites: caps.supportsWrites === true,
+          supportsParallel: caps.supportsParallel === true,
           provider: 'host-native'
         };
-      } catch {
-        return { healthy: false, noNestedDelegation: true };
+      } catch (err) {
+        return { healthy: false, noNestedDelegation: true, reason: err.message };
       }
     },
 
@@ -235,35 +287,86 @@ export function createNativeSubagentAdapter({
       if (options.noNestedDelegation !== true) {
         throw new Error('Nested delegation prohibited');
       }
-      const workerId = `native-${task.id}-${Date.now()}`;
-      activeWorkers.set(task.id, workerId);
+      if (ledger) {
+        ledger.checkBudget();
+      }
 
-      const result = await runner.run(clone(task), {
-        workerId,
-        noNestedDelegation: true,
-        parallelism: options.parallelism || 1
-      });
+      // Harness permission propagation if gate is present
+      if (options.harnessGate && task.scope?.operationClass && task.scope.operationClass !== 'safe') {
+        const gateDecision = options.harnessGate.preToolGate({
+          toolName: 'native_subagent_dispatch',
+          actionType: task.scope.operationClass,
+          args: { taskId: task.id, title: task.title }
+        });
+        if (gateDecision.blocked) {
+          throw new Error(`Native subagent dispatch blocked by harness: ${gateDecision.reason || gateDecision.decision}`);
+        }
+      }
+
+      // Obtain worker identity from the real host runner (spawn or run)
+      // The host runner must provide the real worker identity, NEVER fabricated by the adapter
+      let runResult;
+      let hostWorkerId = null;
+
+      try {
+        if (typeof runner.spawn === 'function') {
+          const handle = await runner.spawn(clone(task), {
+            noNestedDelegation: true,
+            parallelism: options.parallelism || 1
+          });
+          hostWorkerId = handle?.workerId;
+          if (!hostWorkerId || typeof hostWorkerId !== 'string' || !hostWorkerId.trim() || hostWorkerId === 'fake' || hostWorkerId.startsWith('fabricated-')) {
+            throw new Error('Host runner returned invalid or fabricated worker identity');
+          }
+          activeWorkers.set(task.id, { workerId: hostWorkerId, handle });
+          recentWorkers.set(task.id, { workerId: hostWorkerId });
+          runResult = typeof handle.wait === 'function' ? await handle.wait() : await handle;
+        } else {
+          activeWorkers.set(task.id, { workerId: null });
+          runResult = await runner.run(clone(task), {
+            noNestedDelegation: true,
+            parallelism: options.parallelism || 1,
+            signal: options.signal
+          });
+          hostWorkerId = runResult?.workerId;
+          if (!hostWorkerId || typeof hostWorkerId !== 'string' || !hostWorkerId.trim() || hostWorkerId === 'fake' || hostWorkerId.startsWith('fabricated-')) {
+            throw new Error('Host runner returned invalid or fabricated worker identity');
+          }
+          activeWorkers.set(task.id, { workerId: hostWorkerId });
+          recentWorkers.set(task.id, { workerId: hostWorkerId });
+        }
+      } catch (err) {
+        activeWorkers.delete(task.id);
+        throw err;
+      }
 
       activeWorkers.delete(task.id);
-      const evidenceRefs = safeEvidence(result?.evidenceRefs);
+
+      if (runResult?.crashed === true || runResult?.status === 'CRASHED' || runResult?.error) {
+        throw new Error(`Host worker crashed or encountered error: ${runResult.error || 'Worker crash'}`);
+      }
+
+      const evidenceRefs = safeEvidence(runResult?.evidenceRefs);
       return {
-        workerId,
-        verified: result?.verified === true && evidenceRefs.length > 0,
+        workerId: hostWorkerId,
+        verified: runResult?.verified === true && evidenceRefs.length > 0,
         evidenceRefs
       };
     },
 
-    async cancelTask({ taskId, reason = 'canceled' } = {}) {
-      const workerId = activeWorkers.get(taskId);
-      if (workerId) {
-        activeWorkers.delete(taskId);
-        if (typeof runner.cancel === 'function') {
-          try {
-            await runner.cancel({ workerId, taskId, reason });
-          } catch {
-            // Best effort
-          }
-        }
+    async cancelTask({ taskId, workerId = null, reason = 'canceled' } = {}) {
+      const active = activeWorkers.get(taskId) || recentWorkers.get(taskId);
+      const effectiveWorkerId = workerId || active?.workerId;
+      activeWorkers.delete(taskId);
+
+      if (typeof runner.cancel !== 'function') {
+        throw new Error('Runner lacks cancellation API: unable to cancel active worker safely');
+      }
+
+      try {
+        await runner.cancel({ workerId: effectiveWorkerId, taskId, reason });
+      } catch (err) {
+        throw new Error(`Runner cancellation failed: ${err.message}`);
       }
     }
   };
@@ -286,6 +389,9 @@ export async function dispatchScopedTask({
   onEvent = null
 } = {}) {
   validTask(task);
+  if (budgetLedger) {
+    budgetLedger.checkBudget();
+  }
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > 300000) {
     throw new Error('Invalid dispatch timeout');
   }
