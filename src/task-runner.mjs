@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import os from 'node:os';
 import { readyTasks, validateTaskGraph } from './task-graph.mjs';
 
 /**
@@ -27,27 +28,81 @@ export class DurableCheckpointStore {
     return path.join(root, '.xyeena', 'runs', validId, 'dag-checkpoint.json');
   }
 
-  static acquireRunLock(cwd, runId) {
+  static isProcessAlive(pid) {
+    if (!pid || typeof pid !== 'number' || pid <= 0) return false;
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch (err) {
+      return err.code === 'EPERM';
+    }
+  }
+
+  static acquireRunLock(cwd, runId, { staleThresholdMs = 30000 } = {}) {
     const validId = this.validateRunId(runId);
     const root = fs.realpathSync(path.resolve(cwd));
     const runDir = path.join(root, '.xyeena', 'runs', validId);
     fs.mkdirSync(runDir, { recursive: true });
     const lockFile = path.join(runDir, 'run.lock');
 
-    try {
-      const fd = fs.openSync(lockFile, 'wx');
-      fs.writeSync(fd, JSON.stringify({ pid: process.pid, acquiredAt: new Date().toISOString() }) + '\n');
-      fs.closeSync(fd);
-    } catch (err) {
-      if (err.code === 'EEXIST') {
-        throw new Error(`Cannot resume or execute run "${validId}": exclusive lease already held by active process (lockfile exists: ${lockFile})`);
+    const lockData = {
+      pid: process.pid,
+      acquiredAt: new Date().toISOString(),
+      runId: validId,
+      host: os.hostname ? os.hostname() : 'localhost'
+    };
+
+    let acquired = false;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const fd = fs.openSync(lockFile, 'wx');
+        fs.writeSync(fd, JSON.stringify(lockData) + '\n');
+        fs.closeSync(fd);
+        acquired = true;
+        break;
+      } catch (err) {
+        if (err.code !== 'EEXIST') throw err;
+
+        // Inspect existing lockfile to detect crashed or stale process lease
+        let existing = null;
+        try {
+          const content = fs.readFileSync(lockFile, 'utf8');
+          existing = JSON.parse(content);
+        } catch {
+          existing = null;
+        }
+
+        const isAlive = existing?.pid ? this.isProcessAlive(existing.pid) : false;
+        const ageMs = existing?.acquiredAt ? (Date.now() - new Date(existing.acquiredAt).getTime()) : Infinity;
+        const isStale = !isAlive || (staleThresholdMs > 0 && ageMs > staleThresholdMs);
+
+        if (!isStale && isAlive) {
+          throw new Error(`Cannot resume or execute run "${validId}": exclusive lease already held by active process (PID ${existing.pid})`);
+        }
+
+        // Stale or dead process lock detected: safely reclaim and retry once
+        try {
+          fs.rmSync(lockFile, { force: true });
+        } catch {}
       }
-      throw err;
+    }
+
+    if (!acquired) {
+      throw new Error(`Cannot resume or execute run "${validId}": exclusive lease contention prevented lock acquisition`);
     }
 
     return () => {
       try {
-        if (fs.existsSync(lockFile)) fs.rmSync(lockFile, { force: true });
+        if (fs.existsSync(lockFile)) {
+          try {
+            const current = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+            if (current?.pid === process.pid) {
+              fs.rmSync(lockFile, { force: true });
+            }
+          } catch {
+            fs.rmSync(lockFile, { force: true });
+          }
+        }
       } catch {}
     };
   }

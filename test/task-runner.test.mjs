@@ -435,3 +435,78 @@ test('regression P05: transient errors on safe tasks undergo bounded exponential
   // Backoff attempts: 1st backoff (20ms), 2nd backoff (40ms) -> total >= 50ms
   assert.ok(durationMs >= 40, `Expected backoff delay, got ${durationMs}ms`);
 });
+
+test('regression P05: safe crash recovery reclaims stale lock from dead PID without duplicate concurrent execution', async t => {
+  const cwd = temp(t);
+  const runId = 'crash-recovery-test';
+
+  const runDir = path.join(cwd, '.xyeena', 'runs', runId);
+  fs.mkdirSync(runDir, { recursive: true });
+  const lockFile = path.join(runDir, 'run.lock');
+
+  // Find a PID that is guaranteed not alive
+  let deadPid = 999999;
+  while (DurableCheckpointStore.isProcessAlive(deadPid)) {
+    deadPid++;
+  }
+
+  // Simulate crashed process by writing lockfile with dead PID
+  fs.writeFileSync(lockFile, JSON.stringify({ pid: deadPid, acquiredAt: new Date().toISOString() }) + '\n');
+
+  // Should safely detect dead process, break stale lock, and acquire lease
+  const releaseLock = DurableCheckpointStore.acquireRunLock(cwd, runId);
+  assert.equal(typeof releaseLock, 'function');
+
+  // Verify the lock now holds current process PID
+  const currentLock = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+  assert.equal(currentLock.pid, process.pid);
+
+  // Active PID now blocks another concurrent acquire
+  assert.throws(
+    () => DurableCheckpointStore.acquireRunLock(cwd, runId),
+    /exclusive lease already held by active process/
+  );
+
+  releaseLock();
+  assert.equal(fs.existsSync(lockFile), false);
+});
+
+test('regression P05: active live PID in run.lock strictly blocks concurrent duplicate execution', t => {
+  const cwd = temp(t);
+  const runId = 'live-pid-lock-test';
+
+  const runDir = path.join(cwd, '.xyeena', 'runs', runId);
+  fs.mkdirSync(runDir, { recursive: true });
+  const lockFile = path.join(runDir, 'run.lock');
+
+  // Write lock with current live PID and fresh timestamp
+  fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid, acquiredAt: new Date().toISOString() }) + '\n');
+
+  // Must strictly block concurrent execution
+  assert.throws(
+    () => DurableCheckpointStore.acquireRunLock(cwd, runId),
+    new RegExp(`exclusive lease already held by active process \\(PID ${process.pid}\\)`)
+  );
+});
+
+test('regression P05: expired stale lock is safely reclaimed', t => {
+  const cwd = temp(t);
+  const runId = 'expired-lock-test';
+
+  const runDir = path.join(cwd, '.xyeena', 'runs', runId);
+  fs.mkdirSync(runDir, { recursive: true });
+  const lockFile = path.join(runDir, 'run.lock');
+
+  // Write lock from 1 hour ago
+  const oldTime = new Date(Date.now() - 3600000).toISOString();
+  fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid, acquiredAt: oldTime }) + '\n');
+
+  // With a 1000ms stale threshold, this expired lock must be reclaimed
+  const release = DurableCheckpointStore.acquireRunLock(cwd, runId, { staleThresholdMs: 1000 });
+  assert.equal(typeof release, 'function');
+
+  const current = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
+  assert.notEqual(current.acquiredAt, oldTime);
+  release();
+});
+
