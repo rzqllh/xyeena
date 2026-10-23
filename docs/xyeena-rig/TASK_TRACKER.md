@@ -9,10 +9,10 @@ Status means observed repository implementation, not generic product readiness.
 | E01-03 | P0 | Ownership, tamper protection, idempotent backup upgrade | CODED | test/compact-setup.test.mjs |
 | E01-04 | P1 | Automatic legacy migration + restore/uninstall CLI | TODO | Requires migration journal and safety tests |
 | E02-01 | P0 | Compact native orchestrator fallback | CODED | src/orchestrator.mjs |
-| E02-02 | P1 | Superior/Superpowers candidate detection | CODED | src/enterprise-policy.mjs |
+| E02-02 | P1 | Superior/Superpowers candidate detection | VERIFIED | src/enterprise-policy.mjs, test/enterprise-policy.test.mjs |
 | E02-03 | P0 | Host-native plugin/extension inventory and verification | VERIFIED | src/skill-hosts.mjs, src/workspace-skills.mjs |
 | E02-04 | P1 | Semantic local skill match / deterministic fallback | VERIFIED | src/workspace-skills.mjs, test/workspace-skills.test.mjs |
-| E04-01 | P0 | Superpowers bootstrap/lifecycle arbitration | TODO | Must avoid two governors |
+| E04-01 | P0 | Superpowers bootstrap/lifecycle arbitration | VERIFIED | src/enterprise-policy.mjs, arbitrateWorkflow |
 | E05-01 | P0 | Always-core declarative policy, contextual proposals | CODED | src/enterprise-policy.mjs |
 | E05-02 | P0 | Executable Harness pre/post tool enforcement | TODO | One-shot runner currently read-only |
 | E06-01 | P0 | Verified-only Simpul/native backend preference, inline fallback | CODED | src/enterprise-policy.mjs |
@@ -34,8 +34,8 @@ The full 1:1 status and acceptance crosswalk lives in [REQUIREMENTS_TRACEABILITY
 | E01-06 | P1 | Owned uninstaller and automated rollback/restore with fault-injection tests | TODO | R12 / A30 — rollback journal, recovery |
 | E02-05 | P0 | Enumerate plugin/extension registries and effective host trust, enablement, provenance, platform, precedence | VERIFIED | R01 / A21 — pluginLocations & workspace-skills discovery |
 | E02-06 | P0 | Capability dedup, dependency composition, conflict resolver, deterministic minimal skill load | VERIFIED | R02 / A22 — closure check, collision precedence & shadowed list |
-| E04-02 | P0 | Superior specialist policy vs Superpowers lifecycle/bootstrap; no overlapping workflow owners | TODO | R03 / A23 — real dual-install tests |
-| E04-03 | P0 | Native parity fallback when third-party provider missing, disabled, unhealthy or untrusted | PARTIAL | R04 / A24 — compact reference modules exist; live equivalence pending |
+| E04-02 | P0 | Superior specialist policy vs Superpowers lifecycle/bootstrap; no overlapping workflow owners | VERIFIED | R03 / A23 — arbitrateWorkflow single-governor and deduplication tests |
+| E04-03 | P0 | Native parity fallback when third-party provider missing, disabled, unhealthy or untrusted | VERIFIED | R04 / A24 — NATIVE_EQUIVALENCE, nativeFallbackForSkill, all 8 provider cases |
 | E05-03 | P0 | Harness gates propagate to workers and revalidate before each write/tool action | TODO | R05 / A25 — blocked-operation live evidence |
 | E06-05 | P0 | Hard per-run token/cost/concurrency limits and provider usage accounting | TODO | R08 / A26 — resource budget tests |
 | E07-03 | P0 | Durable task DAG checkpoints, idempotent resume/lease, bounded retry, crash cleanup across hosts | TODO | R09 / A27 — kill/restart/fault injection |

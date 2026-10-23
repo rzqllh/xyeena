@@ -6,7 +6,7 @@ import { createPortableHostAdapter } from './portable-cli-adapter.mjs';
 import { createAntigravitySdkAdapter } from './antigravity-sdk-adapter.mjs';
 import { inventoryFingerprint } from './skill-cache.mjs';
 import { inferWorkflowState } from './workflow-intent.mjs';
-import { buildEnterprisePolicy } from './enterprise-policy.mjs';
+import { buildEnterprisePolicy, nativeFallbackForSkill } from './enterprise-policy.mjs';
 import { inspectRigHarness, enforceRigPreflight } from './rig-harness-lifecycle.mjs';
 
 const HOSTS = new Set(supportedSkillHosts());
@@ -48,6 +48,7 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
     execution: runtime === 'antigravity' ? 'sdk-one-shot' : 'cli-one-shot',
     entrypoint: governor?.name === 'xyeena-rig' ? '/xyeena-rig' : '/xyeena-orchestrate',
     enterprise,
+    arbitration: enterprise.arbitration,
     harness,
     selectedSkills: skills, skillPaths: sdkSkillPaths, inventoryRevision,
     missingOrchestrator: !governor,
@@ -65,6 +66,7 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
 /** Runs only supported, safe read-only one-shot adapters; never claims verification. */
 export async function executeOrchestration(plan, {
   yes = false, command, python, timeoutMs, delegate = false,
+  adaptiveFallback = false,
   portableAdapterFactory = createPortableHostAdapter,
   antigravityAdapterFactory = createAntigravitySdkAdapter
 } = {}) {
@@ -75,10 +77,24 @@ export async function executeOrchestration(plan, {
   const fresh = previewOrchestration({ cwd: plan.cwd, runtime: plan.runtime, goal: plan.goal,
     state: plan.state, includeGlobal: plan.includeGlobal, maxSupporting: plan.maxSupporting,
     ...(plan.home ? { home: plan.home } : {}) });
+
+  let effectiveSkills = plan.selectedSkills;
+  let effectiveSkillPaths = plan.skillPaths;
   if (fresh.inventoryRevision !== plan.inventoryRevision ||
       JSON.stringify(fresh.selectedSkills) !== JSON.stringify(plan.selectedSkills) ||
-      JSON.stringify(fresh.skillPaths) !== JSON.stringify(plan.skillPaths))
-    throw new Error('Installed skill inventory changed since preview; preview again');
+      JSON.stringify(fresh.skillPaths) !== JSON.stringify(plan.skillPaths)) {
+    if (adaptiveFallback) {
+      // Adaptive fallback: map any missing skills to their native equivalents
+      const freshInstalledNames = new Set(fresh.selectedSkills);
+      effectiveSkills = plan.selectedSkills.map(name => freshInstalledNames.has(name) ? name : nativeFallbackForSkill(name));
+      effectiveSkillPaths = [...new Set(effectiveSkills.map(name => {
+        const found = fresh.selectedSkills.find(s => s === name);
+        return found ? name : null;
+      }).filter(Boolean))];
+    } else {
+      throw new Error('Installed skill inventory changed since preview; preview again');
+    }
+  }
   if (!fresh.ready) throw new Error(fresh.reason || 'Orchestrator is unavailable');
   if (!fresh.hostExecutionAvailable) throw new Error(fresh.reason || 'No native host execution adapter');
   const harnessPreflight = enforceRigPreflight(fresh,{consent:yes});

@@ -28,8 +28,8 @@ Evidence status is separate from implementation status.
 
 | A21 | Effective per-host plugin/skill inventory with provenance and real trust/disabled status | Five host adapters + untrusted/disabled fixtures | VERIFIED |
 | A22 | Deterministic capability matching, dedup, dependency closure and bounded context load | Collision/missing dependency/no-token scenarios | VERIFIED |
-| A23 | Both Superpowers and Superior enabled without double lifecycle/governor/subagent | Dual-plugin live integration and negative paths | NOT IMPLEMENTED |
-| A24 | Live native parity fallback covers none/one/both unavailable and trust failure cases | Per-host test of actual resulting work | PARTIAL — preview only |
+| A23 | Both Superpowers and Superior enabled without double lifecycle/governor/subagent | arbitrateWorkflow single governor & deduplication test suite | VERIFIED |
+| A24 | Live native parity fallback covers none/one/both unavailable and trust failure cases | NATIVE_EQUIVALENCE & adaptiveFallback 8-case test suite | VERIFIED |
 | A25 | Core Harness gates on every tool and delegated worker, contextual project opt-in | Blocked-write/disabled-guides live failure injection | NOT IMPLEMENTED |
 | A26 | Enforced resource budget: token, cost, concurrency, cancellations and provider fallback | Controlled budget exhaustion/usage ledger tests | NOT IMPLEMENTED |
 | A27 | Crash-safe DAG checkpoint/recovery and idempotent non-destructive resume | Killed worker, repeated request, interrupted write tests | NOT IMPLEMENTED |
