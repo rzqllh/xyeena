@@ -144,15 +144,27 @@ A comparison of the chat backlog R01–R15 with the existing E task tracker and 
 
 ## Phase P08 verification — Enterprise Release Candidate & Verification (2026-10-23)
 
-- Branch: `feat/rig-enterprise-p08-release`, Base: `feat/rig-enterprise-p07-hardening` (9fb3af5).
+- Branch: `feat/rig-enterprise-p08-release`, Base: `feat/rig-enterprise-p07-hardening` (0614cb3).
 - Scope: R15; Acceptance A19, A20, A33; Task E08-04.
 - Changes: `docs/xyeena-rig/PR_INDEX.md`, `docs/xyeena-rig/ROADMAP.md`, `docs/xyeena-rig/ARCHITECTURE.md`, `docs/xyeena-rig/RUNBOOK.md`, `docs/xyeena-rig/evidence-p08.md`.
 - Results:
-  - `npm test`: 277/277 PASS (including P03 Harness authority & unintercepted fail-closed tests, and P04 subagent executionReady & spawn-only runner tests).
-  - `npm run check`: PASS.
+  - `npm test`: 297/297 PASS (all 20 regression tests for code review findings passing).
+  - `npm run check`: PASS (19 capabilities + runtime manifests).
   - `npm run eval`: PASS (18/18).
   - `npm run test:harness`: PASS (15/15).
   - `npm run test:consumer`: PASS.
-  - `npm pack --dry-run`: PASS (247 files, 195.8 kB).
+  - `npm pack --dry-run`: PASS (247 files, 199.0 kB).
 - Recommended Version: `0.5.0`.
 - Release Decision: CONDITIONAL GO (ready for sequential PR merge). Full phase evidence recorded in `docs/xyeena-rig/evidence-p08.md`.
+
+## Final Code Review Remediation Verification — Stack P01–P08 (2026-10-23)
+
+- **P01 (PR #18, commit `4b46610`):** Transitive missing dependencies resolved to fixed point; required dependencies included in routed selection regardless of budget; `extension.json` fingerprinted in inventory cache; collision-shadowed records exposed. 236/236 PASS.
+- **P02 (PR #19, commit `ac84bce`):** Arbitrated skills passed into host adapters; active replacement skills/paths in adaptive fallback; skill/governor content hashing prevents unreviewed edits. 247/247 PASS.
+- **P03 (PR #20, commit `77d37c8`):** Wired `HarnessExecutionGate` into orchestrator; shell commands gated against filesystem escapes; independent on-disk evidence verification; contextual policy preservation across delegation; anti-loop check enforced before privileged actions; rejected default/self-issued credentials. 265/265 PASS.
+- **P04 (PR #21, commit `8085c0a`):** Task scope and permission propagation into Simpul (refusing write delegation when unsupported); mandatory executionReady check and real worker status; budget violations treated as hard failures; shared workspace write lock across concurrent dispatch; public backend APIs exported from `src/index.mjs`. 277/277 PASS.
+- **P05 (PR #22, commit `4223944`):** Path traversal validation for `runId`; exclusive per-run lock (`run.lock`) preventing concurrent resume; cancellation signal propagation to active worker operations; refusal to automatically retry non-idempotent or external/destructive tasks; bounded exponential backoff on transient errors. 287/287 PASS.
+- **P06 (PR #23, commit `341345a`):** Forward-merged P01–P05. 291/291 PASS.
+- **P07 (PR #24, commit `0614cb3`):** Forward-merged P01–P06 with sanitized audit logging. 297/297 PASS.
+- **P08 (PR #25, commit `HEAD`):** Complete stack forward-integrated and verified. 297/297 PASS, 18/18 eval PASS, 15/15 test:harness PASS, packed consumer smoke PASS.
+
