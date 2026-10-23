@@ -3,7 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { loadRegistry } from './registry.mjs';
 import { resolveCapabilities } from './resolver.mjs';
-import { skillLocations, requireSkillHost, supportedSkillHosts } from './skill-hosts.mjs';
+import { skillLocations, pluginLocations, requireSkillHost, supportedSkillHosts } from './skill-hosts.mjs';
 
 const STOPWORDS = new Set(['about','after','agent','agents','also','and','are','based','before','best','can','code','does','for','from','have','into','more','must','only','our','that','the','their','this','use','user','using','when','with','work','your']);
 const words = value => [...new Set(String(value || '').toLowerCase().match(/[a-z0-9]{3,}/g) || [])]
@@ -59,49 +59,169 @@ function readMetadata(file, fallbackName) {
     const platformValue = fields.platforms;
     let platforms = null;
     if (platformValue !== undefined) {
-      // Fail closed on unrecognised YAML rather than ignoring OS constraints.
       if (!/^\[[^\]\r\n]*\]$/.test(platformValue)) return null;
       platforms = platformValue.slice(1, -1).split(',').map(x => x.trim().replace(/^(['"])(.*)\1$/, '$2'));
       if (!platforms.length || platforms.some(x => !['windows', 'macos', 'linux'].includes(x))) return null;
     }
-    return { name, description: fields.description, platforms };
+    let dependencies = [];
+    const depValue = fields.dependencies || fields.requires;
+    if (depValue !== undefined) {
+      if (/^\[[^\]\r\n]*\]$/.test(depValue)) {
+        dependencies = depValue.slice(1, -1).split(',').map(x => x.trim().replace(/^(['"])(.*)\1$/, '$2')).filter(Boolean);
+      } else if (/^[a-z0-9][a-z0-9-]{0,63}$/.test(depValue)) {
+        dependencies = [depValue];
+      }
+    }
+    return { name, description: fields.description, platforms, dependencies };
   } catch { return null; }
 }
 
-/** Discover installed Agent Skills. Only Xyeena-managed links to its immutable home store are followed. */
+function readPluginManifest(pluginDir) {
+  for (const manifestName of ['plugin.json', 'gemini-extension.json', 'extension.json', 'package.json']) {
+    const file = path.join(pluginDir, manifestName);
+    try {
+      if (!fs.lstatSync(file).isFile() || fs.lstatSync(file).isSymbolicLink() || fs.statSync(file).size > 65536) continue;
+      const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (parsed && typeof parsed === 'object') {
+        const name = typeof parsed.name === 'string' && /^[a-z0-9@/._-]+$/i.test(parsed.name)
+          ? parsed.name : path.basename(pluginDir);
+        const version = typeof parsed.version === 'string' ? parsed.version : null;
+        const description = typeof parsed.description === 'string' ? parsed.description : '';
+        const enabled = parsed.disabled !== true && parsed.enabled !== false;
+        return { name, version, description, enabled };
+      }
+    } catch { /* continue */ }
+  }
+  return { name: path.basename(pluginDir), version: null, description: '', enabled: true };
+}
+
+/** Discover installed Agent Skills and plugins. Only Xyeena-managed links to its immutable home store are followed. */
 export function discoverWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigravity',
   home = os.homedir(), includeGlobal = true, env = process.env } = {}) {
   requireSkillHost(runtime);
   const locations = skillLocations({ cwd, runtime, home, includeGlobal, env });
-  const found = new Map(), seenPaths = new Set();
+  const plugins = pluginLocations({ cwd, runtime, home, includeGlobal, env });
+  const found = new Map(), seenPaths = new Set(), shadowed = [];
+
   const visitSkill = (dir, entry, loc) => {
-    if(entry.name.startsWith('.') ||
-      !((entry.isDirectory()&&!entry.isSymbolicLink()) || (entry.isSymbolicLink() && managedSkillLink(dir,entry.name,home))))return false;
+    if (entry.name.startsWith('.')) return false;
+    const isDir = entry.isDirectory();
+    const isSymlink = entry.isSymbolicLink();
+    const isManaged = isSymlink && managedSkillLink(dir, entry.name, home);
+    if (!isDir && !isSymlink) return false;
+
     const skillPath = path.join(dir, entry.name, 'SKILL.md');
+    if (isSymlink && !isManaged) {
+      const metadata = readMetadata(skillPath, entry.name) || { name: entry.name, description: 'Blocked unmanaged symlink skill' };
+      const blockedRecord = {
+        name: metadata.name,
+        description: metadata.description,
+        platforms: metadata.platforms || null,
+        dependencies: metadata.dependencies || [],
+        missingDependencies: [],
+        path: skillPath,
+        canonicalPath: skillPath,
+        runtime: loc.runtime,
+        scope: loc.scope,
+        source: loc.pluginName ? 'plugin' : loc.scope,
+        pluginName: loc.pluginName || null,
+        pluginVersion: loc.pluginVersion || null,
+        installed: true,
+        enabled: loc.pluginEnabled !== false,
+        trusted: false,
+        eligible: false,
+        executable: false,
+        availability: 'blocked-symlink',
+        rank: (loc.scope === 'workspace' ? 1 : 3) + (loc.pluginName ? 1 : 0),
+        provenance: {
+          root: loc.base,
+          relative: loc.relative || '',
+          type: loc.pluginName ? 'plugin' : 'standalone',
+          pluginName: loc.pluginName || null,
+          scope: loc.scope
+        }
+      };
+      if (!found.has(metadata.name)) found.set(metadata.name, blockedRecord);
+      else shadowed.push({ ...blockedRecord, availability: 'collision-shadowed' });
+      return true;
+    }
+
     const metadata = readMetadata(skillPath, entry.name);
     if (!metadata) return false;
     let canonical;
     try { canonical = fs.realpathSync(skillPath); } catch { return false; }
     if (seenPaths.has(canonical)) return true;
     seenPaths.add(canonical);
+
     const osName = process.platform === 'win32' ? 'windows' :
       process.platform === 'darwin' ? 'macos' : 'linux';
-    const availability = loc.requiresTrust ? 'requires-host-trust' :
-      metadata.platforms && !metadata.platforms.includes(osName) ? 'incompatible-platform' : 'detected';
-    // A blocked project skill must not shadow an eligible profile-level skill.
+    const isPlatform = !metadata.platforms || metadata.platforms.includes(osName);
+    const isTrusted = !loc.requiresTrust;
+    const isEnabled = loc.pluginEnabled !== false;
+    const availability = !isEnabled ? 'disabled' :
+      !isTrusted ? 'requires-host-trust' :
+      !isPlatform ? 'incompatible-platform' : 'detected';
+    const eligible = availability === 'detected';
+    const currentRank = (loc.scope === 'workspace' ? 1 : 3) + (loc.pluginName ? 1 : 0);
+
+    const record = {
+      name: metadata.name,
+      description: metadata.description,
+      platforms: metadata.platforms,
+      dependencies: metadata.dependencies || [],
+      missingDependencies: [],
+      path: skillPath,
+      canonicalPath: canonical,
+      runtime: loc.runtime,
+      scope: loc.scope,
+      source: loc.pluginName ? 'plugin' : loc.scope,
+      pluginName: loc.pluginName || null,
+      pluginVersion: loc.pluginVersion || null,
+      installed: true,
+      enabled: isEnabled,
+      trusted: isTrusted,
+      eligible,
+      executable: eligible,
+      availability,
+      rank: currentRank,
+      provenance: {
+        root: loc.base,
+        relative: loc.relative || '',
+        type: loc.pluginName ? 'plugin' : 'standalone',
+        pluginName: loc.pluginName || null,
+        scope: loc.scope
+      }
+    };
+
     const previous = found.get(metadata.name);
-    const record = { ...metadata, path: skillPath, runtime: loc.runtime, scope: loc.scope,
-      source: loc.scope, availability };
-    if (!previous || (previous.availability !== 'detected' && availability === 'detected'))
+    if (!previous) {
       found.set(metadata.name, record);
+    } else {
+      const prevEligible = previous.availability === 'detected';
+      const currEligible = availability === 'detected';
+      if (!prevEligible && currEligible) {
+        shadowed.push({ ...previous, availability: 'collision-shadowed', shadowedBy: record.path });
+        found.set(metadata.name, record);
+      } else if (prevEligible && !currEligible) {
+        shadowed.push({ ...record, availability: 'collision-shadowed', shadowedBy: previous.path });
+      } else if (currentRank < previous.rank) {
+        shadowed.push({ ...previous, availability: 'collision-shadowed', shadowedBy: record.path });
+        found.set(metadata.name, record);
+      } else {
+        shadowed.push({ ...record, availability: 'collision-shadowed', shadowedBy: previous.path });
+      }
+    }
     return true;
   };
+
   const entries = dir => {
     try { return fs.readdirSync(dir, { withFileTypes: true })
       .filter(x => (x.isDirectory() || x.isSymbolicLink()) && !x.name.startsWith('.'))
       .sort((a,b) => a.name.localeCompare(b.name)).slice(0, 256); }
     catch { return []; }
   };
+
+  // 1. Standalone skills
   for (const loc of locations) {
     if (!safeDirectory(loc.base) || (loc.relative && !safeTree(loc.base, loc.relative))) continue;
     const dir = loc.relative ? path.join(loc.base, loc.relative) : loc.base;
@@ -113,7 +233,50 @@ export function discoverWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigr
       for (const skill of entries(category)) visitSkill(category, skill, loc);
     }
   }
-  return [...found.values()];
+
+  // 2. Host-native plugins
+  for (const loc of plugins) {
+    if (!safeDirectory(loc.base) || (loc.relative && !safeTree(loc.base, loc.relative))) continue;
+    const dir = loc.relative ? path.join(loc.base, loc.relative) : loc.base;
+    if (!safeDirectory(dir)) continue;
+    for (const entry of entries(dir)) {
+      if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
+      const pluginDir = path.join(dir, entry.name);
+      if (!safeDirectory(pluginDir)) continue;
+      const manifest = readPluginManifest(pluginDir);
+      const pluginLoc = { ...loc, pluginName: manifest.name, pluginVersion: manifest.version,
+        pluginEnabled: manifest.enabled };
+      // Check skills/ subfolder
+      const skillsDir = path.join(pluginDir, 'skills');
+      if (safeDirectory(skillsDir)) {
+        for (const skillEntry of entries(skillsDir)) {
+          visitSkill(skillsDir, skillEntry, pluginLoc);
+        }
+      }
+      // Check direct SKILL.md in plugin root
+      if (fs.existsSync(path.join(pluginDir, 'SKILL.md'))) {
+        visitSkill(dir, entry, pluginLoc);
+      }
+    }
+  }
+
+  // 3. Resolve dependency closure
+  const detectedSkillNames = new Set([...found.values()].filter(s => s.availability === 'detected').map(s => s.name));
+  for (const skill of found.values()) {
+    if (skill.dependencies && skill.dependencies.length > 0) {
+      const missing = skill.dependencies.filter(dep => !detectedSkillNames.has(dep));
+      if (missing.length > 0) {
+        skill.missingDependencies = missing;
+        skill.executable = false;
+        skill.eligible = false;
+        if (skill.availability === 'detected') skill.availability = 'missing-dependency';
+      }
+    }
+  }
+
+  const result = [...found.values()];
+  result.shadowed = shadowed;
+  return result;
 }
 
 function externalScore(skill, prompt) {
@@ -136,7 +299,7 @@ export function routeWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigravi
   if (!Number.isInteger(maxSupporting) || maxSupporting < 0 || maxSupporting > 8) throw new Error('Invalid supporting-skill budget');
   if (runtime === 'all') throw new Error('Select one host for routing; use all for inventory only');
   const discovered = discoverWorkspaceSkills({ cwd, runtime, home, includeGlobal, env });
-  const installed = discovered.filter(skill => skill.availability === 'detected');
+  const installed = discovered.filter(skill => skill.availability === 'detected' && skill.executable !== false);
   const installedByName = new Map(installed.map(skill => [skill.name, skill]));
   const allBuiltinCaps = loadRegistry();
   const allBuiltinNames = new Set(allBuiltinCaps.map(cap => cap.metadata.name));
@@ -149,17 +312,20 @@ export function routeWorkspaceSkills({ cwd = process.cwd(), runtime = 'antigravi
     .sort((a,b) => b.score - a.score || a.name.localeCompare(b.name));
   const primary = candidates[0] || null;
   const primaryContract = builtins.find(cap => cap.metadata.name === primary?.name);
-  const allowed = new Set(primaryContract?.chain?.allowed || []);
+  const primarySkill = primary ? installedByName.get(primary.name) : null;
+  const primaryDeps = new Set(primarySkill?.dependencies || []);
+  const allowed = new Set([...(primaryContract?.chain?.allowed || []), ...primaryDeps]);
   const supporting = primary ? candidates.slice(1).filter(item => allowed.has(item.name) || item.score >= 30)
     .slice(0, maxSupporting) : [];
   const detail = value => value ? { ...value, path: installedByName.get(value.name).path,
     runtime: installedByName.get(value.name).runtime, scope: installedByName.get(value.name).scope,
-    source: builtinNames.has(value.name) ? 'xyeena' : 'external' } : null;
+    source: builtinNames.has(value.name) ? 'xyeena' : (installedByName.get(value.name).source || 'external') } : null;
   return { mode: 'preview-only', executed: false, runtime, kernel: installedByName.has('xyeena-core') ? 'xyeena-core' : null,
     primary: detail(primary), supporting: supporting.map(detail),
     installedCount: installed.length, detectedCount: discovered.length,
-    unavailable: discovered.filter(skill => skill.availability !== 'detected'), candidates: candidates.map(detail) };
+    unavailable: discovered.filter(skill => skill.availability !== 'detected' || skill.executable === false), candidates: candidates.map(detail) };
 }
+
 
 /** Per-host inventory avoids falsely assuming that a skill in one AI host exists in another. */
 export function skillAvailabilityMatrix(options = {}) {

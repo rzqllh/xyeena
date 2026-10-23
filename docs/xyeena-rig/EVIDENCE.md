@@ -43,3 +43,17 @@ CI now includes a Windows npx GitHub tarball smoke for compact preview (no write
 ## Requirements mapping audit — 2026-10-23
 
 A comparison of the chat backlog R01–R15 with the existing E task tracker and A acceptance matrix found the **broad phases present**, but no one-to-one crosswalk and missing explicit subtasks for provenance, conflict resolution, native parity, write-capable Harness, cost/resource limits, durable recovery, authorization propagation, legacy compatibility/restore, red-team testing and npm release readiness. The omissions are now tracked in `REQUIREMENTS_TRACEABILITY.md`, added E work items and A acceptance gates. This is **documentation completeness**, not code or runtime completion. Branch CI must be re-evaluated for the new documentation commit; previous 9/9 result applies to source HEAD `c9f1080` only.
+
+## Phase P01 verification — Unified Skill Discovery (2026-10-23)
+
+- Branch: `feat/rig-enterprise-p01-discovery`, Base: `main` (4f0fa5e).
+- Scope: R01, R02; Acceptance A11, A18, A21, A22; Tasks E02-03, E02-04, E02-05, E02-06.
+- Changes: `src/skill-hosts.mjs`, `src/workspace-skills.mjs`, `src/skill-cache.mjs`, test suites.
+- Results:
+  - `npm test`: 232/232 PASS (all tests green).
+  - `npm run check`: PASS.
+  - `npm run eval`: PASS (18/18).
+  - `npm run test:harness`: PASS (15/15).
+  - `npm run test:consumer`: PASS.
+  - `npm pack --dry-run`: PASS.
+- Verdict: VERIFIED. Full phase evidence recorded in `docs/xyeena-rig/evidence-p01.md`.

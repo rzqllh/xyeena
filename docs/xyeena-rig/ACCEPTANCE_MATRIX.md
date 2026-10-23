@@ -26,8 +26,8 @@ Evidence status is separate from implementation status.
 | A19 | Windows/macOS/Linux Node 22+ matrix | GitHub Actions | CI PASS |
 | A20 | No implied merge, publish or trust change | Integration checks | CI PASS |
 
-| A21 | Effective per-host plugin/skill inventory with provenance and real trust/disabled status | Five host adapters + untrusted/disabled fixtures | NOT IMPLEMENTED |
-| A22 | Deterministic capability matching, dedup, dependency closure and bounded context load | Collision/missing dependency/no-token scenarios | NOT IMPLEMENTED |
+| A21 | Effective per-host plugin/skill inventory with provenance and real trust/disabled status | Five host adapters + untrusted/disabled fixtures | VERIFIED |
+| A22 | Deterministic capability matching, dedup, dependency closure and bounded context load | Collision/missing dependency/no-token scenarios | VERIFIED |
 | A23 | Both Superpowers and Superior enabled without double lifecycle/governor/subagent | Dual-plugin live integration and negative paths | NOT IMPLEMENTED |
 | A24 | Live native parity fallback covers none/one/both unavailable and trust failure cases | Per-host test of actual resulting work | PARTIAL — preview only |
 | A25 | Core Harness gates on every tool and delegated worker, contextual project opt-in | Blocked-write/disabled-guides live failure injection | NOT IMPLEMENTED |

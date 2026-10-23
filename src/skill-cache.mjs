@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import { skillLocations } from './skill-hosts.mjs';
+import { skillLocations, pluginLocations } from './skill-hosts.mjs';
 import { discoverWorkspaceSkills } from './workspace-skills.mjs';
 
 const stamp = file => {
@@ -16,19 +16,20 @@ const stamp = file => {
 const children = directory => {
   try {
     return fs.readdirSync(directory, { withFileTypes: true })
-      .filter(x => x.isDirectory() && !x.isSymbolicLink() && !x.name.startsWith('.'))
+      .filter(x => (x.isDirectory() || x.isSymbolicLink()) && !x.name.startsWith('.'))
       .map(x => x.name).sort().slice(0, 256);
   } catch { return []; }
 };
 /**
  * Stateless filesystem fingerprint. Includes root/category directory timestamps,
- * SKILL.md timestamps and Hermes active profile config; never reads skill bodies.
+ * SKILL.md timestamps, plugin manifests and Hermes active profile config; never reads skill bodies.
  */
 export function inventoryFingerprint(options = {}) {
   const root = path.resolve(options.cwd || process.cwd());
   const home = path.resolve(options.home || os.homedir());
   const env = options.env || process.env;
   const locations = skillLocations({ ...options, cwd: root, home, env });
+  const plugins = pluginLocations({ ...options, cwd: root, home, env });
   const parts = [options.runtime || 'antigravity', root, home, String(options.includeGlobal !== false)];
   for (const loc of locations) {
     const directory = loc.relative ? path.join(loc.base,loc.relative) : loc.base;
@@ -38,6 +39,23 @@ export function inventoryFingerprint(options = {}) {
       parts.push(name, stamp(skill), stamp(path.join(skill,'SKILL.md')));
       if (loc.nested) for (const sub of children(skill))
         parts.push(sub, stamp(path.join(skill,sub)), stamp(path.join(skill,sub,'SKILL.md')));
+    }
+  }
+  for (const loc of plugins) {
+    const directory = loc.relative ? path.join(loc.base, loc.relative) : loc.base;
+    parts.push('plugin', loc.runtime, loc.scope, directory, stamp(directory));
+    for (const name of children(directory)) {
+      const pluginDir = path.join(directory, name);
+      parts.push(name, stamp(pluginDir),
+        stamp(path.join(pluginDir, 'plugin.json')),
+        stamp(path.join(pluginDir, 'gemini-extension.json')),
+        stamp(path.join(pluginDir, 'package.json')),
+        stamp(path.join(pluginDir, 'SKILL.md')));
+      const skillsDir = path.join(pluginDir, 'skills');
+      for (const skillName of children(skillsDir)) {
+        const skill = path.join(skillsDir, skillName);
+        parts.push(skillName, stamp(skill), stamp(path.join(skill, 'SKILL.md')));
+      }
     }
   }
   if (locations.some(loc => loc.runtime === 'hermes')) {

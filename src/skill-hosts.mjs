@@ -13,6 +13,18 @@ export const SKILL_HOSTS = Object.freeze({
   hermes: Object.freeze({ workspace: ['.hermes/skills', '.agents/skills'],
     global: ['.hermes/skills'], nested: true })
 });
+export const PLUGIN_HOSTS = Object.freeze({
+  antigravity: Object.freeze({ workspace: ['.agents/plugins', '.agent/plugins', '.gemini/plugins'],
+    global: ['.gemini/config/plugins'] }),
+  gemini: Object.freeze({ workspace: ['.agents/plugins', '.gemini/plugins', '.gemini/extensions'],
+    global: ['.gemini/plugins', '.gemini/extensions'] }),
+  codex: Object.freeze({ workspace: ['.codex/plugins', '.agents/plugins'],
+    global: ['.codex/plugins'] }),
+  claude: Object.freeze({ workspace: ['.claude/plugins'],
+    global: ['.claude/plugins'] }),
+  hermes: Object.freeze({ workspace: ['.hermes/plugins'],
+    global: ['.hermes/plugins'] })
+});
 export const supportedSkillHosts = () => Object.keys(SKILL_HOSTS);
 export function requireSkillHost(runtime) {
   if (runtime !== 'all' && !Object.hasOwn(SKILL_HOSTS, runtime))
@@ -111,6 +123,33 @@ export function skillLocations({ cwd = process.cwd(), runtime = 'antigravity',
       for (const external of hermes.externalDirs.slice(0, 32))
         locations.push({ base: external, relative: '', runtime: host, scope: 'external',
           nested: true, requiresTrust: false });
+    }
+  }
+  return locations;
+}
+
+export function pluginLocations({ cwd = process.cwd(), runtime = 'antigravity',
+  home = os.homedir(), includeGlobal = true, env = process.env } = {}) {
+  const targets = requireSkillHost(runtime);
+  const workspace = fs.realpathSync(path.resolve(cwd));
+  const locations = [];
+  for (const host of targets) {
+    const spec = PLUGIN_HOSTS[host];
+    if (!spec) continue;
+    const hermes = host === 'hermes' ? hermesSkillSettings(home, env) : null;
+    const gitRoot = host === 'hermes' ? nearestGitRoot(workspace) : workspace;
+    if (gitRoot) {
+      for (const relative of spec.workspace) {
+        locations.push({ base: gitRoot, relative, runtime: host, scope: 'workspace',
+          requiresTrust: host === 'hermes' &&
+            !hermes.trustedProjectDirs.some(dir => {
+              try { return fs.realpathSync(dir) === gitRoot; } catch { return false; }
+            }) });
+      }
+    }
+    if (!includeGlobal) continue;
+    for (const relative of spec.global) {
+      locations.push({ base: home, relative, runtime: host, scope: 'global', requiresTrust: false });
     }
   }
   return locations;
