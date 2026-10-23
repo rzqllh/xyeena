@@ -27,7 +27,7 @@ export { portableSkillTarget, previewPortableSetup, applyPortableSetup } from '.
 
 export { previewCompactSetup, applyCompactSetup } from './compact-setup.mjs';
 export { buildEnterprisePolicy, inspectOptionalProviders, selectSubagentBackend } from './enterprise-policy.mjs';
-export { inspectRigHarness, enforceRigPreflight, assertWorkspaceBoundary, HarnessExecutionGate, createHarnessExecutionGate, HostApprovalAuthority, createHostApprovalAuthority, IndependentEvidenceVerifier } from './rig-harness-lifecycle.mjs';
+export { inspectRigHarness, enforceRigPreflight, assertWorkspaceBoundary, HarnessExecutionGate, createHarnessExecutionGate, HostApprovalAuthority, createHostApprovalAuthority, createTrustedHostApprovalAuthority, IndependentEvidenceVerifier } from './rig-harness-lifecycle.mjs';
 export {
   dispatchScopedTask,
   createSimpulMcpAdapter,
