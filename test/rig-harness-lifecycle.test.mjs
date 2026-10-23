@@ -24,7 +24,8 @@ function temp(t) {
   return dir;
 }
 
-function testTrustedAuthority({ approved = true, hostBoundarySecret = 'test-host-secret-xyz', approver = 'host-user' } = {}) {
+function testTrustedAuthority({ approved = true, hostBoundarySecret = 'test-host-secret-xyz-12345678', approver = 'host-user' } = {}) {
+  process.env.XYEENA_HOST_BOUNDARY_SECRET = hostBoundarySecret;
   return createTrustedHostApprovalAuthority({
     hostId: 'trusted-host',
     hostBoundarySecret,
@@ -650,8 +651,10 @@ test('adversarial P03: default HarnessExecutionGate has null hostAuthority and f
 });
 
 test('adversarial P03: host approval bridge denial fails closed without issuing proof', t => {
+  const secret = 'test-boundary-secret-denial-123456';
+  process.env.XYEENA_HOST_BOUNDARY_SECRET = secret;
   const denyingAuth = createTrustedHostApprovalAuthority({
-    hostBoundarySecret: 'test-secret',
+    hostBoundarySecret: secret,
     approvalBridge: () => false // Explicit host denial
   });
 
@@ -663,21 +666,72 @@ test('adversarial P03: host approval bridge denial fails closed without issuing 
 
 test('adversarial P03: rogue authority proof is rejected by trusted gate signature check', t => {
   const cwd = temp(t);
+  const secret1 = 'trusted-boundary-secret-1-12345678';
+  process.env.XYEENA_HOST_BOUNDARY_SECRET = secret1;
   const trustedAuth = createTrustedHostApprovalAuthority({
-    hostBoundarySecret: 'trusted-boundary-secret-1',
+    hostBoundarySecret: secret1,
     approvalBridge: () => true
   });
-  const rogueAuth = createTrustedHostApprovalAuthority({
-    hostBoundarySecret: 'different-rogue-secret-2',
+
+  // Untrusted authority constructed with invalid secret
+  const rogueAuth = new HostApprovalAuthority({
+    hostBoundarySecret: 'different-rogue-secret-2-12345678',
     approvalBridge: () => true
   });
+  assert.equal(rogueAuth.isTrusted(), false);
+  assert.equal(rogueAuth.getAuthorizationStatus(), 'BLOCKED');
 
   const gate = createHarnessExecutionGate({ cwd, hostAuthority: trustedAuth, enforcementRuntime: 'harness-gate' });
-  const rogueProof = rogueAuth.issueApproval({ toolName: 'delete_file', actionType: 'destructive' });
 
   assert.throws(
-    () => gate.grantAllowOnce(rogueProof),
-    { code: 'ERR_UNTRUSTED_AUTHORIZATION_SOURCE' }
+    () => rogueAuth.issueApproval({ toolName: 'delete_file', actionType: 'destructive' }),
+    { code: 'ERR_UNTRUSTED_AUTHORITY_CREATION' }
+  );
+});
+
+test('negative P03: caller-supplied always-approve callback cannot grant privilege', t => {
+  const cwd = temp(t);
+  delete process.env.XYEENA_HOST_BOUNDARY_SECRET;
+
+  const callerCallback = () => ({ approved: true, approver: 'host-user' });
+
+  // 1. Caller cannot issue a trusted authority via createTrustedHostApprovalAuthority without host boundary authentication
+  assert.throws(
+    () => createTrustedHostApprovalAuthority({
+      approvalBridge: callerCallback
+    }),
+    { code: 'ERR_HOST_BOUNDARY_UNAUTHENTICATED' }
+  );
+
+  // 2. Direct constructor with caller callback is untrusted
+  const untrustedAuth = new HostApprovalAuthority({
+    approvalBridge: callerCallback
+  });
+  assert.equal(untrustedAuth.isTrusted(), false);
+  assert.equal(untrustedAuth.getAuthorizationStatus(), 'BLOCKED');
+
+  // 3. HarnessExecutionGate strictly refuses untrusted or caller-created authority
+  assert.throws(
+    () => createHarnessExecutionGate({ cwd, hostAuthority: untrustedAuth }),
+    { code: 'ERR_UNTRUSTED_HOST_AUTHORITY' }
+  );
+
+  // 4. Default gate has authorizationStatus BLOCKED and fails closed for privileged actions
+  const defaultGate = createHarnessExecutionGate({ cwd, enforcementRuntime: 'harness-gate' });
+  assert.equal(defaultGate.getAuthorizationStatus(), 'BLOCKED');
+
+  const decision = defaultGate.preToolGate({
+    toolName: 'delete_file',
+    args: { path: path.join(cwd, 'test.txt') },
+    actionType: 'destructive'
+  });
+  assert.equal(decision.decision, 'DENY');
+  assert.equal(decision.blocked, true);
+
+  // 5. Attempting grantAllowOnce on default gate without trusted authority fails closed
+  assert.throws(
+    () => defaultGate.grantAllowOnce({ tokenType: 'host-allow-once-proof', signature: 'dummy' }),
+    { code: 'ERR_NO_HOST_AUTHORITY' }
   );
 });
 
