@@ -123,7 +123,7 @@ test('pre-tool gate enforces single-use consumable authorization (ALLOW_ONCE, no
   assert.equal(deniedFirst.blocked, true);
 
   // Grant single-use consumable token
-  gate.grantAllowOnce(actionSig);
+  gate.grantAllowOnce(actionSig, { approver: 'host-user', authority: 'trusted-host' });
 
   // Approved action executes once
   const allowed = gate.preToolGate({
@@ -152,7 +152,7 @@ test('pre-tool gate requires separate authorization for different arguments', t 
   const differentArgs = { CommandLine: 'git reset --hard' };
 
   // Grant token only for git clean
-  gate.grantAllowOnce({ toolName: 'run_command', args: authorizedArgs, actionType: 'destructive' });
+  gate.grantAllowOnce({ toolName: 'run_command', args: authorizedArgs, actionType: 'destructive' }, { approver: 'host-user', authority: 'trusted-host' });
 
   // Different arguments fail closed
   const denied = gate.preToolGate({
@@ -178,7 +178,7 @@ test('pre-tool gate rejects destructive action outside workspace boundary even i
   const gate = createHarnessExecutionGate({ cwd });
 
   const outsideArgs = { path: path.join(os.tmpdir(), 'outside-secret.txt') };
-  gate.grantAllowOnce({ toolName: 'delete_file', args: outsideArgs, actionType: 'destructive' });
+  gate.grantAllowOnce({ toolName: 'delete_file', args: outsideArgs, actionType: 'destructive' }, { approver: 'host-user', authority: 'trusted-host' });
 
   const decision = gate.preToolGate({
     toolName: 'delete_file',
@@ -222,7 +222,7 @@ test('pre-tool gate blocks unauthorized external operations (push, publish)', t 
 
   // Authorize single-use external action
   const actionArgs = { CommandLine: 'git push origin main' };
-  gate.grantAllowOnce({ toolName: 'run_command', args: actionArgs, actionType: 'external' });
+  gate.grantAllowOnce({ toolName: 'run_command', args: actionArgs, actionType: 'external' }, { approver: 'host-user', authority: 'trusted-host' });
 
   const allowed = gate.preToolGate({
     toolName: 'run_command',
@@ -271,13 +271,33 @@ test('post-tool gate rejects self-certified completion without independent evide
   assert.equal(unverifiedPost.verified, false);
   assert.ok(unverifiedPost.warning.includes('Self-certified'));
 
-  // Verified claim with evidenceRefs
+  // Verified claim with physical evidenceRefs existing and non-empty
+  const logPath = path.join(cwd, 'test-run-123.log');
+  fs.writeFileSync(logPath, '12/12 passing');
   const verifiedPost = gate.postToolGate({
     toolName: 'verify_module',
     result: { verified: true, status: 'PASS', evidenceRefs: ['test-run-123.log'] }
   });
   assert.equal(verifiedPost.verified, true);
   assert.equal(verifiedPost.warning, null);
+
+  // Non-existent evidence file fails independent verification
+  const missingPost = gate.postToolGate({
+    toolName: 'verify_module',
+    result: { verified: true, status: 'PASS', evidenceRefs: ['non-existent.log'] }
+  });
+  assert.equal(missingPost.verified, false);
+  assert.ok(missingPost.warning.includes('does not exist'));
+
+  // Empty evidence file (0 bytes) fails independent verification
+  const emptyPath = path.join(cwd, 'empty.log');
+  fs.writeFileSync(emptyPath, '');
+  const emptyPost = gate.postToolGate({
+    toolName: 'verify_module',
+    result: { verified: true, status: 'PASS', evidenceRefs: ['empty.log'] }
+  });
+  assert.equal(emptyPost.verified, false);
+  assert.ok(emptyPost.warning.includes('empty'));
 });
 
 test('worker delegation propagates policy strictly without permission escalation', t => {
@@ -359,5 +379,95 @@ test('adversarial: host runtime without verified live tool interception fails cl
   assert.equal(externalDecision.decision, 'DENY');
   assert.equal(externalDecision.rule, 'runtime-enforcement');
   assert.equal(externalDecision.blocked, true);
+});
+
+test('regression P03: grantAllowOnce rejects missing credentials (no default self-issuance)', t => {
+  const cwd = temp(t);
+  const gate = createHarnessExecutionGate({ cwd });
+
+  // Calling without credentials must throw ERR_MISSING_AUTHORIZATION_CREDENTIALS
+  assert.throws(
+    () => gate.grantAllowOnce('destructive:rm_file:{}'),
+    { code: 'ERR_MISSING_AUTHORIZATION_CREDENTIALS' }
+  );
+  assert.throws(
+    () => gate.grantAllowOnce('destructive:rm_file:{}', {}),
+    { code: 'ERR_MISSING_AUTHORIZATION_CREDENTIALS' }
+  );
+});
+
+test('regression P03: anti-loop gate blocks repeated failures before checking ALLOW_ONCE token', t => {
+  const cwd = temp(t);
+  const gate = createHarnessExecutionGate({ cwd });
+  const toolArgs = { path: path.join(cwd, 'broken-target.txt') };
+  const actionSig = `destructive:delete_file:${JSON.stringify(toolArgs)}`;
+
+  // Grant an ALLOW_ONCE token
+  gate.grantAllowOnce(actionSig, { approver: 'host-user', authority: 'trusted-host' });
+
+  // Simulate 3 prior consecutive errors
+  for (let i = 0; i < 3; i++) {
+    gate.postToolGate({ toolName: 'delete_file', args: toolArgs, error: 'I/O failure' });
+  }
+
+  // Pre-tool gate must block with anti-loop DENY, NOT consume or approve via ALLOW_ONCE
+  const decision = gate.preToolGate({ toolName: 'delete_file', args: toolArgs, actionType: 'destructive' });
+  assert.equal(decision.decision, 'DENY');
+  assert.equal(decision.rule, 'anti-loop');
+  assert.equal(decision.blocked, true);
+});
+
+test('regression P03: worker delegation preserves requested and installed contextual Harness guides', t => {
+  const cwd = temp(t);
+  const guideDir = path.join(cwd, '.xyeena', 'harness', 'guides', '50-quality');
+  fs.mkdirSync(guideDir, { recursive: true });
+  fs.writeFileSync(path.join(guideDir, 'README.md'), '# quality guide');
+
+  const parentGate = createHarnessExecutionGate({
+    cwd,
+    contextualRequested: ['testing', 'security']
+  });
+
+  assert.deepEqual(parentGate.contextual.contextual.requested, ['50-quality', '60-security']);
+  assert.deepEqual(parentGate.contextual.contextual.installed, ['50-quality']);
+
+  // Delegate child worker: must preserve requested and installed groups
+  const childGate = parentGate.delegateWorker('child-qa-worker');
+  assert.deepEqual(childGate.contextual.contextual.requested, ['50-quality', '60-security']);
+  assert.deepEqual(childGate.contextual.contextual.installed, ['50-quality']);
+  assert.equal(childGate.contextual.contextual.enforcement, 'active-contextual-enforcement');
+});
+
+test('regression P03: shell command execution with filesystem escape or uncontained runtime fails closed', t => {
+  const cwd = temp(t);
+  const gate = createHarnessExecutionGate({ cwd });
+
+  // 1. CommandLine trying directory escape (cd ..) is blocked
+  const escapeDecision = gate.preToolGate({
+    toolName: 'run_command',
+    args: { CommandLine: 'cd .. && ls' }
+  });
+  assert.equal(escapeDecision.decision, 'DENY');
+  assert.equal(escapeDecision.rule, 'scope-control');
+  assert.equal(escapeDecision.blocked, true);
+
+  // 2. Explicit Cwd escaping workspace root is blocked
+  const outsideCwdDecision = gate.preToolGate({
+    toolName: 'run_command',
+    args: { CommandLine: 'npm test', Cwd: path.join(os.tmpdir(), 'other-dir') }
+  });
+  assert.equal(outsideCwdDecision.decision, 'DENY');
+  assert.equal(outsideCwdDecision.rule, 'scope-control');
+  assert.equal(outsideCwdDecision.blocked, true);
+
+  // 3. Shell execution on unsupported host runtime fails closed
+  const headlessGate = createHarnessExecutionGate({ cwd, enforcementRuntime: 'unsupported-headless' });
+  const unsupportedDecision = headlessGate.preToolGate({
+    toolName: 'run_command',
+    args: { CommandLine: 'echo hello' }
+  });
+  assert.equal(unsupportedDecision.decision, 'DENY');
+  assert.equal(unsupportedDecision.rule, 'runtime-enforcement');
+  assert.equal(unsupportedDecision.blocked, true);
 });
 

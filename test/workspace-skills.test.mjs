@@ -213,3 +213,80 @@ test('inventory cache invalidates when plugin or skill files change', t => {
   assert.equal(updated[0].enabled, false);
   assert.equal(updated[0].availability, 'disabled');
 });
+
+test('regression P01: resolves transitive missing dependencies to a fixed point', t => {
+  const { cwd, home } = workspace(t);
+  add(cwd, '.agents/skills', 'chain-c', 'Leaf skill', 'dependencies: [non-existent-dep]\n');
+  add(cwd, '.agents/skills', 'chain-b', 'Middle skill', 'dependencies: [chain-c]\n');
+  add(cwd, '.agents/skills', 'chain-a', 'Root skill', 'dependencies: [chain-b]\n');
+
+  const result = discoverWorkspaceSkills({ cwd, home });
+  const a = result.find(s => s.name === 'chain-a');
+  const b = result.find(s => s.name === 'chain-b');
+  const c = result.find(s => s.name === 'chain-c');
+
+  assert.equal(c.availability, 'missing-dependency');
+  assert.equal(c.executable, false);
+  assert.equal(b.availability, 'missing-dependency');
+  assert.equal(b.executable, false);
+  assert.equal(a.availability, 'missing-dependency');
+  assert.equal(a.executable, false);
+  assert.ok(a.missingDependencies.includes('chain-b'));
+});
+
+test('regression P01: includes required dependencies in routed selection regardless of maxSupporting budget', t => {
+  const { cwd, home } = workspace(t);
+  add(cwd, '.agents/skills', 'dep-leaf', 'Leaf dependency');
+  add(cwd, '.agents/skills', 'dep-root', 'Root skill requiring dep-leaf', 'dependencies: [dep-leaf]\n');
+
+  // Budget is 0 supporting skills, but required dependency must still be included
+  const routed = routeWorkspaceSkills({ cwd, home, prompt: 'dep-root', state: 'TRIAGE', maxSupporting: 0 });
+  assert.equal(routed.primary.name, 'dep-root');
+  assert.equal(routed.supporting.length, 1);
+  assert.equal(routed.supporting[0].name, 'dep-leaf');
+  assert.ok(routed.supporting[0].reasons.includes('required-dependency'));
+});
+
+test('regression P01: inventory cache fingerprints extension.json plugin manifests', t => {
+  const { cwd, home } = workspace(t);
+  const cache = new SkillInventoryCache();
+  const pluginDir = path.join(home, '.gemini/config/plugins/ext-plugin');
+  fs.mkdirSync(path.join(pluginDir, 'skills/ext-skill'), { recursive: true });
+  fs.writeFileSync(path.join(pluginDir, 'extension.json'), JSON.stringify({ name: 'ext-plugin', version: '1.0.0' }));
+  fs.writeFileSync(path.join(pluginDir, 'skills/ext-skill/SKILL.md'), '---\nname: ext-skill\ndescription: Extension skill\n---\n');
+
+  const initial = cache.get({ cwd, home });
+  assert.equal(initial.length, 1);
+  assert.equal(initial[0].pluginVersion, '1.0.0');
+
+  // Modify extension.json
+  fs.writeFileSync(path.join(pluginDir, 'extension.json'), JSON.stringify({ name: 'ext-plugin', version: '2.5.0' }));
+  const updated = cache.get({ cwd, home });
+  assert.equal(updated.length, 1);
+  assert.equal(updated[0].pluginVersion, '2.5.0');
+});
+
+test('regression P01: serialized discovery results expose shadowed collision records', t => {
+  const { cwd, home } = workspace(t);
+  add(home, '.gemini/config/skills', 'shadow-test', 'Global version');
+  add(cwd, '.agents/skills', 'shadow-test', 'Workspace version');
+
+  // 1. Array with includeShadowed: true
+  const withShadowed = discoverWorkspaceSkills({ cwd, home, includeShadowed: true });
+  assert.ok(withShadowed.length >= 2);
+  const serializedArray = JSON.stringify(withShadowed);
+  const parsedArray = JSON.parse(serializedArray);
+  assert.ok(Array.isArray(parsedArray));
+  assert.ok(parsedArray.some(s => s.availability === 'collision-shadowed'));
+
+  // 2. Format: object
+  const asObject = discoverWorkspaceSkills({ cwd, home, format: 'object' });
+  const serializedObj = JSON.stringify(asObject);
+  const parsedObj = JSON.parse(serializedObj);
+  assert.ok(Array.isArray(parsedObj.skills));
+  assert.ok(Array.isArray(parsedObj.shadowed));
+  assert.equal(parsedObj.skills.length, 1);
+  assert.ok(parsedObj.shadowed.length >= 1);
+  assert.equal(parsedObj.shadowed[0].availability, 'collision-shadowed');
+});
+
