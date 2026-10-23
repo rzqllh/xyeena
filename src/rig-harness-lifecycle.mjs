@@ -164,14 +164,30 @@ export function enforceRigPreflight(plan, { consent = false } = {}) {
   };
 }
 
-/**
- * Trusted Host Approval Authority.
- * Generates and verifies unforgeable, cryptographically signed ALLOW_ONCE proofs.
+export function verifyHostBoundarySecret(candidateSecret) {
+  const envSecret = process.env.XYEENA_HOST_BOUNDARY_SECRET;
+  if (!envSecret || typeof envSecret !== 'string' || envSecret.length < 16) {
+    return false;
+  }
+  if (!candidateSecret || typeof candidateSecret !== 'string') {
+    return false;
+  }
+  if (Buffer.byteLength(candidateSecret) !== Buffer.byteLength(envSecret)) {
+    return false;
+  }
+  try {
+    return crypto.timingSafeEqual(Buffer.from(candidateSecret), Buffer.from(envSecret));
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Trusted Host Approval Authority.
  * Generates and verifies unforgeable, cryptographically signed ALLOW_ONCE proofs.
  * Held strictly by the host environment outside the agent boundary.
- * Requires an external host approval callback/bridge to mediate human/host consent.
+ * Requires an external host approval callback/bridge to mediate human/host consent
+ * and verified external host boundary credentials.
  * Caller-created authorities or instances without verified host credentials fail closed.
  */
 export class HostApprovalAuthority {
@@ -186,17 +202,20 @@ export class HostApprovalAuthority {
     hostBoundarySecret = null
   } = {}) {
     this.hostId = hostId;
-    this.#approvalBridge = typeof approvalBridge === 'function' ? approvalBridge : null;
-    const hasBoundaryCredentials = Boolean(
-      hostBoundarySecret ||
-      (process.env.XYEENA_HOST_BOUNDARY_SECRET && hostBoundarySecret === process.env.XYEENA_HOST_BOUNDARY_SECRET)
-    );
-    this.#isTrusted = Boolean(hasBoundaryCredentials && this.#approvalBridge);
-    this.#secret = secret || (hostBoundarySecret ? crypto.createHmac('sha256', hostBoundarySecret).update(hostId).digest('hex') : crypto.randomBytes(32).toString('hex'));
+    const hasValidHostCredentials = verifyHostBoundarySecret(hostBoundarySecret);
+    this.#approvalBridge = hasValidHostCredentials && typeof approvalBridge === 'function' ? approvalBridge : null;
+    this.#isTrusted = Boolean(hasValidHostCredentials && this.#approvalBridge);
+    this.#secret = secret || (hasValidHostCredentials && hostBoundarySecret
+      ? crypto.createHmac('sha256', hostBoundarySecret).update(hostId).digest('hex')
+      : crypto.randomBytes(32).toString('hex'));
   }
 
   isTrusted() {
     return this.#isTrusted;
+  }
+
+  getAuthorizationStatus() {
+    return this.#isTrusted ? 'ACTIVE' : 'BLOCKED';
   }
 
   hasApprovalBridge() {
@@ -308,12 +327,20 @@ export function createTrustedHostApprovalAuthority({
   approvalBridge = null,
   secret = null
 } = {}) {
-  const boundarySecret = hostBoundarySecret || process.env.XYEENA_HOST_BOUNDARY_SECRET || crypto.randomBytes(32).toString('hex');
-  const bridge = typeof approvalBridge === 'function' ? approvalBridge : (() => false);
+  if (!verifyHostBoundarySecret(hostBoundarySecret)) {
+    const err = new Error('Authority issuance rejected: requires external host boundary authentication (XYEENA_HOST_BOUNDARY_SECRET); untrusted agent-callable code cannot self-issue authorities');
+    err.code = 'ERR_HOST_BOUNDARY_UNAUTHENTICATED';
+    throw err;
+  }
+  if (typeof approvalBridge !== 'function') {
+    const err = new Error('Authority issuance rejected: requires an external host approval bridge callback');
+    err.code = 'ERR_UNCONFIGURED_HOST_BRIDGE';
+    throw err;
+  }
   return new HostApprovalAuthority({
     hostId,
-    hostBoundarySecret: boundarySecret,
-    approvalBridge: bridge,
+    hostBoundarySecret,
+    approvalBridge,
     secret
   });
 }
@@ -495,6 +522,12 @@ export class HarnessExecutionGate {
       return 'LIVE_ACTIVE';
     }
     return 'LIVE_PENDING';
+  }
+
+  getAuthorizationStatus() {
+    return (this.#hostAuthority && typeof this.#hostAuthority.isTrusted === 'function' && this.#hostAuthority.isTrusted())
+      ? 'ACTIVE'
+      : 'BLOCKED';
   }
 
   grantAllowOnce(proof, { approver, authority } = {}) {
