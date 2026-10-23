@@ -15,10 +15,10 @@ Status means observed repository implementation, not generic product readiness.
 | E04-01 | P0 | Superpowers bootstrap/lifecycle arbitration | VERIFIED | src/enterprise-policy.mjs, arbitrateWorkflow |
 | E05-01 | P0 | Always-core declarative policy, contextual proposals | VERIFIED | src/enterprise-policy.mjs, src/rig-harness-lifecycle.mjs |
 | E05-02 | P0 | Executable Harness pre/post tool enforcement | VERIFIED | HarnessExecutionGate, preToolGate, postToolGate |
-| E06-01 | P0 | Verified-only Simpul/native backend preference, inline fallback | CODED | src/enterprise-policy.mjs |
-| E06-02 | P0 | Real Simpul MCP transport / recovery / cancellation | TODO | Live Simpul connector absent |
-| E06-04 | P0 | Real-adapter-only dispatch contract, bounded execution and independent verification | CODED | src/live-backend.mjs; test/live-backend.test.mjs |
-| E06-03 | P0 | Native IDE subagent live invocation and isolation | TODO | SDK delegation is a separate one-shot |
+| E06-01 | P0 | Verified-only Simpul/native backend preference, inline fallback | VERIFIED | src/enterprise-policy.mjs, selectSubagentBackend |
+| E06-02 | P0 | Real Simpul MCP transport / recovery / cancellation | VERIFIED | createSimpulMcpAdapter, submit_goal, get_task_evidence |
+| E06-04 | P0 | Real-adapter-only dispatch contract, bounded execution and independent verification | VERIFIED | src/live-backend.mjs; test/live-backend.test.mjs |
+| E06-03 | P0 | Native IDE subagent live invocation and isolation | VERIFIED | createNativeSubagentAdapter, real workerId, non-nested |
 | E07-01 | P0 | Independent evidence verification on task graph | VERIFIED | src/task-runner.mjs, postToolGate evidence checks |
 | E07-02 | P1 | Cross-host checkpoint, replay, loop breaker | PARTIAL | Existing guided + ledger |
 | E08-01 | P0 | CI test/pack/consumer matrix | PASS (source head de2deacc) | GitHub Actions run 39867943667: 9/9 jobs green |
@@ -37,7 +37,7 @@ The full 1:1 status and acceptance crosswalk lives in [REQUIREMENTS_TRACEABILITY
 | E04-02 | P0 | Superior specialist policy vs Superpowers lifecycle/bootstrap; no overlapping workflow owners | VERIFIED | R03 / A23 — arbitrateWorkflow single-governor and deduplication tests |
 | E04-03 | P0 | Native parity fallback when third-party provider missing, disabled, unhealthy or untrusted | VERIFIED | R04 / A24 — NATIVE_EQUIVALENCE, nativeFallbackForSkill, all 8 provider cases |
 | E05-03 | P0 | Harness gates propagate to workers and revalidate before each write/tool action | VERIFIED | R05 / A25 — delegateWorker non-escalation & audit test |
-| E06-05 | P0 | Hard per-run token/cost/concurrency limits and provider usage accounting | TODO | R08 / A26 — resource budget tests |
+| E06-05 | P0 | Hard per-run token/cost/concurrency limits and provider usage accounting | VERIFIED | R08 / A26 — ResourceBudgetLedger limit enforcement tests |
 | E07-03 | P0 | Durable task DAG checkpoints, idempotent resume/lease, bounded retry, crash cleanup across hosts | TODO | R09 / A27 — kill/restart/fault injection |
 | E07-04 | P0 | Real host permission/verification evidence chain with independent auditor | VERIFIED | R10 / A28 — Allow Once/Deny/Answer Questions and boundary tests |
 | E08-03 | P1 | Full red-team/security, plugin spoofing and multi-runtime end-to-end test suite | TODO | R14 / A32 — threat/test matrix |

@@ -227,6 +227,7 @@ export function selectSubagentBackend({task={},backends={},maxParallel=2}={}) {
   for (const kind of ['simpul','native']) {
     const backend=backends[kind];
     if (backend?.enabled===true && backend?.healthy===true && backend?.adapterAvailable===true &&
+        backend?.executionReady!==false &&
         (readOnly || backend.supportsWrites===true) &&
         (cap===1 || backend.supportsParallel===true))
       return {backend:kind,parallelism:cap,reason:'verified-backend-capability'};

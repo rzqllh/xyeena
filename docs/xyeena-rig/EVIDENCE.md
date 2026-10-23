@@ -86,4 +86,19 @@ A comparison of the chat backlog R01–R15 with the existing E task tracker and 
   - `npm pack --dry-run`: PASS.
 - Verdict: VERIFIED. Full phase evidence recorded in `docs/xyeena-rig/evidence-p03.md`.
 
+## Phase P04 verification — Simpul & Native Subagent Integration (2026-10-23)
+
+- Branch: `feat/rig-enterprise-p04-subagents`, Base: `feat/rig-enterprise-p03-harness` (3dfae86).
+- Scope: R06, R07, R08; Acceptance A14, A14a, A15, A16, A26; Tasks E06-01, E06-02, E06-03, E06-04, E06-05.
+- Changes: `src/live-backend.mjs`, `test/live-backend.test.mjs`.
+- Results:
+  - `npm test`: 252/252 PASS (10 unit tests in live-backend, +3 backend/budget tests).
+  - `npm run check`: PASS.
+  - `npm run eval`: PASS (18/18).
+  - `npm run test:harness`: PASS (15/15).
+  - `npm run test:consumer`: PASS.
+  - `npm pack --dry-run`: PASS.
+- Verdict: VERIFIED. Full phase evidence recorded in `docs/xyeena-rig/evidence-p04.md`.
+
+
 

@@ -28,4 +28,10 @@ export { portableSkillTarget, previewPortableSetup, applyPortableSetup } from '.
 export { previewCompactSetup, applyCompactSetup } from './compact-setup.mjs';
 export { buildEnterprisePolicy, inspectOptionalProviders, selectSubagentBackend } from './enterprise-policy.mjs';
 export { inspectRigHarness, enforceRigPreflight, assertWorkspaceBoundary, HarnessExecutionGate, createHarnessExecutionGate, HostApprovalAuthority, createHostApprovalAuthority, createTrustedHostApprovalAuthority, IndependentEvidenceVerifier } from './rig-harness-lifecycle.mjs';
-export { dispatchScopedTask } from './live-backend.mjs';
+export {
+  dispatchScopedTask,
+  createSimpulMcpAdapter,
+  createNativeSubagentAdapter,
+  ResourceBudgetLedger,
+  healthyAdapter
+} from './live-backend.mjs';
