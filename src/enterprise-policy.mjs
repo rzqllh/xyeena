@@ -154,6 +154,35 @@ export function arbitrateWorkflow({ goal = '', state = 'TRIAGE', inventory = [],
     }
   }
 
+  // Compute arbitrated active skills for execution (deduplicating roles and replacing blocked skills)
+  const arbitratedSkills = [];
+  for (const s of selectedSkills) {
+    if (s === 'xyeena-rig' || s === 'xyeena-orchestrate') {
+      arbitratedSkills.push(s);
+      continue;
+    }
+    if (providers.superpowers.skills.includes(s) && !powEligible) {
+      arbitratedSkills.push(nativeFallbackForSkill(s));
+      continue;
+    }
+    if (providers.superior.skills.includes(s) && !supEligible) {
+      arbitratedSkills.push(nativeFallbackForSkill(s));
+      continue;
+    }
+    // Prune duplicate review passes if both providers are active
+    if (powEligible && supEligible) {
+      if ((s === 'requesting-code-review' || s === 'receiving-code-review') &&
+          (selected.has('superior-code-review') || selected.has('xyeena-review'))) {
+        continue;
+      }
+    }
+    if (!detectedNames.has(s)) {
+      arbitratedSkills.push(nativeFallbackForSkill(s));
+      continue;
+    }
+    arbitratedSkills.push(s);
+  }
+
   const activeSuperpowers = powEligible ? providers.superpowers.skills.filter(s => selected.has(s)) : [];
   const activeSuperior = supEligible ? providers.superior.skills.filter(s => selected.has(s)) : [];
   const nativeFallbackSkills = Object.values(fallbackMappings);
@@ -163,6 +192,7 @@ export function arbitrateWorkflow({ goal = '', state = 'TRIAGE', inventory = [],
     workflowOwner: 'xyeena-rig',
     singleGovernorEnforced: true,
     competingControllersBlocked: true,
+    arbitratedSkills: [...new Set(arbitratedSkills)],
     superpowers: {
       status: providers.superpowers.status,
       activeSkills: activeSuperpowers,

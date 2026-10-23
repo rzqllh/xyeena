@@ -413,3 +413,88 @@ test('Simpul MCP adapter bounded polling never interprets SUBMITTED or PENDING a
   assert.deepEqual(execResult.evidenceRefs, []);
 });
 
+test('regression P04: Simpul adapter refuses write-capable delegation when protocol cannot enforce scope/permissions', async () => {
+  const writeTask = { id: 't-write', title: 'Write code', scope: { readOnly: false, operationClass: 'safe' } };
+  const adapter = createSimpulMcpAdapter({
+    mcpClient: { async callTool() { return {}; } }
+  });
+
+  // Must refuse write delegation if write scope enforcement is unsupported
+  await assert.rejects(
+    adapter.executeTask(writeTask, { noNestedDelegation: true }),
+    /Refusing write-capable delegation to Simpul/
+  );
+
+  // If write scope enforcement is supported, scope is propagated in submit_goal
+  let sentParams = null;
+  const mockClient = {
+    async callTool(tool, p) {
+      if (tool === 'submit_goal') {
+        sentParams = p;
+        return { run_id: 'r-scoped-1', status: 'COMPLETED', initial_task_id: 'init-1' };
+      }
+      if (tool === 'get_run') return { status: 'COMPLETED' };
+      return {};
+    }
+  };
+  const scopedAdapter = createSimpulMcpAdapter({ mcpClient: mockClient });
+  await scopedAdapter.executeTask(writeTask, { noNestedDelegation: true, enforceWriteScope: true });
+  assert.equal(sentParams.scope.readOnly, false);
+});
+
+test('regression P04: Simpul adapter fails when budget ceiling breached (never swallowed)', async () => {
+  const ledger = new ResourceBudgetLedger({ tokenLimit: 1000 });
+  const mockClient = {
+    async callTool(tool) {
+      if (tool === 'submit_goal') return { run_id: 'r2', status: 'COMPLETED', initial_task_id: 'i2' };
+      if (tool === 'get_run') return { status: 'COMPLETED' };
+      if (tool === 'get_model_usage') return { tokens: 5000, costMicro: 10000 };
+      return {};
+    }
+  };
+  const adapter = createSimpulMcpAdapter({ mcpClient: mockClient, ledger });
+  await assert.rejects(
+    adapter.executeTask({ id: 't-budget', title: 'Task' }, { noNestedDelegation: true }),
+    /budget ceiling breached/
+  );
+});
+
+test('regression P04: concurrent write dispatches in shared workspace are serialized using write lock', async () => {
+  const log = [];
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+  const makeAdapter = id => ({
+    async executeTask() {
+      log.push(`start:${id}`);
+      await delay(50);
+      log.push(`end:${id}`);
+      return { workerId: `w-${id}` };
+    }
+  });
+
+  const p1 = dispatchScopedTask({
+    task: { id: 'W1', title: 'write 1', scope: { readOnly: false, operationClass: 'safe' } },
+    inlineAdapter: makeAdapter('1'),
+    approvedTaskIds: ['W1'],
+    authorizeOperation: async () => 'allow-once'
+  });
+  const p2 = dispatchScopedTask({
+    task: { id: 'W2', title: 'write 2', scope: { readOnly: false, operationClass: 'safe' } },
+    inlineAdapter: makeAdapter('2'),
+    approvedTaskIds: ['W2'],
+    authorizeOperation: async () => 'allow-once'
+  });
+
+  await Promise.all([p1, p2]);
+  assert.deepEqual(log, ['start:1', 'end:1', 'start:2', 'end:2']);
+});
+
+test('regression P04: public backend APIs are exported and importable from index.mjs', async () => {
+  const indexExports = await import('../src/index.mjs');
+  assert.equal(typeof indexExports.dispatchScopedTask, 'function');
+  assert.equal(typeof indexExports.createSimpulMcpAdapter, 'function');
+  assert.equal(typeof indexExports.createNativeSubagentAdapter, 'function');
+  assert.equal(typeof indexExports.ResourceBudgetLedger, 'function');
+  assert.equal(typeof indexExports.healthyAdapter, 'function');
+  assert.equal(typeof indexExports.selectSubagentBackend, 'function');
+});
+
