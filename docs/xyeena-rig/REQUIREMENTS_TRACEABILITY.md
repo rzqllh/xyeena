@@ -10,8 +10,8 @@ This table is a crosswalk, *not* a second source of implementation status. A gre
 | --- | --- | --- | --- | --- | --- |
 | **R01** | P0 | Inventory *all relevant registered skills/plugins* across workspace/global for each supported host, including source/provenance, effective enablement/trust, compatibility, and unknown states; no arbitrary disk scan | E02-03, E02-05 | A11, A18, A21; G1 | VERIFIED — host-native plugins & standalone skills discovered with provenance and states |
 | **R02** | P0 | Route minimal eligible capabilities by task, resolve dependency closure, collisions/duplicate workflows, provenance and absent skills; token-free deterministic default | E02-04, E02-06 | A22; G1 | VERIFIED — deterministic resolution, dependency closure and collision handling |
-| **R03** | P0 | Detect **Superior** and **Superpowers**, coordinate specialist skills vs Superpowers bootstrap, avoid dual governors or two parallel workflow lifecycles | E02-02, E04-01, E04-02 | A11, A23; G1–G2 | PARTIAL — filename-based candidates, not authoritative activation |
-| **R04** | P0 | Both absent / one absent / disabled / untrusted / unhealthy → reliably use corresponding native Xyeena capabilities in **live task execution**, not just preview; test essential parity coverage | E02-01, E04-03 | A10, A24; G1–G3 | PARTIAL — compact governor and native reference modules, runtime end-to-end pending |
+| **R03** | P0 | Detect **Superior** and **Superpowers**, coordinate specialist skills vs Superpowers bootstrap, avoid dual governors or two parallel workflow lifecycles | E02-02, E04-01, E04-02 | A11, A23; G1–G2 | VERIFIED — single governor (xyeena-rig), arbitrateWorkflow with deduplicated review/test roles |
+| **R04** | P0 | Both absent / one absent / disabled / untrusted / unhealthy → reliably use corresponding native Xyeena capabilities in **live task execution**, not just preview; test essential parity coverage | E02-01, E04-03 | A10, A24; G1–G3 | VERIFIED — NATIVE_EQUIVALENCE, nativeFallbackForSkill, all 8 provider cases verified in test suite |
 | **R05** | P0 | Core Harness boundary **enforced** at every orchestration action and worker hop, contextual Harness opt-in, pre/post execution validation, blocked-write evidence | E05-01, E05-02, E05-03 | A12, A13, A25; G2–G3 | PARTIAL — read-only preflight and policy metadata, no universal write-hook enforcement |
 | **R06** | P0 | Live authenticated Simpul MCP adapter with health probe, actual spawn/status/message/cancel, failure/retry/timeout cleanup and evidence | E06-02 | A14; G2–G3 | TODO — adapter contract only |
 | **R07** | P0 | Host-native subagent adapter with real worker ID, cancellation, native trust/policy, worker join, isolation, and five-host capability matrix | E06-03 | A15, A16; G2–G3 | TODO — optional SDK one-shot delegate is not active IDE execution |
@@ -26,11 +26,11 @@ This table is a crosswalk, *not* a second source of implementation status. A gre
 
 ## Provider and fallback coverage cases that must not be skipped
 
-- [ ] Neither Superior nor Superpowers installed → native Xyeena works with zero provider/API dependency.
-- [ ] Superior only → its eligible specialist skill may be selected; Xyeena supplies missing workflow capability.
-- [ ] Superpowers only → compatible workflow may be used without relinquishing permission/governor ownership.
-- [ ] Both installed → one workflow owner; specialist roles deduplicated; no duplicate review/worker spawning.
-- [ ] Present but disabled/untrusted/incompatible/quarantined → excluded, not treated as active.
+- [x] Neither Superior nor Superpowers installed → native Xyeena works with zero provider/API dependency.
+- [x] Superior only → its eligible specialist skill may be selected; Xyeena supplies missing workflow capability.
+- [x] Superpowers only → compatible workflow may be used without relinquishing permission/governor ownership.
+- [x] Both installed → one workflow owner; specialist roles deduplicated; no duplicate review/worker spawning.
+- [x] Present but disabled/untrusted/incompatible/quarantined → excluded, not treated as active.
 - [ ] Same-name imposter or externally modified skill → provenance conflict, no blind execution.
 - [ ] Installed as host plugin/cache rather than standalone folder → host-specific inventory tested.
 - [ ] Same skill in workspace and global roots → explicit precedence and effective trust.
