@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Xyeena Rig: Developer Tooling for Coding Agents</title>
-  <meta name="description" content="Selectable Agent Skills and opt-in project Harness for Antigravity, Claude Code, and Codex. Zero runtime dependencies.">
+  <meta name="description" content="Portable Agent Skills, optional project Harness, and guarded orchestration for Antigravity, Codex, Claude Code, Gemini CLI, and Hermes.">
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%232563eb%22/><text x=%2250%25%22 y=%2255%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22 font-weight=%22bold%22 font-size=%2218%22>X</text></svg>">
 </head>
@@ -15,7 +15,7 @@
     <div class="container header-inner">
       <div class="brand">
         <span class="brand-name">Xyeena Rig</span>
-        <span class="version-tag" aria-label="Version status">v0.2.0 live · v0.2.1 staging</span>
+        <span class="version-tag" aria-label="Version status">npm v0.4.1</span>
       </div>
       <nav class="site-nav" aria-label="Primary navigation">
         <a href="#skills-vs-harness">Components</a>
@@ -33,21 +33,21 @@
         <p class="hero-kicker">Developer-tooling arm of Xyeena</p>
         <h1 id="hero-title">Equip your agent. Guard your project.</h1>
         <p class="hero-summary">
-          Modular Agent Skills and opt-in project Harness for coding agents. Built for solo developers and engineering teams using Antigravity, Claude Code, and Codex.
+          Portable Agent Skills, optional project safeguards, and guarded orchestration for Antigravity, Codex, Claude Code, Gemini CLI, and Hermes. Install selectively and retain control of permissions.
         </p>
 
         <div class="install-card">
           <div class="install-header">
             <span class="install-label">Quick Install (npm)</span>
-            <span class="status-indicator">v0.2.0 live on npm</span>
+            <span class="status-indicator">Published: v0.4.1</span>
           </div>
           <div class="command-box">
-            <code id="install-cmd">npx xyeena-agent@latest init</code>
+            <code id="install-cmd">npx --yes xyeena-agent@0.4.1 setup</code>
             <button id="copy-btn" class="btn-copy" type="button" aria-label="Copy installation command">Copy</button>
           </div>
           <p id="copy-status" class="copy-feedback" aria-live="polite"></p>
           <p class="install-footnote">
-            Zero runtime dependencies. Requires Node.js >= 22.14. Interactive selection wizard.
+            Requires Node.js 22.14+. Setup does not authenticate AI accounts or prove native IDE activation. The source includes unreleased functionality beyond npm v0.4.1.
           </p>
         </div>
 
@@ -62,7 +62,7 @@
       <div class="container">
         <div class="section-intro">
           <h2 id="components-title">Skills vs Harness</h2>
-          <p>Two opt-in components in one package. Install either or both. Nothing is preselected.</p>
+          <p>Two selectable components in one npm package. Host authorization and optional project Harness are separate decisions.</p>
         </div>
 
         <div class="comparison-grid">
@@ -115,7 +115,7 @@
             <div class="safeguard-num">01</div>
             <div class="safeguard-content">
               <h3>No Silent Install</h3>
-              <p>Nothing installs automatically. Interactive wizard prompts for components, runtimes, skills, and guardrails.</p>
+              <p>Installation requires explicit scope, runtime and preset selection. Review planned changes before confirming.</p>
             </div>
           </div>
 
@@ -131,7 +131,7 @@
             <div class="safeguard-num">03</div>
             <div class="safeguard-content">
               <h3>No Overwrites Without Consent</h3>
-              <p>Modified destination files are preserved. Overwriting existing project files requires the explicit <code>--force</code> flag.</p>
+              <p>Unknown and modified files are preserved by default. Managed updates require review, ownership checks and explicit consent.</p>
             </div>
           </div>
 
@@ -158,7 +158,7 @@
       <div class="container">
         <div class="section-intro">
           <h2 id="runtimes-title">Supported Runtimes</h2>
-          <p>Standardized skills and configs mapped to native agent locations.</p>
+          <p>Five host targets with separate skill loading, trust and permission models. Filesystem installation does not prove live activation.</p>
         </div>
 
         <div class="runtime-table-wrap">
@@ -188,7 +188,19 @@
                 <th scope="row">Codex</th>
                 <td><code>.agents/skills/</code></td>
                 <td><code>.codex-plugin/plugin.json</code></td>
-                <td>Universal git, node, python, nextjs</td>
+                <td>Read-only one-shot adapter</td>
+              </tr>
+              <tr>
+                <th scope="row">Gemini CLI</th>
+                <td><code>.gemini/skills/</code></td>
+                <td>Native host loading</td>
+                <td>Plan-mode one-shot path</td>
+              </tr>
+              <tr>
+                <th scope="row">Hermes</th>
+                <td><code>.hermes/skills/</code></td>
+                <td>Workspace trust required</td>
+                <td>Safe headless path</td>
               </tr>
             </tbody>
           </table>
@@ -200,9 +212,10 @@
       <div class="container">
         <div class="section-intro">
           <h2 id="commands-title">Command Reference</h2>
-          <p>Unified CLI exposed via <code>xyeena</code> or <code>npx xyeena-agent</code>.</p>
+          <p>The published CLI includes installation and diagnostics. Some orchestration and compact-layout commands are available in current source but not yet in the published npm version.</p>
         </div>
 
+        <p class="install-footnote">Published npm: 0.4.1. Live multi-host interception and the Simpul upstream worker supervisor remain subject to separate acceptance.</p>
         <div class="command-table-wrap">
           <table class="data-table">
             <thead>
@@ -216,7 +229,7 @@
               <tr>
                 <td><code>init</code></td>
                 <td><span class="badge badge-interactive">Interactive</span></td>
-                <td>Launch selection wizard for Skills, Harness, or All.</td>
+                <td>Select global or workspace skill installation, runtimes and optional project Harness.</td>
               </tr>
               <tr>
                 <td><code>doctor</code></td>
@@ -246,7 +259,7 @@
               <tr>
                 <td><code>verify</code></td>
                 <td><span class="badge badge-action">Execution</span></td>
-                <td>Execute native project test/check scripts; reports INCOMPLETE if no check ran.</td>
+                <td>Executes native project checks. Returns INCOMPLETE if no meaningful check ran.</td>
               </tr>
               <tr>
                 <td><code>run-init --goal TEXT</code></td>
@@ -284,7 +297,7 @@
     <div class="container footer-inner">
       <div class="footer-left">
         <p><strong>Xyeena Rig</strong> is the developer-tooling product under the Xyeena brand.</p>
-        <p class="license-note">Distributed under the MIT License. Zero runtime dependencies.</p>
+        <p class="license-note">Distributed under the MIT License. Privileged operations require trusted host authorization.</p>
       </div>
       <div class="footer-right">
         <a href="https://github.com/rzqllh/xyeena" target="_blank" rel="noopener noreferrer">GitHub Repository</a>

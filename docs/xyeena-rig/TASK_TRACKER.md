@@ -1,46 +1,21 @@
-# Enterprise task tracker
+# Operational task tracker
 
-Status means observed repository implementation, not generic product readiness.
+All eight engineering phases are present in `main` with automated checks. The remaining work concerns live integration and release evidence. States below describe acceptance, not implementation effort.
 
-| ID | Priority | Task | State | Source/evidence |
+| ID | Priority | Deliverable | Current state | Completion evidence |
 | --- | --- | --- | --- | --- |
-| E01-01 | P0 | Compact single root skill with internal Xyeena modules | VERIFIED | src/compact-setup.mjs, test/compact-setup.test.mjs |
-| E01-02 | P0 | Dry-run, explicit confirmation, duplicate host path handling | VERIFIED | test/compact-setup.test.mjs |
-| E01-03 | P0 | Ownership, tamper protection, idempotent backup upgrade | VERIFIED | test/compact-setup.test.mjs |
-| E01-04 | P1 | Automatic legacy migration + restore/uninstall CLI | VERIFIED | applyLegacyMigration, rollbackLegacyMigration, test/compact-setup.test.mjs |
-| E02-01 | P0 | Compact native orchestrator fallback | CODED | src/orchestrator.mjs |
-| E02-02 | P1 | Superior/Superpowers candidate detection | VERIFIED | src/enterprise-policy.mjs, test/enterprise-policy.test.mjs |
-| E02-03 | P0 | Host-native plugin/extension inventory and verification | VERIFIED | src/skill-hosts.mjs, src/workspace-skills.mjs |
-| E02-04 | P1 | Semantic local skill match / deterministic fallback | VERIFIED | src/workspace-skills.mjs, test/workspace-skills.test.mjs |
-| E04-01 | P0 | Superpowers bootstrap/lifecycle arbitration | VERIFIED | src/enterprise-policy.mjs, arbitrateWorkflow |
-| E05-01 | P0 | Always-core declarative policy, contextual proposals | VERIFIED | src/enterprise-policy.mjs, src/rig-harness-lifecycle.mjs |
-| E05-02 | P0 | Executable Harness pre/post tool enforcement | VERIFIED | HarnessExecutionGate, preToolGate, postToolGate |
-| E06-01 | P0 | Verified-only Simpul/native backend preference, inline fallback | CI_PASS | src/enterprise-policy.mjs, selectSubagentBackend |
-| E06-02 | P0 | Real Simpul MCP transport / recovery / cancellation | INTEGRATION_VERIFIED; LIVE_BLOCKED | createSimpulMcpAdapter, FastMCP candidate signatures submit_goal, get_run, get_task_evidence, cancel_run |
-| E06-04 | P0 | Real-adapter-only dispatch contract, bounded execution and independent verification | CI_PASS | src/live-backend.mjs; test/live-backend.test.mjs |
-| E06-03 | P0 | Native IDE subagent live invocation and isolation | INTEGRATION_VERIFIED | createNativeSubagentAdapter, real host workerId, non-nested, cancellation API |
-| E07-01 | P0 | Independent evidence verification on task graph | CI_PASS | src/task-runner.mjs, postToolGate evidence checks |
-| E07-02 | P1 | Cross-host checkpoint, replay, loop breaker | CI_PASS | DurableCheckpointStore, autoRetryReview, cancelSignal |
-| E08-01 | P0 | CI test/pack/consumer matrix | CI_PASS | GitHub Actions matrix: Windows, macOS, Ubuntu on Node 22.14 & 24 all pass |
-| E08-02 | P0 | Actual five-host reload/activation acceptance | LIVE_BLOCKED | Needs configured physical test machines for live reloads |
+| OPS-01 | P0 | Real Simpul execution supervisor integration | BLOCKED | Authenticated submit → worker start → terminal result → cancellation/timeout and evidence |
+| OPS-02 | P0 | Antigravity native host acceptance | LIVE PENDING | Reload, skill routing, user approval and real tool-interception observation |
+| OPS-03 | P0 | Codex native host acceptance | LIVE PENDING | Skill activation, restricted execution and actual permission boundary |
+| OPS-04 | P0 | Claude Code native host acceptance | LIVE PENDING | Host trust, skill invocation, restricted execution and recovery |
+| OPS-05 | P0 | Gemini CLI native host acceptance | LIVE PENDING | Skill activation, Plan-mode contract and permission behavior |
+| OPS-06 | P0 | Hermes native host acceptance | LIVE PENDING | Trusted workspace, selected skills, safe execution and cancellation |
+| OPS-07 | P0 | Trusted host consent and tool interception | LIVE PENDING | Human approval provenance + blocked negative cases on each eligible runtime |
+| OPS-08 | P1 | Acceptance and security review sign-off | PENDING | Exact commit and release-artifact evidence; unresolved findings addressed |
+| OPS-09 | P1 | Release candidate and npm publication | NOT AUTHORIZED | Versioned immutable release, provenance, registry smoke and separate approval |
 
-## Chat-to-engineering reconciliation (R01–R15)
+## Completion discipline
 
-The full 1:1 status and acceptance crosswalk lives in [REQUIREMENTS_TRACEABILITY.md](REQUIREMENTS_TRACEABILITY.md). The entries below close documentation gaps surfaced by the audit; they are **not completed features**.
+For each operational item, add the test environment, host version, dated evidence, acceptance verdict, and known limitations to [Validation](EVIDENCE.md) and update [Acceptance](ACCEPTANCE_MATRIX.md). Fixture tests cannot close a live task. Privileged actions must remain fail-closed until a verified host boundary is available.
 
-| ID | Priority | Additional tracked work | State | Why open |
-| --- | --- | --- | --- | --- |
-| E01-05 | P1 | Legacy slash aliases/skill-ID compatibility after compact migration; collision-safe cutover | VERIFIED | resolveSkillAlias, command aliases in SKILL.md, test/compact-setup.test.mjs |
-| E01-06 | P1 | Owned uninstaller and automated rollback/restore with fault-injection tests | VERIFIED | uninstallCompactSetup, rollbackLegacyMigration journal & safety backup tests |
-| E02-05 | P0 | Enumerate plugin/extension registries and effective host trust, enablement, provenance, platform, precedence | VERIFIED | R01 / A21 — pluginLocations & workspace-skills discovery |
-| E02-06 | P0 | Capability dedup, dependency composition, conflict resolver, deterministic minimal skill load | VERIFIED | R02 / A22 — closure check, collision precedence & shadowed list |
-| E04-02 | P0 | Superior specialist policy vs Superpowers lifecycle/bootstrap; no overlapping workflow owners | VERIFIED | R03 / A23 — arbitrateWorkflow single-governor and deduplication tests |
-| E04-03 | P0 | Native parity fallback when third-party provider missing, disabled, unhealthy or untrusted | VERIFIED | R04 / A24 — NATIVE_EQUIVALENCE, nativeFallbackForSkill, all 8 provider cases |
-| E05-03 | P0 | Harness gates propagate to workers and revalidate before each write/tool action | VERIFIED | R05 / A25 — delegateWorker non-escalation & audit test |
-| E06-05 | P0 | Hard per-run token/cost/concurrency limits and provider usage accounting | VERIFIED | R08 / A26 — ResourceBudgetLedger limit enforcement tests |
-| E07-03 | P0 | Durable task DAG checkpoints, idempotent resume/lease, bounded retry, crash cleanup across hosts | VERIFIED | R09 / A27 — DurableCheckpointStore, crash-safe resume, unconsumed result recovery |
-| E07-04 | P0 | Real host permission/verification evidence chain with independent auditor | VERIFIED | R10 / A28 — Allow Once/Deny/Answer Questions and boundary tests |
-| E08-03 | P1 | Full red-team/security, plugin spoofing and multi-runtime end-to-end test suite | VERIFIED | test/security-hardening.test.mjs (prompt injection, null-byte traversal, secret redaction, anti-recursion, multi-runtime) |
-| E08-04 | P1 | Release notes, npm artifact verification, version bump, signed verdict, authorized publish | INTEGRATION_VERIFIED | evidence-p08.md, PR_INDEX.md, consumer smoke, tarball inspection, QA verdict CONDITIONAL GO |
-
-The CI PASS in E08-01 covers repository source and packed smoke only; E08-02, E08-03 and E08-04 remain distinct release gates. Never mark an E item COMPLETE from an R checkbox alone.
+Engineering coverage: [Requirements R01–R15](REQUIREMENTS_TRACEABILITY.md) and [Roadmap](ROADMAP.md).

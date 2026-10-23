@@ -1,3 +1,15 @@
+# Changelog
+
+All versions listed as released refer to published npm artifacts. Repository source changes are not published until a matching release is authorized.
+
+## Unreleased — source after 0.4.1
+
+- Add opt-in compact skill installation, ownership-aware migration and restore workflows.
+- Extend host skill/plugin discovery, dependency closure, provider arbitration and native fallback.
+- Add guarded execution adapter interfaces, authorization and verification contracts, budget controls and durable task recovery.
+- Include contract tests and cross-platform source validation while retaining separate live-acceptance gates for host interception and the Simpul supervisor.
+- Consolidate maintained product documentation and release-readiness records; retire obsolete planning material.
+
 ## [0.4.1] - Installer status and routing corrections
 
 - Global copy installation now verifies matching packaged skills for each selected AI host separately; reports real paths and counts without claiming native AI activation.
@@ -38,16 +50,12 @@
 - First Rig-branded npm release candidate: version `0.2.1` aligns npm, CLI, lockfile and native plugin manifest versions; historical `0.2.0` remains unchanged.
 - Static landing page in `site/` with zero runtime dependencies, light/dark theme support, accessible contrast, and 1-click install command copy.
 - Comprehensive non-TTY `--help` and `-h` support for all CLI subcommands (`init`, `doctor`, `harness`, `audit`) returning exit code 0.
-- Public surface audit, redesign plans, and release-day bump ledger in `docs/audit/`.
-- Isolated `site/` and `docs/audit` from the npm publication tarball via `package.json` files configuration.
+- Maintained documentation, CLI references and release communications were updated.
+- Website assets remain separate from the npm distribution tarball.
 - Removed marketing buzzwords and unnecessary punctuation across public CLI wizard prompts and documentation.
 - Clarified non-TTY error diagnostics in CLI selection to explicitly guide users toward `--guards` for CI Harness workflows.
 - Linked capability-contract, orchestration, and runtime-adapters specifications in `docs/ARCHITECTURE.md`.
 
-- Adopt **Xyeena Rig** as the developer-tooling product identity under the Xyeena parent brand ([PR #4](https://github.com/rzqllh/xyeena/pull/4)).
-- Rebrand human-facing CLI/setup text, source plugin display labels and npm package description while preserving the package name `xyeena-agent`, CLI aliases, Skill IDs and installed file paths.
-- Refresh public documentation with [Getting started](docs/GETTING-STARTED.md), [CLI reference](docs/CLI-REFERENCE.md) and reconciled release records.
-- First Rig-branded npm release candidate: version `0.2.1` aligns npm, CLI, lockfile and native plugin manifest versions; historical `0.2.0` remains unchanged.
 
 ## 0.2.0: Skills + Harness upgrade
 

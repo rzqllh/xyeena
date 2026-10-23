@@ -1,97 +1,71 @@
-# Xyeena Rig CLI reference
+# CLI reference
 
-The npm package is named **`xyeena-agent`** and exposes both `xyeena` and `xyeena-agent` executables.
+Commands can be invoked with `npx --yes xyeena-agent@0.4.1` for the published package or `node bin/xyeena.mjs` from a source checkout. Some documented source commands postdate the published package; they are marked **source**.
 
-```bash
-npx xyeena-agent@latest help
-npx xyeena-agent@latest version
-```
-
-Use `npx xyeena-agent@latest <command>` for the subcommands listed below. Command names remain compatible.
-
-## Beginner setup
-
-The recommended public command for humans is simply `npx --yes xyeena-agent setup`. It asks for scope, runtime, preset, mode, optional project Harness, and confirmation.
-
-| Flag | Values | Default / notes |
-| --- | --- | --- |
-| `--scope` | `workspace`, `global` | Workspace for noninteractive backward compatibility; wizard asks explicitly |
-| `--mode` | `copy`, `symlink` | Copy |
-| `--runtime` | `antigravity`, `gemini`, `codex`, `claude`, `hermes`, comma-separated | Required noninteractively |
-| `--preset` | `essential`, `balanced`, `complete` | Essential |
-| `--harness` | `none`, `essential`, `full` | None; **global scope requires none** |
-| `--dry-run` | no value | Preview with no writes |
-| `--yes` | no value | Explicit confirmation for unattended changes |
-| `--update` | no value | Back up and replace existing packaged conflicts |
-
-Workspace copy retains the v0.3.0 install/rollback behavior. Symlinks use a home-persistent content snapshot, not npm cache; previous Xyeena-managed links can be updated with `--update`. The portable global/symlink method does not currently support the workspace-copy rollback journal and must be manually restored from the displayed backup directory.
-
-For exact native global destinations and setup examples: [Global installation guide](GLOBAL-INSTALL.md), [Windows beginner guide](INSTALL-WINDOWS-PEMULA.md).
-
-## Conflict inspection and post-install health
+## Setup and inspection
 
 | Command | Effect |
 | --- | --- |
-| `setup diff --runtime HOST --preset PRESET --file PATH` | Bounded local text diff for one listed conflicting file; read-only |
-| `setup --runtime HOST --preset PRESET --replace-files PATH[,PATH] --dry-run` | Preview specifically selected conflict updates |
-| `setup --runtime HOST --preset PRESET --replace-files PATH[,PATH] --yes` | Back up then replace only selected conflicts |
-| `setup backups` | List recent backup IDs; old journal-less backups marked as manual recovery |
-| `setup rollback --id ID --dry-run` | Integrity-check preview without modifying files |
-| `setup rollback --id ID --yes` | Explicit safe restore only if no subsequent file edits occurred |
-| `setup check --runtime HOST` | Report local skill eligibility and host detection clues; not live activation |
+| `setup` | Interactive installation wizard |
+| `setup --scope workspace|global --runtime HOST --preset PRESET --dry-run` | Read-only installation preview |
+| `setup ... --yes` | Confirm the proposed installation |
+| `setup check --runtime HOST` | Inspect installed host-visible skills; not proof of live activation |
+| `setup diff --runtime HOST --preset PRESET --file PATH` | Preview a bounded managed-file conflict |
+| `setup backups` | List recorded backup journals |
+| `setup rollback --id ID --dry-run` | Inspect a supported restore operation |
+| `setup rollback --id ID --yes` | Apply an ownership-checked restore |
+| `setup compact --runtime HOST --preset PRESET --dry-run` | **Source:** preview one host-visible Xyeena skill entry |
+| `setup compact --runtime HOST --preset PRESET --yes` | **Source:** install that compact entry |
 
-Rollback journaling is available for *new* installations through the updated installer. Backups created by older candidates without a journal are not automatically restored; recovery remains manual. The rollback command does not remove entire skill directories or touch unrelated third-party skills. All commands respect project path and symlink safeguards.
+The `--runtime` value accepts supported host names (comma-separated where permitted). The setup preset is `essential`, `balanced`, or `complete`. Global installation writes into user-owned host skill directories. Project Harness remains a separate opt-in.
 
-## Installation
+Legacy selective installation remains supported:
 
-| Command | Behavior |
-| --- | --- |
-| `init` | Interactive, selection-first installation |
-| `init --components skills --runtime codex --skills xyeena-interface --yes` | Install Skills for Codex, plus mandatory dependencies |
-| `init --components harness --guards 00-core --yes` | Install Harness Core guardrails only |
-| `init --components all --runtime all --skills all --guards all --dry-run` | Preview full installation without writes |
-| `doctor` | Check the existing Agent Skills installation |
-| `harness doctor` | Inspect Harness project state independently |
-
-**Non-interactive flags:** `--components skills|harness|all` is required; Skills require `--runtime` and `--skills`, Harness requires `--guards`. Select multiple values with commas or explicitly select `all`. Use `--yes` to approve writes, `--dry-run` to preview, `--dir PATH` to choose a project, and `--force` only to deliberately overwrite modified destinations.
-
-## Harness and verification
-
-| Command | Meaning |
-| --- | --- |
-| `audit` / `harness audit` | Read-only project findings |
-| `scan` / `harness scan` | Read-only scan; returns nonzero on blockers |
-| `risk` / `harness risk` | Explain change risk |
-| `changed` / `harness changed` | Inspect changed files |
-| `adapters` / `harness adapters` | Inspect project adapters |
-| `verify` / `harness verify` | **Run** supported project-native checks |
-| `check --source PATH` | Validate source capability manifests |
-| `eval` | Run deterministic capability evaluations |
-
-Harness commands support `--dir PATH` and `--base REF` for Git comparisons; `--evidence` opts in to persistent verification evidence. `audit` and `scan` are read-only. `verify` can execute arbitrary configured project scripts and should only be used on a project you trust. Missing native checks result in **INCOMPLETE**, not an invented PASS.
-
-```bash
-npx xyeena-agent@latest changed --base origin/main
-npx xyeena-agent@latest adapters
-npx xyeena-agent@latest verify --evidence
+```sh
+node bin/xyeena.mjs init --components skills --runtime codex --skills xyeena-interface --yes
+node bin/xyeena.mjs init --components harness --guards 00-core,60-security --yes
 ```
 
-The public bridge intentionally does not expose upstream Harness `init` or `install-hook`.
+Never assume a `--dry-run` result granted permission for a later write.
 
-## Agent capabilities
+## Inventory and routing
 
-| Command | Meaning |
+| Command | Effect |
 | --- | --- |
-| `list` | List packaged skill/capability identifiers |
-| `resolve --prompt TEXT --state TRIAGE` | Inspect capability routing |
-| `run-init --goal TEXT` | Initialize a run journal in the selected project |
+| `skills matrix` | Per-host filesystem inventory |
+| `skills discover --runtime HOST` | Read-only skill discovery |
+| `route --runtime HOST --prompt TEXT` | Select eligible skill candidates without a model call |
+| `orchestrate preview --runtime HOST --goal TEXT` | **Source:** inspect workflow plan and constraints |
+| `orchestrate run --runtime HOST --goal TEXT --yes` | **Source:** new, restricted read-only one-shot agent session |
+| `host preview / host run` | Host-specific one-shot preview or consent-gated invocation |
+| `sdk preview / sdk run` | Optional Antigravity SDK bridge, separate Python environment required |
 
-```bash
-npx xyeena-agent@latest resolve --prompt "review auth changes" --state TRIAGE
-```
+Orchestration and host adapters do not inject into a running IDE conversation. Detected skill files do not prove host activation. Execution may incur provider usage.
 
-## Compatibility
+## Harness and diagnostics
 
-Do not rename the package to `xyeena-rig` or rename any `xyeena-*` Skill identifiers. There is one npm package, including Harness. Rig branding shipped in the `0.2.1` release line; it does not change historical `0.2.0`.
+| Command | Effect |
+| --- | --- |
+| `list` | List packaged capabilities |
+| `doctor` | Inspect installation details |
+| `harness doctor` | Inspect Harness configuration |
+| `audit` | Read-only repository assessment |
+| `scan` | Check project invariants, nonzero exit on blockers |
+| `risk` / `changed` | Assess Git change scope |
+| `adapters` | Inspect project adapter selection |
+| `verify` | **Executes** native project checks; may create artifacts |
+| `check --source .` | Validate packaged skill/contracts |
+| `eval` | Run deterministic evaluator fixtures |
+| `guided preview/install/status/uninstall` | Manage optional Antigravity Guided hooks |
 
-For setup walkthroughs, see [Getting started](GETTING-STARTED.md); for product naming, see [Branding](BRANDING.md).
+`verify` reports INCOMPLETE if no meaningful native check ran; it does not manufacture PASS. Guided hooks are separate from skill and Harness installation.
+
+## Operational safety
+
+- Destructive, external, and privileged actions require authority from the actual host.
+- Caller-supplied approval metadata is not valid human consent.
+- Runtime tool interception is only effective when a supported host integration is installed and verified.
+- Third-party skill/plugin eligibility depends on host trust and runtime state.
+- Token, cost, and worker limits are constraints on a usable adapter, not a guarantee that any host supports delegation.
+
+See [Getting started](GETTING-STARTED.md), [Runtime adapters](RUNTIME-ADAPTERS.md), [Operator runbook](xyeena-rig/RUNBOOK.md), and [Security](../SECURITY.md).

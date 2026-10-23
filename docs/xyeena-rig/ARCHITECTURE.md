@@ -1,90 +1,47 @@
-# Architecture — Enterprise Xyeena Rig
+# Xyeena Rig system design
 
-**Current Verified Baseline:** `0.4.1`  
-**Target Release Candidate:** `0.5.0`  
-**Governing Component:** `xyeena-rig`  
+## Boundary model
 
----
+Xyeena Rig is a portable orchestration and skill toolkit. The host runtime retains authority over tool execution, authentication, user trust and live model sessions.
 
-## 1. System Overview & Layer Architecture
-
-```mermaid
-graph TD
-  User["Operator / Developer"] --> Host["Host Runtime (Antigravity / Codex / Claude / Gemini / Hermes)"]
-  Host --> Governor["Single Workflow Governor: xyeena-rig"]
-  
-  subgraph "Discovery & Arbitration Layer"
-    Governor --> Disc["Unified Skill & Plugin Discovery (src/workspace-skills.mjs, src/skill-hosts.mjs)"]
-    Disc --> Arb["Provider Arbitrator (src/enterprise-policy.mjs)"]
-    Arb --> ExtSP["Superpowers (Methodology)"]
-    Arb --> ExtSup["Superior (Specialist Quality)"]
-    Arb --> Native["Native Parity Fallback (NATIVE_EQUIVALENCE)"]
-  end
-
-  subgraph "Harness Enforcement Layer"
-    Governor --> Gate["HarnessExecutionGate (src/rig-harness-lifecycle.mjs)"]
-    Gate --> Pre["Pre-Tool Gate: Scope Boundary, Destructive & External Permission, Anti-Loop"]
-    Gate --> Post["Post-Tool Gate: Independent Verification & Secret Sanitization"]
-    Gate --> WorkerPol["Worker Policy Propagation (Strict Non-Escalation & Anti-Recursion)"]
-  end
-
-  subgraph "Execution & Reliability Layer"
-    Governor --> Runner["Task Graph Runner (src/task-runner.mjs)"]
-    Runner --> Checkpoint["DurableCheckpointStore (Atomic Checkpoints & Smart Resume)"]
-    Runner --> Budget["ResourceBudgetLedger (Token, Cost & Concurrency Ceilings)"]
-    Runner --> Dispatcher["Subagent Dispatcher (src/live-backend.mjs)"]
-    Dispatcher --> Simpul["Simpul FastMCP Adapter"]
-    Dispatcher --> NativeWorker["Host-Native Subagent Adapter"]
-    Dispatcher --> Inline["Safe Inline Executor"]
-  end
+```text
+User / host
+    ↓  host trust, native permissions
+Skill / plugin inventory → dependency and eligibility resolver
+    ↓
+Single Xyeena workflow governor
+    ↓  optional specialist skills or native fallback
+Harness preflight and host-backed execution gates
+    ↓  only when real adapter and authority are available
+Inline executor / host-native worker / optional Simpul MCP
+    ↓
+Independent acceptance checker → checkpoint / review / guarded resume
 ```
 
----
+## Implementation
 
-## 2. Core Architectural Pillars
+| Layer | Files | Contract |
+| --- | --- | --- |
+| Discovery | `src/skill-hosts.mjs`, `src/workspace-skills.mjs` | Enumerate bounded host locations; distinguish detected from enabled/trusted |
+| Arbitration | `src/enterprise-policy.mjs`, `src/orchestrator.mjs` | Route eligible capabilities under one workflow owner |
+| Harness | `src/rig-harness-lifecycle.mjs` | Enforce scope and acceptance only when trusted host integration is present |
+| Workers | `src/live-backend.mjs` | Probe actual execution readiness; use real worker handles and fail safely |
+| Recovery | `src/task-runner.mjs` | DAG/checkpoint, bounded retry, lease control and reconciliation |
+| Install | `src/setup*.mjs`, `src/compact-setup.mjs` | Preview, ownership-checked updates, backups and rollback |
 
-### A. Single Workflow Governor
-- `xyeena-rig` retains absolute controller authority over workflow state, task graphs, permission gates, and verification claims.
-- Superpowers supplies compatible software-development methodologies (`using-git-worktrees`, `writing-plans`, `subagent-driven-development`).
-- Superior supplies specialized engineering quality capabilities (`superior-logic`, `superior-code-review`, `superior-testing`).
-- If either external provider is absent, untrusted, disabled, or fails mid-run, Xyeena Native automatically takes over with zero disruption (`NATIVE_EQUIVALENCE`).
+Third-party Superpowers and Superior Skills are optional. They supply eligible methodologies or specialist knowledge, not alternate workflow owners. Simpul is a separate optional execution transport whose upstream supervisor is not yet live-accepted.
 
-### B. Executable Harness Enforcement
-- Replaces passive declarative guidance with an active execution boundary via `HarnessExecutionGate`.
-- **Pre-Tool Gate:**
-  - Lexical and physical workspace boundary containment (`assertWorkspaceBoundary`).
-  - Null-byte path injection protection (`\0`).
-  - Destructive operations (`rm -rf`, `reset --hard`) blocked with `DENY` or interactive `ANSWER_QUESTION`.
-  - External operations (`git push`, `npm publish`) require explicit authorization or single-use `ALLOW_ONCE` tokens.
-  - Anti-loop detector halts after 3 consecutive identical tool failures.
-- **Post-Tool Gate:**
-  - Self-certified model completion (`status: PASS`) without independent verifier proof is marked invalid.
-  - Secret credentials (PATs, API keys, private keys, Bearer tokens) are redacted from all audit entries.
-- **Worker Policy Propagation:**
-  - Child workers inherit only a subset of parent permissions (`parent && delegated`).
-  - Strict anti-recursion guard prevents workers at depth >= 1 from creating nested sub-workers (`noNestedDelegation`).
+## Security and correctness invariants
 
-### C. Live Backend Dispatching & Resource Budgets
-- **Simpul FastMCP Contract:**
-  - Connects to `SubagentBridge` over FastMCP transport (`submit_goal`, `get_task_evidence`, `get_model_usage`, `cancel_run`).
-  - Probes health and non-nested execution boundaries before dispatch.
-- **Host-Native Subagents:**
-  - Dispatches isolated workers with real worker IDs and clean abort signal propagation.
-- **Resource Budget Ledger:**
-  - Tracks token count, micro-dollar cost, and concurrency ceilings per orchestration run.
-  - Serializes unisolated writes to avoid race conditions and file collisions.
+1. Host-discovered content cannot grant authority.
+2. Human consent must originate in a trusted host boundary; a self-issued token is insufficient.
+3. Unsupported privileged execution fails closed.
+4. Concurrent shared writes are serialized unless independent isolation is established.
+5. Worker terminal state and identity come from the execution adapter.
+6. A model-generated PASS claim or arbitrary evidence file cannot satisfy an independent acceptance criterion.
+7. Resume and rollback cannot silently replay unauthorized side effects.
+8. Installer operations preserve files without demonstrable Xyeena ownership.
 
-### D. Durable Checkpoints & Crash Recovery
-- Task DAG checkpoints are atomically saved to `.xyeena/runs/<runId>/dag-checkpoint.json` on every state transition.
-- **Smart Resume Suggestion:** Formats structured human-readable recommendations showing completed tasks, pending work, and exact continuation commands.
-- **Unconsumed Worker Result Reclaiming:** If an orchestrator process is killed after a worker completes, the runner recovers the worker's evidence artifact from disk without re-dispatching.
-- **Anti-Loop Review Cycle Breaker:** Bounded review/repair iterations terminate oscillating reviews after 3 cycles, marking the task `BLOCKED` with actionable remediation.
+## Deployment limitations
 
-### E. Compact Single-Root Installer Layout
-- Host-visible layout: exposes one single root skill: `<skills-root>/xyeena-rig/SKILL.md`.
-- All 19 native Xyeena modules are organized as internal reference documents under `references/skills/xyeena-*/SKILL.md`.
-- **Legacy Migration & Compatibility:**
-  - `resolveSkillAlias`: automatically maps legacy slash commands (`/xyeena-orchestrate`, `/xyeena-debug`) to their compact reference file.
-  - Ownership-aware migration checks `.xyeena-managed.json` markers and SHA-256 byte fingerprints.
-  - User notes, modified skills, and third-party skills are strictly preserved in place.
-  - Timestamped backups and `rollback.json` journals ensure atomic rollback to original flat layouts if desired.
+Automated contracts and CLI/sandbox smoke tests pass on supported CI operating systems. Their results are not evidence that each IDE's live tool interception, worker lifecycle and approval dialogs have been exercised. See [Runtime adapters](../RUNTIME-ADAPTERS.md), [Security](../../SECURITY.md) and [Acceptance](ACCEPTANCE_MATRIX.md).
