@@ -293,3 +293,23 @@ test('Windows Antigravity hooks avoid quoted paths in all managed command entrie
     }
   } finally { cleanup(cwd); }
 });
+
+test('agy Windows native command runs from .agents even with spaces in workspace path', { skip: process.platform !== 'win32' }, () => {
+  const temp=fixture(), cwd=path.join(temp,'Workspace With Spaces');
+  fs.mkdirSync(cwd);
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    const command=read(config(cwd))['xyeena-rig-guided'].PreToolUse[0].hooks[0].command;
+    assert.equal(command,'node ../.xyeena/hooks/antigravity-guided.mjs PreToolUse');
+    const words=command.split(' ');
+    const result=spawnSync(words[0],words.slice(1),{
+      cwd:path.join(cwd,'.agents'),
+      input:JSON.stringify({workspacePaths:[cwd],toolCall:{
+        name:'run_command',args:{CommandLine:'git status --short'}
+      }}),
+      encoding:'utf8',timeout:3000
+    });
+    assert.equal(result.status,0,result.stderr);
+    assert.equal(JSON.parse(result.stdout).decision,'force_ask');
+  } finally { cleanup(temp); }
+});
