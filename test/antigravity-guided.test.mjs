@@ -150,14 +150,14 @@ test('guided status distinguishes installed configuration from unproven native e
     assert.equal(before.enabled,false);
     assert.equal(before.hostActivation,'UNVERIFIED');
     assert.equal(before.hostEnforcement,'UNVERIFIED');
-    assert.equal(before.securityEnforced,false);
+    assert.equal(before.securityEnforcementVerified,false);
     guidedCommand('install',{cwd,yes:true});
     const after=guidedCommand('status',{cwd});
     assert.equal(after.installed,true);
     assert.equal(after.enabled,true);
     assert.equal(after.upgradeAvailable,false);
     assert.equal(after.hostEnforcement,'UNVERIFIED');
-    assert.equal(after.securityEnforced,false);
+    assert.equal(after.securityEnforcementVerified,false);
   } finally { cleanup(cwd); }
 });
 test('guided probe needs explicit consent and a current installed PreToolUse runner', () => {
@@ -182,7 +182,7 @@ test('guided native hook probe starts awaiting callback without modifying root i
     assert.equal(result.state,'AWAITING_CALLBACK');
     assert.equal(result.hostEnforcement,'UNVERIFIED');
     assert.equal(guidedCommand('probe',{cwd,probeAction:'status'}).state,'AWAITING_CALLBACK');
-    assert.equal(guidedCommand('status',{cwd}).securityEnforced,false);
+    assert.equal(guidedCommand('status',{cwd}).securityEnforcementVerified,false);
     assert.equal(fs.existsSync(path.join(cwd,'.gitignore')),false);
     const probeDir=path.join(cwd,'.xyeena','guided','probe');
     assert.equal(fs.readFileSync(path.join(probeDir,'.gitignore'),'utf8'),'*\n!.gitignore\n');
@@ -216,7 +216,7 @@ test('hook runner records private bounded callback receipt without storing tool 
     const normal=guidedCommand('status',{cwd});
     assert.equal(normal.hostActivation,'CALLBACK_OBSERVED_UNATTESTED');
     assert.equal(normal.hostEnforcement,'UNVERIFIED');
-    assert.equal(normal.securityEnforced,false);
+    assert.equal(normal.securityEnforcementVerified,false);
     const persisted=fs.readFileSync(path.join(cwd,'.xyeena','guided','probe','state.json'),'utf8');
     assert.ok(!persisted.includes('SECRET_NEVER_RECORD_THIS'));
     assert.ok(!persisted.includes(cwd));

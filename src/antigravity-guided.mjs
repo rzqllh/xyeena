@@ -168,7 +168,7 @@ export function guidedCommand(command, { cwd = process.cwd(), yes = false, id = 
       config: plan.f.config, upgradeAvailable: plan.changed,
       hostActivation: probe.state === 'CALLBACK_OBSERVED_UNATTESTED'
         ? 'CALLBACK_OBSERVED_UNATTESTED' : 'UNVERIFIED',
-      hostEnforcement: 'UNVERIFIED', securityEnforced: false,
+      hostEnforcement: 'UNVERIFIED', securityEnforcementVerified: false,
       probe: probe.state,
       note: 'Filesystem configuration is not proof that Antigravity IDE invoked or enforced a hook.' };
   }
