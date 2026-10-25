@@ -69,3 +69,9 @@ Orchestration and host adapters do not inject into a running IDE conversation. D
 - Token, cost, and worker limits are constraints on a usable adapter, not a guarantee that any host supports delegation.
 
 See [Getting started](GETTING-STARTED.md), [Runtime adapters](RUNTIME-ADAPTERS.md), [Operator runbook](xyeena-rig/RUNBOOK.md), and [Security](../SECURITY.md).
+
+## Resource limits and native host hooks (current source)
+
+`host run --runtime hermes --max-turns N --token-limit N --yes` sets Hermes one-shot maximum agent iterations and a settlement-only reported usage ceiling. Defaults are 2 turns and 50,000 reported tokens; overruns and missing usage fail the response, **not** the provider bill. Numeric limits are validated before process launch.
+
+`guided preview` / `guided install --yes` now include a native Antigravity `PreToolUse` hook in the managed hook group. Real host activation must be verified independently. The host decides approval; Xyeena never auto-approves or silently overrides permissions.

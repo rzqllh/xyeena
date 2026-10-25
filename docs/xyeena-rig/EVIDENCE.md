@@ -141,3 +141,7 @@ SubagentBridge workspace access blocked by agent policy. No live MCP transport. 
 - **Transparent shell command interception:** LIVE_PENDING (requires project-level `xyeena guided install`).
 
 
+
+## Source changes pending operational live validation
+
+The code in the pending feature PR adds the opt-in Antigravity native `PreToolUse` hook and bounds Hermes CLI `--max-turns` with a configured reported-token settlement ceiling. CI tests cover simulated hook payloads, workspace write deny, symlink target rejection, fresh confirmation for shell, invalid payload fail-closed, and missing/oversized Hermes usage. These are contract tests, **not** an assertion that the user's actual Antigravity hook installation has been enabled or a guarantee that no Hermes tokens are spent beyond the ceiling. The commit must pass CI and be reviewed before these capabilities are considered integrated.
