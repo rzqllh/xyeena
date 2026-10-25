@@ -260,7 +260,7 @@ test('Windows Antigravity hooks avoid quoted paths in all managed command entrie
     ];
     if(process.platform==='win32'){
       for(const command of commands){
-        assert.match(command,/^node \.xyeena\/hooks\/antigravity-guided\.mjs (SessionStart|PreInvocation|PreToolUse|PostToolUse|Stop)$/);
+        assert.match(command,/^node \.\.\/\.xyeena\/hooks\/antigravity-guided\.mjs (SessionStart|PreInvocation|PreToolUse|PostToolUse|Stop)$/);
         assert.ok(!command.includes('"'), 'Antigravity Windows CLI must not receive quoted executable/argument paths');
         assert.ok(!command.includes(cwd), 'Command must not include a spaced absolute workspace path');
         assert.ok(!command.includes('Program Files'), 'Command must not embed a quoted Program Files executable');
@@ -271,13 +271,25 @@ test('Windows Antigravity hooks avoid quoted paths in all managed command entrie
     assert.equal(guidedCommand('status',{cwd}).installed,true);
     const active=read(config(cwd))['xyeena-rig-guided'];
     assert.equal(active.PreToolUse[0].hooks[0].command,group.PreToolUse[0].hooks[0].command);
-    const runner=path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs');
-    const result=spawnSync('node',[runner,'PreToolUse'],{
+    const actualCommand = active.PreToolUse[0].hooks[0].command;
+    // Emulate agy CLI 1.4.7's REAL hook cwd: <workspace>/.agents (not
+    // the PowerShell invocation's current workspace directory).
+    const runnerCwd=path.join(cwd,'.agents');
+    const runnerArgs=actualCommand.split(' ');
+    const cmd = process.platform === 'win32' ? runnerArgs[0] : process.execPath;
+    const args = process.platform === 'win32'
+      ? runnerArgs.slice(1)
+      : [path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs'),'PreToolUse'];
+    const result=spawnSync(cmd,args,{
       input:JSON.stringify({workspacePaths:[cwd],toolCall:{
-        name:'run_command',args:{CommandLine:'Get-Location',Cwd:cwd}
-      }}),encoding:'utf8',cwd
+        name:'run_command',args:{CommandLine:'Get-Location'}
+      }}),encoding:'utf8',cwd:runnerCwd
     });
     assert.equal(result.status,0,result.stderr);
     assert.equal(JSON.parse(result.stdout).decision,'force_ask');
+    if (process.platform === 'win32') {
+      assert.equal(args[0], '../.xyeena/hooks/antigravity-guided.mjs');
+      assert.equal(path.resolve(runnerCwd,args[0]),path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs'));
+    }
   } finally { cleanup(cwd); }
 });

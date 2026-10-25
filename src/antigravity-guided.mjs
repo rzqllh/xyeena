@@ -79,13 +79,14 @@ export function hookPlan({ cwd = process.cwd(), action = 'install' } = {}) {
   const installedScript = fs.existsSync(f.script) ? fs.readFileSync(f.script, 'utf8') : null;
   if (manifest && installedScript !== null && hash(installedScript) !== manifest.scriptHash)
     throw new Error('Managed hook runner changed; refusing overwrite');
-  // agy CLI on Windows can treat quotes in the command field as literal
-  // executable characters. Avoid both quoted absolute paths (Program Files,
-  // user profile containing spaces) in the installed hook command.
-  // This is workspace-scoped: launch agy from the workspace root.
-  // Node must be on the trusted host PATH; the hook never uses a shell override.
+  // agy CLI 1.4.7 runs workspace hook commands from the .agents directory
+  // containing hooks.json (observed in a Windows live session). Quoted absolute
+  // paths are misparsed by its cmd launcher when the profile contains spaces.
+  // Keep the command quote-free and resolve the script from .agents/ instead.
+  // IDE hook activation is a separate unsupported/unverified host boundary.
+  // Node must be on the trusted host PATH; do not auto-approve on failure.
   const command = process.platform === 'win32'
-    ? 'node .xyeena/hooks/antigravity-guided.mjs'
+    ? 'node ../.xyeena/hooks/antigravity-guided.mjs'
     : quote(process.execPath) + ' ' + quote(f.script);
   const proposed = {
     SessionStart: [{ type: 'command', command: command + ' SessionStart', timeout: 3 }],
