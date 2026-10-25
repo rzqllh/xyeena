@@ -173,6 +173,50 @@ export function beforeInvocation(root, payload) {
   atomicJson(statePath(root, payload.conversationId), state);
   return { injectSteps: [{ ephemeralMessage: notice }] };
 }
+
+const scopedWrites = new Set(['write_to_file', 'replace_file_content', 'multi_replace_file_content']);
+const readOnlyTools = new Set(['view_file', 'list_dir', 'find_by_name', 'grep_search']);
+const denyHook = reason => ({ decision: 'deny', reason });
+function safeHostTarget(root, target) {
+  if (typeof target !== 'string' || !target.trim() || target.includes('\0')) return false;
+  const resolved = path.resolve(root, target);
+  const rel = path.relative(root, resolved);
+  if (rel === '..' || rel.startsWith('..' + path.sep) || path.isAbsolute(rel)) return false;
+  let current = resolved;
+  while (current !== root) {
+    try {
+      if (fs.lstatSync(current).isSymbolicLink()) return false;
+    } catch (e) { if (e.code !== 'ENOENT') return false; }
+    const parent = path.dirname(current);
+    if (parent === current) return false;
+    current = parent;
+  }
+  return true;
+}
+/** Native host PreToolUse policy. It never auto-approves, overrides permissions, or runs tools. */
+export function preToolUse(root, payload) {
+  try {
+    root = fs.realpathSync(path.resolve(root));
+    if (!matchesWorkspace(root, payload)) return denyHook('Xyeena: workspace identity not verified');
+    if (!object(payload.toolCall) || typeof payload.toolCall.name !== 'string' ||
+        !object(payload.toolCall.args)) return denyHook('Xyeena: invalid tool payload');
+    const { name, args } = payload.toolCall;
+    if (readOnlyTools.has(name)) return { decision: 'allow' }; // native host policies remain in effect
+    if (scopedWrites.has(name)) {
+      if (!safeHostTarget(root, args.TargetFile)) return denyHook('Xyeena: write target outside trusted workspace');
+      return { decision: 'force_ask', reason: 'Xyeena: confirm this specific workspace file modification' };
+    }
+    if (name === 'run_command') {
+      if (!safeHostTarget(root, args.Cwd || root)) return denyHook('Xyeena: command Cwd outside trusted workspace');
+      if (typeof args.CommandLine !== 'string' || !args.CommandLine.trim())
+        return denyHook('Xyeena: missing shell command');
+      return { decision: 'force_ask', reason: 'Xyeena: review shell command; host sandbox and fresh user consent required' };
+    }
+    if (name === 'ask_permission') return { decision: 'allow' }; // host's native permission UI
+    return { decision: 'force_ask', reason: 'Xyeena: confirm this external or privileged host action' };
+  } catch { return denyHook('Xyeena: safety hook unavailable'); }
+}
+
 export function afterTool(root, payload) {
   if (!matchesWorkspace(root, payload) || !conversationIdOK(payload.conversationId)) return {};
   const state = readState(root, payload.conversationId);
@@ -212,11 +256,12 @@ export function stopCheckpoint(root, payload) {
 
 async function run() {
   const event = process.argv[2];
-  if (!['SessionStart','PreInvocation','PostToolUse','Stop'].includes(event)) { process.stdout.write('{}\n'); return; }
+  if (!['SessionStart','PreInvocation','PreToolUse','PostToolUse','Stop'].includes(event)) { process.stdout.write('{}\n'); return; }
   let input = '', bytes = 0;
   for await (const chunk of process.stdin) {
     bytes += chunk.length;
-    if (bytes > 65536) { process.stdout.write('{}\n'); return; }
+    if (bytes > 65536) { process.stdout.write(event === 'PreToolUse'
+      ? JSON.stringify(denyHook('Xyeena: hook payload exceeded limit')) + '\n' : '{}\n'); return; }
     input += chunk.toString('utf8');
   }
   try {
@@ -224,10 +269,13 @@ async function run() {
     const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
     const response = event === 'SessionStart' ? sessionStart(root, payload) :
       event === 'PreInvocation' ? beforeInvocation(root, payload) :
+      event === 'PreToolUse' ? preToolUse(root, payload) :
       event === 'PostToolUse' ? afterTool(root, payload) : stopCheckpoint(root, payload);
     process.stdout.write(JSON.stringify(response) + '\n');
-  } catch { process.stdout.write(event === 'Stop' ? '{"decision":"stop"}\n' : '{}\n'); }
+  } catch { process.stdout.write(event === 'Stop' ? '{"decision":"stop"}\n' :
+    event === 'PreToolUse' ? JSON.stringify(denyHook('Xyeena: invalid hook input')) + '\n' : '{}\n'); }
 }
 if (process.argv[1] && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))) {
-  run().catch(() => process.stdout.write('{}\n'));
+  run().catch(() => process.stdout.write(process.argv[2] === 'PreToolUse'
+    ? JSON.stringify(denyHook('Xyeena: hook runtime error')) + '\n' : '{}\n'));
 }
