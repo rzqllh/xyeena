@@ -10,7 +10,7 @@ All eight engineering phases are present in `main` with automated checks. The re
 | OPS-04 | P0 | Claude Code native host acceptance | LIVE BLOCKED | Standalone `claude` CLI not installed on host |
 | OPS-05 | P0 | Gemini CLI native host acceptance | LIVE BLOCKED | Standalone `gemini` CLI not installed on host |
 | OPS-06 | P0 | Hermes native host acceptance | LIVE PARTIAL | Hermes live one-shot smoke observed previously; source now bounds tool turns and rejects reported usage above token limit post-run; native cancellation and provider-side hard spend remain pending |
-| OPS-07 | P0 | Trusted host consent and tool interception | CODED; LIVE PENDING | Opt-in native Antigravity PreToolUse hook added to source; native host registration, fresh permission dialogs, and real denies not yet live-accepted |
+| OPS-07 | P0 | Trusted host consent and tool interception | IDE 2.5.5 LIVE BLOCKED; OTHER HOSTS PENDING | Windows IDE 2.5.5 executed out-of-workspace `Get-Location` despite installed `PreToolUse` expected `deny`; no dialog. Source now distinguishes installation from runtime callback and host enforcement; pending separate CLI/native-host validation |
 | OPS-08 | P1 | Acceptance and security review sign-off | CONDITIONAL GO | 327/327 unit tests PASS (including adversarial parser/stderr tests), 19 caps PASS, 18/18 eval PASS, 15/15 harness PASS, packed consumer PASS; OPS-02 & OPS-06 live smoke verified |
 | OPS-09 | P1 | Release candidate and npm publication | NOT AUTHORIZED | Candidate ready (sha512 verified, 236 files); publication strictly requires explicit human authorization |
 

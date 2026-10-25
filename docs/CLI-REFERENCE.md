@@ -75,3 +75,16 @@ See [Getting started](GETTING-STARTED.md), [Runtime adapters](RUNTIME-ADAPTERS.m
 `host run --runtime hermes --max-turns N --token-limit N --yes` sets Hermes one-shot maximum agent iterations and a settlement-only reported usage ceiling. Defaults are 2 turns and 50,000 reported tokens; overruns and missing usage fail the response, **not** the provider bill. Numeric limits are validated before process launch.
 
 `guided preview` / `guided install --yes` now include a native Antigravity `PreToolUse` hook in the managed hook group. Real host activation must be verified independently. The host decides approval; Xyeena never auto-approves or silently overrides permissions.
+
+## Guided native-hook diagnostics
+
+`xyeena guided status --dir .` reports filesystem installation and enablement independently of `hostActivation` and `hostEnforcement`. Both status fields remain unverified without external native proof; even a locally observed callback is not an authenticated IDE host decision.
+
+```sh
+xyeena guided probe start --dir . --yes
+# Ask a NEW native IDE agent session to run a harmless read-only command.
+xyeena guided probe status --dir .
+xyeena guided probe clear --dir . --yes
+```
+
+`start` writes one local diagnostic state file with a five-minute expiry; the hook runner only records an invocation timestamp, tool name and its own decision. It does not log tool arguments or grant permission. `CALLBACK_OBSERVED_UNATTESTED` cannot establish that Antigravity actually enforced a decision; direct local invocation can create the same record. Verify a real native denial separately. On the tested Windows IDE 2.5.5 session, expected `deny` was not enforced. See [Guided hooks](ANTIGRAVITY-GUIDED.md).

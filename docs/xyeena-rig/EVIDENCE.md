@@ -145,3 +145,14 @@ SubagentBridge workspace access blocked by agent policy. No live MCP transport. 
 ## Source changes pending operational live validation
 
 The code in the pending feature PR adds the opt-in Antigravity native `PreToolUse` hook and bounds Hermes CLI `--max-turns` with a configured reported-token settlement ceiling. CI tests cover simulated hook payloads, workspace write deny, symlink target rejection, fresh confirmation for shell, invalid payload fail-closed, and missing/oversized Hermes usage. These are contract tests, **not** an assertion that the user's actual Antigravity hook installation has been enabled or a guarantee that no Hermes tokens are spent beyond the ceiling. The commit must pass CI and be reviewed before these capabilities are considered integrated.
+
+## OPS-07 native IDE negative observation — 2026-10-25 (Windows, Antigravity IDE 2.5.5)
+
+- **Surface:** Antigravity IDE version 2.5.5, Windows 11 x64; real agent native `run_command` invocations.
+- **Installed configuration:** workspace `.agents/hooks.json` contains `xyeena-rig-guided.PreToolUse` with `matcher: "*"`, `guided status` returned `installed=true`, `enabled=true`. The managed runner includes a documented `deny` outcome for out-of-workspace working directories.
+- **First empirical test:** native `run_command` executed `git status --short` inside workspace with exit 0. No host permission dialog observed by the user.
+- **Negative safety test:** native `run_command` executed PowerShell `Get-Location` with `Cwd` set to the **parent of the trusted workspace**; exit code 0 and output pointed to that parent. Expected Xyeena decision was `deny`. No Xyeena error or native prompt appeared.
+- **Verdict:** **HOST_BOUNDARY_UNENFORCED_OBSERVED** for this live IDE session; **OPS-07 IDE LIVE_BLOCKED**. The evidence does not isolate whether hook dispatch was absent or the IDE discarded its decision. Test tools were read-only; no privileged mutation was attempted.
+- **Documentation conflict:** [official lifecycle hooks](https://www.antigravity.google/docs/hooks) describe IDE support; [independent August 2026 forum reproduction](https://discuss.ai.google.dev/t/do-antigravity-ide-2-0-actually-execute-plugin-hooks-pretooluse-posttooluse-or-is-that-cli-only-right-now/176814) reports CLI callbacks operating while earlier IDE/desktop builds did not invoke them. Those earlier reports are corroboration, not an official limitation statement for v2.5.5.
+- **Source follow-up (pending PR):** `guided status` reports filesystem installation separately from `hostEnforcement: UNVERIFIED`; an opt-in five-minute `guided probe` logs bounded callback receipt only. A receipt, unit tests, and running direct JavaScript are **not** acceptance evidence for native policy enforcement.
+- **Safety:** until a host-enforced negative test is independently witnessed, Xyeena must never claim the IDE is protected by the hook or grant privileged capabilities based on its installation state.
