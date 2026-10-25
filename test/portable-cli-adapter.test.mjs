@@ -202,3 +202,38 @@ test('headless preview does not select platform-incompatible orchestrator or sup
   assert.deepEqual(ready.requestedSkills, ['xyeena-orchestrate']);
   assert.deepEqual(ready.incompatibleSkills, ['systematic-debugging']);
 });
+
+test('Hermes stream-json parser tolerates trailing non-JSON session telemetry lines', async t => {
+  const cwd = fixture(t);
+  const streamOutput = [
+    '{"type":"system","subtype":"init","model":"Hermes"}',
+    '{"type":"text","text":"Observed "}',
+    '{"type":"text","text":"evidence"}',
+    '{"type":"result","session_id":"20261025_test","exit_code":0,"text":"Observed evidence","tokens":{"total":42}}',
+    'session_id: 20261025_test'
+  ].join('\n') + '\n';
+  const adapter = createPortableHostAdapter({
+    cwd,
+    runtime: 'hermes',
+    selectedSkills: ['xyeena-orchestrate'],
+    spawnImpl: mockProcess(streamOutput)
+  });
+  const result = await adapter.executeTask(makeTask());
+  assert.equal(result.executed, true);
+  assert.equal(result.report, 'Observed evidence');
+  assert.equal(result.usageTokens, 42);
+  assert.equal(result.status, 'REVIEW_REQUIRED');
+});
+
+test('portableLaunchPlan sets windowsVerbatimArguments false for native exe paths with spaces', async t => {
+  const { portableLaunchPlan } = await import('../src/portable-cli-adapter.mjs');
+  const plan = portableLaunchPlan({
+    runtime: 'hermes',
+    executable: 'C:\\Users\\User With Spaces\\hermes.exe',
+    platform: 'win32',
+    args: ['chat', '--oneshot']
+  });
+  assert.equal(plan.command, 'C:\\Users\\User With Spaces\\hermes.exe');
+  assert.equal(plan.windowsVerbatimArguments, false);
+});
+

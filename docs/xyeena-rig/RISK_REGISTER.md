@@ -4,7 +4,7 @@ Residual risks are tracked separately from automated test completion.
 
 | Risk | Impact | Current control | Residual state |
 | --- | --- | --- | --- |
-| Host reports a skill file but does not activate it | Incorrect runtime behavior | Distinct inventory/eligibility states; require native acceptance | Antigravity in-session verified; Hermes live toolset documented |
+| Host reports a skill file but does not activate it | Incorrect runtime behavior | Distinct inventory/eligibility states; require native acceptance | Antigravity and Hermes LIVE ACCEPTED; Hermes JSONL adapter patched |
 | Privileged operation without host-confirmed consent | Unauthorized changes | Fail-closed execution gates, explicit host authority boundary | Live tested: attacker authority injection blocked with ERR_HOST_BOUNDARY_UNAUTHENTICATED |
 | Untrusted third-party skill instructions | Prompt injection or unexpected actions | No execution during discovery; host trust and scope checks | Review on enablement |
 | Unavailable Simpul execution supervisor | Tasks stuck in submitted/pending | Execution-readiness probe and native/inline fallback | Upstream blocked; native/inline fallback verified |

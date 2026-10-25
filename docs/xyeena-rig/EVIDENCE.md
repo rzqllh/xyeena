@@ -72,14 +72,24 @@ Shell command returned ALLOW (observation-only mode — harness not installed in
 
 **Status: CI_PASS (automated). Boundary enforcement and authority injection attack both fail closed — confirmed live. Live shell-command interception: LIVE_PENDING (requires `xyeena guided install` in the target project).**
 
-### OPS-06 — Hermes live detection and invocation
+### OPS-06 — Hermes live detection, fix, and verified execution
 
 - **Binary:** `C:\Users\Hafizh Rizqullah\AppData\Local\hermes\bin\hermes.exe` — version `v0.22.2+7.g16c5e85`.
-- **Auth:** Nous Portal logged in (exp 2026-10-25 15:16 WIB), OpenAI Codex OAuth logged in.
-- **`host preview --runtime hermes`:** Ready, `requestedSkills: ["xyeena-orchestrate"]`, 47 skills detected.
-- **`host run --runtime hermes --yes`:** Hermes session `20261025_143357_f4c3ff` spawned. Used `web_search` tool. Produced stream-json JSONL. No `{type:"result"}` event emitted under `--toolsets safe` (safe toolset excludes `skills_list` and `terminal` — by design).
-- **Root cause:** Xyeena JSONL parser requires `{type:"result", exit_code:0}` termination event. Hermes `safe` toolset does not emit this. Adapter correctly raises an error instead of fabricating success.
-- **Status: INTEGRATION_VERIFIED; LIVE_PARTIAL** — Hermes host confirmed installed and authenticated. CLI adapter and task dispatch functional. Final result event not received under safe toolset restriction.
+- **Auth:** Nous Portal logged in, OpenAI Codex OAuth logged in.
+- **Root cause analysis:**
+  1. Process launch: On Windows, `windowsVerbatimArguments: true` was inadvertently enabled on native `.exe` binaries whose path contained spaces (`C:\Users\Hafizh Rizqullah\...`). This prevented Node from quoting the path, causing Windows `CreateProcess` to split the path at the space and fail with exit code 1 (`hermes: 'Rizqullah\AppData\Local\hermes\bin\hermes.exe' is not a hermes command.`).
+  2. Protocol parsing: In `stream-json` mode, Hermes CLI emits a trailing telemetry line (`session_id: <id>`) after JSON events. The JSONL parser attempted to parse this line as JSON, throwing `Hermes CLI returned invalid JSONL`.
+- **Source fix:**
+  - `src/portable-cli-adapter.mjs`: `portableLaunchPlan` explicitly sets `windowsVerbatimArguments: false` for native `.exe` executables, reserving `true` strictly for `cmd.exe` shims (`.cmd`/`.bat`).
+  - `decodeResponse`: tolerates non-JSON trailing telemetry lines by checking `line.trim().startsWith('{')`.
+  - Diagnostics: captured stderr details in nonzero exit errors.
+  - Regression tests added in `test/portable-cli-adapter.test.mjs` (323 tests total, all passing).
+- **Live verification:**
+  - Command: `node ./bin/xyeena.mjs host run --runtime hermes --goal "Sebutkan nama proyek dan cabang git aktif" --yes`.
+  - Exit code: 0.
+  - Tokens: 75,361 total tokens recorded.
+  - Model outcome: Factually identified project as `xyeena`, working directory `_active/xyeena`, active branch `ops/live-acceptance-evidence-2026-10-25`, and accurately declined shell execution.
+- **Status: LIVE_ACCEPTED** — real model call executed, terminal `{type: "result", exit_code: 0}` event parsed, factual evidence returned and verified.
 
 ### OPS-03, OPS-04, OPS-05 — Host CLI detection on this Windows device
 
@@ -96,4 +106,33 @@ Exact prerequisites: install `npm i -g @openai/codex` (OPS-03), `npm i -g @anthr
 SubagentBridge workspace access blocked by agent policy. No live MCP transport. Adapter code present in `src/live-backend.mjs`. Fallback chain (Simpul → native → inline) CI_PASS.
 
 **Status: LIVE_BLOCKED.** Prerequisite: authorized and running Simpul MCP transport from `rzqllh/SubagentBridge`.
+
+## Live Execution Closure Session — 2026-10-25
+
+**Orchestrator:** `xyeena-orchestrate`  
+**Host:** Antigravity IDE (active agent session)  
+**Evaluated Branch:** `ops/live-acceptance-evidence-2026-10-25`  
+
+### Evidence Correction (Task 1)
+- Corrected `.tmp/ops-live-acceptance/sandbox-ops02/ops02-evidence.json`: historical record was previously misclassified as `VERIFIED` based on preview/preflight alone. Updated to `PREFLIGHT_PASS; TASK_UNEXECUTED` with `status: REVIEW_REQUIRED`.
+
+### Real Antigravity In-Session Execution (Task 2)
+- Task ID: `ops02-antigravity-live-read`
+- Task input: "Audit repository license, public documentation links, and current head commit hash"
+- Loaded orchestration instructions: `skills/xyeena-orchestrate/SKILL.md` loaded and verified.
+- Real host tools invoked:
+  1. `view_file` on `LICENSE`: verified MIT License, Copyright (c) 2026 Xyeena contributors.
+  2. `run_command` with `git rev-parse HEAD`: verified commit `19e05fab98bec1f9a9cedd8138d17b6b6167a94d`.
+  3. `view_file` on `README.md`: verified package description and reference links.
+- Effective skills used: `xyeena-orchestrate`, `xyeena-verify`, `xyeena-debug`.
+- Subagent delegation: Marked `PENDING` (no native subagent runner tool exposed in this agent session; no simulated execution).
+- Independent verification: Criteria 1–5 satisfied, task completed with zero file mutations.
+- **Status: LIVE_ACCEPTED (in-session task execution)**.
+
+### Harness Boundary Classification (Task 4)
+- **Unit / API gates:** CI_PASS (automated tests in `test/rig-harness-lifecycle.test.mjs` and `test/security-hardening.test.mjs`).
+- **Antigravity host tool interception:** Tested live in-session. Safe workspace read ALLOW (`core-safety`), traversal outside root write DENIED (`Workspace boundary violation`), external HTTP DENIED (`blocked: true`).
+- **Host-mediated human approval:** Host IDE dialog prompts active; attacker authority injection blocked with `ERR_HOST_BOUNDARY_UNAUTHENTICATED`.
+- **Transparent shell command interception:** LIVE_PENDING (requires project-level `xyeena guided install`).
+
 

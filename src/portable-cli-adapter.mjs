@@ -30,13 +30,14 @@ export function portableLaunchPlan({ runtime, args, executable, platform = proce
     throw new Error('Unsafe portable host arguments');
   const resolved = platform === 'win32' ? windowsResolveExecutable(executable, env) : executable;
   if (platform !== 'win32' || !/\.(cmd|bat)$/i.test(resolved))
-    return { command: resolved, args };
+    return { command: resolved, args, windowsVerbatimArguments: false };
   if (/[%!^&|<>"\r\n]/.test(resolved))
     throw new Error('Unsafe Windows shim path; use a native executable');
   // cmd.exe is necessary for Windows npm .cmd shims. Only vetted constant
   // arguments and skill identifiers are interpolated; the task prompt is stdin.
   return { command: env.ComSpec || 'cmd.exe',
-    args: ['/d', '/s', '/c', '""' + resolved + '" ' + args.join(' ') + '"'] };
+    args: ['/d', '/s', '/c', '""' + resolved + '" ' + args.join(' ') + '"'],
+    windowsVerbatimArguments: true };
 }
 
 
@@ -107,8 +108,10 @@ function decodeResponse(host, output) {
   }
   let last = null;
   for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('{')) continue;
     let event;
-    try { event = JSON.parse(line); } catch { throw new Error('Hermes CLI returned invalid JSONL'); }
+    try { event = JSON.parse(trimmed); } catch { throw new Error('Hermes CLI returned invalid JSONL'); }
     if (event?.type === 'result') last = event;
   }
   if (!last || last.exit_code !== 0 || typeof last.text !== 'string' || last.error)
@@ -169,7 +172,7 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
         try {
           child = spawnImpl(launch.command, launch.args, { cwd: root, shell: false, windowsHide: true,
             stdio: ['pipe','pipe','pipe'],
-            windowsVerbatimArguments: platform === 'win32' && launch.command !== executable });
+            windowsVerbatimArguments: Boolean(launch.windowsVerbatimArguments) });
         } catch { reject(new Error('Cannot launch host executable')); return; }
         const timer = setTimeout(() => { child.kill(); done(new Error('Host execution timeout')); }, timeoutMs);
         child.on('error', () => done(new Error('Cannot launch host executable')));
@@ -179,15 +182,21 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
             child.kill(); done(new Error('Host output exceeded limit'));
           }
         });
+        let stderrText = '';
         child.stderr.on('data', chunk => {
           stderrLength += chunk.length;
           if (stderrLength > MAX_OUTPUT) {
             child.kill(); done(new Error('Host diagnostic output exceeded limit'));
           }
+          if (stderrText.length < 2048) stderrText += chunk.toString('utf8');
         });
         child.on('close', code => {
           if (finished) return;
-          if (code !== 0) { done(new Error(runtime + ' CLI returned a nonzero status')); return; }
+          if (code !== 0) {
+            const detail = stderrText.trim() ? ': ' + stderrText.trim().slice(0, 500) : '';
+            done(new Error(runtime + ' CLI returned a nonzero status' + detail));
+            return;
+          }
           try {
             const result = decodeResponse(runtime, stdout);
             done(null, { executed: true, verified: false, evidenceRefs: [],
