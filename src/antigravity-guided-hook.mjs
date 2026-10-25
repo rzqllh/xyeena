@@ -179,17 +179,26 @@ const readOnlyTools = new Set(['view_file', 'list_dir', 'find_by_name', 'grep_se
 const denyHook = reason => ({ decision: 'deny', reason });
 function safeHostTarget(root, target) {
   if (typeof target !== 'string' || !target.trim() || target.includes('\0')) return false;
-  const resolved = path.resolve(root, target);
-  const rel = path.relative(root, resolved);
+  const requested = path.resolve(root, target);
+  let existing = requested;
+  const missing = [];
+  while (!fs.existsSync(existing)) {
+    const parent = path.dirname(existing);
+    if (parent === existing) return false;
+    missing.unshift(path.basename(existing));
+    existing = parent;
+  }
+  // On macOS /var may be a symlink to /private/var; compare canonical paths
+  // without granting access through a symlink into another workspace.
+  const canonical = path.join(fs.realpathSync(existing), ...missing);
+  const rel = path.relative(root, canonical);
   if (rel === '..' || rel.startsWith('..' + path.sep) || path.isAbsolute(rel)) return false;
-  let current = resolved;
-  while (current !== root) {
+  let current = root;
+  for (const segment of rel.split(path.sep).filter(Boolean)) {
+    current = path.join(current, segment);
     try {
       if (fs.lstatSync(current).isSymbolicLink()) return false;
     } catch (e) { if (e.code !== 'ENOENT') return false; }
-    const parent = path.dirname(current);
-    if (parent === current) return false;
-    current = parent;
   }
   return true;
 }
