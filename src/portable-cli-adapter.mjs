@@ -7,6 +7,8 @@ const HOSTS = new Set(['gemini', 'hermes', 'codex', 'claude']);
 const MAX_OUTPUT = 256 * 1024;
 const MAX_PROMPT = 12000;
 const HOST_TIMEOUT_MAX = 300000;
+const DEFAULT_HERMES_TOKEN_LIMIT = 50000;
+const DEFAULT_HERMES_MAX_TURNS = 2;
 const skillName = s => typeof s === 'string' && /^[a-z0-9][a-z0-9-]{0,63}$/.test(s);
 const object = x => x !== null && typeof x === 'object' && !Array.isArray(x);
 
@@ -140,10 +142,16 @@ function classifyStderr(text) {
 
 /** Caller-provided, explicit host process; never auto-launch or inherit external approvals. */
 export function createPortableHostAdapter({ cwd = process.cwd(), runtime, selectedSkills = [],
-  command, timeoutMs = 120000, spawnImpl = spawn, platform = process.platform, env = process.env } = {}) {
+  command, timeoutMs = 120000, tokenLimit = DEFAULT_HERMES_TOKEN_LIMIT,
+  maxTurns = DEFAULT_HERMES_MAX_TURNS,
+  spawnImpl = spawn, platform = process.platform, env = process.env } = {}) {
   if (!HOSTS.has(runtime)) throw new Error('Unsupported portable CLI host');
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > HOST_TIMEOUT_MAX)
     throw new Error('Invalid portable host timeout');
+  if (!Number.isSafeInteger(tokenLimit) || tokenLimit < 1000 || tokenLimit > 1000000)
+    throw new Error('Invalid portable token limit');
+  if (!Number.isSafeInteger(maxTurns) || maxTurns < 1 || maxTurns > 10)
+    throw new Error('Invalid portable max turns');
   if (!Array.isArray(selectedSkills) || selectedSkills.length > 8 || selectedSkills.some(s => !skillName(s)))
     throw new Error('Invalid selected skill names');
   if (typeof command !== 'undefined' && (typeof command !== 'string' || !command.trim()))
@@ -171,7 +179,8 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
       ].join('\n');
       const args = runtime === 'hermes'
         ? ['chat', '--query-file', '-', '--oneshot', '-Q', '--format', 'stream-json',
-           '--toolsets', 'safe', ...(selectedSkills.length ? ['--skills', selectedSkills.join(',')] : [])]
+           '--toolsets', 'safe', '--max-turns', String(maxTurns),
+           ...(selectedSkills.length ? ['--skills', selectedSkills.join(',')] : [])]
         : runtime === 'codex'
           ? ['exec', '--json', '--sandbox', 'read-only', '-']
           : runtime === 'claude'
@@ -219,8 +228,22 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
           }
           try {
             const result = decodeResponse(runtime, stdout);
+            if (runtime === 'hermes') {
+              if (!Number.isSafeInteger(result.usageTokens) || result.usageTokens < 0) {
+                const err = new Error('Hermes did not report usable token accounting');
+                err.code = 'ERR_PORTABLE_USAGE_UNAVAILABLE';
+                done(err); return;
+              }
+              if (result.usageTokens > tokenLimit) {
+                const err = new Error('Hermes one-shot token budget exceeded');
+                err.code = 'ERR_PORTABLE_BUDGET_EXCEEDED';
+                done(err); return;
+              }
+            }
             done(null, { executed: true, verified: false, evidenceRefs: [],
               ...result, requestedSkills: [...selectedSkills], host: runtime,
+              ...(runtime === 'hermes' ? { budget: { tokenLimit, usedTokens: result.usageTokens,
+                maxTurns, enforcement: 'reported-usage-settlement' } } : {}),
               status: 'REVIEW_REQUIRED' });
           } catch (e) { done(e); }
         });
