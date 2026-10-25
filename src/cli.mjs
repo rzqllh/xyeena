@@ -201,7 +201,9 @@ export async function main(args){
     if(f.yes!==true)throw new Error('Host run makes a real model call; pass --yes for this invocation');
     const adapter=createPortableHostAdapter({cwd:preview.cwd,runtime:preview.runtime,selectedSkills:preview.requestedSkills,
       ...(typeof f.command==='string'?{command:f.command}:{}),
-      ...(f.timeoutMs!==undefined?{timeoutMs:Number(f.timeoutMs)}:{})});
+      ...(f.timeoutMs!==undefined?{timeoutMs:Number(f.timeoutMs)}:{}),
+      ...(f.tokenLimit!==undefined?{tokenLimit:Number(f.tokenLimit)}:{}),
+      ...(f.maxTurns!==undefined?{maxTurns:Number(f.maxTurns)}:{})});
     const result=await adapter.executeTask({id:'host-one-shot',title:f.goal,
       scope:{readOnly:true,operationClass:'safe'}});
     console.log(JSON.stringify(result,null,2));return;

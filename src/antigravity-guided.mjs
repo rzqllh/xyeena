@@ -83,6 +83,7 @@ export function hookPlan({ cwd = process.cwd(), action = 'install' } = {}) {
   const proposed = {
     SessionStart: [{ type: 'command', command: command + ' SessionStart', timeout: 3 }],
     PreInvocation: [{ type: 'command', command: command + ' PreInvocation', timeout: 3 }],
+    PreToolUse: [{ matcher: '*', hooks: [{ type: 'command', command: command + ' PreToolUse', timeout: 3 }] }],
     PostToolUse: [{ matcher: 'run_command|write_to_file|replace_file_content|multi_replace_file_content', hooks: [{ type: 'command', command: command + ' PostToolUse', timeout: 3 }] }],
     Stop: [{ type: 'command', command: command + ' Stop', timeout: 3 }],
   };

@@ -54,3 +54,19 @@ Check the local `.xyeena/runs/` journal for an interrupted run. Inspect task sta
 6. Use the repository's Trusted Publisher pipeline and verify the published artifact against source.
 
 **Current status:** `0.5.0` is not published. No release tag or npm command is implied by this runbook. See [Task tracker](TASK_TRACKER.md).
+
+## Antigravity native PreToolUse hook
+
+Run `node bin/xyeena.mjs guided preview --dir .` and inspect the proposed `PreToolUse` group before installation. The `guided install --yes` workflow preserves unrelated hook groups and takes managed backups. The policy returns only `allow`, `force_ask` or `deny`: it never bypasses existing host user-approval rules.
+
+The hook rejects write targets outside the trusted workspace and symlinked file targets; commands require a fresh user decision, but may have shell-internal side effects beyond what a pre-hook can inspect. **No OS sandbox guarantee** is provided. Native IDE hook enablement, consent prompts, and deny results must be verified on a real installed host, not a simulated stdin event.
+
+## Hermes headless usage budget
+
+Portable Hermes one-shot sessions now default to at most 2 native tool-calling turns, with a response acceptance ceiling of 50,000 reported tokens. To adjust per invocation from current source:
+
+```sh
+node bin/xyeena.mjs host run --runtime hermes --goal "Review README" --max-turns 2 --token-limit 50000 --yes
+```
+
+Hermes `--max-turns` caps iteration count. The token ceiling is a **settlement check after the provider has completed**, not provider-side hard spend enforcement. Missing or excessive `tokens.total` makes Xyeena reject the result with a typed error. Avoid treating this as a billing cap; configure provider-side spending limits and use bounded timeouts. The separate `ResourceBudgetLedger` is not automatically applied to the `host run` CLI. [Hermes CLI reference](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/reference/cli-commands.md).
