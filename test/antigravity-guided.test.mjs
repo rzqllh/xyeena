@@ -244,3 +244,40 @@ test('expired, invalid and linked probe state never become native host enforceme
     } catch(e) { if(!['EPERM','EACCES'].includes(e.code)) throw e; }
   } finally { cleanup(cwd); }
 });
+
+
+test('Windows Antigravity hooks avoid quoted paths in all managed command entries', () => {
+  const cwd=fixture();
+  try {
+    const plan=hookPlan({cwd});
+    const group=plan.next['xyeena-rig-guided'];
+    const commands=[
+      group.SessionStart[0].command,
+      group.PreInvocation[0].command,
+      group.PreToolUse[0].hooks[0].command,
+      group.PostToolUse[0].hooks[0].command,
+      group.Stop[0].command
+    ];
+    if(process.platform==='win32'){
+      for(const command of commands){
+        assert.match(command,/^node \.xyeena\/hooks\/antigravity-guided\.mjs (SessionStart|PreInvocation|PreToolUse|PostToolUse|Stop)$/);
+        assert.ok(!command.includes('"'), 'Antigravity Windows CLI must not receive quoted executable/argument paths');
+        assert.ok(!command.includes(cwd), 'Command must not include a spaced absolute workspace path');
+        assert.ok(!command.includes('Program Files'), 'Command must not embed a quoted Program Files executable');
+      }
+      assert.equal(plan.next['xyeena-rig-guided'].PreToolUse[0].matcher,'*');
+    }
+    guidedCommand('install',{cwd,yes:true});
+    assert.equal(guidedCommand('status',{cwd}).installed,true);
+    const active=read(config(cwd))['xyeena-rig-guided'];
+    assert.equal(active.PreToolUse[0].hooks[0].command,group.PreToolUse[0].hooks[0].command);
+    const runner=path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs');
+    const result=spawnSync('node',[runner,'PreToolUse'],{
+      input:JSON.stringify({workspacePaths:[cwd],toolCall:{
+        name:'run_command',args:{CommandLine:'Get-Location',Cwd:cwd}
+      }}),encoding:'utf8',cwd
+    });
+    assert.equal(result.status,0,result.stderr);
+    assert.equal(JSON.parse(result.stdout).decision,'force_ask');
+  } finally { cleanup(cwd); }
+});

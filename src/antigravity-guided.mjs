@@ -79,7 +79,14 @@ export function hookPlan({ cwd = process.cwd(), action = 'install' } = {}) {
   const installedScript = fs.existsSync(f.script) ? fs.readFileSync(f.script, 'utf8') : null;
   if (manifest && installedScript !== null && hash(installedScript) !== manifest.scriptHash)
     throw new Error('Managed hook runner changed; refusing overwrite');
-  const command = quote(process.execPath) + ' ' + quote(f.script);
+  // agy CLI on Windows can treat quotes in the command field as literal
+  // executable characters. Avoid both quoted absolute paths (Program Files,
+  // user profile containing spaces) in the installed hook command.
+  // This is workspace-scoped: launch agy from the workspace root.
+  // Node must be on the trusted host PATH; the hook never uses a shell override.
+  const command = process.platform === 'win32'
+    ? 'node .xyeena/hooks/antigravity-guided.mjs'
+    : quote(process.execPath) + ' ' + quote(f.script);
   const proposed = {
     SessionStart: [{ type: 'command', command: command + ' SessionStart', timeout: 3 }],
     PreInvocation: [{ type: 'command', command: command + ' PreInvocation', timeout: 3 }],

@@ -54,3 +54,9 @@ Binding and unbinding are explicit: `guided bind --id RUN_ID --conversation UUID
 This policy is **not** an operating-system sandbox and does not parse shell commands to prevent shell-internal path escapes. Approval remains a decision of the user and the host; `force_ask` requests a fresh dialog rather than granting permission. A successful installation, `guided status`, callback receipt or unit test does **not** prove native interception has been activated. Verify the hook in Antigravity IDE > Customizations > Hooks and observe a real read, denied write and freshly prompted shell command before marking OPS-07 LIVE_ACCEPTED. The native hook contract is documented at [Antigravity Hooks](https://www.antigravity.google/docs/hooks). Hook setup and unit tests are not substitutes for host activation evidence.
 
 See [Runtime adapters](RUNTIME-ADAPTERS.md) and [Security](../SECURITY.md).
+
+## Windows CLI hook launcher compatibility
+
+The Xyeena hook installer uses `node .xyeena/hooks/antigravity-guided.mjs EVENT` (no embedded quotes or absolute paths) on Windows, because `agy` CLI has been observed to misparse quoted `C:\Program Files\nodejs\node.exe` and quoted user-profile script paths. This command is **workspace-relative**: launch `agy` from the root of the project. Node must resolve through your trusted `PATH`. If it doesn't, keep the hook disabled until a compatible launcher is available; do not rely on the hook for security. The installer updates Xyeena-owned configuration and runner with backup, preserving unrelated hook groups.
+
+The CLI's `run_command` tool schema in the user's October 25 session rejected `Cwd` as an argument; use a valid, harmless `run_command` **without `Cwd`** to test the force-ask prompt and native execution. An argument-schema rejection is not a hook denial. The successful negative test in a real CLI or IDE must still be independently observed before claiming enforcement.
