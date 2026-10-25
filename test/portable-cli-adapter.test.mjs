@@ -19,7 +19,7 @@ function addSkill(cwd, relative, name) {
   fs.writeFileSync(path.join(folder,'SKILL.md'),
     '---\nname: '+name+'\ndescription: Debug and review code changes\n---\n# Demo\n');
 }
-function mockProcess(output, { exitCode=0, expectedCommand=null, argsCheck=null, capture=null }={}) {
+function mockProcess(output, { exitCode=0, expectedCommand=null, argsCheck=null, capture=null, stderrOutput='' }={}) {
   return (command,args,options) => {
     if(expectedCommand)assert.ok(command===expectedCommand || path.basename(command, path.extname(command))===expectedCommand);
     if(argsCheck)argsCheck(args);
@@ -28,7 +28,13 @@ function mockProcess(output, { exitCode=0, expectedCommand=null, argsCheck=null,
     child.stdin=new PassThrough();child.stdout=new PassThrough();child.stderr=new PassThrough();
     child.kill=()=>{child.emit('close',130);};
     if(capture)child.stdin.on('data',chunk=>capture.push(chunk.toString('utf8')));
-    process.nextTick(()=>{child.stdout.write(output);child.stdout.end();child.emit('close',exitCode);});
+    process.nextTick(()=>{
+      if(stderrOutput)child.stderr.write(stderrOutput);
+      child.stderr.end();
+      child.stdout.write(output);
+      child.stdout.end();
+      child.emit('close',exitCode);
+    });
     return child;
   };
 }
@@ -202,3 +208,105 @@ test('headless preview does not select platform-incompatible orchestrator or sup
   assert.deepEqual(ready.requestedSkills, ['xyeena-orchestrate']);
   assert.deepEqual(ready.incompatibleSkills, ['systematic-debugging']);
 });
+
+test('Hermes stream-json parser tolerates trailing non-JSON session telemetry lines', async t => {
+  const cwd = fixture(t);
+  const streamOutput = [
+    '{"type":"system","subtype":"init","model":"Hermes"}',
+    '{"type":"text","text":"Observed "}',
+    '{"type":"text","text":"evidence"}',
+    '{"type":"result","session_id":"20261025_test","exit_code":0,"text":"Observed evidence","tokens":{"total":42}}',
+    'session_id: 20261025_test'
+  ].join('\n') + '\n';
+  const adapter = createPortableHostAdapter({
+    cwd,
+    runtime: 'hermes',
+    selectedSkills: ['xyeena-orchestrate'],
+    spawnImpl: mockProcess(streamOutput)
+  });
+  const result = await adapter.executeTask(makeTask());
+  assert.equal(result.executed, true);
+  assert.equal(result.report, 'Observed evidence');
+  assert.equal(result.usageTokens, 42);
+  assert.equal(result.status, 'REVIEW_REQUIRED');
+});
+
+test('portableLaunchPlan sets windowsVerbatimArguments false for native exe paths with spaces', async t => {
+  const { portableLaunchPlan } = await import('../src/portable-cli-adapter.mjs');
+  const plan = portableLaunchPlan({
+    runtime: 'hermes',
+    executable: 'C:\\Users\\User With Spaces\\hermes.exe',
+    platform: 'win32',
+    args: ['chat', '--oneshot']
+  });
+  assert.equal(plan.command, 'C:\\Users\\User With Spaces\\hermes.exe');
+  assert.equal(plan.windowsVerbatimArguments, false);
+});
+
+test('Hermes parser fails closed on unexpected non-JSON output', async t => {
+  const cwd = fixture(t);
+  const streamOutput = [
+    '{"type":"system","subtype":"init"}',
+    'Unexpected host warning or raw output',
+    '{"type":"result","session_id":"t1","exit_code":0,"text":"done"}'
+  ].join('\n') + '\n';
+  const adapter = createPortableHostAdapter({
+    cwd, runtime: 'hermes', spawnImpl: mockProcess(streamOutput)
+  });
+  await assert.rejects(adapter.executeTask(makeTask()), /unexpected non-JSON output/);
+});
+
+test('Hermes parser fails closed on structured error event before result', async t => {
+  const cwd = fixture(t);
+  const streamOutput = [
+    '{"type":"system","subtype":"init"}',
+    '{"type":"error","error":"model context exceeded"}',
+    '{"type":"result","session_id":"t2","exit_code":0,"text":"synthetic success"}'
+  ].join('\n') + '\n';
+  const adapter = createPortableHostAdapter({
+    cwd, runtime: 'hermes', spawnImpl: mockProcess(streamOutput)
+  });
+  await assert.rejects(adapter.executeTask(makeTask()), /error event/);
+});
+
+test('Hermes parser fails closed on turn.failed event', async t => {
+  const cwd = fixture(t);
+  const streamOutput = [
+    '{"type":"system","subtype":"init"}',
+    '{"type":"turn.failed","message":"provider quota reached"}',
+    '{"type":"result","session_id":"t3","exit_code":0,"text":"partial output"}'
+  ].join('\n') + '\n';
+  const adapter = createPortableHostAdapter({
+    cwd, runtime: 'hermes', spawnImpl: mockProcess(streamOutput)
+  });
+  await assert.rejects(adapter.executeTask(makeTask()), /error event/);
+});
+
+test('Hermes adapter never leaks raw credentials or private paths from child stderr', async t => {
+  const cwd = fixture(t);
+  const sensitiveStderr = [
+    'Error: failed to connect to API',
+    'Authorization: Bearer sk-ant-api03-SECRETTOKEN1234567890abcdef',
+    'password=super_secret_password_value',
+    'File "C:\\Users\\ConfidentialAdmin\\AppData\\Local\\hermes\\auth.json", line 42',
+    'not a hermes command'
+  ].join('\n');
+  const adapter = createPortableHostAdapter({
+    cwd, runtime: 'hermes', spawnImpl: mockProcess('', { exitCode: 1, stderrOutput: sensitiveStderr })
+  });
+  let thrownError = null;
+  try {
+    await adapter.executeTask(makeTask());
+  } catch (err) {
+    thrownError = err;
+  }
+  assert.ok(thrownError, 'Must throw error on nonzero status');
+  assert.match(thrownError.message, /hermes CLI returned a nonzero status/);
+  assert.ok(!thrownError.message.includes('sk-ant-api03'), 'Must not leak API key');
+  assert.ok(!thrownError.message.includes('SECRETTOKEN'), 'Must not leak token');
+  assert.ok(!thrownError.message.includes('super_secret_password_value'), 'Must not leak password');
+  assert.ok(!thrownError.message.includes('ConfidentialAdmin'), 'Must not leak user profile path');
+  assert.ok(!thrownError.message.includes('auth.json'), 'Must not leak internal auth file path');
+});
+
+

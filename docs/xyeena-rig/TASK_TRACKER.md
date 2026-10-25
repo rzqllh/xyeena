@@ -4,15 +4,15 @@ All eight engineering phases are present in `main` with automated checks. The re
 
 | ID | Priority | Deliverable | Current state | Completion evidence |
 | --- | --- | --- | --- | --- |
-| OPS-01 | P0 | Real Simpul execution supervisor integration | BLOCKED | Authenticated submit → worker start → terminal result → cancellation/timeout and evidence |
-| OPS-02 | P0 | Antigravity native host acceptance | LIVE PENDING | Reload, skill routing, user approval and real tool-interception observation |
-| OPS-03 | P0 | Codex native host acceptance | LIVE PENDING | Skill activation, restricted execution and actual permission boundary |
-| OPS-04 | P0 | Claude Code native host acceptance | LIVE PENDING | Host trust, skill invocation, restricted execution and recovery |
-| OPS-05 | P0 | Gemini CLI native host acceptance | LIVE PENDING | Skill activation, Plan-mode contract and permission behavior |
-| OPS-06 | P0 | Hermes native host acceptance | LIVE PENDING | Trusted workspace, selected skills, safe execution and cancellation |
-| OPS-07 | P0 | Trusted host consent and tool interception | LIVE PENDING | Human approval provenance + blocked negative cases on each eligible runtime |
-| OPS-08 | P1 | Acceptance and security review sign-off | PENDING | Exact commit and release-artifact evidence; unresolved findings addressed |
-| OPS-09 | P1 | Release candidate and npm publication | NOT AUTHORIZED | Versioned immutable release, provenance, registry smoke and separate approval |
+| OPS-01 | P0 | Real Simpul execution supervisor integration | LIVE BLOCKED | No live MCP transport (`rzqllh/SubagentBridge`). Native/inline fallback verified. |
+| OPS-02 | P0 | Antigravity native host acceptance | LIVE PARTIAL | In-session read-only task `ops02-antigravity-live-read` executed under `xyeena-orchestrate`; live smoke PASS; native subagent delegation and independent host gate PENDING |
+| OPS-03 | P0 | Codex native host acceptance | LIVE BLOCKED | Standalone `codex` CLI not installed on host |
+| OPS-04 | P0 | Claude Code native host acceptance | LIVE BLOCKED | Standalone `claude` CLI not installed on host |
+| OPS-05 | P0 | Gemini CLI native host acceptance | LIVE BLOCKED | Standalone `gemini` CLI not installed on host |
+| OPS-06 | P0 | Hermes native host acceptance | LIVE PARTIAL | Hermes single-turn smoke PASS (exit 0, 75k tokens, factual output); Windows path fix, stderr leak prevention & strict JSONL verified; full native host acceptance PENDING |
+| OPS-07 | P0 | Trusted host consent and tool interception | CI PASS; LIVE PENDING | Library boundary tests and forged-authority rejection pass; native host interception and human approval provenance not yet accepted |
+| OPS-08 | P1 | Acceptance and security review sign-off | CONDITIONAL GO | 327/327 unit tests PASS (including adversarial parser/stderr tests), 19 caps PASS, 18/18 eval PASS, 15/15 harness PASS, packed consumer PASS; OPS-02 & OPS-06 live smoke verified |
+| OPS-09 | P1 | Release candidate and npm publication | NOT AUTHORIZED | Candidate ready (sha512 verified, 236 files); publication strictly requires explicit human authorization |
 
 ## Completion discipline
 
