@@ -88,3 +88,5 @@ xyeena guided probe clear --dir . --yes
 ```
 
 `start` writes one local diagnostic state file with a five-minute expiry; the hook runner only records an invocation timestamp, tool name and its own decision. It does not log tool arguments or grant permission. `CALLBACK_OBSERVED_UNATTESTED` cannot establish that Antigravity actually enforced a decision; direct local invocation can create the same record. Verify a real native denial separately. On the tested Windows IDE 2.5.5 session, expected `deny` was not enforced. See [Guided hooks](ANTIGRAVITY-GUIDED.md).
+
+`guided status` also reports `managedIntegrity`, `runnerIntegrity`, `preToolUseExact`, `preToolUseEnabled`, `probeEligible`, and a redacted list of `changedManagedFields` to safely diagnose host modifications. A diagnostic probe can run with unrelated managed event drift **only** when the exact owned `PreToolUse` event is enabled and the runner hash matches. Install/uninstall still refuse modified managed groups. A callback receipt never certifies native host enforcement.
