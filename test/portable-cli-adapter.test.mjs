@@ -310,3 +310,36 @@ test('Hermes adapter never leaks raw credentials or private paths from child std
 });
 
 
+
+
+test('Hermes one-shot bounds tool turns and reports settled usage against configured limit', async t => {
+  const cwd = fixture(t);
+  const output = JSON.stringify({type:'result',exit_code:0,text:'checked',tokens:{total:1200}})+'\n';
+  const adapter = createPortableHostAdapter({cwd,runtime:'hermes',maxTurns:1,tokenLimit:2000,
+    spawnImpl:mockProcess(output,{argsCheck(args){
+      assert.deepEqual(args.slice(args.indexOf('--max-turns'),args.indexOf('--max-turns')+2),['--max-turns','1']);
+      assert.ok(!args.includes('--yolo'));
+    }})});
+  const result=await adapter.executeTask(makeTask());
+  assert.equal(result.budget.usedTokens,1200);
+  assert.equal(result.budget.tokenLimit,2000);
+  assert.equal(result.budget.enforcement,'reported-usage-settlement');
+});
+test('Hermes rejects reported token overage and missing accounting rather than claiming completion', async t=>{
+  const cwd=fixture(t);
+  const tooMany=createPortableHostAdapter({cwd,runtime:'hermes',tokenLimit:2000,
+    spawnImpl:mockProcess(JSON.stringify({type:'result',exit_code:0,text:'ok',tokens:{total:2001}})+'\n')});
+  await assert.rejects(tooMany.executeTask(makeTask()),e=>e.code==='ERR_PORTABLE_BUDGET_EXCEEDED');
+  const missing=createPortableHostAdapter({cwd,runtime:'hermes',
+    spawnImpl:mockProcess(JSON.stringify({type:'result',exit_code:0,text:'ok'})+'\n')});
+  await assert.rejects(missing.executeTask(makeTask()),e=>e.code==='ERR_PORTABLE_USAGE_UNAVAILABLE');
+});
+test('Hermes rejects invalid limits and preserves read-only execution restrictions',async t=>{
+  const cwd=fixture(t);
+  for(const options of [{tokenLimit:0},{tokenLimit:Infinity},{maxTurns:0},{maxTurns:11},{maxTurns:1.5}]){
+    assert.throws(()=>createPortableHostAdapter({cwd,runtime:'hermes',...options}),/Invalid portable/);
+  }
+  const a=createPortableHostAdapter({cwd,runtime:'hermes',maxTurns:1,tokenLimit:1000,
+    spawnImpl:()=>{throw Error('must not start')}});
+  await assert.rejects(a.executeTask({...makeTask(),scope:{readOnly:false,operationClass:'safe'}}),/read-only/);
+});

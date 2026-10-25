@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { hookPlan, applyHookPlan, guidedCommand } from '../src/antigravity-guided.mjs';
-import { sessionStart, resumeCapsule } from '../src/antigravity-guided-hook.mjs';
+import { sessionStart, resumeCapsule, preToolUse } from '../src/antigravity-guided-hook.mjs';
 
 const fixture = () => fs.mkdtempSync(path.join(os.tmpdir(), 'rig-guided-'));
 const cleanup = cwd => fs.rmSync(cwd, { recursive: true, force: true });
@@ -99,4 +99,44 @@ test('native IDE enabled toggle is honored and does not block safe uninstall', (
     guidedCommand('uninstall', { cwd, yes: true });
     assert.equal(fs.existsSync(config(cwd)), false);
   } finally { cleanup(cwd); }
+});
+
+test('PreToolUse host hook requests fresh user approval without auto-approval',()=>{
+  const cwd=fixture();
+  try{
+    const root=fs.realpathSync(cwd);
+    const payload=(name,args)=>({workspacePaths:[cwd],toolCall:{name,args}});
+    assert.deepEqual(preToolUse(root,payload('view_file',{AbsolutePath:path.join(root,'README.md')})),{decision:'allow'});
+    assert.equal(preToolUse(root,payload('write_to_file',{TargetFile:path.join(root,'good.txt')})).decision,'force_ask');
+    assert.equal(preToolUse(root,payload('replace_file_content',{TargetFile:path.join(root,'edited.txt')})).decision,'force_ask');
+    assert.equal(preToolUse(root,payload('write_to_file',{TargetFile:path.resolve(root,'../out.txt')})).decision,'deny');
+    assert.equal(preToolUse(root,payload('write_to_file',{})).decision,'deny');
+    assert.equal(preToolUse(root,payload('run_command',{Cwd:root,CommandLine:'npm test'})).decision,'force_ask');
+    assert.equal(preToolUse(root,payload('run_command',{Cwd:path.resolve(root,'..'),CommandLine:'npm test'})).decision,'deny');
+    assert.equal(preToolUse(root,payload('run_command',{CommandLine:'  '})).decision,'deny');
+    assert.equal(preToolUse(root,payload('search_web',{query:'current'})).decision,'force_ask');
+    assert.equal(preToolUse(root,{workspacePaths:[],toolCall:{name:'write_to_file',args:{TargetFile:'a'}}}).decision,'deny');
+    const linked=path.join(root,'linked');
+    try{fs.symlinkSync(path.dirname(root),linked,'dir');assert.equal(preToolUse(root,payload('write_to_file',{TargetFile:path.join(linked,'no.txt')})).decision,'deny');}
+    catch(e){if(!['EPERM','EACCES'].includes(e.code))throw e;}
+  }finally{cleanup(cwd);}
+});
+test('installed Antigravity PreToolUse runner follows host JSON contract and fails closed',()=>{
+  const cwd=fixture();
+  try{
+    guidedCommand('install',{cwd,yes:true});
+    const group=read(config(cwd))['xyeena-rig-guided'];
+    assert.equal(group.PreToolUse[0].matcher,'*');
+    const script=path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs');
+    const payload={workspacePaths:[cwd],toolCall:{name:'run_command',args:{CommandLine:'npm test',Cwd:cwd}}};
+    const result=spawnSync(process.execPath,[script,'PreToolUse'],{input:JSON.stringify(payload),encoding:'utf8'});
+    assert.equal(result.status,0,result.stderr);
+    const d=JSON.parse(result.stdout);
+    assert.equal(d.decision,'force_ask');
+    assert.equal(d.permissionOverrides,undefined);
+    const invalid=spawnSync(process.execPath,[script,'PreToolUse'],{input:'not-json',encoding:'utf8'});
+    assert.equal(JSON.parse(invalid.stdout).decision,'deny');
+    const oversized=spawnSync(process.execPath,[script,'PreToolUse'],{input:' '.repeat(66000),encoding:'utf8'});
+    assert.equal(JSON.parse(oversized.stdout).decision,'deny');
+  }finally{cleanup(cwd);}
 });
