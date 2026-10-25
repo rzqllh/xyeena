@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { pendingRuns, resumeCapsule, bindConversation, unbindConversation } from './antigravity-guided-hook.mjs';
+import { pendingRuns, resumeCapsule, bindConversation, unbindConversation, startHookProbe, hookProbeStatus, clearHookProbe } from './antigravity-guided-hook.mjs';
 
 const GROUP = 'xyeena-rig-guided';
 const SOURCE = fileURLToPath(new URL('./antigravity-guided-hook.mjs', import.meta.url));
@@ -135,17 +135,43 @@ export function applyHookPlan(plan, { yes = false } = {}) {
   }
   return { changed: true, file: plan.f.config };
 }
-export function guidedCommand(command, { cwd = process.cwd(), yes = false, id = null, conversationId = null } = {}) {
+export function guidedCommand(command, { cwd = process.cwd(), yes = false, id = null, conversationId = null, probeAction = null } = {}) {
   if (command === 'list') return pendingRuns(cwd).map(r => ({
     id: r.id, goal: String(r.snapshot.goal).slice(0, 120), state: r.snapshot.workflow_state }));
   if (command === 'resume') return resumeCapsule(cwd, id);
   if (command === 'bind') return bindConversation(cwd, id, conversationId, { yes });
   if (command === 'unbind') return unbindConversation(cwd, conversationId, { yes });
+  if (command === 'probe') {
+    const root = paths(cwd).root;
+    if (probeAction === 'status') return hookProbeStatus(root);
+    if (!['start', 'clear'].includes(probeAction))
+      throw new Error('Expected guided probe start|status|clear');
+    if (!yes) throw new Error('Explicit --yes required for hook probe changes');
+    if (probeAction === 'clear') return clearHookProbe(root);
+    const plan = hookPlan({ cwd: root, action: 'install' });
+    if (!plan.manifest || plan.config.value[GROUP]?.enabled === false ||
+        !plan.config.value[GROUP]?.PreToolUse || plan.changed)
+      throw new Error('Install or upgrade the enabled Xyeena PreToolUse hook before probing');
+    return startHookProbe(root);
+  }
   if (!['preview', 'install', 'uninstall', 'status'].includes(command))
     throw new Error('Expected guided preview|install|uninstall|status|list|resume|bind|unbind');
   const action = command === 'uninstall' ? 'uninstall' : 'install';
   const plan = hookPlan({ cwd, action });
-  if (command === 'status') return { installed: !!plan.manifest, enabled: plan.config.value[GROUP]?.enabled !== false, config: plan.f.config };
+  if (command === 'status') {
+    const configured = !!plan.manifest && !!plan.config.value[GROUP];
+    let probe;
+    try { probe = hookProbeStatus(plan.f.root); }
+    catch { probe = { state: 'PROBE_STATE_INVALID', hostEnforcement: 'UNVERIFIED' }; }
+    return { installed: configured, enabled: configured &&
+        plan.config.value[GROUP]?.enabled !== false,
+      config: plan.f.config, upgradeAvailable: plan.changed,
+      hostActivation: probe.state === 'CALLBACK_OBSERVED_UNATTESTED'
+        ? 'CALLBACK_OBSERVED_UNATTESTED' : 'UNVERIFIED',
+      hostEnforcement: 'UNVERIFIED', securityEnforced: false,
+      probe: probe.state,
+      note: 'Filesystem configuration is not proof that Antigravity IDE invoked or enforced a hook.' };
+  }
   if (command === 'preview') return plan.preview;
   return { ...plan.preview, result: applyHookPlan(plan, { yes }) };
 }
