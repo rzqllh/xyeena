@@ -43,7 +43,8 @@ Thumbs.db
 # Deployment artifacts
 site/.vercel/
 
-
-.agents/
+# Runtime locks, caches, and backups
+.xyeena/backups/
+.xyeena/*.lock
+.xyeena/rollback.json
 .subagentbridge/
-.xyeena/

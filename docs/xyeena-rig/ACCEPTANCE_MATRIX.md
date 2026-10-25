@@ -22,7 +22,7 @@ This matrix retains each acceptance ID individually for auditable traceability. 
 | A15 | Native worker lifecycle and health | CONTRACT PASS; LIVE PENDING | Host-issued handles in live runtime pending |
 | A16 | Bound recursion and shared writes | CI PASS | Concurrency fixtures |
 | A17 | Independent verification before completion | CI PASS | Checker contract; real criteria vary |
-| A18 | Five-host activation and reload | LIVE PARTIAL (2/5 ACCEPTED) | Antigravity and Hermes LIVE ACCEPTED on Windows host; Codex/Claude/Gemini LIVE BLOCKED by missing binaries |
+| A18 | Five-host activation and reload | LIVE PARTIAL (2/5 live smoke) | Antigravity and Hermes live smoke verified on Windows host; Codex/Claude/Gemini LIVE BLOCKED by missing binaries; full native host acceptance pending |
 | A19 | Cross-platform Node and packaging CI | CI PASS | Windows, macOS, Linux source CI |
 | A20 | Explicit merge/publish/trust permissions | CI PASS | Source safety tests |
 | A21 | Host/plugin provenance and trust inventory | CI PASS; LIVE PENDING | Host state must be checked natively |
@@ -35,7 +35,7 @@ This matrix retains each acceptance ID individually for auditable traceability. 
 | A28 | Consent and evidence boundary | CI PASS; LIVE AUTHORITY VERIFIED | Attacker approval injection blocked with ERR_HOST_BOUNDARY_UNAUTHENTICATED; env secret enforced |
 | A29 | Ownership-aware legacy migration | CI PASS | Migration smoke tests |
 | A30 | Uninstall and rollback integrity | CI PASS | Restore/fault tests |
-| A31 | Real five-host integration acceptance | LIVE PARTIAL (2/5 ACCEPTED) | Antigravity + Hermes LIVE ACCEPTED on Windows host; 3 CLIs uninstalled |
+| A31 | Real five-host integration acceptance | LIVE PARTIAL (2/5 live smoke) | Antigravity + Hermes live smoke verified on Windows host; 3 CLIs uninstalled; full native host integration pending |
 | A32 | Security regression and adversarial suite | CI PASS | Not an independent penetration test |
 | A33 | Release artifact/provenance and publication | CONDITIONAL GO | Package candidate verified (sha512, 236 files); v0.5.0 publication requires separate human authorization |
 

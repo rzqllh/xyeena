@@ -56,7 +56,7 @@ Executed within this Antigravity agent session using `src/orchestrator.mjs` API 
 - **Inventory:** 43 skills detected, including 15 Superpowers (`dispatching-parallel-agents`, `subagent-driven-development`, `systematic-debugging`, `test-driven-development`, `using-superpowers`, `verification-before-completion`, `writing-plans`, etc.).
 - **verification:** `LIVE_IN_SESSION`.
 - **Evidence artifact:** `.tmp/ops-live-acceptance/sandbox-ops02/ops02-evidence.json`.
-- **Status: INTEGRATION_VERIFIED** — in-session API execution confirmed. The current Antigravity session is itself proof that the host loads and routes through xyeena-orchestrate.
+- **Status: LIVE_PARTIAL (live smoke passed; full native host acceptance pending)** — in-session API execution and skill resolution confirmed. Full native host acceptance requires independent verification of subagent dispatch, native IDE prompts, and multi-agent supervisor interception.
 
 ### OPS-07 — Harness security gate live tests
 
@@ -68,34 +68,39 @@ Executed within this Antigravity agent session using `src/orchestrator.mjs` API 
 | Attacker-supplied approval callback | `createTrustedHostApprovalAuthority({ approvalBridge: () => ({approved:true}), hostBoundarySecret: "attacker" })` | BLOCKED | `ERR_HOST_BOUNDARY_UNAUTHENTICATED` |
 | Missing env secret | `createTrustedHostApprovalAuthority` with no `XYEENA_HOST_BOUNDARY_SECRET` | BLOCKED | `ERR_HOST_BOUNDARY_UNAUTHENTICATED` |
 
-Shell command returned ALLOW (observation-only mode — harness not installed in test worktree). This is the documented `LIVE_PENDING` condition for live tool interception.
+Shell command returned ALLOW in observation-only mode (harness uninstalled in the test worktree).
 
-**Status: CI_PASS (automated). Boundary enforcement and authority injection attack both fail closed — confirmed live. Live shell-command interception: LIVE_PENDING (requires `xyeena guided install` in the target project).**
+**Status: CI_PASS; LIVE_BOUNDARY_VERIFIED. Boundary rules and authority injection attack fail closed — confirmed live in sandbox. Transparent host tool/shell interception: LIVE_PENDING (requires `xyeena guided install` in target project).**
 
 ### OPS-06 — Hermes live detection, fix, and verified execution
 
-- **Binary:** `C:\Users\Hafizh Rizqullah\AppData\Local\hermes\bin\hermes.exe` — version `v0.22.2+7.g16c5e85`.
-- **Auth:** Nous Portal logged in, OpenAI Codex OAuth logged in.
+- **Binary:** `<user-local-bin>/hermes.exe` (Windows path: `C:\Users\<user>\AppData\Local\hermes\bin\hermes.exe`) — version `v0.22.2+7.g16c5e85`.
+- **Auth:** Authenticated provider session configured.
 - **Root cause analysis:**
-  1. Process launch: On Windows, `windowsVerbatimArguments: true` was inadvertently enabled on native `.exe` binaries whose path contained spaces (`C:\Users\Hafizh Rizqullah\...`). This prevented Node from quoting the path, causing Windows `CreateProcess` to split the path at the space and fail with exit code 1 (`hermes: 'Rizqullah\AppData\Local\hermes\bin\hermes.exe' is not a hermes command.`).
+  1. Process launch: On Windows, `windowsVerbatimArguments: true` was inadvertently enabled on native `.exe` binaries whose path contained spaces (e.g. `C:\Users\Example User\...`). This prevented Node from quoting the path, causing Windows `CreateProcess` to split the path at the space and fail with exit code 1 (`<user-with-space>\AppData\Local\hermes\bin\hermes.exe is not a hermes command.`).
   2. Protocol parsing: In `stream-json` mode, Hermes CLI emits a trailing telemetry line (`session_id: <id>`) after JSON events. The JSONL parser attempted to parse this line as JSON, throwing `Hermes CLI returned invalid JSONL`.
-- **Source fix:**
+- **Source fix & hardening:**
   - `src/portable-cli-adapter.mjs`: `portableLaunchPlan` explicitly sets `windowsVerbatimArguments: false` for native `.exe` executables, reserving `true` strictly for `cmd.exe` shims (`.cmd`/`.bat`).
-  - `decodeResponse`: tolerates non-JSON trailing telemetry lines by checking `line.trim().startsWith('{')`.
-  - Diagnostics: captured stderr details in nonzero exit errors.
-  - Regression tests added in `test/portable-cli-adapter.test.mjs` (323 tests total, all passing).
-- **Live verification:**
+  - `decodeResponse`: tolerates documented non-JSON trailing telemetry footers matching `/^session_id:\s*[A-Za-z0-9_.-]+$/` while strictly failing closed on any other unexpected non-JSON output.
+  - Error event detection: detects structured error events (`event.type === 'error'`, `event.type === 'turn.failed'`) and fails closed even if subsequent result events exist.
+  - Stderr sanitization: eliminates raw child stderr interpolation into thrown error messages; uses `classifyStderr()` allowlist returning only high-level diagnostic codes (`COMMAND_NOT_FOUND`, `AUTH_REQUIRED`, `RATE_LIMITED`) to prevent leaking auth tokens, passwords, or machine-specific file paths.
+  - Adversarial regression tests added in `test/portable-cli-adapter.test.mjs` verifying strict parsing, error event rejection, and stderr leak prevention (327 tests total, all passing).
+- **Live verification (Smoke):**
   - Command: `node ./bin/xyeena.mjs host run --runtime hermes --goal "Sebutkan nama proyek dan cabang git aktif" --yes`.
   - Exit code: 0.
   - Tokens: 75,361 total tokens recorded.
   - Model outcome: Factually identified project as `xyeena`, working directory `_active/xyeena`, active branch `ops/live-acceptance-evidence-2026-10-25`, and accurately declined shell execution.
-- **Status: LIVE_ACCEPTED** — real model call executed, terminal `{type: "result", exit_code: 0}` event parsed, factual evidence returned and verified.
+- **Token Accounting & Budget Analysis:**
+  - Event accounting semantics: In Hermes CLI `--format stream-json`, `tokens.total` reports cumulative token consumption across all session steps (`input_tokens + output_tokens + cache_read_tokens`).
+  - Underlying session execution: For goal `"Sebutkan nama proyek dan cabang git aktif"`, Hermes loaded system instructions and full tool schemas (~32k tokens), performed an inspection step, and synthesized the Indonesian response.
+  - Budget enforcement: The 75,361 cumulative token count was evaluated against `ResourceBudgetLedger` in `src/live-backend.mjs` (default ceiling: 200,000 tokens) and verified to remain well within safe resource constraints.
+- **Status: LIVE_PARTIAL (live smoke passed; full native host acceptance pending)** — real model call executed, terminal `{type: "result", exit_code: 0}` event parsed, factual evidence returned and verified. Full native host acceptance requires multi-turn execution, tool invocation, interrupt/cancellation, and independent verification outside self-authored output.
 
 ### OPS-03, OPS-04, OPS-05 — Host CLI detection on this Windows device
 
 Detection method: `Get-Command codex, claude, gemini -ErrorAction SilentlyContinue` and `where.exe codex; where.exe claude; where.exe gemini`. Global npm: `npm list -g --depth=0`. All returned empty.
 
-- **OPS-03 (Codex):** LIVE_BLOCKED. No `codex` binary. Hermes has Codex OAuth but no standalone Codex CLI.
+- **OPS-03 (Codex):** LIVE_BLOCKED. No standalone `codex` CLI binary installed on host.
 - **OPS-04 (Claude Code):** LIVE_BLOCKED. No `claude` binary.
 - **OPS-05 (Gemini CLI):** LIVE_BLOCKED. No `gemini` binary.
 
@@ -127,7 +132,7 @@ SubagentBridge workspace access blocked by agent policy. No live MCP transport. 
 - Effective skills used: `xyeena-orchestrate`, `xyeena-verify`, `xyeena-debug`.
 - Subagent delegation: Marked `PENDING` (no native subagent runner tool exposed in this agent session; no simulated execution).
 - Independent verification: Criteria 1–5 satisfied, task completed with zero file mutations.
-- **Status: LIVE_ACCEPTED (in-session task execution)**.
+- **Status: LIVE_PARTIAL (live smoke passed in-session; full native host acceptance pending)**.
 
 ### Harness Boundary Classification (Task 4)
 - **Unit / API gates:** CI_PASS (automated tests in `test/rig-harness-lifecycle.test.mjs` and `test/security-hardening.test.mjs`).

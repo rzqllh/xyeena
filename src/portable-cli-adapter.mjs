@@ -106,17 +106,36 @@ function decodeResponse(host, output) {
     if (failed || !last) throw new Error('Codex CLI did not return a successful agent message');
     return { report: last, usageTokens };
   }
+
   let last = null;
+  let errorEvent = null;
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed.startsWith('{')) continue;
+    if (!trimmed.startsWith('{')) {
+      if (/^session_id:\s*[A-Za-z0-9_.-]+$/.test(trimmed)) continue;
+      throw new Error('Hermes CLI returned unexpected non-JSON output');
+    }
     let event;
     try { event = JSON.parse(trimmed); } catch { throw new Error('Hermes CLI returned invalid JSONL'); }
-    if (event?.type === 'result') last = event;
+    if (event?.type === 'error' || event?.type === 'turn.failed' || (event?.type !== 'tool_result' && event?.error)) {
+      errorEvent = event;
+    }
+    if (event?.type === 'result') {
+      last = event;
+    }
   }
+  if (errorEvent) throw new Error('Hermes CLI reported an error event');
   if (!last || last.exit_code !== 0 || typeof last.text !== 'string' || last.error)
     throw new Error('Hermes CLI did not return a successful final result');
   return { report: last.text, usageTokens: Number.isSafeInteger(last.tokens?.total) ? last.tokens.total : null };
+}
+
+function classifyStderr(text) {
+  if (typeof text !== 'string' || !text.trim()) return null;
+  if (/not found|is not recognized|not a `?[a-z0-9_-]+`? command/i.test(text)) return 'COMMAND_NOT_FOUND';
+  if (/unauthorized|authentication|not logged in|login required/i.test(text)) return 'AUTH_REQUIRED';
+  if (/rate limit|quota|too many requests/i.test(text)) return 'RATE_LIMITED';
+  return null;
 }
 
 /** Caller-provided, explicit host process; never auto-launch or inherit external approvals. */
@@ -193,8 +212,9 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
         child.on('close', code => {
           if (finished) return;
           if (code !== 0) {
-            const detail = stderrText.trim() ? ': ' + stderrText.trim().slice(0, 500) : '';
-            done(new Error(runtime + ' CLI returned a nonzero status' + detail));
+            const diag = classifyStderr(stderrText);
+            const detail = diag ? ` [${diag}]` : '';
+            done(new Error(`${runtime} CLI returned a nonzero status${detail}`));
             return;
           }
           try {
