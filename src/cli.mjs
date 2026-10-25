@@ -54,6 +54,7 @@ Usage:
   xyeena eval
   xyeena run-init --goal TEXT [--dir PATH]
   xyeena guided preview|install|status|uninstall [--dir PATH] [--yes]
+  xyeena guided probe start|status|clear [--dir PATH] [--yes] # diagnostic only
   xyeena guided list|resume [--id RUN_ID] [--dir PATH]
   xyeena guided bind --id RUN_ID --conversation UUID --yes
   xyeena guided unbind --conversation UUID --yes
@@ -226,7 +227,7 @@ export async function main(args){
   }
  if(cmd==='eval'){const r=runEvals(); for(const d of r.details)console.log(`${d.ok?'PASS':'FAIL'} ${d.name}: ${d.actual}`); console.log(`\n${r.pass} passed, ${r.fail} failed`); if(r.fail)process.exitCode=1;return}
  if(cmd==='guided'){
-    const result=guidedCommand(f._[0]||'preview',{cwd:path.resolve(f.dir||process.cwd()),yes:!!f.yes,id:f.id||null,conversationId:f.conversation||null});
+    const result=guidedCommand(f._[0]||'preview',{cwd:path.resolve(f.dir||process.cwd()),yes:!!f.yes,id:f.id||null,conversationId:f.conversation||null,probeAction:f._[1]||null});
     console.log(JSON.stringify(result,null,2));
     return;
   }
