@@ -14,8 +14,8 @@ This matrix retains each acceptance ID individually for auditable traceability. 
 | A08 | Keep legacy installation compatible | CI PASS | Consumer regression |
 | A09 | Load compact governor reference | CI PASS | Workspace fixture |
 | A10 | Native operation without optional providers | CI PASS | Fallback tests |
-| A11 | Distinguish skill presence from activation | PARTIAL; LIVE VERIFIED | Antigravity session confirms skill discovery + in-session execution; plugin live reporting verified |
-| A12 | Core Harness operation boundaries | CI PASS; LIVE BOUNDARY TESTED | Safe read (ALLOW), outside workspace write (DENY), external HTTP (DENY) verified live |
+| A11 | Distinguish skill presence from activation | PARTIAL; LIVE SMOKE | Host skill inventory and read-only in-session task observed; native plugin activation telemetry not independently proven |
+| A12 | Core Harness operation boundaries | CI PASS; API TESTED; LIVE PENDING | Library preToolGate read/write/network decisions tested; automatic host interception not demonstrated |
 | A13 | Contextual project Harness opt-in | CI PASS | Guide selection tests |
 | A14 | Simpul dispatch/cancel/timeout lifecycle | CONTRACT PASS; LIVE BLOCKED | Upstream supervisor unavailable; native fallback active |
 | A14a | Verified adapter or safe inline fallback | CI PASS | Adapter tests |
@@ -29,10 +29,10 @@ This matrix retains each acceptance ID individually for auditable traceability. 
 | A22 | Capability and dependency closure | CI PASS | Resolver tests |
 | A23 | Single governor for optional providers | CI PASS | Arbitration fixtures |
 | A24 | Native fallback across provider combinations | CI PASS; LIVE PENDING | Eight test scenarios; host acceptance pending |
-| A25 | Per-tool Harness authorization/worker scope | CI PASS; LIVE BOUNDARY VERIFIED | Pre-tool gate verified live in sandbox; shell hook interception requires guided project install |
+| A25 | Per-tool Harness authorization/worker scope | CI PASS; LIVE PENDING | Explicit preToolGate calls passed; real native host interception and worker scope still need acceptance |
 | A26 | Budget and concurrency enforcement | CI PASS | Ledger and dispatcher fixtures |
 | A27 | Checkpoint and crash-safe recovery | CI PASS | Recovery/fencing tests |
-| A28 | Consent and evidence boundary | CI PASS; LIVE AUTHORITY VERIFIED | Attacker approval injection blocked with ERR_HOST_BOUNDARY_UNAUTHENTICATED; env secret enforced |
+| A28 | Consent and evidence boundary | CI PASS; NEGATIVE TEST PASS; LIVE PENDING | Forged caller authority rejected by library; no independent observation of real host-authorized privileged invocation |
 | A29 | Ownership-aware legacy migration | CI PASS | Migration smoke tests |
 | A30 | Uninstall and rollback integrity | CI PASS | Restore/fault tests |
 | A31 | Real five-host integration acceptance | LIVE PARTIAL (2/5 live smoke) | Antigravity + Hermes live smoke verified on Windows host; 3 CLIs uninstalled; full native host integration pending |

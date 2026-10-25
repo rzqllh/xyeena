@@ -46,7 +46,7 @@ Each completed operational gate should record its environment, exact commit, hos
 
 ### OPS-02 — Antigravity live in-session task execution
 
-Executed within this Antigravity agent session using `src/orchestrator.mjs` API directly:
+Preview and gate APIs were invoked from an Antigravity session. A separate read-only in-session tool smoke is recorded below; neither proves that every IDE tool call is intercepted by Xyeena:
 
 - **Governor:** `/xyeena-orchestrate` (detected, eligible).
 - **Selected skills:** `["xyeena-orchestrate", "writing-skills"]` (state: VERIFY).
@@ -54,7 +54,7 @@ Executed within this Antigravity agent session using `src/orchestrator.mjs` API 
 - **Task:** `ops02-live-001` — "Verify Xyeena skill inventory", scope: `{readOnly: true, operationClass: "safe"}`.
 - **Harness pre-tool gate:** `ALLOW` (rule: `core-safety`, actionType: `read`).
 - **Inventory:** 43 skills detected, including 15 Superpowers (`dispatching-parallel-agents`, `subagent-driven-development`, `systematic-debugging`, `test-driven-development`, `using-superpowers`, `verification-before-completion`, `writing-plans`, etc.).
-- **verification:** `LIVE_IN_SESSION`.
+- **Preview field:** `LIVE_IN_SESSION` was self-recorded during a preflight-only session; it is **not** evidence of completed task execution. Historical artifact reclassified as `TASK_UNEXECUTED; REVIEW_REQUIRED`.
 - **Evidence artifact:** `.tmp/ops-live-acceptance/sandbox-ops02/ops02-evidence.json`.
 - **Status: LIVE_PARTIAL (live smoke passed; full native host acceptance pending)** — in-session API execution and skill resolution confirmed. Full native host acceptance requires independent verification of subagent dispatch, native IDE prompts, and multi-agent supervisor interception.
 
@@ -70,7 +70,7 @@ Executed within this Antigravity agent session using `src/orchestrator.mjs` API 
 
 Shell command returned ALLOW in observation-only mode (harness uninstalled in the test worktree).
 
-**Status: CI_PASS; LIVE_BOUNDARY_VERIFIED. Boundary rules and authority injection attack fail closed — confirmed live in sandbox. Transparent host tool/shell interception: LIVE_PENDING (requires `xyeena guided install` in target project).**
+**Status: CI_PASS; LIBRARY_GATE_TESTED; HOST_INTERCEPTION_PENDING.** The API boundary checks were invoked by the agent explicitly; they did not demonstrate automatic interception of the Antigravity host tools. Native host authorization and shell/tool interception still require observed host-side tests.
 
 ### OPS-06 — Hermes live detection, fix, and verified execution
 
@@ -91,9 +91,9 @@ Shell command returned ALLOW in observation-only mode (harness uninstalled in th
   - Tokens: 75,361 total tokens recorded.
   - Model outcome: Factually identified project as `xyeena`, working directory `_active/xyeena`, active branch `ops/live-acceptance-evidence-2026-10-25`, and accurately declined shell execution.
 - **Token Accounting & Budget Analysis:**
-  - Event accounting semantics: In Hermes CLI `--format stream-json`, `tokens.total` reports cumulative token consumption across all session steps (`input_tokens + output_tokens + cache_read_tokens`).
-  - Underlying session execution: For goal `"Sebutkan nama proyek dan cabang git aktif"`, Hermes loaded system instructions and full tool schemas (~32k tokens), performed an inspection step, and synthesized the Indonesian response.
-  - Budget enforcement: The 75,361 cumulative token count was evaluated against `ResourceBudgetLedger` in `src/live-backend.mjs` (default ceiling: 200,000 tokens) and verified to remain well within safe resource constraints.
+  - Reported usage: the Hermes terminal event was reported as `tokens.total = 75,361`. Whether this includes cache reads or represents the cumulative full host session was not independently confirmed from sanitized provider usage breakdown.
+  - Cost explanation: a large system/tool context and multiple internal steps are possible contributors, but exact token categories, cache accounting and model behavior were not established by this acceptance evidence.
+  - **Budget limitation:** `xyeena host run` constructs `createPortableHostAdapter` directly and does **not** connect this invocation to `ResourceBudgetLedger`. The ledger's default `tokenLimit = 200000` is not proof of a ceiling enforced on this Hermes invocation. Actual provider usage, cost and budget enforcement for the portable CLI remain unverified and require a separate acceptance test.
 - **Status: LIVE_PARTIAL (live smoke passed; full native host acceptance pending)** — real model call executed, terminal `{type: "result", exit_code: 0}` event parsed, factual evidence returned and verified. Full native host acceptance requires multi-turn execution, tool invocation, interrupt/cancellation, and independent verification outside self-authored output.
 
 ### OPS-03, OPS-04, OPS-05 — Host CLI detection on this Windows device
@@ -131,13 +131,13 @@ SubagentBridge workspace access blocked by agent policy. No live MCP transport. 
   3. `view_file` on `README.md`: verified package description and reference links.
 - Effective skills used: `xyeena-orchestrate`, `xyeena-verify`, `xyeena-debug`.
 - Subagent delegation: Marked `PENDING` (no native subagent runner tool exposed in this agent session; no simulated execution).
-- Independent verification: Criteria 1–5 satisfied, task completed with zero file mutations.
+- Task outcome: read-only `view_file` and `run_command` observations were checked for internal consistency in the same Antigravity session. No separate independent execution checker or full host tool-interception trace was supplied; full native acceptance remains pending.
 - **Status: LIVE_PARTIAL (live smoke passed in-session; full native host acceptance pending)**.
 
 ### Harness Boundary Classification (Task 4)
 - **Unit / API gates:** CI_PASS (automated tests in `test/rig-harness-lifecycle.test.mjs` and `test/security-hardening.test.mjs`).
-- **Antigravity host tool interception:** Tested live in-session. Safe workspace read ALLOW (`core-safety`), traversal outside root write DENIED (`Workspace boundary violation`), external HTTP DENIED (`blocked: true`).
-- **Host-mediated human approval:** Host IDE dialog prompts active; attacker authority injection blocked with `ERR_HOST_BOUNDARY_UNAUTHENTICATED`.
+- **Harness library API calls:** `preToolGate()` returned ALLOW for a read and DENY for out-of-scope writes/network calls when invoked directly from the IDE session. These results are **not** proof of automatic interception of actual IDE tool invocations.
+- **Host-mediated approval:** The caller-created authority negative test produced `ERR_HOST_BOUNDARY_UNAUTHENTICATED` in the library. A real host approval dialog associated with a Xyeena-gated privileged action has not been independently demonstrated.
 - **Transparent shell command interception:** LIVE_PENDING (requires project-level `xyeena guided install`).
 
 

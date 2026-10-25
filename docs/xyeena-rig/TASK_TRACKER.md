@@ -10,7 +10,7 @@ All eight engineering phases are present in `main` with automated checks. The re
 | OPS-04 | P0 | Claude Code native host acceptance | LIVE BLOCKED | Standalone `claude` CLI not installed on host |
 | OPS-05 | P0 | Gemini CLI native host acceptance | LIVE BLOCKED | Standalone `gemini` CLI not installed on host |
 | OPS-06 | P0 | Hermes native host acceptance | LIVE PARTIAL | Hermes single-turn smoke PASS (exit 0, 75k tokens, factual output); Windows path fix, stderr leak prevention & strict JSONL verified; full native host acceptance PENDING |
-| OPS-07 | P0 | Trusted host consent and tool interception | CI PASS; LIVE PENDING | Boundary rules and authority injection fail-closed verified live; transparent host tool/shell interception requires guided install |
+| OPS-07 | P0 | Trusted host consent and tool interception | CI PASS; LIVE PENDING | Library boundary tests and forged-authority rejection pass; native host interception and human approval provenance not yet accepted |
 | OPS-08 | P1 | Acceptance and security review sign-off | CONDITIONAL GO | 327/327 unit tests PASS (including adversarial parser/stderr tests), 19 caps PASS, 18/18 eval PASS, 15/15 harness PASS, packed consumer PASS; OPS-02 & OPS-06 live smoke verified |
 | OPS-09 | P1 | Release candidate and npm publication | NOT AUTHORIZED | Candidate ready (sha512 verified, 236 files); publication strictly requires explicit human authorization |
 
