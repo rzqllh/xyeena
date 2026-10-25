@@ -118,6 +118,10 @@ function guidedIntegrity(cwd) {
   const pre = group?.PreToolUse?.[0], entry = pre?.hooks?.[0];
   const preToolUseRegistered = pre?.matcher === '*' && entry?.type === 'command' &&
     entry?.command === target.PreToolUse[0].hooks[0].command;
+  // Diagnostics may tolerate unrelated host changes, but not any modification
+  // to the complete safety-critical PreToolUse event (including added hooks).
+  const preToolUseExact = present &&
+    JSON.stringify(group.PreToolUse) === JSON.stringify(target.PreToolUse);
   const enabled = present && group.enabled !== false;
   return {
     installed: !!manifest && present,
@@ -126,8 +130,11 @@ function guidedIntegrity(cwd) {
     managedIntegrity: !manifest ? (present ? 'UNOWNED' : 'NOT_INSTALLED')
       : !present ? 'MISSING_GROUP' : managedHashMatch ? 'MATCH' : 'MODIFIED',
     runnerIntegrity, changedManagedFields: driftPaths,
-    preToolUseRegistered, preToolUseEnabled: enabled && preToolUseRegistered &&
+    preToolUseRegistered, preToolUseExact,
+    preToolUseEnabled: enabled && preToolUseRegistered &&
       pre.enabled !== false && entry.enabled !== false,
+    probeEligible: !!manifest && enabled && preToolUseExact &&
+      runnerIntegrity === 'MATCH',
     hostEnforcement: 'UNVERIFIED', securityEnforcementVerified: false,
   };
 }
@@ -211,7 +218,7 @@ function guidedStatus(cwd) {
       ? 'CALLBACK_OBSERVED_UNATTESTED' : 'UNVERIFIED',
     probe: probe.state,
     note: info.managedIntegrity === 'MODIFIED'
-      ? 'Managed hook group drift detected. Probe start and installer still refuse to overwrite it; review changedManagedFields and .agents/hooks.json. No files changed by status.'
+      ? 'Managed hook group drift detected. Installer will not overwrite it. Read-only probe may run only with an exact, enabled PreToolUse event and verified runner; review changedManagedFields before relying on any hook behavior.'
       : 'Filesystem configuration or a local callback does not prove Antigravity native policy enforcement.' };
 }
 
@@ -228,11 +235,14 @@ export function guidedCommand(command, { cwd = process.cwd(), yes = false, id = 
       throw new Error('Expected guided probe start|status|clear');
     if (!yes) throw new Error('Explicit --yes required for hook probe changes');
     if (probeAction === 'clear') return clearHookProbe(root);
-    const plan = hookPlan({ cwd: root, action: 'install' });
-    if (!plan.manifest || plan.config.value[GROUP]?.enabled === false ||
-        !plan.config.value[GROUP]?.PreToolUse || plan.changed)
-      throw new Error('Install or upgrade the enabled Xyeena PreToolUse hook before probing');
-    return startHookProbe(root);
+    const info = guidedIntegrity(root);
+    // Probe activation changes ONLY local diagnostic state; never re-installs
+    // or repairs .agents/hooks.json. Drift in other event types is preserved.
+    if (!info.probeEligible)
+      throw new Error('Probe requires an owned, enabled, exact PreToolUse event and matching managed runner; review guided status');
+    return { ...startHookProbe(root),
+      managedIntegrity: info.managedIntegrity,
+      otherManagedChanges: info.changedManagedFields };
   }
   if (command === 'status') return guidedStatus(cwd);
   if (!['preview', 'install', 'uninstall'].includes(command))
