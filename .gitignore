@@ -43,3 +43,7 @@ Thumbs.db
 # Deployment artifacts
 site/.vercel/
 
+
+.agents/
+.subagentbridge/
+.xyeena/
