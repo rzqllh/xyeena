@@ -313,3 +313,61 @@ test('agy Windows native command runs from .agents even with spaces in workspace
     assert.equal(JSON.parse(result.stdout).decision,'force_ask');
   } finally { cleanup(temp); }
 });
+
+test('guided status reports host-mutated group safely and leaves managed files untouched',()=>{
+  const cwd=fixture();
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    const before=read(config(cwd));
+    const modified=structuredClone(before);
+    // Simulate a host /hooks GUI adding event-level metadata, not an owned
+    // installer change. Root-level enabled toggles are already supported.
+    modified['xyeena-rig-guided'].PreToolUse[0].enabled=false;
+    fs.writeFileSync(config(cwd),JSON.stringify(modified,null,2));
+    const original=fs.readFileSync(config(cwd),'utf8');
+    const result=guidedCommand('status',{cwd});
+    assert.equal(result.installed,true);
+    assert.equal(result.managedIntegrity,'MODIFIED');
+    assert.equal(result.runnerIntegrity,'MATCH');
+    assert.equal(result.preToolUseRegistered,true);
+    assert.equal(result.preToolUseEnabled,false);
+    assert.deepEqual(result.changedManagedFields,['PreToolUse[0].enabled']);
+    assert.equal(result.upgradeAvailable,null);
+    assert.equal(result.hostEnforcement,'UNVERIFIED');
+    assert.equal(result.securityEnforcementVerified,false);
+    assert.equal(fs.readFileSync(config(cwd),'utf8'),original);
+    assert.throws(()=>guidedCommand('probe',{cwd,probeAction:'start',yes:true}),/Managed hook group was changed/);
+    assert.throws(()=>guidedCommand('install',{cwd,yes:true}),/Managed hook group was changed/);
+    assert.equal(fs.readFileSync(config(cwd),'utf8'),original);
+    assert.equal(guidedCommand('probe',{cwd,probeAction:'status'}).state,'NOT_STARTED');
+  } finally {cleanup(cwd);}
+});
+test('guided status reports an altered PreToolUse command without printing the command',()=>{
+  const cwd=fixture();
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    const modified=read(config(cwd));
+    modified['xyeena-rig-guided'].PreToolUse[0].hooks[0].command='UNTRUSTED_COMMAND_PRIVATE';
+    fs.writeFileSync(config(cwd),JSON.stringify(modified));
+    const output=guidedCommand('status',{cwd});
+    assert.equal(output.managedIntegrity,'MODIFIED');
+    assert.equal(output.preToolUseRegistered,false);
+    assert.equal(output.preToolUseEnabled,false);
+    assert.deepEqual(output.changedManagedFields,['PreToolUse[0].hooks[0].command']);
+    assert.ok(!JSON.stringify(output).includes('UNTRUSTED_COMMAND_PRIVATE'));
+  } finally { cleanup(cwd); }
+});
+test('guided status reports disabled managed root toggle as supported, not hash drift',()=>{
+  const cwd=fixture();
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    const updated=read(config(cwd));
+    updated['xyeena-rig-guided'].enabled=false;
+    fs.writeFileSync(config(cwd),JSON.stringify(updated));
+    const status=guidedCommand('status',{cwd});
+    assert.equal(status.enabled,false);
+    assert.equal(status.preToolUseEnabled,false);
+    assert.equal(status.managedIntegrity,'MATCH');
+    assert.deepEqual(status.changedManagedFields,[]);
+  } finally {cleanup(cwd);}
+});

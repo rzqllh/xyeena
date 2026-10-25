@@ -22,7 +22,7 @@ xyeena guided uninstall --dir . --yes
 
 ## Native host callback diagnostic (does not grant security)
 
-The installed `guided status` result reports `installed` and `enabled` from the workspace manifest, while `hostActivation`, `hostEnforcement`, and `securityEnforced` explicitly distinguish native host behavior. A configured hook alone is not proof of IDE interception.
+The installed `guided status` result reports `installed` and `enabled` from the workspace manifest, while `hostActivation`, `hostEnforcement`, and `securityEnforcementVerified` explicitly distinguish native host behavior. A configured hook alone is not proof of IDE interception.
 
 To inspect a **fresh diagnostic signal** (five-minute window, private local storage):
 
@@ -38,6 +38,12 @@ xyeena guided probe clear --dir . --yes
 `AWAITING_CALLBACK` after a real tool execution indicates no hook callback was recorded. A `CALLBACK_OBSERVED_UNATTESTED` receipt **only proves a local hook runner was invoked**: local scripts can generate the same receipt, and even a real callback does not prove the IDE honored `deny` or `force_ask`. No raw prompt, command, path, transcript, tokens, or credentials are persisted; probe state is stored under `.xyeena/guided/probe/` behind a local `.gitignore`. This diagnostic does not modify other hook groups or permissions. Host enforcement requires an independent native tool deny and human approval observation.
 
 In one reproduced Windows Antigravity IDE **2.5.5** session on 2026-10-25, the installed hook did not block an out-of-workspace read-only `run_command` and no native prompt appeared. This is evidence of an **unenforced boundary in that session**, not proof of the cause. [Google's Hooks documentation](https://www.antigravity.google/docs/hooks) describes IDE support, while an [August 2026 community reproduction](https://discuss.ai.google.dev/t/do-antigravity-ide-2-0-actually-execute-plugin-hooks-pretooluse-posttooluse-or-is-that-cli-only-right-now/176814) reports native CLI hooks firing but IDE hooks remaining silent in tested older versions. Neither source establishes that every IDE build behaves identically.
+
+## Host-modified configuration and integrity
+
+Antigravity's interactive `/hooks` menu may modify managed hook fields. When `guided probe start` reports `Managed hook group was changed; refusing overwrite`, **do not re-install, delete the manifest, or reset the managed JSON** without reviewing the change. The 5-minute probe has **not started**; `NOT_STARTED` is expected, not evidence that the host skipped a callback.
+
+Use `xyeena guided status --dir .` from this PR to safely inspect `managedIntegrity`, `runnerIntegrity`, `preToolUseRegistered`, `preToolUseEnabled` and `changedManagedFields`. Status no longer relies on the installer guard and remains read-only even after host-side drift. `changedManagedFields` lists JSON field locations, not command contents, paths or secrets. A root `enabled` toggle is supported; nested event-level changes still block installer and probe start pending review. No file is silently overwritten.
 
 ## Session behavior
 

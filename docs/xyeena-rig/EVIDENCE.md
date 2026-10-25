@@ -166,3 +166,9 @@ The code in the pending feature PR adds the opt-in Antigravity native `PreToolUs
 
 - **Later live CLI failure, 2026-10-25:** After quote-free hook command installation, native `agy` again aborted a `run_command` with `MODULE_NOT_FOUND` because it resolved `node .xyeena/hooks/antigravity-guided.mjs` relative to `<workspace>/.agents/` instead of workspace root, producing `<workspace>/.agents/.xyeena/hooks/antigravity-guided.mjs`. The script existed at `<workspace>/.xyeena/hooks/antigravity-guided.mjs`; this is a command-working-directory mismatch, not proof of a missing script or broken Node installation.
 - **Updated correction (pending live acceptance):** Windows launcher is `node ../.xyeena/hooks/antigravity-guided.mjs EVENT`, with a regression executing the exact installed command from an actual `.agents` working directory, including paths under a directory containing spaces. This correction is not proof of live `agy` enforcement until the user retests in CLI.
+
+## 2026-10-25 CLI /hooks configuration integrity conflict
+
+- After disabling the global Coucou hook in `agy`, a read-only `git status --short` executed and reported a modified `.gitignore`. No Xyeena `force_ask` dialog was reported, but host activation is not proven and Xyeena's enabled state may have been changed by `/hooks`.
+- An explicit `guided probe start --dir . --yes` failed with `Managed hook group was changed; refusing overwrite`. `guided probe status` then returned `NOT_STARTED`, as expected because no diagnostic window was ever created. The exact field changed in `hooks.json` has **not** been inspected; attributing it to the Coucou toggle would be speculative.
+- Follow-up branch adds read-only status reporting for managed group drift and nested event-level enablement with no secret-bearing config values. Installer/probe start still refuse to overwrite or proceed on unreviewed modifications. Do not weaken integrity protections merely to force the probe.
