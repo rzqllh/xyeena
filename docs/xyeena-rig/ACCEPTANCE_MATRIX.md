@@ -63,3 +63,7 @@ PR #50 final-head GitHub CI [40272104829](https://github.com/rzqllh/xyeena/actio
 ## RIG-only host acceptance scope (2026-10-26)
 
 Source `ops preflight` and the Windows acceptance JSON enumerate only native RIG host requirements (#34, #36, #37). A14/OPS-01/#35 document an **optional external adapter** and cannot block RIG-native release. Hermes native cancellation and user authorization remain in RIG scope; a separately operated provider billing hard cap is not a RIG-native capability claim. This scope correction does **not** turn any untested native host into LIVE PASS.
+
+## Exact managed hook shape — new source regression
+
+A12/A25/A28 source diagnostics now refuse to report managed PreToolUse registration for commands that only **mention** the runner, multiple command hooks or changed timeout. An enabled, exact local entry still reports `hostEnforcement: UNVERIFIED` and cannot independently satisfy the Antigravity IDE LIVE gate #34.
