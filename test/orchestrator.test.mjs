@@ -153,3 +153,29 @@ test('regression P02: adaptive fallback passes effective fallback skills and pat
   assert.ok(!passedSkills.includes('systematic-debugging'));
   assert.deepEqual(result.selectedSkills, passedSkills);
 });
+
+test('orchestrator propagates cancellation to the native adapter and rejects pre-aborted tasks',async t=>{
+  const cwd=workspace(t);
+  add(cwd,'.gemini/skills','xyeena-orchestrate');
+  const plan=previewOrchestration({cwd,runtime:'gemini',goal:'Review source',includeGlobal:false});
+  const preAborted=new AbortController();
+  preAborted.abort();
+  let called=false;
+  await assert.rejects(executeOrchestration(plan,{
+    yes:true,signal:preAborted.signal,
+    portableAdapterFactory:()=>{called=true;throw Error('never create worker');}
+  }),e=>e.code==='ERR_ORCHESTRATION_CANCELED');
+  assert.equal(called,false);
+  const controller=new AbortController();
+  const report=await executeOrchestration(plan,{
+    yes:true,signal:controller.signal,
+    portableAdapterFactory:()=>({
+      async executeTask(task,{signal}){
+        assert.equal(task.scope.readOnly,true);
+        assert.equal(signal,controller.signal);
+        return {executed:true,verified:false,report:'Observed read-only state'};
+      }
+    })
+  });
+  assert.equal(report.status,'REVIEW_REQUIRED');
+});

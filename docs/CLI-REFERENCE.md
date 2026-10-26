@@ -81,6 +81,10 @@ See [Getting started](GETTING-STARTED.md), [Runtime adapters](RUNTIME-ADAPTERS.m
 
 `guided preview` / `guided install --yes` now include a native Antigravity `PreToolUse` hook in the managed hook group. Real host activation must be verified independently. The host decides approval; Xyeena never auto-approves or silently overrides permissions.
 
+## Native source CLI cancellation
+
+For source-only `host run`, `sdk run`, and `orchestrate run` (including `--record`), pressing Ctrl+C sends a cancellation request through a scoped `AbortSignal` to the adapter. SIGTERM is handled the same way. Run-specific listeners are removed afterward; no implicit global background watcher is created. The adapters attempt to stop only their directly spawned child and reject canceled work without reporting completion. This behavior is covered by programmatic tests; native terminal signal delivery and all-descendant cleanup have **not** been accepted on Windows. Review [OPS-06 issue #37](https://github.com/rzqllh/xyeena/issues/37).
+
 ## Guided native-hook diagnostics
 
 **Native acceptance update (2026-10-26):** `agy 1.4.7` honored a Xyeena approval prompt/cancellation and independently blocked an exact, read-only command via Xyeena `deny`. The probe's local `hostEnforcement: UNVERIFIED` is intentional; see the [witnessed evidence](xyeena-rig/EVIDENCE.md) and [scope limits](STATUS.md). Use `guided runner-preview`, `guided runner-upgrade --yes`, and `guided probe deny-start --yes` only from a source checkout; the published 0.4.1 package predates them.

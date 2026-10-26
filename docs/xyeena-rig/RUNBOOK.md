@@ -57,6 +57,10 @@ Check the local `.xyeena/runs/` journal for an interrupted run. Inspect task sta
 
 **Current status:** `0.5.0` is not published. No release tag or npm command is implied by this runbook. See [Task tracker](TASK_TRACKER.md).
 
+## Source CLI cancellation
+
+An operator can attempt to cancel a running **source** `host run`, `sdk run`, or `orchestrate run` with Ctrl+C, which is converted into an AbortSignal and passed to the direct child adapter; the command should not report a completed/verified task afterward. SIGTERM follows the same path, and listeners are scoped to each command. A separate native Windows process-tree and provider billing check is still required ([OPS-06](https://github.com/rzqllh/xyeena/issues/37)). Never treat a source-level cancellation unit test as that live proof.
+
 ## Canceling source one-shot adapters
 
 For a direct API caller, pass an `AbortController` signal into `createPortableHostAdapter(...).executeTask(task, {signal})` or `createAntigravitySdkAdapter(...).executeTask(task, {signal})`. Abort before spawning prevents a provider call; abort during execution requests direct-child termination and rejects with `ERR_PORTABLE_CANCELED` or `ERR_SDK_CANCELED`. This is **not the same as CLI cancellation**, guaranteed Windows child-process tree termination, or proof that a provider immediately stops billing. Do not record it as a live OPS-06 acceptance test.
