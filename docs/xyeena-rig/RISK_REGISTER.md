@@ -19,3 +19,7 @@ Residual risks are tracked separately from automated test completion.
 Scoped agy 1.4.7 native consent-and-deny evidence reduces uncertainty for that specific CLI path; it does not change the IDE 2.5.5 bypass observation. A local hook receipt alone cannot prove native enforcement. See [dated evidence](EVIDENCE.md).
 
 Critical impact is not equivalent to a known active critical vulnerability. Automated tests cover specified contracts; operational evidence is still required for live scenarios.
+
+## Worker identifier diagnostics — source hardening (2026-10-26)
+
+Native host adapters continue to reject missing, malformed or placeholder worker identities. Validation errors no longer include raw host-supplied identifiers, preventing incidental credential/path leakage through error messages. This is a source-level defensive change verified by tests, not a live host containment claim.

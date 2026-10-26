@@ -20,6 +20,8 @@ All versions listed as released refer to published npm artifacts. Repository sou
 - Add source-only `ops preflight` read-only command to summarize redacted host executable hints, hook registration presence and pending native acceptance issues without invoking AI, MCP, or hook scripts. Reject linked/oversized hook files, and never infer activation from a configuration file.
 - Expand cross-platform CLI fixture tests: real OS subprocesses emulate Gemini/Hermes JSON output and error/budget behavior without AI accounts or network. These do not close live host acceptance.
 
+- Redact untrusted, malformed host-returned worker identity values from rejection messages, retaining strict format/placeholder checks; prevent secrets or private paths from being echoed to logs.
+
 ## Earlier unreleased implementation work
 
 - Add opt-in compact skill installation, ownership-aware migration and restore workflows.
