@@ -27,6 +27,10 @@ The package version remains `0.4.1` in `package.json`. Features implemented afte
 
 The Antigravity CLI may modify `SessionStart` and `PostInvocation` in the managed group. Guided status reports this as `managedIntegrity: MODIFIED`; only the exact, enabled `PreToolUse` event and matching runner are probe-eligible. A guarded `runner-upgrade` updates the owned runner and manifest script hash with backup, preserving host-managed `.agents/hooks.json`, unrelated hooks, and the user's `.gitignore`. No global permissions are silently granted.
 
+## Read-only host command discovery
+
+The source `setup check --runtime antigravity` now checks `agy` as the native CLI executable in addition to any `antigravity` binary. This corrects a false negative seen on machines where only `agy` is on PATH. Results identify command candidates without launching a model and **do not change** the host acceptance matrix above: a discovered binary is not proof that either the CLI session is active or the IDE enforces hooks.
+
 ## What remains before a wider release
 
 - Verify real native IDE interception or explicitly document IDE as unsupported for security enforcement; do not infer support from vendor docs or a successful install.

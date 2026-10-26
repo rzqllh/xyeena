@@ -7,6 +7,8 @@ Commands can be invoked with `npx --yes xyeena-agent@0.4.1` for the published pa
 
 ## Setup and inspection
 
+`setup check --runtime antigravity` now reports `hostDetection.detectedCommands` (including `agy` if discovered), `detectedSurface`, and `confirmedRunning:false`. Command presence never certifies CLI session interception or IDE activation; it is a read-only PATH/skill inventory hint.
+
 | Command | Effect |
 | --- | --- |
 | `setup` | Interactive installation wizard |
