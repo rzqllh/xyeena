@@ -54,6 +54,7 @@ Usage:
   xyeena eval
   xyeena run-init --goal TEXT [--dir PATH]
   xyeena guided preview|install|status|uninstall [--dir PATH] [--yes]
+  xyeena guided runner-preview|runner-upgrade [--dir PATH] [--yes]
   xyeena guided probe start|deny-start|status|clear [--dir PATH] [--yes] # diagnostic only
   xyeena guided list|resume [--id RUN_ID] [--dir PATH]
   xyeena guided bind --id RUN_ID --conversation UUID --yes
