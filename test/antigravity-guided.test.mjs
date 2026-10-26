@@ -140,3 +140,300 @@ test('installed Antigravity PreToolUse runner follows host JSON contract and fai
     assert.equal(JSON.parse(oversized.stdout).decision,'deny');
   }finally{cleanup(cwd);}
 });
+
+
+test('guided status distinguishes installed configuration from unproven native enforcement', () => {
+  const cwd=fixture();
+  try {
+    const before=guidedCommand('status',{cwd});
+    assert.equal(before.installed,false);
+    assert.equal(before.enabled,false);
+    assert.equal(before.hostActivation,'UNVERIFIED');
+    assert.equal(before.hostEnforcement,'UNVERIFIED');
+    assert.equal(before.securityEnforcementVerified,false);
+    guidedCommand('install',{cwd,yes:true});
+    const after=guidedCommand('status',{cwd});
+    assert.equal(after.installed,true);
+    assert.equal(after.enabled,true);
+    assert.equal(after.upgradeAvailable,false);
+    assert.equal(after.hostEnforcement,'UNVERIFIED');
+    assert.equal(after.securityEnforcementVerified,false);
+  } finally { cleanup(cwd); }
+});
+test('guided probe needs explicit consent and a current installed PreToolUse runner', () => {
+  const cwd=fixture();
+  try {
+    assert.throws(()=>guidedCommand('probe',{cwd,probeAction:'start',yes:true}),/Probe requires/);
+    guidedCommand('install',{cwd,yes:true});
+    assert.throws(()=>guidedCommand('probe',{cwd,probeAction:'start'}),/--yes/);
+    const configValue=read(config(cwd));
+    configValue['xyeena-rig-guided'].enabled=false;
+    fs.writeFileSync(config(cwd),JSON.stringify(configValue));
+    assert.throws(()=>guidedCommand('probe',{cwd,probeAction:'start',yes:true}),/Probe requires/);
+    assert.equal(guidedCommand('status',{cwd}).enabled,false);
+  } finally { cleanup(cwd); }
+});
+test('guided native hook probe starts awaiting callback without modifying root ignore or user files', () => {
+  const cwd=fixture();
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    const original=fs.readFileSync(config(cwd),'utf8');
+    const result=guidedCommand('probe',{cwd,probeAction:'start',yes:true});
+    assert.equal(result.state,'AWAITING_CALLBACK');
+    assert.equal(result.hostEnforcement,'UNVERIFIED');
+    assert.equal(guidedCommand('probe',{cwd,probeAction:'status'}).state,'AWAITING_CALLBACK');
+    assert.equal(guidedCommand('status',{cwd}).securityEnforcementVerified,false);
+    assert.equal(fs.existsSync(path.join(cwd,'.gitignore')),false);
+    const probeDir=path.join(cwd,'.xyeena','guided','probe');
+    assert.equal(fs.readFileSync(path.join(probeDir,'.gitignore'),'utf8'),'*\n!.gitignore\n');
+    assert.equal(fs.readFileSync(config(cwd),'utf8'),original);
+    assert.throws(()=>guidedCommand('probe',{cwd,probeAction:'start',yes:true}),/probe is active/);
+    assert.deepEqual(guidedCommand('probe',{cwd,probeAction:'clear',yes:true}),{
+      cleared:true,hostEnforcement:'UNVERIFIED'
+    });
+    assert.equal(guidedCommand('probe',{cwd,probeAction:'status'}).state,'NOT_STARTED');
+  } finally { cleanup(cwd); }
+});
+test('hook runner records private bounded callback receipt without storing tool arguments or certifying enforcement',()=>{
+  const cwd=fixture();
+  try{
+    guidedCommand('install',{cwd,yes:true});
+    guidedCommand('probe',{cwd,probeAction:'start',yes:true});
+    const runner=path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs');
+    const payload={workspacePaths:[cwd],toolCall:{name:'run_command',args:{
+      Cwd:cwd,CommandLine:'Write-Output SECRET_NEVER_RECORD_THIS'
+    }}};
+    const response=spawnSync(process.execPath,[runner,'PreToolUse'],{
+      input:JSON.stringify(payload),encoding:'utf8'
+    });
+    assert.equal(response.status,0,response.stderr);
+    assert.equal(JSON.parse(response.stdout).decision,'force_ask');
+    const status=guidedCommand('probe',{cwd,probeAction:'status'});
+    assert.equal(status.state,'CALLBACK_OBSERVED_UNATTESTED');
+    assert.equal(status.observation.decision,'force_ask');
+    assert.equal(status.observation.toolName,'run_command');
+    assert.equal(status.hostEnforcement,'UNVERIFIED');
+    const normal=guidedCommand('status',{cwd});
+    assert.equal(normal.hostActivation,'CALLBACK_OBSERVED_UNATTESTED');
+    assert.equal(normal.hostEnforcement,'UNVERIFIED');
+    assert.equal(normal.securityEnforcementVerified,false);
+    const persisted=fs.readFileSync(path.join(cwd,'.xyeena','guided','probe','state.json'),'utf8');
+    assert.ok(!persisted.includes('SECRET_NEVER_RECORD_THIS'));
+    assert.ok(!persisted.includes(cwd));
+    assert.ok(!persisted.includes('CommandLine'));
+  }finally{cleanup(cwd);}
+});
+test('expired, invalid and linked probe state never become native host enforcement proof',()=>{
+  const cwd=fixture();
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    guidedCommand('probe',{cwd,probeAction:'start',yes:true});
+    const stateFile=path.join(cwd,'.xyeena','guided','probe','state.json');
+    const state=read(stateFile);
+    state.startedAt=Date.now()-600000;
+    state.expiresAt=state.startedAt+300000;
+    fs.writeFileSync(stateFile,JSON.stringify(state));
+    assert.equal(guidedCommand('probe',{cwd,probeAction:'status'}).state,'EXPIRED');
+    fs.writeFileSync(stateFile,'{"schema":1,"probeId":"forged"}');
+    assert.equal(guidedCommand('status',{cwd}).probe,'PROBE_STATE_INVALID');
+    assert.throws(()=>guidedCommand('probe',{cwd,probeAction:'status'}),/Invalid Xyeena probe state/);
+    fs.rmSync(stateFile);
+    try {
+      fs.symlinkSync(path.join(cwd,'.agents','hooks.json'),stateFile);
+      assert.throws(()=>guidedCommand('probe',{cwd,probeAction:'status'}),/Invalid Xyeena probe state/);
+    } catch(e) { if(!['EPERM','EACCES'].includes(e.code)) throw e; }
+  } finally { cleanup(cwd); }
+});
+
+
+test('Windows Antigravity hooks avoid quoted paths in all managed command entries', () => {
+  const cwd=fixture();
+  try {
+    const plan=hookPlan({cwd});
+    const group=plan.next['xyeena-rig-guided'];
+    const commands=[
+      group.SessionStart[0].command,
+      group.PreInvocation[0].command,
+      group.PreToolUse[0].hooks[0].command,
+      group.PostToolUse[0].hooks[0].command,
+      group.Stop[0].command
+    ];
+    if(process.platform==='win32'){
+      for(const command of commands){
+        assert.match(command,/^node \.\.\/\.xyeena\/hooks\/antigravity-guided\.mjs (SessionStart|PreInvocation|PreToolUse|PostToolUse|Stop)$/);
+        assert.ok(!command.includes('"'), 'Antigravity Windows CLI must not receive quoted executable/argument paths');
+        assert.ok(!command.includes(cwd), 'Command must not include a spaced absolute workspace path');
+        assert.ok(!command.includes('Program Files'), 'Command must not embed a quoted Program Files executable');
+      }
+      assert.equal(plan.next['xyeena-rig-guided'].PreToolUse[0].matcher,'*');
+    }
+    guidedCommand('install',{cwd,yes:true});
+    assert.equal(guidedCommand('status',{cwd}).installed,true);
+    const active=read(config(cwd))['xyeena-rig-guided'];
+    assert.equal(active.PreToolUse[0].hooks[0].command,group.PreToolUse[0].hooks[0].command);
+    const actualCommand = active.PreToolUse[0].hooks[0].command;
+    // Emulate agy CLI 1.4.7's REAL hook cwd: <workspace>/.agents (not
+    // the PowerShell invocation's current workspace directory).
+    const runnerCwd=path.join(cwd,'.agents');
+    const runnerArgs=actualCommand.split(' ');
+    const cmd = process.platform === 'win32' ? runnerArgs[0] : process.execPath;
+    const args = process.platform === 'win32'
+      ? runnerArgs.slice(1)
+      : [path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs'),'PreToolUse'];
+    const result=spawnSync(cmd,args,{
+      input:JSON.stringify({workspacePaths:[cwd],toolCall:{
+        name:'run_command',args:{CommandLine:'Get-Location'}
+      }}),encoding:'utf8',cwd:runnerCwd
+    });
+    assert.equal(result.status,0,result.stderr);
+    assert.equal(JSON.parse(result.stdout).decision,'force_ask');
+    if (process.platform === 'win32') {
+      assert.equal(args[0], '../.xyeena/hooks/antigravity-guided.mjs');
+      assert.equal(path.resolve(runnerCwd,args[0]),path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs'));
+    }
+  } finally { cleanup(cwd); }
+});
+
+test('agy Windows native command runs from .agents even with spaces in workspace path', { skip: process.platform !== 'win32' }, () => {
+  const temp=fixture(), cwd=path.join(temp,'Workspace With Spaces');
+  fs.mkdirSync(cwd);
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    const command=read(config(cwd))['xyeena-rig-guided'].PreToolUse[0].hooks[0].command;
+    assert.equal(command,'node ../.xyeena/hooks/antigravity-guided.mjs PreToolUse');
+    const words=command.split(' ');
+    const result=spawnSync(words[0],words.slice(1),{
+      cwd:path.join(cwd,'.agents'),
+      input:JSON.stringify({workspacePaths:[cwd],toolCall:{
+        name:'run_command',args:{CommandLine:'git status --short'}
+      }}),
+      encoding:'utf8',timeout:3000
+    });
+    assert.equal(result.status,0,result.stderr);
+    assert.equal(JSON.parse(result.stdout).decision,'force_ask');
+  } finally { cleanup(temp); }
+});
+
+test('guided status reports host-mutated group safely and leaves managed files untouched',()=>{
+  const cwd=fixture();
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    const before=read(config(cwd));
+    const modified=structuredClone(before);
+    // Simulate a host /hooks GUI adding event-level metadata, not an owned
+    // installer change. Root-level enabled toggles are already supported.
+    modified['xyeena-rig-guided'].PreToolUse[0].enabled=false;
+    fs.writeFileSync(config(cwd),JSON.stringify(modified,null,2));
+    const original=fs.readFileSync(config(cwd),'utf8');
+    const result=guidedCommand('status',{cwd});
+    assert.equal(result.installed,true);
+    assert.equal(result.managedIntegrity,'MODIFIED');
+    assert.equal(result.runnerIntegrity,'MATCH');
+    assert.equal(result.preToolUseRegistered,true);
+    assert.equal(result.preToolUseEnabled,false);
+    assert.deepEqual(result.changedManagedFields,['PreToolUse[0].enabled']);
+    assert.equal(result.upgradeAvailable,null);
+    assert.equal(result.hostEnforcement,'UNVERIFIED');
+    assert.equal(result.securityEnforcementVerified,false);
+    assert.equal(fs.readFileSync(config(cwd),'utf8'),original);
+    assert.throws(()=>guidedCommand('probe',{cwd,probeAction:'start',yes:true}),/Probe requires/);
+    assert.throws(()=>guidedCommand('install',{cwd,yes:true}),/Managed hook group was changed/);
+    assert.equal(fs.readFileSync(config(cwd),'utf8'),original);
+    assert.equal(guidedCommand('probe',{cwd,probeAction:'status'}).state,'NOT_STARTED');
+  } finally {cleanup(cwd);}
+});
+test('guided status reports an altered PreToolUse command without printing the command',()=>{
+  const cwd=fixture();
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    const modified=read(config(cwd));
+    modified['xyeena-rig-guided'].PreToolUse[0].hooks[0].command='UNTRUSTED_COMMAND_PRIVATE';
+    fs.writeFileSync(config(cwd),JSON.stringify(modified));
+    const output=guidedCommand('status',{cwd});
+    assert.equal(output.managedIntegrity,'MODIFIED');
+    assert.equal(output.preToolUseRegistered,false);
+    assert.equal(output.preToolUseEnabled,false);
+    assert.deepEqual(output.changedManagedFields,['PreToolUse[0].hooks[0].command']);
+    assert.ok(!JSON.stringify(output).includes('UNTRUSTED_COMMAND_PRIVATE'));
+  } finally { cleanup(cwd); }
+});
+test('guided status reports disabled managed root toggle as supported, not hash drift',()=>{
+  const cwd=fixture();
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    const updated=read(config(cwd));
+    updated['xyeena-rig-guided'].enabled=false;
+    fs.writeFileSync(config(cwd),JSON.stringify(updated));
+    const status=guidedCommand('status',{cwd});
+    assert.equal(status.enabled,false);
+    assert.equal(status.preToolUseEnabled,false);
+    assert.equal(status.managedIntegrity,'MATCH');
+    assert.deepEqual(status.changedManagedFields,[]);
+  } finally {cleanup(cwd);}
+});
+
+test('guided callback probe tolerates SessionStart drift and added PostInvocation without rewriting host hooks', () => {
+  const cwd=fixture();
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    const hostEdited=read(config(cwd));
+    hostEdited['xyeena-rig-guided'].SessionStart[0].timeout=5;
+    hostEdited['xyeena-rig-guided'].PostInvocation=[
+      {type:'command',command:'echo external-host-only',timeout:2}
+    ];
+    fs.writeFileSync(config(cwd),JSON.stringify(hostEdited,null,2)+'\n');
+    const before=fs.readFileSync(config(cwd),'utf8');
+    const status=guidedCommand('status',{cwd});
+    assert.equal(status.managedIntegrity,'MODIFIED');
+    assert.deepEqual(status.changedManagedFields,['SessionStart[0].timeout','PostInvocation']);
+    assert.equal(status.preToolUseExact,true);
+    assert.equal(status.probeEligible,true);
+    assert.equal(status.runnerIntegrity,'MATCH');
+    const started=guidedCommand('probe',{cwd,probeAction:'start',yes:true});
+    assert.equal(started.state,'AWAITING_CALLBACK');
+    assert.equal(started.managedIntegrity,'MODIFIED');
+    assert.deepEqual(started.otherManagedChanges,['SessionStart[0].timeout','PostInvocation']);
+    assert.equal(fs.readFileSync(config(cwd),'utf8'),before);
+    assert.equal(guidedCommand('probe',{cwd,probeAction:'status'}).state,'AWAITING_CALLBACK');
+    assert.throws(()=>guidedCommand('install',{cwd,yes:true}),/Managed hook group was changed/);
+    const cmd='node';
+    const result=spawnSync(cmd,[path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs'),'PreToolUse'],{
+      cwd:path.join(cwd,'.agents'),encoding:'utf8',
+      input:JSON.stringify({workspacePaths:[cwd],toolCall:{name:'run_command',args:{CommandLine:'git status --short'}}})
+    });
+    assert.equal(result.status,0,result.stderr);
+    assert.equal(JSON.parse(result.stdout).decision,'force_ask');
+    const observed=guidedCommand('probe',{cwd,probeAction:'status'});
+    assert.equal(observed.state,'CALLBACK_OBSERVED_UNATTESTED');
+    assert.equal(observed.hostEnforcement,'UNVERIFIED');
+    assert.equal(fs.readFileSync(config(cwd),'utf8'),before);
+  } finally { cleanup(cwd); }
+});
+test('guided callback probe rejects modified PreToolUse including unexpected extra hooks',()=>{
+  const cwd=fixture();
+  try{
+    guidedCommand('install',{cwd,yes:true});
+    const hostEdited=read(config(cwd));
+    hostEdited['xyeena-rig-guided'].PreToolUse[0].hooks.push({type:'command',command:'echo unexpected',timeout:2});
+    fs.writeFileSync(config(cwd),JSON.stringify(hostEdited));
+    const check=guidedCommand('status',{cwd});
+    assert.equal(check.preToolUseRegistered,true);
+    assert.equal(check.preToolUseExact,false);
+    assert.equal(check.probeEligible,false);
+    assert.throws(()=>guidedCommand('probe',{cwd,probeAction:'start',yes:true}),/Probe requires/);
+    assert.equal(guidedCommand('probe',{cwd,probeAction:'status'}).state,'NOT_STARTED');
+  }finally{cleanup(cwd);}
+});
+test('guided callback probe rejects modified runner even with exact PreToolUse',()=>{
+  const cwd=fixture();
+  try{
+    guidedCommand('install',{cwd,yes:true});
+    const runner=path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs');
+    fs.appendFileSync(runner,'\n// altered runner\n');
+    const check=guidedCommand('status',{cwd});
+    assert.equal(check.runnerIntegrity,'MODIFIED');
+    assert.equal(check.preToolUseExact,true);
+    assert.equal(check.probeEligible,false);
+    assert.throws(()=>guidedCommand('probe',{cwd,probeAction:'start',yes:true}),/Probe requires/);
+  }finally{cleanup(cwd);}
+});

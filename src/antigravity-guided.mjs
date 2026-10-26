@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { pendingRuns, resumeCapsule, bindConversation, unbindConversation } from './antigravity-guided-hook.mjs';
+import { pendingRuns, resumeCapsule, bindConversation, unbindConversation, startHookProbe, hookProbeStatus, clearHookProbe } from './antigravity-guided-hook.mjs';
 
 const GROUP = 'xyeena-rig-guided';
 const SOURCE = fileURLToPath(new URL('./antigravity-guided-hook.mjs', import.meta.url));
@@ -66,6 +66,79 @@ function atomic(filename, contents) {
     fs.renameSync(temp, filename);
   } finally { if (fs.existsSync(temp)) fs.rmSync(temp); }
 }
+
+/** Canonical managed hook group, shared by installer and read-only diagnostics. */
+function managedHookDefinition(script, disabled = false) {
+  // agy CLI 1.4.7 runs workspace hooks from the .agents directory, not root.
+  // The Windows command remains quote-free to avoid cmd quote parsing failures.
+  const command = process.platform === 'win32'
+    ? 'node ../.xyeena/hooks/antigravity-guided.mjs'
+    : quote(process.execPath) + ' ' + quote(script);
+  const result = {
+    SessionStart: [{ type: 'command', command: command + ' SessionStart', timeout: 3 }],
+    PreInvocation: [{ type: 'command', command: command + ' PreInvocation', timeout: 3 }],
+    PreToolUse: [{ matcher: '*', hooks: [{ type: 'command', command: command + ' PreToolUse', timeout: 3 }] }],
+    PostToolUse: [{ matcher: 'run_command|write_to_file|replace_file_content|multi_replace_file_content', hooks: [{ type: 'command', command: command + ' PostToolUse', timeout: 3 }] }],
+    Stop: [{ type: 'command', command: command + ' Stop', timeout: 3 }],
+  };
+  if (disabled) result.enabled = false;
+  return result;
+}
+/** Report only JSON field paths: never print command values or host-managed data. */
+function changedJsonPaths(expected, actual, prefix = '', result = []) {
+  if (result.length >= 24) return result;
+  if (Array.isArray(expected) && Array.isArray(actual)) {
+    for (let i = 0; i < Math.max(expected.length, actual.length) && result.length < 24; i++)
+      changedJsonPaths(expected[i], actual[i], prefix + '[' + i + ']', result);
+  } else if (object(expected) && object(actual)) {
+    for (const key of new Set([...Object.keys(expected), ...Object.keys(actual)])) {
+      if (result.length >= 24) break;
+      changedJsonPaths(expected[key], actual[key], prefix ? prefix + '.' + key : key, result);
+    }
+  } else if (expected !== actual) result.push(prefix || '(root)');
+  return result;
+}
+function guidedIntegrity(cwd) {
+  const f = paths(cwd);
+  const cfg = readConfig(f.config), manifest = readManifest(f.manifest);
+  const group = cfg.value[GROUP];
+  const present = object(group);
+  const managedHashMatch = present && !!manifest &&
+    hash(JSON.stringify(withoutToggle(group))) === manifest.groupHash;
+  let runnerIntegrity = 'MISSING';
+  if (fs.existsSync(f.script)) {
+    if (!fs.statSync(f.script).isFile() || fs.lstatSync(f.script).isSymbolicLink())
+      runnerIntegrity = 'INVALID_FILE';
+    else runnerIntegrity = manifest &&
+      hash(fs.readFileSync(f.script, 'utf8')) === manifest.scriptHash ? 'MATCH' : 'MODIFIED';
+  }
+  const target = managedHookDefinition(f.script);
+  const driftPaths = present && manifest && !managedHashMatch ?
+    changedJsonPaths(target, withoutToggle(group)) : [];
+  const pre = group?.PreToolUse?.[0], entry = pre?.hooks?.[0];
+  const preToolUseRegistered = pre?.matcher === '*' && entry?.type === 'command' &&
+    entry?.command === target.PreToolUse[0].hooks[0].command;
+  // Diagnostics may tolerate unrelated host changes, but not any modification
+  // to the complete safety-critical PreToolUse event (including added hooks).
+  const preToolUseExact = present &&
+    JSON.stringify(group.PreToolUse) === JSON.stringify(target.PreToolUse);
+  const enabled = present && group.enabled !== false;
+  return {
+    installed: !!manifest && present,
+    enabled,
+    config: f.config,
+    managedIntegrity: !manifest ? (present ? 'UNOWNED' : 'NOT_INSTALLED')
+      : !present ? 'MISSING_GROUP' : managedHashMatch ? 'MATCH' : 'MODIFIED',
+    runnerIntegrity, changedManagedFields: driftPaths,
+    preToolUseRegistered, preToolUseExact,
+    preToolUseEnabled: enabled && preToolUseRegistered &&
+      pre.enabled !== false && entry.enabled !== false,
+    probeEligible: !!manifest && enabled && preToolUseExact &&
+      runnerIntegrity === 'MATCH',
+    hostEnforcement: 'UNVERIFIED', securityEnforcementVerified: false,
+  };
+}
+
 export function hookPlan({ cwd = process.cwd(), action = 'install' } = {}) {
   if (!['install', 'uninstall'].includes(action)) throw new Error('Unknown hook action');
   const f = paths(cwd), config = readConfig(f.config), manifest = readManifest(f.manifest);
@@ -79,15 +152,7 @@ export function hookPlan({ cwd = process.cwd(), action = 'install' } = {}) {
   const installedScript = fs.existsSync(f.script) ? fs.readFileSync(f.script, 'utf8') : null;
   if (manifest && installedScript !== null && hash(installedScript) !== manifest.scriptHash)
     throw new Error('Managed hook runner changed; refusing overwrite');
-  const command = quote(process.execPath) + ' ' + quote(f.script);
-  const proposed = {
-    SessionStart: [{ type: 'command', command: command + ' SessionStart', timeout: 3 }],
-    PreInvocation: [{ type: 'command', command: command + ' PreInvocation', timeout: 3 }],
-    PreToolUse: [{ matcher: '*', hooks: [{ type: 'command', command: command + ' PreToolUse', timeout: 3 }] }],
-    PostToolUse: [{ matcher: 'run_command|write_to_file|replace_file_content|multi_replace_file_content', hooks: [{ type: 'command', command: command + ' PostToolUse', timeout: 3 }] }],
-    Stop: [{ type: 'command', command: command + ' Stop', timeout: 3 }],
-  };
-  if (current?.enabled === false) proposed.enabled = false;
+  const proposed = managedHookDefinition(f.script, current?.enabled === false);
   const next = action === 'install' ? { ...config.value, [GROUP]: proposed } :
     Object.fromEntries(Object.entries(config.value).filter(([key]) => key !== GROUP));
   const changed = action === 'install'
@@ -135,17 +200,55 @@ export function applyHookPlan(plan, { yes = false } = {}) {
   }
   return { changed: true, file: plan.f.config };
 }
-export function guidedCommand(command, { cwd = process.cwd(), yes = false, id = null, conversationId = null } = {}) {
+
+/** Status remains read-only and available even if the host rewrites the group. */
+function guidedStatus(cwd) {
+  const info = guidedIntegrity(cwd);
+  let probe;
+  try { probe = hookProbeStatus(cwd); }
+  catch { probe = { state: 'PROBE_STATE_INVALID' }; }
+  let upgradeAvailable = null;
+  if (info.managedIntegrity === 'MATCH' && info.runnerIntegrity === 'MATCH') {
+    try { upgradeAvailable = hookPlan({ cwd }).changed; } catch { /* read-only status */ }
+  } else if (info.managedIntegrity === 'NOT_INSTALLED') {
+    try { upgradeAvailable = hookPlan({ cwd }).changed; } catch { /* invalid script */ }
+  }
+  return { ...info, upgradeAvailable,
+    hostActivation: probe.state === 'CALLBACK_OBSERVED_UNATTESTED'
+      ? 'CALLBACK_OBSERVED_UNATTESTED' : 'UNVERIFIED',
+    probe: probe.state,
+    note: info.managedIntegrity === 'MODIFIED'
+      ? 'Managed hook group drift detected. Installer will not overwrite it. Read-only probe may run only with an exact, enabled PreToolUse event and verified runner; review changedManagedFields before relying on any hook behavior.'
+      : 'Filesystem configuration or a local callback does not prove Antigravity native policy enforcement.' };
+}
+
+export function guidedCommand(command, { cwd = process.cwd(), yes = false, id = null, conversationId = null, probeAction = null } = {}) {
   if (command === 'list') return pendingRuns(cwd).map(r => ({
     id: r.id, goal: String(r.snapshot.goal).slice(0, 120), state: r.snapshot.workflow_state }));
   if (command === 'resume') return resumeCapsule(cwd, id);
   if (command === 'bind') return bindConversation(cwd, id, conversationId, { yes });
   if (command === 'unbind') return unbindConversation(cwd, conversationId, { yes });
-  if (!['preview', 'install', 'uninstall', 'status'].includes(command))
+  if (command === 'probe') {
+    const root = paths(cwd).root;
+    if (probeAction === 'status') return hookProbeStatus(root);
+    if (!['start', 'clear'].includes(probeAction))
+      throw new Error('Expected guided probe start|status|clear');
+    if (!yes) throw new Error('Explicit --yes required for hook probe changes');
+    if (probeAction === 'clear') return clearHookProbe(root);
+    const info = guidedIntegrity(root);
+    // Probe activation changes ONLY local diagnostic state; never re-installs
+    // or repairs .agents/hooks.json. Drift in other event types is preserved.
+    if (!info.probeEligible)
+      throw new Error('Probe requires an owned, enabled, exact PreToolUse event and matching managed runner; review guided status');
+    return { ...startHookProbe(root),
+      managedIntegrity: info.managedIntegrity,
+      otherManagedChanges: info.changedManagedFields };
+  }
+  if (command === 'status') return guidedStatus(cwd);
+  if (!['preview', 'install', 'uninstall'].includes(command))
     throw new Error('Expected guided preview|install|uninstall|status|list|resume|bind|unbind');
   const action = command === 'uninstall' ? 'uninstall' : 'install';
   const plan = hookPlan({ cwd, action });
-  if (command === 'status') return { installed: !!plan.manifest, enabled: plan.config.value[GROUP]?.enabled !== false, config: plan.f.config };
   if (command === 'preview') return plan.preview;
   return { ...plan.preview, result: applyHookPlan(plan, { yes }) };
 }

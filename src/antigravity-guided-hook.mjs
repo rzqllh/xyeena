@@ -226,6 +226,101 @@ export function preToolUse(root, payload) {
   } catch { return denyHook('Xyeena: safety hook unavailable'); }
 }
 
+
+/**
+ * Diagnostic signal, never an authority grant. A local process can invoke this
+ * same script manually; a receipt alone cannot establish native host provenance.
+ * No tool args, shell commands, paths, credentials, or model output are stored.
+ */
+const PROBE_IGNORE = '*\n!.gitignore\n';
+function probeFiles(root) {
+  root = fs.realpathSync(path.resolve(root));
+  let cursor = root;
+  for (const segment of ['.xyeena', 'guided', 'probe']) {
+    cursor = path.join(cursor, segment);
+    try {
+      const stat = fs.lstatSync(cursor);
+      if (stat.isSymbolicLink() || !stat.isDirectory())
+        throw new Error('Invalid Xyeena probe directory');
+    } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  }
+  return { dir: cursor, state: path.join(cursor, 'state.json'),
+    ignore: path.join(cursor, '.gitignore') };
+}
+function readProbe(root) {
+  const f = probeFiles(root);
+  let stat;
+  try { stat = fs.lstatSync(f.state); }
+  catch (error) { if (error.code === 'ENOENT') return null; throw error; }
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 2048)
+    throw new Error('Invalid Xyeena probe state');
+  let value;
+  try { value = JSON.parse(fs.readFileSync(f.state, 'utf8')); }
+  catch { throw new Error('Invalid Xyeena probe state'); }
+  if (!object(value) || value.schema !== 1 ||
+      typeof value.probeId !== 'string' || !/^[a-f0-9-]{36}$/.test(value.probeId) ||
+      !Number.isSafeInteger(value.startedAt) || !Number.isSafeInteger(value.expiresAt) ||
+      value.expiresAt - value.startedAt !== 300000 ||
+      (value.observation !== null && (!object(value.observation) ||
+        !['allow', 'deny', 'force_ask', 'ask'].includes(value.observation.decision) ||
+        typeof value.observation.toolName !== 'string' ||
+        !/^[a-z0-9_]{1,64}$/.test(value.observation.toolName) ||
+        !Number.isSafeInteger(value.observation.at))))
+    throw new Error('Invalid Xyeena probe state');
+  return value;
+}
+export function startHookProbe(root) {
+  const f = probeFiles(root);
+  // Refuse to overwrite unrelated content in the private diagnostic folder.
+  const previous = readProbe(root);
+  if (previous && previous.expiresAt > Date.now())
+    throw new Error('Existing hook probe is active; inspect or clear it first');
+  fs.mkdirSync(f.dir, { recursive: true });
+  if (fs.existsSync(f.ignore)) {
+    if (fs.lstatSync(f.ignore).isSymbolicLink() ||
+        fs.readFileSync(f.ignore, 'utf8') !== PROBE_IGNORE)
+      throw new Error('Unowned probe ignore file; refusing changes');
+  } else fs.writeFileSync(f.ignore, PROBE_IGNORE, { flag: 'wx', mode: 0o600 });
+  const state = { schema: 1, probeId: crypto.randomUUID(),
+    startedAt: Date.now(), expiresAt: Date.now() + 300000, observation: null };
+  // Maintain exactly five minutes rather than two separate timestamp samples.
+  state.expiresAt = state.startedAt + 300000;
+  atomicJson(f.state, state);
+  return { state: 'AWAITING_CALLBACK', probeId: state.probeId,
+    expiresAt: new Date(state.expiresAt).toISOString(),
+    hostEnforcement: 'UNVERIFIED',
+    instructions: 'In a fresh native Antigravity session run a harmless run_command via the agent, then check guided probe status. Do not simulate stdin or call the hook directly.' };
+}
+export function hookProbeStatus(root) {
+  const state = readProbe(root);
+  if (!state) return { state: 'NOT_STARTED', hostEnforcement: 'UNVERIFIED' };
+  if (state.expiresAt <= Date.now()) return {
+    state: 'EXPIRED', probeId: state.probeId, hostEnforcement: 'UNVERIFIED' };
+  if (state.observation) return {
+    state: 'CALLBACK_OBSERVED_UNATTESTED', probeId: state.probeId,
+    observation: state.observation, hostEnforcement: 'UNVERIFIED',
+    note: 'Callback observed locally; manual invocation can spoof this record. Verify real native host denial separately.' };
+  return { state: 'AWAITING_CALLBACK', probeId: state.probeId,
+    expiresAt: new Date(state.expiresAt).toISOString(), hostEnforcement: 'UNVERIFIED' };
+}
+export function clearHookProbe(root) {
+  const f = probeFiles(root);
+  if (!readProbe(root)) return { cleared: false };
+  fs.rmSync(f.state);
+  return { cleared: true, hostEnforcement: 'UNVERIFIED' };
+}
+function recordHookProbe(root, payload, result) {
+  const state = readProbe(root);
+  if (!state || state.observation || state.expiresAt <= Date.now() ||
+      !matchesWorkspace(root, payload) || !object(payload.toolCall) ||
+      typeof payload.toolCall.name !== 'string' ||
+      !/^[a-z0-9_]{1,64}$/.test(payload.toolCall.name) ||
+      !['allow', 'deny', 'force_ask', 'ask'].includes(result?.decision)) return;
+  state.observation = { at: Date.now(), toolName: payload.toolCall.name,
+    decision: result.decision };
+  atomicJson(probeFiles(root).state, state);
+}
+
 export function afterTool(root, payload) {
   if (!matchesWorkspace(root, payload) || !conversationIdOK(payload.conversationId)) return {};
   const state = readState(root, payload.conversationId);
@@ -280,6 +375,10 @@ async function run() {
       event === 'PreInvocation' ? beforeInvocation(root, payload) :
       event === 'PreToolUse' ? preToolUse(root, payload) :
       event === 'PostToolUse' ? afterTool(root, payload) : stopCheckpoint(root, payload);
+    if (event === 'PreToolUse') {
+      try { recordHookProbe(root, payload, response); }
+      catch { /* diagnostics cannot alter the permission decision */ }
+    }
     process.stdout.write(JSON.stringify(response) + '\n');
   } catch { process.stdout.write(event === 'Stop' ? '{"decision":"stop"}\n' :
     event === 'PreToolUse' ? JSON.stringify(denyHook('Xyeena: invalid hook input')) + '\n' : '{}\n'); }

@@ -145,3 +145,65 @@ SubagentBridge workspace access blocked by agent policy. No live MCP transport. 
 ## Source changes pending operational live validation
 
 The code in the pending feature PR adds the opt-in Antigravity native `PreToolUse` hook and bounds Hermes CLI `--max-turns` with a configured reported-token settlement ceiling. CI tests cover simulated hook payloads, workspace write deny, symlink target rejection, fresh confirmation for shell, invalid payload fail-closed, and missing/oversized Hermes usage. These are contract tests, **not** an assertion that the user's actual Antigravity hook installation has been enabled or a guarantee that no Hermes tokens are spent beyond the ceiling. The commit must pass CI and be reviewed before these capabilities are considered integrated.
+
+## OPS-07 native IDE negative observation — 2026-10-25 (Windows, Antigravity IDE 2.5.5)
+
+- **Surface:** Antigravity IDE version 2.5.5, Windows 11 x64; real agent native `run_command` invocations.
+- **Installed configuration:** workspace `.agents/hooks.json` contains `xyeena-rig-guided.PreToolUse` with `matcher: "*"`, `guided status` returned `installed=true`, `enabled=true`. The managed runner includes a documented `deny` outcome for out-of-workspace working directories.
+- **First empirical test:** native `run_command` executed `git status --short` inside workspace with exit 0. No host permission dialog observed by the user.
+- **Negative safety test:** native `run_command` executed PowerShell `Get-Location` with `Cwd` set to the **parent of the trusted workspace**; exit code 0 and output pointed to that parent. Expected Xyeena decision was `deny`. No Xyeena error or native prompt appeared.
+- **Verdict:** **HOST_BOUNDARY_UNENFORCED_OBSERVED** for this live IDE session; **OPS-07 IDE LIVE_BLOCKED**. The evidence does not isolate whether hook dispatch was absent or the IDE discarded its decision. Test tools were read-only; no privileged mutation was attempted.
+- **Documentation conflict:** [official lifecycle hooks](https://www.antigravity.google/docs/hooks) describe IDE support; [independent August 2026 forum reproduction](https://discuss.ai.google.dev/t/do-antigravity-ide-2-0-actually-execute-plugin-hooks-pretooluse-posttooluse-or-is-that-cli-only-right-now/176814) reports CLI callbacks operating while earlier IDE/desktop builds did not invoke them. Those earlier reports are corroboration, not an official limitation statement for v2.5.5.
+- **Source follow-up (pending PR):** `guided status` reports filesystem installation separately from `hostEnforcement: UNVERIFIED`; an opt-in five-minute `guided probe` logs bounded callback receipt only. A receipt, unit tests, and running direct JavaScript are **not** acceptance evidence for native policy enforcement.
+- **Safety:** until a host-enforced negative test is independently witnessed, Xyeena must never claim the IDE is protected by the hook or grant privileged capabilities based on its installation state.
+
+## Antigravity CLI Windows native hook launch failure — 2026-10-25
+
+- The user's native Antigravity CLI `/hooks` menu listed the workspace `xyeena-rig-guided` `PreToolUse` matcher. This proves host discovery, **not** callback execution or policy enforcement.
+- A requested tool call with `Cwd` was rejected by the live CLI tool schema (`additional properties 'Cwd' not allowed`), so it never reached the hook.
+- A subsequent valid tool call emitted `jsonhook__xyeena-rig-guided_PreToolUse_0_0` execution failure: Windows reported the quoted `"C:\Program Files\nodejs\node.exe"` token was not recognized. The hook process failed before it could return `deny` or `force_ask`. No claim is made that Node.js is absent from the user's machine.
+- Pending feature PR replaces the Windows installed command with quote-free workspace-relative `node .xyeena/hooks/antigravity-guided.mjs EVENT`. Native CLI prompt/deny acceptance remains **LIVE_PENDING** until tested on a real `agy` session after a managed upgrade. `Cwd` mismatch is a host CLI schema compatibility difference and should not be retried in tests.
+
+- **Later live CLI failure, 2026-10-25:** After quote-free hook command installation, native `agy` again aborted a `run_command` with `MODULE_NOT_FOUND` because it resolved `node .xyeena/hooks/antigravity-guided.mjs` relative to `<workspace>/.agents/` instead of workspace root, producing `<workspace>/.agents/.xyeena/hooks/antigravity-guided.mjs`. The script existed at `<workspace>/.xyeena/hooks/antigravity-guided.mjs`; this is a command-working-directory mismatch, not proof of a missing script or broken Node installation.
+- **Updated correction (pending live acceptance):** Windows launcher is `node ../.xyeena/hooks/antigravity-guided.mjs EVENT`, with a regression executing the exact installed command from an actual `.agents` working directory, including paths under a directory containing spaces. This correction is not proof of live `agy` enforcement until the user retests in CLI.
+
+## 2026-10-25 CLI /hooks configuration integrity conflict
+
+- After disabling the global Coucou hook in `agy`, a read-only `git status --short` executed and reported a modified `.gitignore`. No Xyeena `force_ask` dialog was reported, but host activation is not proven and Xyeena's enabled state may have been changed by `/hooks`.
+- An explicit `guided probe start --dir . --yes` failed with `Managed hook group was changed; refusing overwrite`. `guided probe status` then returned `NOT_STARTED`, as expected because no diagnostic window was ever created. The exact field changed in `hooks.json` has **not** been inspected; attributing it to the Coucou toggle would be speculative.
+- Follow-up branch adds read-only status reporting for managed group drift and nested event-level enablement with no secret-bearing config values. Installer/probe start still refuse to overwrite or proceed on unreviewed modifications. Do not weaken integrity protections merely to force the probe.
+
+## 2026-10-25 focused diagnosis — managed event drift
+
+- User ran the new read-only `guided status` command at PR #29 commit `e72b223`. It returned `installed:true`, `enabled:true`, `managedIntegrity:MODIFIED`, `runnerIntegrity:MATCH`, `changedManagedFields:["SessionStart","PostInvocation"]`, `preToolUseRegistered:true`, `preToolUseEnabled:true`, `hostEnforcement:UNVERIFIED`, and `probe:NOT_STARTED`.
+- These field-level results **do not reveal the modified values** or their author. In particular, we have not confirmed whether the `/hooks` menu, host migration, or another actor modified the group.
+- Follow-up implementation permits a user-approved five-minute read-only callback probe when the **entire expected `PreToolUse` subtree**, its enablement, the owner manifest, and the installed runner's hash all match. Drift in unrelated event types is preserved; installer and uninstall integrity guards are **unchanged**. Extra or altered `PreToolUse` hooks continue to block probe start.
+- Live callback and enforcement remain unverified until a new `agy` native test is observed; the new CLI behavior has CI coverage but must not be confused with host acceptance.
+
+## OPS-07 native CLI callback observation — 2026-10-25
+
+- **Host:** Windows 11, Antigravity CLI `agy 1.4.7`, workspace-local `xyeena-rig-guided` hook; global Coucou hook had been disabled for isolation.
+- **Probe created:** `guided probe start --dir . --yes` returned `AWAITING_CALLBACK`, probe ID `f291d885-69e7-4f0a-a85d-40b188d61505`, expiring after five minutes.
+- **Real native run:** immediately afterward, the user started `agy`, issued `git status --short`, and the agent executed the command successfully with output `M .gitignore`. The user did not report seeing a fresh native approval prompt.
+- **Probe read-back:** `CALLBACK_OBSERVED_UNATTESTED`; `observation.toolName = run_command`, `observation.decision = force_ask`. This tightly corroborates actual CLI runner execution during the native tool call, but the record is **locally forgeable** and does not attest enforcement.
+- **Observed distinction:** `CLI_CALLBACK_OBSERVED` (high confidence, corroborated temporal native test) is **not** `CLI_CONSENT_ENFORCED`. The tool visibly completed after a `force_ask` decision; no host-native approval step is evidenced in the transcript. No proof of native `deny` exists.
+- **Output contract:** official [Hooks docs](https://www.antigravity.google/docs/hooks) explicitly specify `force_ask` as a supported `PreToolUse.decision` which prompts regardless of cached permissions, so no response-schema modification is justified by this observation.
+- **Next unresolved confounder:** inspect only the current CLI `toolPermission` / `agentMode` settings and interactive approval preset before classifying this as a host enforcement defect. A community [Antigravity CLI hook implementation report](https://github.com/thomas-chong/agy-cli-jev-auto-mode) claims `always-proceed` can bypass `force_ask`; that is third-party evidence, **not confirmation** of this user's configuration. Any further safety acceptance requires a witnessed native prompt or controlled non-destructive deny with settings documented.
+- **No privileged work allowed on hook trust alone**, and no change to user-owned `.gitignore`, Coucou state, native permissions or local secrets was made by this repository change.
+
+## OPS-07 CLI fresh consent and user cancellation — 2026-10-26
+
+- **Host/evidence:** screenshot of `agy 1.4.7` on Windows. Native `run_command` proposed `git status --short`. Approval UI explicitly displayed `Reason: Xyeena: review shell command; host sandbox and fresh user consent required` with `Yes`, `Yes and always allow`, and `No, cancel` choices.
+- **User action and outcome:** user selected **No, cancel**. Subsequent screenshot shows `Ran (git status --short) failed`, `User declined the tool call`, and `Interrupted · What should Antigravity CLI do instead?`. Command was **not executed** in this attempt.
+- **Acceptance:** real native `force_ask`-attributed approval UI and user-decline cancellation **OBSERVED / PASS for this attempt**. No claim about the host's behavior on all commands, automatic `deny`, or Antigravity IDE.
+- **Confounder:** immediately preceding screenshots also show a **temporary project-level `asklist (1)` rule `command(git status)`**, added deliberately to test host-native permissions. Thus the test does not isolate the Xyeena hook as the sole source of prompting even though the modal contains Xyeena's specific reason. Need repeat after removing **only this temporary rule** (do not alter Shared/Global rules or Coucou configuration).
+- **Clean isolation criterion:** after removing that Project Ask rule, submit a fresh native `run_command git status --short`, require explicit Xyeena reason and a prompt, select `No, cancel`, and observe cancellation. If confirmed, mark **CLI HOOK FORCE_ASK+USER CANCEL PASS (isolated)**; native IDE and hook's automatic `deny` remain separate.
+
+## OPS-07 native CLI force_ask + user decline — isolated live attempt, 2026-10-26
+
+- **Environment:** Antigravity CLI `agy 1.4.7` on Windows; workspace-local `xyeena-rig-guided` `PreToolUse`, matcher `*`, registered runner `node ../.xyeena/hooks/antigravity-guided.mjs PreToolUse`. Previously observed explicit callback `run_command → force_ask`.
+- **Isolation procedure:** the user was instructed to delete only the temporary Project `asklist` rule `command(git status)` before repeating the controlled tool invocation. Their next screenshot captures this repeat, but **does not itself show the restored Project asklist(0)**. Treat the absence of the temporary Ask rule as **reported by sequence, not independently reverified**.
+- **Native permission modal:** while the agent proposed read-only `git status --short`, the CLI displayed `Reason: Xyeena: review shell command; host sandbox and fresh user consent required` and offered `No, cancel`. This directly attributes the request to the Xyeena hook.
+- **Actual user action:** user selected `4. No, cancel`; the resulting CLI screenshot shows `Ran (git status --short) failed`, `User declined the tool call`, and `Interrupted · What should Antigravity CLI do instead?`. No command output was returned for this attempt.
+- **Verdict:** **CLI 1.4.7 REAL FORCE_ASK PROMPT + USER DENIAL ACCEPTED** for this scoped interaction (with temporary Ask-rule deletion not independently pictured). This is a **real native runtime observation**, distinct from local fixtures or a forged callback log.
+- **Separate unresolved safety gates:** Xyeena-generated unconditional `deny` was **not** demonstrated on the CLI; Antigravity IDE 2.5.5 remains **LIVE_BLOCKED** for native interception. Avoid describing OPS-07 as universally complete. Do not execute actual out-of-scope file writes to probe denial.

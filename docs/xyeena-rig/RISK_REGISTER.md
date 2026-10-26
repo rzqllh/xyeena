@@ -5,7 +5,7 @@ Residual risks are tracked separately from automated test completion.
 | Risk | Impact | Current control | Residual state |
 | --- | --- | --- | --- |
 | Host reports a skill file but does not activate it | Incorrect runtime behavior | Distinct inventory/eligibility states; require native acceptance | Antigravity and Hermes live smoke PASS; Hermes JSONL adapter hardened & stderr sanitized; full multi-turn native host acceptance pending |
-| Privileged operation without host-confirmed consent | Unauthorized changes | Fail-closed execution gates, explicit host authority boundary | Negative library test passed; native host approval/interception still pending |
+| Privileged operation without host-confirmed consent | Unauthorized changes | Fail-closed execution gates, explicit host authority boundary | agy CLI 1.4.7 force_ask prompt + user decline observed, but no policy auto-deny live test. Antigravity IDE 2.5.5 previously bypassed native hook; do not rely on IDE hook security |
 | Untrusted third-party skill instructions | Prompt injection or unexpected actions | No execution during discovery; host trust and scope checks | Review on enablement |
 | Unavailable Simpul execution supervisor | Tasks stuck in submitted/pending | Execution-readiness probe and native/inline fallback | Upstream blocked; native/inline fallback verified |
 | Shared-write concurrency or stale run state | Duplicate changes | Serialization, lease ownership, recovery checks and negative tests | Automated fencing & concurrency tests pass |
