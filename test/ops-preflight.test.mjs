@@ -108,9 +108,12 @@ test('preflight does not mistake decoy, extra or disabled Antigravity hooks for 
 });
 test('preflight recognizes exact POSIX managed PreToolUse command but never host enforcement',t=>{
   const cwd=fixture(t);
+  // macOS temp paths can contain /var -> /private/var symlink aliases.
+  // The installer and preflight both use the canonical workspace root.
+  const root=fs.realpathSync(cwd);
   fs.mkdirSync(path.join(cwd,'.agents'),{recursive:true});
   fs.mkdirSync(path.join(cwd,'.xyeena','hooks'),{recursive:true});
-  const runner=path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs');
+  const runner=path.join(root,'.xyeena','hooks','antigravity-guided.mjs');
   fs.writeFileSync(runner,'// fixture');
   const command=`"${process.execPath}" "${runner}" PreToolUse`;
   fs.writeFileSync(path.join(cwd,'.agents','hooks.json'),JSON.stringify({
