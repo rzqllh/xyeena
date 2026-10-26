@@ -121,3 +121,7 @@ The Windows evidence pack must report `project: xyeena-rig` and `acceptanceScope
 ## Preflight exact-match interpretation
 
 `preToolUseRegistered:true` means the inspected workspace manifest contains the exact source-managed single PreToolUse hook invocation and timeout. `preToolUseEnabled:true` additionally requires it not to be disabled. Neither proves the Antigravity IDE or CLI loaded or executed that hook. A modified command, added hook, or mismatch must be diagnosed, not auto-repaired or treated as security enforcement. For native PASS, observe a host-side safe negative interception in the actual IDE.
+
+## Native file-read boundary (source policy)
+
+On an Antigravity host that actually loads managed hooks, `view_file`, `list_dir`, `find_by_name` and `grep_search` are no longer automatically allowed without validating their explicit target path inside the canonical trusted workspace. Reads outside that workspace fail closed; unknown host argument schemas or extra location-bearing fields require native user consent (`force_ask`). This check cannot sandbox filesystem accesses or establish that an IDE loads `PreToolUse`. If a future host version changes argument field names, gather sanitized native evidence and adapt contract fixtures; never weaken to unconditional allow.

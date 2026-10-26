@@ -121,3 +121,7 @@ The user ran the read-only Windows PowerShell 5.1 pack on `184e2d9abb73` success
 ## Preflight hook matching hardening (source-only)
 
 `ops preflight` now treats registration as a **syntactic exact-match** of the managed Antigravity `PreToolUse` command and its single-event shape/timeout, rather than accepting unrelated commands that merely contain the runner filename or event string. Disabled groups/hook entries cannot be mistaken for enabled registration. Tampered/extra callbacks are reported as not exactly registered and require human review; the tool does not modify them. Even exact local registration is **not IDE interception evidence**; issue #34 stays LIVE BLOCKED.
+
+## RIG-native read tool workspace containment (source-only)
+
+The Antigravity `PreToolUse` source policy no longer automatically allows file/directory/search reads by tool name alone. When the host payload exposes the documented primary target (`AbsolutePath`, `DirectoryPath`, `SearchDirectory`, `SearchPath`), a target outside the canonical trusted workspace or through an escaping symlink returns `deny`; a verified in-workspace target may return `allow` without overriding native host restrictions. Missing/unrecognized or additional location fields return `force_ask` rather than silently expanding access. This is a **source policy**, not proof that Antigravity IDE 2.5.5 loads or enforces its hooks; #34 remains LIVE BLOCKED.

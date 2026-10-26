@@ -43,3 +43,7 @@ Before this source fix, a timeout could release the shared workspace write lock 
 ## Unverified isolation claims (PR #50)
 
 A caller-provided isolatedWorktrees flag could previously bypass write serialization without host-proven worktree containment. All writes are now fenced and limited to parallelism one, regardless of that flag. A canceled, unresponsive write can block that workspace pending controlled recovery: this is an intentional fail-closed tradeoff. Host-authenticated worktree isolation and OS descendant ownership remain unverified.
+
+## Native read target leakage boundary
+
+The pre-existing read-tool allow-by-name behavior could permit a native host to read outside the trusted RIG workspace without an Xyeena approval request. Source policy now requires an explicit, contained canonical target for `allow`, denies outside/symlink destinations and asks the native host for approval when target schema is ambiguous. **Residual risk:** native IDE hooks have not been proven to run at all; a security boundary must not be asserted for IDE 2.5.5 without independent live negative acceptance (#34). OS-level sandboxing is not implemented by this policy.

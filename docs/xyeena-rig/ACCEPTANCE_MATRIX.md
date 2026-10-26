@@ -67,3 +67,7 @@ Source `ops preflight` and the Windows acceptance JSON enumerate only native RIG
 ## Exact managed hook shape — new source regression
 
 A12/A25/A28 source diagnostics now refuse to report managed PreToolUse registration for commands that only **mention** the runner, multiple command hooks or changed timeout. An enabled, exact local entry still reports `hostEnforcement: UNVERIFIED` and cannot independently satisfy the Antigravity IDE LIVE gate #34.
+
+## Antigravity file read scope source regression
+
+A12/A25/A28 gain fail-closed source tests for read-only Antigravity file/directory/search operations. An explicit out-of-workspace target is denied; missing or alternate host path schema receives `force_ask`; an in-workspace canonical target remains subject to the host's native permission rules. This only guards the **hook when invoked**, not the IDE's registration or invocation of the hook. Native IDE LIVE BLOCKED is unchanged.

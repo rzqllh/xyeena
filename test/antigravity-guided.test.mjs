@@ -122,6 +122,66 @@ test('PreToolUse host hook requests fresh user approval without auto-approval',(
     catch(e){if(!['EPERM','EACCES'].includes(e.code))throw e;}
   }finally{cleanup(cwd);}
 });
+test('read-only native tools cannot silently read outside the trusted workspace',()=>{
+  const cwd=fixture();
+  try {
+    const root=fs.realpathSync(cwd);
+    const outside=path.dirname(root);
+    const payload=(name,args,workspacePaths=[cwd])=>({
+      workspacePaths,toolCall:{name,args}
+    });
+    const cases=[
+      ['view_file','AbsolutePath'],
+      ['list_dir','DirectoryPath'],
+      ['find_by_name','SearchDirectory'],
+      ['grep_search','SearchPath'],
+    ];
+    for (const [name,key] of cases) {
+      assert.deepEqual(
+        preToolUse(root,payload(name,{[key]:path.join(root,'readme.md')})),
+        {decision:'allow'}, name+' should accept canonical workspace target');
+      assert.equal(preToolUse(root,payload(name,{[key]:outside})).decision,'deny',
+        name+' must reject out-of-workspace target');
+      assert.equal(preToolUse(root,payload(name,{[key]:null})).decision,'deny',
+        name+' must reject malformed path');
+      assert.equal(preToolUse(root,payload(name,{})).decision,'force_ask',
+        name+' must not guess an unverified host default path');
+      assert.equal(preToolUse(root,payload(name,{
+        [key]:path.join(root,'readme.md'),AlternativeFile:outside
+      })).decision,'force_ask',name+' must not automatically authorize alternate paths');
+      assert.equal(preToolUse(root,payload(name,{[key]:path.join(root,'readme.md')},[outside])).decision,
+        'deny',name+' must reject foreign workspace identity');
+    }
+    const linked=path.join(root,'read-linked');
+    try {
+      fs.symlinkSync(outside,linked,'dir');
+      assert.equal(preToolUse(root,payload('list_dir',{DirectoryPath:linked})).decision,
+        'deny','linked outside location must be rejected');
+    } catch(error) { if(!['EPERM','EACCES'].includes(error.code)) throw error; }
+  } finally { cleanup(cwd); }
+});
+test('installed native runner requires consent for ambiguous reads and denies out-of-workspace reads',()=>{
+  const cwd=fixture();
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    const script=path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs');
+    const invoke=(name,args)=>spawnSync(process.execPath,[script,'PreToolUse'],{
+      input:JSON.stringify({workspacePaths:[cwd],toolCall:{name,args}}),
+      encoding:'utf8',timeout:3000
+    });
+    for (const [name,args,decision] of [
+      ['view_file',{AbsolutePath:path.dirname(cwd)},'deny'],
+      ['list_dir',{DirectoryPath:path.join(cwd,'src')},'allow'],
+      ['find_by_name',{},'force_ask'],
+    ]) {
+      const run=invoke(name,args);
+      assert.equal(run.status,0,run.stderr);
+      const output=JSON.parse(run.stdout);
+      assert.equal(output.decision,decision,name);
+      assert.equal(output.permissionOverrides,undefined);
+    }
+  } finally { cleanup(cwd); }
+});
 test('installed Antigravity PreToolUse runner follows host JSON contract and fails closed',()=>{
   const cwd=fixture();
   try{
