@@ -1,5 +1,6 @@
 import path from 'node:path'; import fs from 'node:fs';
 import { withNativeCancelSignals } from './native-cancel.mjs';
+import { inspectOpsPreflight } from './ops-preflight.mjs';
 import { parseFlags } from './util.mjs'; import { VERSION, PACKAGE_ROOT } from './paths.mjs'; import { install, installSelective } from './install.mjs';
 import { explicitSelection, interactiveSelection } from './selection.mjs';
 import { runHarness } from './harness.mjs'; import { doctor } from './doctor.mjs'; import { validateSource } from './validate.mjs'; import { loadRegistry } from './registry.mjs'; import { resolveCapabilities } from './resolver.mjs'; import { runEvals } from './eval.mjs'; import { RunLedger } from './ledger.mjs';
@@ -24,6 +25,7 @@ Usage:
   xyeena setup --runtime antigravity --preset complete --replace-files .agents/skills/xyeena-orchestrate/SKILL.md --yes
   xyeena setup diff --runtime antigravity --preset complete --file .agents/skills/xyeena-orchestrate/SKILL.md
   xyeena setup check --runtime antigravity
+  xyeena ops preflight [--dir PATH]  # source-only, read-only prerequisite inventory
   xyeena setup backups
   xyeena setup compact --runtime "codex,antigravity" --preset complete --dry-run
   xyeena setup compact --runtime "codex,antigravity" --preset complete --yes
@@ -179,6 +181,12 @@ export async function main(args){
       prompt:f.prompt,state:f.state||'TRIAGE',paths:f.path?[f.path]:[],maxSupporting:f.maxSupporting===undefined?2:Number(f.maxSupporting),
       includeGlobal:!f.localOnly});
     console.log(JSON.stringify(result,null,2));return;
+  }
+ if(cmd==='ops') {
+    if(f._.length!==1||f._[0]!=='preflight'||Object.keys(f).some(key=>!['_','dir'].includes(key)))
+      throw new Error('Usage: xyeena ops preflight [--dir PATH]');
+    console.log(JSON.stringify(inspectOpsPreflight({cwd:path.resolve(f.dir||process.cwd())}),null,2));
+    return;
   }
  if(cmd==='orchestrate'){
     if(!['preview','run'].includes(f._[0]))throw new Error('Expected: xyeena orchestrate preview|run');
