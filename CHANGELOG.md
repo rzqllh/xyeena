@@ -1,5 +1,7 @@
 # Changelog
 
+- Close out repository-side source work with one RIG-only native acceptance handoff: safe IDE negative probe, unavailable standalone CLI hosts, Hermes live cancel boundary, and explicit human npm release authorization. This adds **no** new host PASS.
+
 - Make `ops preflight` distinguish exact hook registration from owned installed runner SHA-256 integrity. Tamper, missing marker, oversize and symlink fixtures fail probe eligibility; no native-host enforcement claim.
 
 - Windows one-shot adapter cancellation now requests `taskkill /PID <owned-child-pid> /T /F` on the spawned child process tree with strict PID validation, no shell and direct-child fallback; controlled dummy descendant CI smoke is **not** real provider/IDE LIVE acceptance.
