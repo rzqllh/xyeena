@@ -221,13 +221,14 @@ export function selectSubagentBackend({task={},backends={},maxParallel=2}={}) {
   const needed=task.requiresDelegation===true;
   const independent=task.independent===true;
   const readOnly=task.readOnly===true;
-  const isolated=task.isolatedWorktrees===true;
-  const cap = independent && (readOnly || isolated) ? maxParallel : 1;
+  // Caller-asserted worktree isolation is not proof of host-enforced
+  // containment. Never authorize parallel writes from this policy hint.
+  const cap = independent && readOnly ? maxParallel : 1;
   if (!needed) return {backend:'inline',parallelism:1,reason:'delegation-not-needed'};
   for (const kind of ['simpul','native']) {
     const backend=backends[kind];
     if (backend?.enabled===true && backend?.healthy===true && backend?.adapterAvailable===true &&
-        backend?.executionReady!==false &&
+        backend?.executionReady===true &&
         (readOnly || backend.supportsWrites===true) &&
         (cap===1 || backend.supportsParallel===true))
       return {backend:kind,parallelism:cap,reason:'verified-backend-capability'};
