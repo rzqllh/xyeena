@@ -303,3 +303,7 @@ The Windows PowerShell 5.1 acceptance pack running source `184e2d9abb73` returne
 ## Exact native hook registration diagnostic — source regression
 
 Adversarial fixtures now distinguish the intended single Antigravity `PreToolUse` command from a decoy shell echo containing its name, extra hook entries, mismatched timeout and disabled entries. Cross-platform canonical Windows and POSIX shapes are exercised without invoking any host tool. This prevents an incorrect **registration hint**, not a native host bypass. Antigravity IDE 2.5.5 remains LIVE BLOCKED until witnessed in-IDE denial.
+
+## Antigravity native read path negative fixture — source only
+
+The source `PreToolUse` handler previously returned `allow` for all read tools solely based on tool name; that could not establish trusted workspace containment. Regression fixtures now exercise read targets inside/outside the workspace, symlink escape, missing/invalid paths, unrecognized alternate location arguments, foreign workspace identity and the actual installed Node hook runner JSON contract. Any source PASS remains distinct from a witnessed native IDE host denial; #34 does not close from CI.
