@@ -9,7 +9,7 @@ The eight engineering phases are integrated into `main`. Source implementation a
 | P01 — Discovery | R01–R02 | Host skill/plugin inventory, provenance, collisions and dependency closure | CI validated |
 | P02 — Routing | R03–R04 | Single governor, external skills arbitration and native fallback | CI validated |
 | P03 — Harness | R05, R10 | Execution gates, scope checks, consent contracts and verifier interfaces | CI validated; scoped Antigravity CLI 1.4.7 native force_ask/deny PASS; IDE and other hosts pending/blocked |
-| P04 — Delegation | R06–R08 | Simpul/native adapter contracts, readiness probing, resource budgets | CI validated; Simpul supervisor blocked |
+| P04 — Delegation | R06–R08 | Native/inline worker contracts, readiness probing, budgets; separately optional Simpul adapter | Native/inline contracts CI validated; optional external supervisor not live-accepted |
 | P05 — Recovery | R09–R10 | Checkpoints, guarded resume, concurrency control and bounded retries | CI validated |
 | P06 — Packaging | R11–R12 | Compact install, legacy migration, managed backups and rollback | CI validated |
 | P07 — Hardening | R13–R14 | Cross-platform tests, negative cases and multi-host fixtures | CI validated; scoped agy native negative/consent acceptance PASS; full multi-host acceptance pending |
@@ -18,12 +18,12 @@ The eight engineering phases are integrated into `main`. Source implementation a
 ## Operational release gates
 
 1. **Host acceptance:** exercise installation, reload, actual invocation, authorization and safe failure on each declared host. Track unsupported host capabilities explicitly.
-2. **Simpul:** validate a deployed, authenticated supervisor that actually executes a task from submission through terminal status and cancellation; protocol-only coverage is insufficient.
+2. **RIG-native delegation:** validate actual host-owned worker execution, authorization, cancellation and independent verification. A separate, opt-in Simpul supervisor is **not** a core release gate.
 3. **Approval and interception:** verify host-sourced human approval and the actual interception boundary for privileged actions, or keep those actions disabled.
 4. **Release qualification:** reconcile acceptance criteria, security review and package provenance for the exact release commit.
 5. **Publication:** authorize a semantic version, tag/release and npm Trusted Publisher workflow only after preceding gates close.
 
-Outstanding live acceptance is tracked in [IDE #34](https://github.com/rzqllh/xyeena/issues/34), [Simpul #35](https://github.com/rzqllh/xyeena/issues/35), [other CLIs #36](https://github.com/rzqllh/xyeena/issues/36), and [Hermes #37](https://github.com/rzqllh/xyeena/issues/37). No numeric completion percentage is assigned to pending live gates. See [Task tracker](TASK_TRACKER.md), [Acceptance](ACCEPTANCE_MATRIX.md) and [Validation](EVIDENCE.md).
+Outstanding **RIG-native** live acceptance is tracked in [IDE #34](https://github.com/rzqllh/xyeena/issues/34), [other CLIs #36](https://github.com/rzqllh/xyeena/issues/36), and [Hermes #37](https://github.com/rzqllh/xyeena/issues/37). Optional cross-project Simpul interface [#35](https://github.com/rzqllh/xyeena/issues/35) is tracked separately and cannot block the native RIG release. No numeric completion percentage is assigned to pending live gates. See [Task tracker](TASK_TRACKER.md), [Acceptance](ACCEPTANCE_MATRIX.md) and [Validation](EVIDENCE.md).
 
 ## Source-to-operator checkpoint — 2026-10-26
 
