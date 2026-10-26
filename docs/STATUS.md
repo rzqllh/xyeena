@@ -6,7 +6,7 @@
 
 | Surface | Verified source state | Release boundary |
 | --- | --- | --- |
-| GitHub `main` | Source audit baseline [`dc96a79c`](https://github.com/rzqllh/xyeena/commit/dc96a79c40632e558c8b12b9560e677b4fb91a49) (PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#48](https://github.com/rzqllh/xyeena/pull/48), excluding issue-only numbers) | Repository source is not automatically npm-published |
+| GitHub `main` | Source audit baseline [`a27b4db1`](https://github.com/rzqllh/xyeena/commit/a27b4db167ceeac27095f991bbaff4de01562a6c) (PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#49](https://github.com/rzqllh/xyeena/pull/49), excluding issue-only numbers) | Repository source is not automatically npm-published |
 | npm `xyeena-agent` | `0.4.1` is the last published baseline **recorded by this repository** | Registry cannot be authoritatively rechecked from this audit; verify the registry before a future release |
 | Candidate `0.5.0` | Not published, tagged, or authorized by the user | A future publication requires explicit human approval |
 | CI | PR #31, #32, #33, #38–#45 (implemented PR numbers) each passed 9/9 GitHub CI jobs at their final PR heads | CI is source/packaging assurance, not live host enforcement |
@@ -102,3 +102,7 @@ The source adapter now bounds legacy direct-object and structured FastMCP respon
 ## Native runner cancellation and diagnostic integrity (PR #49, source-only)
 
 The native subagent adapter refuses pre-aborted signals before host dispatch, removes per-run cancellation listeners after completion and absorbs rejected cooperative cancel requests without unhandled rejections. It also redacts host-returned status, execution, crash and cancellation error details. Tests exercise cancellation after completion, abort during wait and synthetic credential-like errors. No Windows process-tree or provider-side termination assertion follows from these tests; issue #37 remains LIVE PARTIAL.
+
+## Fail-closed shared-write timeout fencing (PR #50)
+
+If a shared-workspace write adapter times out but its invocation remains unsettled, the dispatcher now retains the write lock until that invocation actually settles. An acknowledged cancellation alone does not release the write fence. A stuck adapter may therefore block subsequent writes until supervisor recovery or process restart; this deliberate fail-closed tradeoff prevents falsely assuming writes have stopped. Source negative tests are not evidence of Windows descendant teardown or trusted host fencing.

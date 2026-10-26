@@ -35,3 +35,7 @@ Unbounded structured/direct-object Simpul MCP responses and raw upstream excepti
 ## Native worker cancellation lifecycle (PR #49)
 
 Previously, an already-aborted native adapter signal could still dispatch a worker; successful runs left abort listeners attached and asynchronous cancel failures could surface as unhandled rejections. Source now blocks pre-aborted runs, cleans up listeners, handles rejected cancellation promises, and redacts host failure details. Remaining limits: actual OS descendant teardown, terminal signaling and provider settlement still need independent live evidence.
+
+## Shared write lock after timeout (PR #50)
+
+Before this source fix, a timeout could release the shared workspace write lock immediately after best-effort cancellation, even with an unresolved adapter operation. Source now retains the lock until the invocation settles. Residual operational risk: an unresponsive worker can block subsequent writes indefinitely within the process, requiring controlled recovery; there is still no OS-native guarantee that descendants stop writing after their parent resolves. Continue LIVE BLOCKED on unverified host containment.

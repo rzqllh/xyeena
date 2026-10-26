@@ -51,3 +51,7 @@ A26 gains negative input, numeric-overflow, and duplicate-worker identity regres
 ## PR #49 native lifecycle source regression
 
 A15/A26/A28 gain explicit source-level regression cases for abort-before-worker-launch, in-flight cooperative cancellation, late-signal listener disposal and opaque host errors. These checks cannot demonstrate actual process-tree termination or native approval provenance. All previous LIVE statuses remain as documented; verify exact PR CI separately.
+
+## P0 write timeout fence (PR #50)
+
+A16/A27 add a negative regression for shared-workspace write serialization after timed-out adapter execution. On unresolved work, subsequent shared writes remain blocked deliberately. CI PASS for the exact PR head must be verified independently; native process termination remains unverified.

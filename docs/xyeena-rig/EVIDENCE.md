@@ -4,7 +4,7 @@
 
 ## Current reconciled evidence — 2026-10-26
 
-The last verified integrated source checkpoint is [main `dc96a79c`](https://github.com/rzqllh/xyeena/commit/dc96a79c40632e558c8b12b9560e677b4fb91a49). PR #48 bounded Simpul MCP results and sanitized external errors; its final branch head passed 9/9 CI ([run 40270947152](https://github.com/rzqllh/xyeena/actions/runs/40270947152)) before merging. PR #47 source budget-input hardening passed 9/9 final-head GitHub CI jobs ([run 40270476537](https://github.com/rzqllh/xyeena/actions/runs/40270476537)) before merging. PR [#44](https://github.com/rzqllh/xyeena/pull/44) (native worker diagnostic redaction) and PR [#45](https://github.com/rzqllh/xyeena/pull/45) (workspace write-lock queue cleanup) each passed **9/9** checks on their final PR head. Earlier CI result and live-acceptance history remain as separately dated records below; no new host acceptance is implied.
+The last verified integrated source checkpoint is [main `a27b4db1`](https://github.com/rzqllh/xyeena/commit/a27b4db167ceeac27095f991bbaff4de01562a6c). PR #49 native cancellation and diagnostic hardening passed 9/9 final-head CI ([run 40271504759](https://github.com/rzqllh/xyeena/actions/runs/40271504759)) before merging. PR #48 bounded Simpul MCP results and sanitized external errors; its final branch head passed 9/9 CI ([run 40270947152](https://github.com/rzqllh/xyeena/actions/runs/40270947152)) before merging. PR #47 source budget-input hardening passed 9/9 final-head GitHub CI jobs ([run 40270476537](https://github.com/rzqllh/xyeena/actions/runs/40270476537)) before merging. PR [#44](https://github.com/rzqllh/xyeena/pull/44) (native worker diagnostic redaction) and PR [#45](https://github.com/rzqllh/xyeena/pull/45) (workspace write-lock queue cleanup) each passed **9/9** checks on their final PR head. Earlier CI result and live-acceptance history remain as separately dated records below; no new host acceptance is implied.
 
 The **2026-10-26 native Antigravity CLI 1.4.7** session showed both an explicit Xyeena `force_ask` reason with human refusal and, separately, a host-enforced one-shot `deny` against harmless `git status --short`. The CLI returned the exact diagnostic error, the command produced no successful output, and the temporary probe was cleared. This closes **only the scoped CLI test**, not the general permissions boundary, native IDE support or other hosts.
 
@@ -287,3 +287,7 @@ Simpul's structured/direct/text MCP payloads are bounded and untrusted transport
 ### PR #49 source-only native cancellation
 
 Negative tests address pre-aborted worker dispatch, listener cleanup, cooperative cancel rejection and error redaction. No live Windows native host or authenticated model call was made by this PR; exact final-head CI is required before source acceptance.
+
+### PR #50 shared-write timeout regression
+
+Source test simulates a still-running write whose cancel callback acknowledges before the actual write settles. A second shared write must not begin before settlement. This test is not real host/process-tree termination evidence; the exact PR CI must be checked before merge.
