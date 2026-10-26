@@ -1,50 +1,66 @@
 name: publish
+# An explicitly published GitHub Release is the only publication trigger.
+# There is NO main push/commit-message triggered npm release.
 on:
   release:
     types: [published]
-  # Approved main-branch publish: v0.3.0 historical and v0.4.0 global/symlink release.
-  # Future versions continue to use the ordinary GitHub Release trigger.
-  push:
-    branches: [main]
-    paths: [package.json, .github/workflows/publish.yml]
 permissions:
   contents: read
-  id-token: write
 concurrency:
   group: xyeena-npm-publish
   cancel-in-progress: false
 jobs:
   npm:
     if: >-
-      github.event_name == 'release' ||
-      (github.event_name == 'push' && (startsWith(github.event.head_commit.message, 'release: xyeena-agent v0.4.1') || startsWith(github.event.head_commit.message, 'release: xyeena-agent v0.4.0') || startsWith(github.event.head_commit.message, 'release: xyeena-agent v0.3.0') || startsWith(github.event.head_commit.message, 'verify: xyeena-agent v0.3.0')))
+      github.event_name == 'release' &&
+      github.event.release.draft == false &&
+      github.event.release.prerelease == false &&
+      github.repository == 'rzqllh/xyeena'
     runs-on: ubuntu-latest
+    # Required reviewers MUST be configured in GitHub Settings > Environments
+    # before enabling a public release. An unprotected environment alone does
+    # not imply approval; document that truthfully.
+    environment: npm-publish
     permissions:
-      contents: write
+      contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v6
         with:
           node-version: 24
+          registry-url: https://registry.npmjs.org
           package-manager-cache: false
       - run: npm install --global npm@11.19.1
-      - name: Validate release event and package version
+      - name: Verify release tag matches package and current main exactly
+        shell: bash
         run: |
-          set -eu
-          PACKAGE_VERSION="$(node -p 'require("./package.json").version')"
-          if [ "$GITHUB_EVENT_NAME" = "release" ]; then
-            if [ "$GITHUB_REF_NAME" != "v$PACKAGE_VERSION" ]; then
-              echo "::error::Release tag $GITHUB_REF_NAME does not match package version v$PACKAGE_VERSION"
-              exit 1
-            fi
-          elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
-            if [ "$GITHUB_REF" != "refs/heads/main" ] || { [ "$PACKAGE_VERSION" != "0.4.1" ] && [ "$PACKAGE_VERSION" != "0.4.0" ] && [ "$PACKAGE_VERSION" != "0.3.0" ]; }; then
-              echo "::error::Main-branch publish is limited to an explicitly approved release version"
-              exit 1
-            fi
-          else
-            echo "::error::Unexpected publish event"
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = release
+          test "$GITHUB_REF_TYPE" = tag
+          test "$GITHUB_REPOSITORY" = rzqllh/xyeena
+          VERSION="$(node -p 'require("./package.json").version')"
+          test -n "$VERSION"
+          test "$GITHUB_REF_NAME" = "v$VERSION" || {
+            echo "::error::Release tag does not match checked-out package version"
+            exit 1
+          }
+          # Reject old, unmerged or side-branch tags, even if someone publishes
+          # a GitHub Release for them. Pin to the current reviewed main HEAD.
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          EXPECTED="$(git rev-parse refs/remotes/origin/main)"
+          ACTUAL="$(git rev-parse HEAD)"
+          test "$ACTUAL" = "$GITHUB_SHA"
+          test "$ACTUAL" = "$EXPECTED" || {
+            echo "::error::Release ref is not the current main commit"
+            exit 1
+          }
+          # Exact version must be immutable at registry: do not overwrite.
+          if npm view "xyeena-agent@$VERSION" version --registry=https://registry.npmjs.org/ --prefer-online --fetch-retries=0 2>/dev/null | grep -Fx "$VERSION"; then
+            echo "::error::This exact npm version is already published; no upload performed"
             exit 1
           fi
       - run: npm ci
@@ -54,91 +70,31 @@ jobs:
       - run: npm run check
       - run: npm run eval
       - run: npm pack --dry-run
-      - name: Check exact npm version availability
-        id: existing
-        run: |
-          VERSION="$(node -p 'require("./package.json").version')"
-          if npm view "xyeena-agent@$VERSION" version --registry=https://registry.npmjs.org/ 2>/dev/null | grep -Fx "$VERSION"; then
-            echo "Version $VERSION is already published; will not overwrite it."
-            echo "published=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "published=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Authenticate to npm registry
-        if: "steps.existing.outputs.published != 'true' && !startsWith(github.event.head_commit.message, 'verify: xyeena-agent v0.3.0')"
-        run: |
-          if [ -n "${{ secrets.NPM_TOKEN }}" ]; then
-            echo "Using NPM_TOKEN secret from GitHub repository."
-            echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > "$HOME/.npmrc"
-            echo "Successfully configured ~/.npmrc with NPM_TOKEN."
-          else
-            echo "NPM_TOKEN secret not set; attempting OIDC token exchange..."
-            TOKEN_RESP=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=npm:registry.npmjs.org")
-            ID_TOKEN=$(echo "$TOKEN_RESP" | jq -r '.value // empty')
-            if [ -z "$ID_TOKEN" ]; then
-              echo "::error::Could not fetch OIDC ID token from GitHub Actions: $TOKEN_RESP"
-              exit 1
-            fi
-            echo "::add-mask::$ID_TOKEN"
-            EXCHANGE_RESP=$(curl -s -w "\n%{http_code}" -X POST "https://registry.npmjs.org/-/npm/v1/oidc/token/exchange/package/xyeena-agent" \
-              -H "Authorization: Bearer $ID_TOKEN" \
-              -H "Content-Type: application/json")
-            HTTP_CODE=$(echo "$EXCHANGE_RESP" | tail -n1)
-            BODY=$(echo "$EXCHANGE_RESP" | sed '$d')
-            echo "npm exchange HTTP code: $HTTP_CODE"
-            if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
-              echo "::error::npm OIDC exchange failed with HTTP $HTTP_CODE: $BODY"
-              exit 1
-            fi
-            NPM_SESSION_TOKEN=$(echo "$BODY" | jq -r '.token')
-            echo "::add-mask::$NPM_SESSION_TOKEN"
-            echo "//registry.npmjs.org/:_authToken=$NPM_SESSION_TOKEN" > "$HOME/.npmrc"
-            echo "Successfully authenticated to npm via OIDC session token!"
-          fi
-      - name: Publish new package to npm with provenance
-        if: "steps.existing.outputs.published != 'true' && !startsWith(github.event.head_commit.message, 'verify: xyeena-agent v0.3.0')"
-        run: npm publish --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Wait for npm processing and verify public version
+      - name: Publish via npm trusted publisher OIDC, with provenance
+        # No NPM_TOKEN, no explicit OIDC token exchange, no persistent .npmrc.
+        run: npm publish --provenance --access public
+      - name: Verify exact version becomes public
         timeout-minutes: 35
+        shell: bash
         run: |
-          set -eu
+          set -euo pipefail
           VERSION="$(node -p 'require("./package.json").version')"
           for attempt in $(seq 1 90); do
             FOUND="$(npm view "xyeena-agent@$VERSION" version --registry=https://registry.npmjs.org/ --prefer-online --fetch-retries=0 2>/dev/null || true)"
             if [ "$FOUND" = "$VERSION" ]; then
-              echo "Verified xyeena-agent@$VERSION on public npm registry (attempt $attempt)."
+              echo "Exact public npm version verified."
               exit 0
             fi
-            echo "npm has accepted this version but public metadata is not yet visible (attempt $attempt/90)."
             sleep 20
           done
-          echo "::error::Package not publicly visible after 30 minutes. It may still be processing or require maintainer action in npm."
+          echo "::error::New version is not yet visible in npm registry"
           exit 1
-      - name: Test fresh consumer installation from npm registry
+      - name: Verify fresh npm consumer install
+        shell: bash
         run: |
-          set -eu
+          set -euo pipefail
           VERSION="$(node -p 'require("./package.json").version')"
           TMP="$(mktemp -d)"
           cd "$TMP"
           FOUND="$(npm exec --yes --package="xyeena-agent@$VERSION" -- xyeena version)"
-          if [ "$FOUND" != "$VERSION" ]; then
-            echo "::error::Fresh registry install reported $FOUND, expected $VERSION"
-            exit 1
-          fi
-      - name: Create matching GitHub Release after verified main publish
-        if: github.event_name == 'push'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -eu
-          VERSION="$(node -p 'require("./package.json").version')"
-          TARGET="$GITHUB_SHA"
-          if [ "$VERSION" = "0.3.0" ]; then
-            TARGET="a5e7dfb43b3e342a8f589ce7c9b7d95edd4b8782"
-          fi
-          gh release view "v$VERSION" >/dev/null 2>&1 || \
-            gh release create "v$VERSION" --target "$TARGET" \
-              --title "v$VERSION — Xyeena Rig global and symlink setup" \
-              --generate-notes
+          test "$FOUND" = "$VERSION"
