@@ -1,6 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { spawn } from 'node:child_process';
+import { requestOwnedProcessTermination } from './owned-process-termination.mjs';
 import { fileURLToPath } from 'node:url';
 import { discoverWorkspaceSkills, routeWorkspaceSkills } from './workspace-skills.mjs';
 
@@ -13,7 +14,8 @@ const MAX_TIMEOUT = 300000;
 /** Explicit, one-shot Antigravity SDK bridge. Never invoked by Guided hooks. */
 export function createAntigravitySdkAdapter({
   cwd = process.cwd(), python = process.platform === 'win32' ? 'python' : 'python3',
-  skillPaths = [], timeoutMs = 120000, enableSubagents = false, workerPath = WORKER, spawnImpl = spawn
+  skillPaths = [], timeoutMs = 120000, enableSubagents = false, workerPath = WORKER,
+  spawnImpl = spawn, terminateSpawnImpl = spawn, platform = process.platform
 } = {}) {
   const root = fs.realpathSync(path.resolve(cwd));
   if (typeof enableSubagents !== 'boolean') throw new Error('Invalid subagent flag');
@@ -54,12 +56,12 @@ export function createAntigravitySdkAdapter({
           if (onAbort) signal?.removeEventListener('abort', onAbort);
           if (error) reject(error); else resolve(result);
         };
-        // This only requests direct-child termination; descendants and
-        // host-level process containment must still be tested natively.
+        // Request termination of the owned worker tree when on Windows.
+        // This does not independently prove descendant shutdown.
         const stopChild = error => {
           if (finished) return;
           done(error);
-          try { child.kill(); } catch { /* best-effort termination */ }
+          requestOwnedProcessTermination(child, { platform, spawnImpl: terminateSpawnImpl });
         };
         try {
           child = spawnImpl(python, [workerPath], { cwd: root, stdio: ['pipe', 'pipe', 'pipe'],
