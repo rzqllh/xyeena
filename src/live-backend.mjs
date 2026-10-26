@@ -520,7 +520,7 @@ export function createNativeSubagentAdapter({
         throw Object.assign(new Error('Native worker cancellation requested'), { code: 'ERR_NATIVE_CANCELED' });
 
       if (runResult?.crashed === true || runResult?.status === 'CRASHED' || runResult?.error) {
-        throw new Error('Host worker crashed or returned a failed result');
+        throw new Error('Host worker crashed or encountered error');
       }
 
       const evidenceRefs = safeEvidence(runResult?.evidenceRefs);
