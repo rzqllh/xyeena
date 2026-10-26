@@ -4,7 +4,7 @@
 
 ## Current reconciled evidence — 2026-10-26
 
-The last verified integrated source checkpoint is [main `2c2f0cea`](https://github.com/rzqllh/xyeena/commit/2c2f0cea2ba75edd58aa8bd33c7cf952da5e1468). PR #50 shared write fencing and rejection of caller-asserted worktree isolation passed 9/9 final-head CI ([run 40272104829](https://github.com/rzqllh/xyeena/actions/runs/40272104829)) before merging. PR #49 native cancellation and diagnostic hardening passed 9/9 final-head CI ([run 40271504759](https://github.com/rzqllh/xyeena/actions/runs/40271504759)) before merging. PR #48 bounded Simpul MCP results and sanitized external errors; its final branch head passed 9/9 CI ([run 40270947152](https://github.com/rzqllh/xyeena/actions/runs/40270947152)) before merging. PR #47 source budget-input hardening passed 9/9 final-head GitHub CI jobs ([run 40270476537](https://github.com/rzqllh/xyeena/actions/runs/40270476537)) before merging. PR [#44](https://github.com/rzqllh/xyeena/pull/44) (native worker diagnostic redaction) and PR [#45](https://github.com/rzqllh/xyeena/pull/45) (workspace write-lock queue cleanup) each passed **9/9** checks on their final PR head. Earlier CI result and live-acceptance history remain as separately dated records below; no new host acceptance is implied.
+The last verified integrated source checkpoint before this scope patch is [main `184e2d9`](https://github.com/rzqllh/xyeena/commit/184e2d9abb7385a670c22b53898a29cff7d6e769), including the PowerShell 5.1 fix (PR #53). PR #50 shared write fencing and rejection of caller-asserted worktree isolation passed 9/9 final-head CI ([run 40272104829](https://github.com/rzqllh/xyeena/actions/runs/40272104829)) before merging. PR #49 native cancellation and diagnostic hardening passed 9/9 final-head CI ([run 40271504759](https://github.com/rzqllh/xyeena/actions/runs/40271504759)) before merging. PR #48 bounded Simpul MCP results and sanitized external errors; its final branch head passed 9/9 CI ([run 40270947152](https://github.com/rzqllh/xyeena/actions/runs/40270947152)) before merging. PR #47 source budget-input hardening passed 9/9 final-head GitHub CI jobs ([run 40270476537](https://github.com/rzqllh/xyeena/actions/runs/40270476537)) before merging. PR [#44](https://github.com/rzqllh/xyeena/pull/44) (native worker diagnostic redaction) and PR [#45](https://github.com/rzqllh/xyeena/pull/45) (workspace write-lock queue cleanup) each passed **9/9** checks on their final PR head. Earlier CI result and live-acceptance history remain as separately dated records below; no new host acceptance is implied.
 
 The **2026-10-26 native Antigravity CLI 1.4.7** session showed both an explicit Xyeena `force_ask` reason with human refusal and, separately, a host-enforced one-shot `deny` against harmless `git status --short`. The CLI returned the exact diagnostic error, the command produced no successful output, and the temporary probe was cleared. This closes **only the scoped CLI test**, not the general permissions boundary, native IDE support or other hosts.
 
@@ -27,7 +27,7 @@ These references document a historical passing commit; they do not assert that l
 | Code and contracts | Repository tests, skills manifests, Harness and adapter tests | Tests may use fixtures |
 | Packaging | Tarball/consumer smoke | Not a new published npm version |
 | Cross-platform | GitHub Actions jobs | Not a live IDE acceptance session |
-| Simpul | MCP API contract tests | No accepted end-to-end supervisor execution |
+| Optional Simpul bridge (separate project) | MCP adapter contract fixtures only | Excluded from RIG-native acceptance/release; no supervisor LIVE PASS claimed |
 | Host approvals and hooks | Boundary tests, fail-closed behavior | Live host interception and user-approval provenance still pending |
 
 No new `0.5.0` tag or npm publication has been authorized. Never treat a model status message or file-size check as independent proof of acceptance.
@@ -116,7 +116,7 @@ Detection method: `Get-Command codex, claude, gemini -ErrorAction SilentlyContin
 
 Exact prerequisites: install `npm i -g @openai/codex` (OPS-03), `npm i -g @anthropic-ai/claude-code` (OPS-04), `npm i -g @google/generative-ai-cli` or equivalent (OPS-05), then authenticate.
 
-### OPS-01 — Simpul
+### Historical OPS-01 — optional Simpul integration, NOT a RIG-native acceptance gate
 
 SubagentBridge workspace access blocked by agent policy. No live MCP transport. Adapter code present in `src/live-backend.mjs`. Fallback chain (Simpul → native → inline) CI_PASS.
 
@@ -253,7 +253,7 @@ The code in the pending feature PR adds the opt-in Antigravity native `PreToolUs
 
 ## Latest public blockers — 2026-10-26
 
-External/live gates now have distinct traceable GitHub issues: [#34 Antigravity IDE](https://github.com/rzqllh/xyeena/issues/34), [#35 Simpul supervisor](https://github.com/rzqllh/xyeena/issues/35), [#36 Codex/Claude/Gemini CLI](https://github.com/rzqllh/xyeena/issues/36), and [#37 Hermes cancellation/usage](https://github.com/rzqllh/xyeena/issues/37). These do **not** imply their requirements have been met. Repo-native source hardening is complete through PR #33; end-to-end host actions remain unavailable from CI.
+RIG-native live gates have distinct traceable GitHub issues: [#34 Antigravity IDE](https://github.com/rzqllh/xyeena/issues/34), [#36 Codex/Claude/Gemini CLI](https://github.com/rzqllh/xyeena/issues/36), and [#37 Hermes native cancellation/host authorization](https://github.com/rzqllh/xyeena/issues/37). Separately [#35 optional Simpul supervisor](https://github.com/rzqllh/xyeena/issues/35) has **no RIG-native release gate status**. These do **not** imply their requirements have been met. Repo-native source hardening is complete through PR #33; end-to-end host actions remain unavailable from CI.
 
 ## Host one-shot cancellation and SDK stream limits — source verification (2026-10-26)
 
@@ -295,3 +295,7 @@ Source test simulates a still-running write whose cancel callback acknowledges b
 ### Read-only Windows operator handoff (source script)
 
 scripts/windows-acceptance-pack.ps1 creates a temporary source worktree and redacted preflight JSON outside the user checkout. It compares git-status snapshots. CI current-source mode performs an offline Windows smoke test without fetching, invoking model providers or treating hook inventory as native activation. The output verdict is SOURCE_PREFLIGHT_PASS_LIVE_PENDING, never LIVE PASS. Human-host approvals remain pending.
+
+## Operator source-preflight result and scope reconciliation — 2026-10-26
+
+The Windows PowerShell 5.1 acceptance pack running source `184e2d9abb73` returned `SOURCE_PREFLIGHT_PASS_LIVE_PENDING` with checkout unchanged. Its earlier JSON included a Simpul supervisor field despite the separate project's optional status. This is a **report-scope defect**, not evidence of working Simpul. The newer RIG preflight contract enumerates native host gates #34/#36/#37 only; tests assert the optional supervisor name/issue and billing-hard-cap claim are not included. Source checks cannot close these live gates.
