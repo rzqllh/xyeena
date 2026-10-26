@@ -4,6 +4,8 @@
 param(
   [string]$RepoDir = (Get-Location).Path,
   [switch]$UseCurrentSource,
+  [ValidateSet('refs/remotes/origin/main','HEAD')]
+  [string]$SourceRef = 'refs/remotes/origin/main',
   [string]$OutputDir = ''
 )
 
@@ -62,7 +64,9 @@ try {
   } else {
     # Fetch never resets the current checkout. The new worktree is uniquely named.
     Invoke-GitOrFail -GitArgs @('fetch','--no-tags','origin','main') | Out-Null
-    $head = (Invoke-GitOrFail -GitArgs @('rev-parse','refs/remotes/origin/main')).Trim()
+    # CI may use HEAD on a PR to exercise its updated script and CLI. The
+    # default always uses freshly fetched main for normal operator use.
+    $head = (Invoke-GitOrFail -GitArgs @('rev-parse',$SourceRef)).Trim()
     $sourceDir = Join-Path ([System.IO.Path]::GetTempPath()) ('xyeena-rig-source-' + [guid]::NewGuid().ToString('N'))
     Invoke-GitOrFail -GitArgs @('worktree','add','--detach',$sourceDir,$head) | Out-Null
     $createdWorktree = $true
