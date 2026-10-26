@@ -254,3 +254,9 @@ The code in the pending feature PR adds the opt-in Antigravity native `PreToolUs
 ## Latest public blockers — 2026-10-26
 
 External/live gates now have distinct traceable GitHub issues: [#34 Antigravity IDE](https://github.com/rzqllh/xyeena/issues/34), [#35 Simpul supervisor](https://github.com/rzqllh/xyeena/issues/35), [#36 Codex/Claude/Gemini CLI](https://github.com/rzqllh/xyeena/issues/36), and [#37 Hermes cancellation/usage](https://github.com/rzqllh/xyeena/issues/37). These do **not** imply their requirements have been met. Repo-native source hardening is complete through PR #33; end-to-end host actions remain unavailable from CI.
+
+## Host one-shot cancellation and SDK stream limits — source verification (2026-10-26)
+
+- Portable Gemini/Hermes/Codex/Claude and Antigravity SDK adapters accept optional programmatic `AbortSignal`; pre-aborted work cannot spawn a child. In-flight abort returns a typed cancellation error and **requests direct-child termination**.
+- Both adapters enforce total received byte ceilings rather than repeatedly accumulating unbounded strings. The SDK stderr byte ceiling had previously been unreachable due to truncation before counting; this is now covered with a negative test. Unexpected SDK worker-provided error text no longer enters exception messages.
+- Unit tests model held processes, abort, large stdout/stderr and redaction; they do not attest process-tree teardown, Windows OS behavior, a real CLI Ctrl+C flow, or provider billing caps. **OPS-06 remains LIVE PARTIAL** ([#37](https://github.com/rzqllh/xyeena/issues/37)).

@@ -17,6 +17,10 @@ Xyeena Rig supports five agent hosts for skill packaging, inventory and routing.
 
 Paths vary with host version, platform and profile configuration; use `skills matrix` and `setup check` for observed roots.
 
+## Source-only one-shot AbortSignal support
+
+The portable one-shot adapters and Antigravity SDK adapter accept an optional `executeTask(task, {signal})` for preflight/in-flight cancellation. They reject the task on cancellation and attempt to terminate the direct child process, with bounded stdout/stderr streams. This is not a validated descendant process-tree kill or provider-side budget cap; native Windows and host cancellation acceptance remains in [issue #37](https://github.com/rzqllh/xyeena/issues/37).
+
 ## Native plugin metadata
 
 The repository includes `plugin.json`, `.claude-plugin/`, `.codex-plugin/`, and `.agents/plugins/`. Marketplace recognition, effective enablement, and execution privileges require independent validation in the respective host.

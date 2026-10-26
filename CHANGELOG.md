@@ -13,6 +13,8 @@ All versions listed as released refer to published npm artifacts. Repository sou
 
 - Correct Simpul FastMCP adapter to send only arguments accepted by upstream `submit_goal(goal, workspace_path, model, execute=False)`. Disallow write-capable or ambiguous scopes regardless of caller-authored permission flags; report submission-only status honestly and parse bounded SDK call-tool response wrappers without promoting transport health into execution readiness. Simpul live delegation remains BLOCKED.
 
+- Add programmatic `AbortSignal` cancellation to portable CLI and Antigravity SDK one-shot adapters, checked before process start and during execution. Enforce actual received stdout/stderr byte ceilings and avoid surfacing arbitrary provider/worker error contents. Direct-child termination remains best effort and full descendant teardown still needs live Windows acceptance.
+
 ## Earlier unreleased implementation work
 
 - Add opt-in compact skill installation, ownership-aware migration and restore workflows.
