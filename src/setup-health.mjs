@@ -22,7 +22,8 @@ function executableHint(command, env=process.env, platform=process.platform) {
   return entries.some(dir=>endings.some(ext=>{
     try {
       const target=path.join(dir,command+ext), stat=fs.lstatSync(target);
-      return !stat.isSymbolicLink() && stat.isFile();
+      return !stat.isSymbolicLink() && stat.isFile() &&
+        (platform==='win32' || (stat.mode & 0o111)!==0);
     } catch { return false; }
   }));
 }
@@ -36,8 +37,9 @@ export function inspectSetupHosts({cwd=process.cwd(),env=process.env,platform=pr
     return {host,projectMarkers:markers,hostCommandAvailable,detectedCommands,
       // Finding agy is evidence of a command on PATH, not proof of an IDE
       // installation, native skill activation, or a live security boundary.
-      detectedSurface:host==='antigravity'&&detectedCommands.includes('agy')
-        ? 'antigravity-cli-binary' : 'unspecified-host-binary',
+      detectedSurface:!hostCommandAvailable?'not-detected':
+        host==='antigravity'&&detectedCommands.includes('agy')
+          ? 'antigravity-cli-binary' : 'unspecified-host-binary',
       level:hostCommandAvailable?'executable-on-PATH':sharedOnly?'shared-folder-only':
         markers.length?'project-markers-only':'undetected',
       confirmedRunning:false};
