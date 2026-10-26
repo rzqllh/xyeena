@@ -28,11 +28,12 @@ try {
     throw 'Origin is not the intended rzqllh/xyeena repository'
   }
   $nodeVersion = (& node --version).Trim()
-  if ($LASTEXITCODE -ne 0 -or $nodeVersion -notmatch '^v(\d+)\.(\d+)\.') {
+  $versionMatch = [regex]::Match($nodeVersion, '^v(\d+)\.(\d+)\.')
+  if ($LASTEXITCODE -ne 0 -or -not $versionMatch.Success) {
     throw 'Cannot read Node.js version'
   }
-  $major = [int]$Matches[1]
-  $minor = [int]$Matches[2]
+  $major = [int]$versionMatch.Groups[1].Value
+  $minor = [int]$versionMatch.Groups[2].Value
   if ($major -lt 22 -or ($major -eq 22 -and $minor -lt 14)) {
     throw 'Node.js 22.14+ is required'
   }
