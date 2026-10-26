@@ -207,3 +207,29 @@ The code in the pending feature PR adds the opt-in Antigravity native `PreToolUs
 - **Actual user action:** user selected `4. No, cancel`; the resulting CLI screenshot shows `Ran (git status --short) failed`, `User declined the tool call`, and `Interrupted · What should Antigravity CLI do instead?`. No command output was returned for this attempt.
 - **Verdict:** **CLI 1.4.7 REAL FORCE_ASK PROMPT + USER DENIAL ACCEPTED** for this scoped interaction (with temporary Ask-rule deletion not independently pictured). This is a **real native runtime observation**, distinct from local fixtures or a forged callback log.
 - **Separate unresolved safety gates:** Xyeena-generated unconditional `deny` was **not** demonstrated on the CLI; Antigravity IDE 2.5.5 remains **LIVE_BLOCKED** for native interception. Avoid describing OPS-07 as universally complete. Do not execute actual out-of-scope file writes to probe denial.
+
+## OPS-07 optional automatic deny acceptance harness — source PR (not live-tested)
+
+- Proposed follow-up provides a five-minute one-shot `guided probe deny-start` that returns `deny` for an exact, read-only `git status --short` tool call. It does not attempt any out-of-workspace write or change host permissions.
+- `PreToolUse` exact ownership/hash checks remain mandatory before arming; unrelated host config drift does not trigger an installer write. A denied callback is recorded locally without command arguments, but such a local record is not host attestation.
+- Source/CI verification establishes only simulation of the documented native response contract. **Real `agy 1.4.7` acceptance must observe the host block the command and report the Xyeena diagnostic deny reason.** An accepted command is a failure. No claim about IDE support or general command sandboxing.
+
+## Guarded runner-only update for OPS-07 negative acceptance
+
+- The user has a legitimately drifted managed group (`SessionStart` removed; `PostInvocation` appeared) while `PreToolUse` remained exact and the installed runner matched its owner manifest. The installer correctly refused an unsafe overwrite.
+- Follow-up PR adds read-only `guided runner-preview` and explicit `guided runner-upgrade --yes` to safely introduce the one-shot automatic-deny runner without resetting `.agents/hooks.json`. Requires exact enabled PreToolUse, untampered old runner, and a Git-ignored backup directory. Only the runner and its manifest script hash are updated.
+- Still no native `agy` automatic-deny result. CLI auto-deny remains **PENDING** until a real native tool call is blocked and observed by the user.
+
+## OPS-07 native CLI auto-deny live acceptance — 2026-10-26
+
+**Environment:** Windows PowerShell workspace `xyeena`, Antigravity CLI `agy 1.4.7`, real `run_command` request. This is user-supplied native execution evidence, not a fixture.
+
+**Upgrade evidence:** PR #30 isolated worktree source at `9933640`. `guided runner-preview` reported `changed:true` and `configPreserved:true`; `runner-upgrade --yes` returned `backupCreated:true` and `runnerIntegrity:MATCH`. Subsequent `guided status` showed `installed:true`, `enabled:true`, `managedIntegrity:MODIFIED` for unrelated `SessionStart`/`PostInvocation` drift, `runnerIntegrity:MATCH`, `preToolUseExact:true`, `preToolUseEnabled:true`, `probeEligible:true`. The user's trace does not include a binary diff of `.agents/hooks.json`, but the installer response states that its config was preserved.
+
+**Probe:** `guided probe deny-start --dir . --yes` returned `AWAITING_CALLBACK`, `testMode:deny-safe-command`, probe ID `cff11e83-481a-406d-bd0c-78396f7bd842`, expiry `2026-10-26T01:31:09.062Z`. Within that window a new native CLI session was asked to call `run_command` with `git status --short` exactly once.
+
+**Decisive host output:** `Ran (git status --short) failed` and `Encountered error in tool execution: tool call denied by pre-tool hook: Xyeena: native deny diagnostic blocked read-only git status`. The host returned no successful command output and explicitly attributed the cancellation to a pre-tool hook. This is independent host-visible corroboration beyond the forgeable local receipt.
+
+**Probe read-back:** `CALLBACK_OBSERVED_UNATTESTED` with `toolName:run_command`, `decision:deny`, `testMode:deny-safe-command`. Subsequent `guided probe clear --dir . --yes` returned `cleared:true`. The probe's own `hostEnforcement:UNVERIFIED` remains deliberately unverified by software, because an on-disk receipt cannot authenticate CLI enforcement on its own. Human-reviewed acceptance is separate.
+
+**Verdict:** **OPS-07 CLI 1.4.7 scoped native automatic deny LIVE PASS**, in addition to previously observed `force_ask` prompt and `No, cancel` live pass. The tested command is an exact, harmless, read-only tool call. This is **not** an OS sandbox, not proof of all-policy enforcement, not proof of real out-of-workspace write containment, and **not** acceptance of Antigravity IDE 2.5.5 (previously bypassed interception). No unapproved npm publication.

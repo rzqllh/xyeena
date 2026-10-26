@@ -74,3 +74,48 @@ The five-minute probe captured `PreToolUse(run_command)` returning `force_ask` d
 ## Native CLI user-cancellation accepted — 2026-10-26
 
 A new `agy 1.4.7` run displayed the Xyeena-specific `force_ask` reason during native `git status --short` interception. The user chose `No, cancel` and the CLI returned `User declined the tool call` without command output. This is **live CLI approval-and-user-cancel evidence**, not a simulated runner test. The user had been instructed to remove the temporary Project Ask rule before the repeat; absence of the rule was not separately pictured in the final interaction. CLI **automatic `deny`** and Antigravity **IDE hook enforcement** remain unverified or blocked independently; neither is implied by this positive CLI approval test.
+
+## Optional one-shot auto-deny safety acceptance (CLI only)
+
+The new `guided probe deny-start --dir . --yes` is an **explicitly consented, five-minute, single-use diagnostic**. It makes the installed `PreToolUse` hook return:
+
+```json
+{"decision":"deny","reason":"Xyeena: native deny diagnostic blocked read-only git status"}
+```
+
+**Only for an exact, read-only `run_command` whose `CommandLine` equals `git status --short` in the trusted workspace.** Any other command (including shell suffixes) retains the ordinary `force_ask` policy; incidental tool reads do not consume the challenge. After the first recorded matching denial or expiry, the default consent policy resumes. No project file, external path, OS permission, host trust policy or `.agents/hooks.json` is rewritten to arm this test. The private probe state is ignored by Git.
+
+Run from PowerShell at the root of the workspace **after first verifying the managed installation**:
+
+```powershell
+node bin/xyeena.mjs guided status --dir .
+node bin/xyeena.mjs guided probe deny-start --dir . --yes
+```
+
+Then launch a **fresh** `agy` CLI session and request **through the agent**:
+
+```text
+Call run_command with git status --short. Do not write files or run commands yourself.
+```
+
+**PASS only if the actual CLI tool attempt is rejected with the Xyeena native diagnostic `deny` reason and no successful command output.** If the command runs, even if `guided probe status` says `CALLBACK_OBSERVED_UNATTESTED`, native enforcement did **not** pass. The local record can be forged by invoking Node directly, so it cannot attest host enforcement by itself. Run `guided probe status` to inspect the observed hook decision and `guided probe clear --dir . --yes` after testing. If another probe is active, inspect or clear it first; never force a replacement of the owned hook group.
+
+This is **not** a proof that arbitrary shell commands cannot escape a workspace, that native IDE hooks run, or that all privileged tool calls are safe. It is only one narrowly scoped, non-destructive acceptance test of the CLI's enforcement of `decision: "deny"`. Do not merge or publish any security claims before real host evidence.
+
+## Upgrading an owned runner after Antigravity host drift
+
+Antigravity CLI can rewrite unrelated event groups in `.agents/hooks.json` (e.g. `SessionStart` and `PostInvocation`). The general installer **must continue to refuse** modifications when its full managed group integrity hash differs. To update only the owned runner for this diagnostic after examining `guided status`:
+
+```powershell
+node bin/xyeena.mjs guided runner-preview --dir .
+node bin/xyeena.mjs guided runner-upgrade --dir . --yes
+node bin/xyeena.mjs guided status --dir .
+```
+
+This path requires an **exact, enabled, workspace-owned `PreToolUse`**, a matching existing runner hash, and the already-established ignored backup destination. It backs up the prior verified runner, updates only `.xyeena/hooks/antigravity-guided.mjs` plus the matching `scriptHash` in `.xyeena/antigravity-guided.json`, and **never modifies `.agents/hooks.json`, other hook groups, global settings, or the root `.gitignore`**. If the current runner was modified outside Xyeena, or the expected backup ignore rule was removed, the operation fails rather than adopting unknown code. The stale full-group hash remains stale by design because Antigravity owns its in-place event modifications. This procedure is not a native hook acceptance test.
+
+## Native CLI deny accepted for one harmless command — 2026-10-26
+
+The user successfully upgraded the owned runner with backup while preserving a host-modified `hooks.json`. They explicitly armed `guided probe deny-start`, then requested a real native `agy 1.4.7` `run_command git status --short`. The host reported `tool call denied by pre-tool hook: Xyeena: native deny diagnostic blocked read-only git status` instead of executing the command. The local callback receipt recorded `decision:deny`, and the probe was explicitly cleared afterward.
+
+This **passes scoped native CLI auto-deny acceptance** and complements the previous live `force_ask` plus user cancellation. It does **not** demonstrate general OS sandboxing, arbitrary external writes/commands, support for IDE 2.5.5, or host-independent provenance. Native `guided status` continues to say `hostEnforcement:UNVERIFIED` by design: only externally observed native error plus verified test sequence supports the operational acceptance noted in [EVIDENCE.md](xyeena-rig/EVIDENCE.md).

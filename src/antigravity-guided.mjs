@@ -201,6 +201,59 @@ export function applyHookPlan(plan, { yes = false } = {}) {
   return { changed: true, file: plan.f.config };
 }
 
+
+/**
+ * Upgrade ONLY the owned runner, even when the host has reshaped unrelated
+ * event groups. Never change .agents/hooks.json or adopt modified PreToolUse.
+ */
+function runnerUpgrade(cwd, { yes = false, preview = false } = {}) {
+  const f = paths(cwd), info = guidedIntegrity(cwd);
+  if (!info.installed || !info.probeEligible || info.runnerIntegrity !== 'MATCH')
+    throw new Error('Runner upgrade requires an owned, enabled, exact PreToolUse and unmodified current runner');
+  const previous = fs.readFileSync(f.script, 'utf8');
+  const latest = fs.readFileSync(SOURCE, 'utf8');
+  const changed = previous !== latest;
+  const description = { action: preview ? 'runner-preview' : 'runner-upgrade',
+    changed, configPreserved: true, runner: f.script,
+    managedIntegrity: info.managedIntegrity,
+    otherManagedChanges: info.changedManagedFields,
+    hostEnforcement: 'UNVERIFIED' };
+  if (preview) return description;
+  if (!yes) throw new Error('Explicit --yes required for runner upgrade');
+  if (!changed) return { ...description, result: { changed: false } };
+  const ignore = path.join(path.dirname(f.backup), '.gitignore');
+  if (!fs.existsSync(ignore) || fs.lstatSync(ignore).isSymbolicLink() ||
+      !/(^|\n)antigravity\/(\r?\n|$)/.test(fs.readFileSync(ignore, 'utf8')))
+    throw new Error('Runner upgrade backups must already be ignored by Git');
+  const initialConfig = fs.readFileSync(f.config, 'utf8');
+  const initialManifest = fs.readFileSync(f.manifest, 'utf8');
+  const oldManifest = readManifest(f.manifest);
+  const newManifest = { ...oldManifest, scriptHash: hash(latest) };
+  fs.mkdirSync(f.backup, { recursive: true });
+  const backup = path.join(f.backup, 'runner-' + crypto.randomUUID() + '.mjs');
+  fs.writeFileSync(backup, previous, { flag: 'wx', mode: 0o600 });
+  try {
+    // Avoid silently racing an interactive /hooks host edit.
+    if (fs.readFileSync(f.config, 'utf8') !== initialConfig ||
+        fs.readFileSync(f.manifest, 'utf8') !== initialManifest ||
+        fs.readFileSync(f.script, 'utf8') !== previous)
+      throw new Error('Managed hook changed during runner upgrade');
+    atomic(f.script, latest);
+    atomic(f.manifest, JSON.stringify(newManifest, null, 2) + '\n');
+  } catch (error) {
+    if (fs.existsSync(f.script) && fs.readFileSync(f.script, 'utf8') === latest)
+      atomic(f.script, previous);
+    // Manifest is either unchanged or was updated completely.
+    if (fs.existsSync(f.manifest) && fs.readFileSync(f.manifest, 'utf8') !== initialManifest)
+      atomic(f.manifest, initialManifest);
+    throw error;
+  }
+  if (fs.readFileSync(f.config, 'utf8') !== initialConfig)
+    throw new Error('Host changed hooks.json during runner upgrade; inspect before continuing');
+  return { ...description, result: { changed: true, backupCreated: true,
+    runnerIntegrity: 'MATCH', configPreserved: true } };
+}
+
 /** Status remains read-only and available even if the host rewrites the group. */
 function guidedStatus(cwd) {
   const info = guidedIntegrity(cwd);
@@ -231,8 +284,8 @@ export function guidedCommand(command, { cwd = process.cwd(), yes = false, id = 
   if (command === 'probe') {
     const root = paths(cwd).root;
     if (probeAction === 'status') return hookProbeStatus(root);
-    if (!['start', 'clear'].includes(probeAction))
-      throw new Error('Expected guided probe start|status|clear');
+    if (!['start', 'deny-start', 'clear'].includes(probeAction))
+      throw new Error('Expected guided probe start|deny-start|status|clear');
     if (!yes) throw new Error('Explicit --yes required for hook probe changes');
     if (probeAction === 'clear') return clearHookProbe(root);
     const info = guidedIntegrity(root);
@@ -240,10 +293,12 @@ export function guidedCommand(command, { cwd = process.cwd(), yes = false, id = 
     // or repairs .agents/hooks.json. Drift in other event types is preserved.
     if (!info.probeEligible)
       throw new Error('Probe requires an owned, enabled, exact PreToolUse event and matching managed runner; review guided status');
-    return { ...startHookProbe(root),
+    return { ...startHookProbe(root, { mode: probeAction === 'deny-start' ? 'deny-safe-command' : 'observe' }),
       managedIntegrity: info.managedIntegrity,
       otherManagedChanges: info.changedManagedFields };
   }
+  if (command === 'runner-preview') return runnerUpgrade(cwd, { preview: true });
+  if (command === 'runner-upgrade') return runnerUpgrade(cwd, { yes });
   if (command === 'status') return guidedStatus(cwd);
   if (!['preview', 'install', 'uninstall'].includes(command))
     throw new Error('Expected guided preview|install|uninstall|status|list|resume|bind|unbind');
