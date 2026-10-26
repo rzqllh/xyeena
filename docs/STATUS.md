@@ -129,3 +129,7 @@ The Antigravity `PreToolUse` source policy no longer automatically allows file/d
 ## Windows owned subprocess tree cleanup — source and CI only
 
 Portable CLI and Antigravity Python SDK one-shot adapters now request Windows `taskkill.exe /PID <owned-child-pid> /T /F` for cancellation, timeout or output overflow. The PID comes **only** from the child process spawned by the adapter; no free-form PID or shell invocation is accepted. Non-Windows, missing PID, or failed taskkill paths fall back to direct-child kill. Tests cover synthetic owned PID validation and a controlled dummy child/grandchild on a GitHub Windows CI runner. The adapter still rejects cancellation immediately; the termination request is **best effort, asynchronous and not a completion receipt**. An arbitrary real provider CLI may have detached grandchildren and may continue remote billing; the owner's live Ctrl+C/host acceptance (#37) remains PENDING.
+
+## Read-only managed hook runner integrity (source)
+
+The RIG native preflight now reports `runnerIntegrity` (`MATCH`, `MODIFIED`, `UNOWNED`, `INVALID_MANIFEST`, or `MISSING_OR_UNTRUSTED`) and `probeEligible`. `MATCH` means the installed runner bytes match the locally stored owned-manifest SHA-256; it is **not** a signed host attestation. Merely finding the exact `PreToolUse` command or runner file is no longer enough for a positive probe eligibility hint. Any modified, unowned, oversize or symlinked runner is excluded. No auto-repair, remote call or native IDE acceptance occurs. Host enforcement remains `UNVERIFIED`.
