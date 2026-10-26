@@ -82,7 +82,11 @@ try {
   $raw = @(& node $cli ops preflight --dir $RepoDir) -join [Environment]::NewLine
   if ($LASTEXITCODE -ne 0) { throw 'Xyeena source preflight failed' }
   $preflight = $raw | ConvertFrom-Json
-  if ($preflight.schema -ne 1 -or $preflight.modelCallPerformed -ne $false -or
+  if ($preflight.schema -ne 1 -or $preflight.project -ne 'xyeena-rig' -or
+      $preflight.acceptanceScope -ne 'rig-native-hosts' -or
+      $preflight.PSObject.Properties.Name -contains 'simpul' -or
+      ($preflight.remainingGates | Where-Object { $_.issue -eq 35 }) -or
+      $preflight.modelCallPerformed -ne $false -or
       $preflight.filesModified -ne $false -or $preflight.guidedHook.hostEnforcement -ne 'UNVERIFIED') {
     throw 'Preflight reported an unexpected or unsafe result'
   }
@@ -93,6 +97,8 @@ try {
   }
   $evidence = [ordered]@{
     schema = 1
+    project = 'xyeena-rig'
+    acceptanceScope = 'rig-native-hosts'
     verdict = 'SOURCE_PREFLIGHT_PASS_LIVE_PENDING'
     sourceCommit = $head
     nodeVersion = $nodeVersion
@@ -100,11 +106,10 @@ try {
     preflight = $preflight
     nativeAcceptance = [ordered]@{
       antigravityIde = 'LIVE_BLOCKED_REQUIRES_IN_IDE_NEGATIVE_TEST'
-      simpul = 'LIVE_BLOCKED_REQUIRES_AUTHENTICATED_SUPERVISOR'
       codexClaudeGemini = 'LIVE_BLOCKED_OR_PENDING_PER_HOST'
-      hermes = 'LIVE_PARTIAL_REQUIRES_REAL_CANCEL_AND_BILLING_EVIDENCE'
+      hermes = 'LIVE_PARTIAL_REQUIRES_REAL_HOST_CANCEL_EVIDENCE'
     }
-    limitations = 'Read-only prerequisite report: not native interception, approval, cancellation, execution readiness or provider hard cap'
+    limitations = 'RIG-native prerequisite report only: not native interception, approval, cancellation or execution readiness; optional subagent transports and provider billing are separately scoped'
   }
   $json = ConvertTo-Json -InputObject $evidence -Depth 20
   $reportPath = Join-Path $OutputDir 'rig-windows-evidence.json'
@@ -112,7 +117,7 @@ try {
   Write-Output 'PASS: read-only source preflight; existing checkout unchanged.'
   Write-Output ('Source commit: ' + $head)
   Write-Output ('Evidence JSON: ' + $reportPath)
-  Write-Output 'LIVE PENDING: Antigravity IDE, Simpul, Codex/Claude/Gemini, Hermes cancellation/provider billing.'
+  Write-Output 'RIG LIVE PENDING: Antigravity IDE, Codex/Claude/Gemini, Hermes native cancellation.'
 } finally {
   if ($createdWorktree) {
     # This was created here using a random unused temporary directory.
