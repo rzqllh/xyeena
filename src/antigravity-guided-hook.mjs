@@ -175,7 +175,16 @@ export function beforeInvocation(root, payload) {
 }
 
 const scopedWrites = new Set(['write_to_file', 'replace_file_content', 'multi_replace_file_content']);
-const readOnlyTools = new Set(['view_file', 'list_dir', 'find_by_name', 'grep_search']);
+// Host read tools can disclose private files. Restrict automatic 'allow' to
+// canonical targets inside this workspace, not merely a read-only tool name.
+// Unknown/changed host argument schemas require native permission instead of
+// silently inheriting an authorization that has not been verified.
+const readOnlyTargets = new Map([
+  ['view_file', 'AbsolutePath'],
+  ['list_dir', 'DirectoryPath'],
+  ['find_by_name', 'SearchDirectory'],
+  ['grep_search', 'SearchPath'],
+]);
 const denyHook = reason => ({ decision: 'deny', reason });
 function safeHostTarget(root, target) {
   if (typeof target !== 'string' || !target.trim() || target.includes('\0')) return false;
@@ -202,6 +211,25 @@ function safeHostTarget(root, target) {
   }
   return true;
 }
+/** Treat an explicit, out-of-workspace read as denied rather than benign. */
+function readToolDecision(root, name, args) {
+  const pathField = readOnlyTargets.get(name);
+  const target = args[pathField];
+  if (target === undefined) {
+    // A host can omit the location or change its schema. It is not safe to
+    // assume the host will fall back to the same working directory as RIG.
+    return { decision: 'force_ask', reason: 'Xyeena: verify read scope with the native host' };
+  }
+  if (!safeHostTarget(root, target))
+    return denyHook('Xyeena: read target outside trusted workspace or invalid');
+  // Reject new/alternate location fields from automatic allow. The
+  // standard search/read filters themselves remain under native host policy.
+  const hasOtherLocation = Object.keys(args).some(key =>
+    key !== pathField && /(?:path|file|dir|cwd|root|folder)/i.test(key));
+  if (hasOtherLocation)
+    return { decision: 'force_ask', reason: 'Xyeena: verify additional read locations with the native host' };
+  return { decision: 'allow' };
+}
 /** Native host PreToolUse policy. It never auto-approves, overrides permissions, or runs tools. */
 export function preToolUse(root, payload) {
   try {
@@ -210,7 +238,7 @@ export function preToolUse(root, payload) {
     if (!object(payload.toolCall) || typeof payload.toolCall.name !== 'string' ||
         !object(payload.toolCall.args)) return denyHook('Xyeena: invalid tool payload');
     const { name, args } = payload.toolCall;
-    if (readOnlyTools.has(name)) return { decision: 'allow' }; // native host policies remain in effect
+    if (readOnlyTargets.has(name)) return readToolDecision(root, name, args); // no native-policy override
     if (scopedWrites.has(name)) {
       if (!safeHostTarget(root, args.TargetFile)) return denyHook('Xyeena: write target outside trusted workspace');
       return { decision: 'force_ask', reason: 'Xyeena: confirm this specific workspace file modification' };
