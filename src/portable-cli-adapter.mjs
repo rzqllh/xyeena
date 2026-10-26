@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { requestOwnedProcessTermination } from './owned-process-termination.mjs';
 import { discoverWorkspaceSkills, routeWorkspaceSkills } from './workspace-skills.mjs';
 
 const HOSTS = new Set(['gemini', 'hermes', 'codex', 'claude']);
@@ -144,7 +145,8 @@ function classifyStderr(text) {
 export function createPortableHostAdapter({ cwd = process.cwd(), runtime, selectedSkills = [],
   command, timeoutMs = 120000, tokenLimit = DEFAULT_HERMES_TOKEN_LIMIT,
   maxTurns = DEFAULT_HERMES_MAX_TURNS,
-  spawnImpl = spawn, platform = process.platform, env = process.env } = {}) {
+  spawnImpl = spawn, terminateSpawnImpl = spawn,
+  platform = process.platform, env = process.env } = {}) {
   if (!HOSTS.has(runtime)) throw new Error('Unsupported portable CLI host');
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1000 || timeoutMs > HOST_TIMEOUT_MAX)
     throw new Error('Invalid portable host timeout');
@@ -204,13 +206,12 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
           if (onAbort) signal?.removeEventListener('abort', onAbort);
           if (error) reject(error); else resolve(result);
         };
-        // Cancellation/timeout requests termination of the directly spawned
-        // process. A separate host-native teardown test is needed to prove
-        // descendants are gone; never report that as verified here.
+        // Request termination of the child and, on Windows, its descendants.
+        // Never treat the request as verified teardown or a provider billing stop.
         const stopChild = error => {
           if (finished) return;
           done(error);
-          try { child.kill(); } catch { /* termination is best effort */ }
+          requestOwnedProcessTermination(child, { platform, spawnImpl: terminateSpawnImpl });
         };
         try {
           child = spawnImpl(launch.command, launch.args, { cwd: root, shell: false, windowsHide: true,
