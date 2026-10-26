@@ -36,7 +36,7 @@ Simpul is a **separate workspace and optional MCP transport**. The adapter remai
 
 ## Programmatic one-shot cancellation (source-only)
 
-Portable host and Antigravity SDK adapters now accept `adapter.executeTask(task, {signal: abortController.signal})`; a pre-aborted signal prevents child launch, and an in-flight cancellation rejects the operation and requests direct-child termination. Received stdout/stderr byte caps are enforced, and raw SDK worker error messages are no longer echoed as exception details. These are **source-level API and CI guarantees only**; the `host run` CLI has not been wired to an operator-supplied AbortSignal. Descendant teardown, Windows native process ownership and provider-side hard spend limits remain unverified in live sessions (see [#37](https://github.com/rzqllh/xyeena/issues/37)).
+Portable host and Antigravity SDK adapters now accept `adapter.executeTask(task, {signal: abortController.signal})`; a pre-aborted signal prevents child launch, and an in-flight cancellation rejects the operation and requests direct-child termination (and, in updated unreleased source, an owned Windows process-tree termination request). Received stdout/stderr byte caps are enforced, and raw SDK worker error messages are no longer echoed as exception details. These are **source-level API and CI guarantees only**; the `host run` CLI has not been wired to an operator-supplied AbortSignal. Descendant teardown, Windows native process ownership and provider-side hard spend limits remain unverified in live sessions (see [#37](https://github.com/rzqllh/xyeena/issues/37)).
 
 ## CLI signal propagation (source-only)
 
@@ -125,3 +125,7 @@ The user ran the read-only Windows PowerShell 5.1 pack on `184e2d9abb73` success
 ## RIG-native read tool workspace containment (source-only)
 
 The Antigravity `PreToolUse` source policy no longer automatically allows file/directory/search reads by tool name alone. When the host payload exposes the documented primary target (`AbsolutePath`, `DirectoryPath`, `SearchDirectory`, `SearchPath`), a target outside the canonical trusted workspace or through an escaping symlink returns `deny`; a verified in-workspace target may return `allow` without overriding native host restrictions. Missing/unrecognized or additional location fields return `force_ask` rather than silently expanding access. This is a **source policy**, not proof that Antigravity IDE 2.5.5 loads or enforces its hooks; #34 remains LIVE BLOCKED.
+
+## Windows owned subprocess tree cleanup — source and CI only
+
+Portable CLI and Antigravity Python SDK one-shot adapters now request Windows `taskkill.exe /PID <owned-child-pid> /T /F` for cancellation, timeout or output overflow. The PID comes **only** from the child process spawned by the adapter; no free-form PID or shell invocation is accepted. Non-Windows, missing PID, or failed taskkill paths fall back to direct-child kill. Tests cover synthetic owned PID validation and a controlled dummy child/grandchild on a GitHub Windows CI runner. The adapter still rejects cancellation immediately; the termination request is **best effort, asynchronous and not a completion receipt**. An arbitrary real provider CLI may have detached grandchildren and may continue remote billing; the owner's live Ctrl+C/host acceptance (#37) remains PENDING.
