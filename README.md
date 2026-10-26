@@ -96,6 +96,10 @@ node bin/xyeena.mjs setup compact --runtime codex --preset balanced --dry-run
 
 Global paths, precedence rules and caveats are documented in [Runtime adapters](docs/RUNTIME-ADAPTERS.md) and [Global installation](docs/GLOBAL-INSTALL.md).
 
+## Read-only host acceptance preflight (newer source only)
+
+From a current source checkout, `node bin/xyeena.mjs ops preflight --dir .` returns redacted executable hints, local hook registration/runner presence and links to outstanding live gates. It **does not** run a model, execute host tools, authenticate MCP, request permission, or assert native hook enforcement. It is not included in the repository-recorded npm 0.4.1 release. See [source/host acceptance](docs/STATUS.md).
+
 ## Development and validation
 
 ```sh

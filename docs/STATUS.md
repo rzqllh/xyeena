@@ -43,6 +43,14 @@ Portable host and Antigravity SDK adapters now accept `adapter.executeTask(task,
 
 The latest source CLI wraps actual `host run`, `sdk run` and `orchestrate run` execution in temporary SIGINT/SIGTERM listeners, forwarding an `AbortSignal` to the owned native adapter. Preview commands do not start such a session, and handlers are removed after each operation. A Ctrl+C requests cancellation; it is not a guarantee that a Windows process tree, model-provider request, or billing has stopped. Signal delivery through the actual terminal and native descendant teardown remain [live acceptance #37](https://github.com/rzqllh/xyeena/issues/37).
 
+## One-command local preflight (newer source, not npm 0.4.1)
+
+```sh
+node bin/xyeena.mjs ops preflight --dir .
+```
+
+This read-only report is designed as the prerequisite inventory for the operator handoff: it shows available command names (not installation paths), minimal Xyeena hook structure, local runner file presence, and the corresponding open GitHub acceptance gates. It does not invoke `agy`, Python, Hermes, Codex, Claude, Gemini, Simpul, the installer, network calls, or user-approval dialogs. It makes **no new live PASS claims** and does not print tool command lines or credential values. Missing native evidence remains blocked.
+
 ## Outstanding live acceptance — public issue tracker
 
 The remaining work needs target-host runtime observations or external dependencies, not more simulated PASS labels:
