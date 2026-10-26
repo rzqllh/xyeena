@@ -4,6 +4,8 @@ All versions listed as released refer to published npm artifacts. Repository sou
 
 ## Unreleased — source after 0.4.1 (updated 2026-10-26)
 
+- Reject pre-aborted native worker execution, remove completed-run abort listeners, handle rejected cancellation promises and avoid echoing untrusted runner failure text (PR #49; cooperative, source-only cancellation).
+
 - Bound all Simpul MCP result object forms to 64 KiB UTF-8 JSON and redact untrusted transport/submission errors (PR #48, source-only; does not demonstrate a live supervisor).
 
 - Harden `ResourceBudgetLedger` against negative/non-finite/coerced provider usage, budget overflow and duplicate active worker IDs. With a ledger attached, Simpul now rejects missing/malformed accounting instead of treating it as zero usage. This is post-run accounting, **not** a provider-enforced spending cap. (PR #47 merged; source-only, not published to npm.)
