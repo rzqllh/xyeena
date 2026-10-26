@@ -38,6 +38,22 @@ jobs:
               $report.preflight.modelCallPerformed -ne $false) {
             throw 'Windows acceptance report made an unsupported claim'
           }
+      - name: Windows PowerShell 5.1 detached-worktree preflight
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Exercise the non-UseCurrentSource path under legacy powershell.exe,
+          # including git fetch/worktree stderr progress, as on the owner's PC.
+          $dest = Join-Path $env:RUNNER_TEMP ('xyeena-ps51-' + [guid]::NewGuid().ToString('N'))
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/windows-acceptance-pack.ps1 -RepoDir . -OutputDir $dest
+          if ($LASTEXITCODE -ne 0) { throw 'Windows PowerShell 5.1 detached-worktree preflight failed' }
+          $report = Get-Content -Raw (Join-Path $dest 'rig-windows-evidence.json') | ConvertFrom-Json
+          if ($report.verdict -ne 'SOURCE_PREFLIGHT_PASS_LIVE_PENDING' -or
+              $report.existingCheckoutUnchanged -ne $true -or
+              $report.preflight.modelCallPerformed -ne $false -or
+              $report.preflight.guidedHook.hostEnforcement -ne 'UNVERIFIED') {
+            throw 'Windows PowerShell 5.1 preflight reported unsupported evidence'
+          }
   skills-ref:
     runs-on: ubuntu-latest
     steps:
