@@ -326,7 +326,7 @@ export function startHookProbe(root, { mode = 'observe' } = {}) {
     expiresAt: new Date(state.expiresAt).toISOString(),
     hostEnforcement: 'UNVERIFIED',
     instructions: mode === 'deny-safe-command'
-      ? 'In fresh agy CLI request only native run_command git status --short without Cwd. The armed hook should deny once; verify the host blocks execution. Do not call the runner manually.'
+      ? 'In a fresh native Antigravity CLI or IDE session for this workspace, request only run_command git status --short without Cwd. A loaded hook should deny this harmless read-only command. Verify the native host displays an explicit Xyeena denial; a local probe receipt alone is not acceptance. Do not call the runner manually.'
       : 'In a fresh native Antigravity session run a harmless run_command via the agent, then check guided probe status. Do not simulate stdin or call the hook directly.' };
 }
 export function hookProbeStatus(root) {
