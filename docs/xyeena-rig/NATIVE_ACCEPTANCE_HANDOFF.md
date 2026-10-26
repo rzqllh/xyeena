@@ -44,3 +44,16 @@ For Hermes, use an isolated read-only bounded task and actual terminal cancellat
 - Native tests must not be marked PASS based on CI, a local JSON receipt, a fetched executable or a host UI toggle alone.
 
 **Project closeout definition:** repository changes and CI can be complete without these externally controlled observations. Report `SOURCE_READY / LIVE_PENDING / RELEASE_NOT_AUTHORIZED` until independent host evidence and human release consent exist.
+
+## Supply-chain publication controls (source-only)
+
+The updated `.github/workflows/publish.yml` removes legacy push/commit-message publication and long-lived npm token fallbacks. It accepts **only an explicitly published non-prerelease GitHub Release** matching the package version, rejects tags whose commit is not the **current main HEAD**, rejects an already-published exact version, and uses npm's official Trusted Publisher OIDC path with provenance on a GitHub-hosted runner. This is source configuration, not proof of a successful publication.
+
+**Prerequisites that must be configured externally before any release authorization:**
+
+1. In **GitHub Settings → Environments → npm-publish**, require the intended human reviewers; merely naming an environment in YAML does not enable human approval. Prevent self-approval where supported.
+2. In **npm package Settings → Trusted publishing**, configure the exact repository `rzqllh/xyeena`, workflow `publish.yml`, and any matching environment name. Enable the intended publication method; restrict or revoke long-lived tokens only after trusted publishing is confirmed usable.
+3. Protect release tags and prefer immutable GitHub Releases if supported. Explicitly approve the `0.5.0` package/version promotion, exact tag and source SHA first. Do not create a GitHub Release until all requested evidence gates are either independently accepted or clearly excluded from the publicly advertised support scope.
+4. Validate the released tarball, provenance and fresh registry consumer install after publication. A clean source CI alone cannot attest npm registry contents.
+
+No environment protection state or npm Trusted Publisher account settings were read or changed by this repository patch. Publication remains `RELEASE_NOT_AUTHORIZED`.

@@ -51,3 +51,7 @@ The pre-existing read-tool allow-by-name behavior could permit a native host to 
 ## Owned subprocess descendants on Windows
 
 Previously the portable and Python SDK one-shot adapters only signaled their direct child; spawned descendants could survive timeout or Ctrl+C. Unreleased source now requests Windows tree cleanup using only the owned child PID, with conservative fallback when taskkill is unavailable. Residual risk: a kill request does **not** authenticate full termination, a detached subprocess may escape the tree, PID reuse is theoretically possible, and remote provider requests/spending are not guaranteed to stop; independent host observation remains required for OPS-06/#37. The source handler still returns cancellation before receiving an OS confirmation.
+
+## Release pipeline supply-chain authorization
+
+Previously `publish.yml` contained legacy `main` push/commit-message triggers, credential-token fallback and no release-tag-to-current-main equality gate. The source workflow now accepts only explicit stable GitHub Release publication and refuses version/tag mismatches, non-main commits and registry duplicate versions. It delegates authentication to trusted OIDC. **Residual external prerequisites:** configure npm Trusted Publisher, required human reviewers for the `npm-publish` environment, GitHub tag protection/immutable releases and separate user approval. A YAML environment declaration is not an approval control until reviewers are configured.
