@@ -1,5 +1,7 @@
 # Xyeena Rig — Global installation and symlink mode
 
+[Current source and host acceptance (2026-10-26)](STATUS.md). Live Antigravity CLI 1.4.7 approvals and scoped automatic denial passed; IDE 2.5.5 interception, broader security boundaries, and remaining runtimes are not live-accepted.
+
 ## One command for beginners
 
 Install Node.js **22.14 or later** from https://nodejs.org. Open any normal terminal, then enter:

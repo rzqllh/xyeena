@@ -1,6 +1,16 @@
 # Validation and evidence
 
-## Recorded repository baseline
+[Current source and host acceptance (2026-10-26)](../STATUS.md). Live Antigravity CLI 1.4.7 approvals and scoped automatic denial passed; IDE 2.5.5 interception, broader security boundaries, and remaining runtimes are not live-accepted.
+
+## Current reconciled evidence — 2026-10-26
+
+The latest merged source checkpoint audited for this document is [main `f3336547`](https://github.com/rzqllh/xyeena/commit/f3336547e57a65850e13ee8f225e250a5cf9f7b0). PR [#29](https://github.com/rzqllh/xyeena/pull/29) and [#30](https://github.com/rzqllh/xyeena/pull/30) have been merged. PR #30 final CI checks passed **9/9** (Windows, macOS, Linux and packaging/contract jobs).
+
+The **2026-10-26 native Antigravity CLI 1.4.7** session showed both an explicit Xyeena `force_ask` reason with human refusal and, separately, a host-enforced one-shot `deny` against harmless `git status --short`. The CLI returned the exact diagnostic error, the command produced no successful output, and the temporary probe was cleared. This closes **only the scoped CLI test**, not the general permissions boundary, native IDE support or other hosts.
+
+Previous numeric test totals below (317, 321, 327), previous unmerged source hashes and earlier statements such as "CLI auto-deny pending" are **historical snapshots of the dates they were recorded**, not the current acceptance verdict. The current source's release baseline remains repo-recorded npm `0.4.1`; `0.5.0` has not been authorized/published.
+
+## Recorded repository baseline (historical snapshot; not latest main)
 
 - **Repository:** [rzqllh/xyeena](https://github.com/rzqllh/xyeena)
 - **Integrated source baseline:** `main` at [`aade0a69242bea989101588953be781110372530`](https://github.com/rzqllh/xyeena/commit/aade0a69242bea989101588953be781110372530)

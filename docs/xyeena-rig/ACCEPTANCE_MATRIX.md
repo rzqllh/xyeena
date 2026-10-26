@@ -1,5 +1,7 @@
 # Acceptance matrix
 
+[Current source and host acceptance (2026-10-26)](../STATUS.md). Live Antigravity CLI 1.4.7 approvals and scoped automatic denial passed; IDE 2.5.5 interception, broader security boundaries, and remaining runtimes are not live-accepted.
+
 This matrix retains each acceptance ID individually for auditable traceability. **CI PASS** refers to source/contract tests; **LIVE PENDING** and **LIVE BLOCKED** indicate separate operational gates. The evidence record is [EVIDENCE.md](EVIDENCE.md).
 
 | ID | Acceptance criterion | Status | Evidence / limitation |
@@ -40,4 +42,4 @@ This matrix retains each acceptance ID individually for auditable traceability. 
 | A33 | Release artifact/provenance and publication | CONDITIONAL GO | Package candidate verified (sha512, 236 files); v0.5.0 publication requires separate human authorization |
 
 
-**Release blockers:** real host authorization/interception (A12/A18/A25/A28/A31), Simpul execution when advertised as a live backend (A14), final release authorization (A33), and any unresolved material security risk. Limited use can exclude Simpul, but must state that limitation.
+**Release blockers:** Antigravity CLI's narrowly tested authorization/deny has live evidence for A12/A25/A28, but IDE 2.5.5 interception and wider host authorization (A18/A31) are still blocked; Simpul execution when advertised as a live backend (A14), final release authorization (A33), and unresolved material security risk remain. Limited use can exclude Simpul, but must state that limitation.

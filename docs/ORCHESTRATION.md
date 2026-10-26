@@ -1,5 +1,7 @@
 # Orchestration protocol
 
+[Current source and host acceptance (2026-10-26)](STATUS.md). Live Antigravity CLI 1.4.7 approvals and scoped automatic denial passed; IDE 2.5.5 interception, broader security boundaries, and remaining runtimes are not live-accepted.
+
 Xyeena Rig maintains a single workflow governor. Workers cannot create uncontrolled subagent trees or increase the permissions delegated to them.
 
 ## Task model

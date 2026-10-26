@@ -1,5 +1,7 @@
 # Xyeena product names
 
+[Current source and host acceptance (2026-10-26)](STATUS.md). Live Antigravity CLI 1.4.7 approvals and scoped automatic denial passed; IDE 2.5.5 interception, broader security boundaries, and remaining runtimes are not live-accepted.
+
 **Xyeena** is the parent brand. **Xyeena Rig** is the developer-tooling package in this repository, distributed through npm as `xyeena-agent`. **Xyeena Notch** and mascot components are separate projects and are not bundled in Rig.
 
 ## Stable identifiers
