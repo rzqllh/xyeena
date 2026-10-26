@@ -17,6 +17,9 @@ All versions listed as released refer to published npm artifacts. Repository sou
 
 - Wire Ctrl+C/SIGINT and SIGTERM from source CLI `host run`, `sdk run` and `orchestrate run` (including `--record`) into the previously added one-shot AbortSignal handlers; remove signal listeners when each run ends. Native OS process-tree teardown is still unverified.
 
+- Add source-only `ops preflight` read-only command to summarize redacted host executable hints, hook registration presence and pending native acceptance issues without invoking AI, MCP, or hook scripts. Reject linked/oversized hook files, and never infer activation from a configuration file.
+- Expand cross-platform CLI fixture tests: real OS subprocesses emulate Gemini/Hermes JSON output and error/budget behavior without AI accounts or network. These do not close live host acceptance.
+
 ## Earlier unreleased implementation work
 
 - Add opt-in compact skill installation, ownership-aware migration and restore workflows.

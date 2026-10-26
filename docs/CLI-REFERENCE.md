@@ -5,6 +5,14 @@ See [current source/host status](STATUS.md) (2026-10-26). CLI 1.4.7 `force_ask`/
 
 Commands can be invoked with `npx --yes xyeena-agent@0.4.1` for the published package or `node bin/xyeena.mjs` from a source checkout. Some documented source commands postdate the published package; they are marked **source**.
 
+## Read-only operational prerequisites (source only)
+
+```sh
+node bin/xyeena.mjs ops preflight --dir .
+```
+
+This performs local executable/PATH and `.agents/hooks.json` metadata inspection only, without invoking any host command, starting a model, printing command lines, changing files or contacting Simpul. It intentionally reports `hostEnforcement: "UNVERIFIED"` and native host acceptance as `NOT_TESTED_BY_PREFLIGHT` even when `agy` is detected and `PreToolUse` is registered. Linked or oversized hook manifests are not read. A human must separately verify native deny and consent; see [status](STATUS.md). This command is not part of published npm 0.4.1.
+
 ## Setup and inspection
 
 `setup check --runtime antigravity` now reports `hostDetection.detectedCommands` (including `agy` if discovered), `detectedSurface`, and `confirmedRunning:false`. Command presence never certifies CLI session interception or IDE activation; it is a read-only PATH/skill inventory hint.

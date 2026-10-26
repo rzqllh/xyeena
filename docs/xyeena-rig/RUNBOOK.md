@@ -4,6 +4,10 @@
 
 Requirements: Node.js 22.14+, a Git checkout for source-only capabilities, and appropriate host permissions. Use isolated workspaces for migration or acceptance testing.
 
+## Safe operator prerequisites (source-only)
+
+From the checkout containing the latest source, run `node bin/xyeena.mjs ops preflight --dir .`. It reads local binary hints and Xyeena hook metadata, prints redacted JSON with remaining acceptance issue links, and leaves all files unchanged. It does not call agents or prove native hook enforcement; operator-run native tests come later. If using an older checkout, use a **separate detached Git worktree** at `origin/main` rather than resetting local edits. The source-only command is not part of npm 0.4.1.
+
 ## Validate source
 
 ```sh

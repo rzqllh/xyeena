@@ -265,3 +265,9 @@ External/live gates now have distinct traceable GitHub issues: [#34 Antigravity 
 
 - `host run`, `sdk run` and `orchestrate run` now wrap actual native execution in a scoped `AbortController`, forward its signal through `executeOrchestration` and the one-shot adapters, and remove SIGINT/SIGTERM listeners after completion/failure.
 - Unit tests validate abort propagation, pre-aborted rejection, listener cleanup and no self-reported `VERIFIED`. This does **not** attest native Ctrl+C behavior on the Windows target host or successful descendant process-tree shutdown; OPS-06 [#37](https://github.com/rzqllh/xyeena/issues/37) remains LIVE PARTIAL.
+
+## Read-only operator preflight and real fixture subprocesses — CI only, 2026-10-26
+
+- A new `ops preflight` source command inspects host command candidates, local hook metadata and unresolved acceptance issues without running CLI host tools, MCP, providers or hooks. The output removes workspace/user absolute paths and any raw hook commands or secrets.
+- The read-only safety tests include missing, invalid, linked and oversized local manifests and verify no filesystem writes. Command presence remains distinct from actual host activation.
+- Cross-platform `host run`/orchestration smoke tests use real native OS subprocesses that emit **simulated provider JSON**, testing invocation, stdin, output parsing, token settlement and failure handling without real AI accounts or calls. These fixtures do **not** close #34–#37.
