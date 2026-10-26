@@ -108,3 +108,15 @@ test('public acceptance backlog keeps named external host gates visible',()=>{
   assert.match(status,/cannot close|only independent observations|not finished work/i);
   assert.match(status,/2a673c64/);
 });
+
+test('release status separates current source CI from unverified native host acceptance',()=>{
+  const status=read('docs/STATUS.md');
+  const runbook=read('docs/xyeena-rig/RUNBOOK.md');
+  for(const pr of [39,40,41,42]) assert.ok(status.includes('/pull/'+pr));
+  assert.match(status,/c84f7c45/);
+  assert.match(status,/fake.*provider/i);
+  assert.match(status,/No wider live-host/i);
+  assert.match(runbook,/git worktree add --detach/);
+  assert.match(runbook,/ops preflight --dir/);
+  assert.match(status,/0\.4\.1/);
+});
