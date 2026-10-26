@@ -27,3 +27,7 @@ Native host adapters continue to reject missing, malformed or placeholder worker
 ## Budget ledger input integrity — source fix in PR #47
 
 The previous ledger accepted invalid (including negative and non-finite) usage and estimates, potentially understating consumption. Source validation now rejects those values and prevents duplicate active worker IDs; Simpul with an attached ledger rejects missing or invalid post-run usage. Residual risk remains **provider-side over-consumption before settlement**; these checks are not upstream spending enforcement and require live provider verification before changing OPS-06.
+
+## MCP payload and diagnostic boundary — PR #48
+
+Unbounded structured/direct-object Simpul MCP responses and raw upstream exception/submission errors could exhaust resources or expose private paths in diagnostics. Source now normalizes bounded UTF-8 JSON objects and returns generic transport/submission failures. Residual risk: real MCP server trust, authenticated execution, supervisor lifecycle and filesystem containment remain LIVE BLOCKED.
