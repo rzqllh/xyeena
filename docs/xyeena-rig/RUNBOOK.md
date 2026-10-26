@@ -109,3 +109,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\windows-acceptance
 ```
 
 This script fetches origin/main and uses a uniquely named detached temporary Git worktree. It never resets local changes, overwrites existing output, edits installed hooks or contacts model providers. It emits one redacted rig-windows-evidence.json in a new system-temp folder and removes only its own clean temporary worktree without force. The SOURCE_PREFLIGHT_PASS_LIVE_PENDING verdict establishes prerequisites only. Issues #34–#37 require host-verified IDE/CLI/supervisor/provider evidence with explicit human consent.
+
+## Windows PowerShell 5.1 Git progress compatibility (2026-10-26)
+
+The preflight helper now treats Git stderr progress such as `From github.com` and `Preparing worktree` as expected diagnostics, checking actual Git exit status instead of treating PowerShell 5.1 `NativeCommandError` as a failed fetch. A targeted Windows CI smoke exercises `powershell.exe` without `-UseCurrentSource`, covering both temporary source worktree creation and cleanup. No host acceptance, provider spending limit or privileged tool interception is implied.
