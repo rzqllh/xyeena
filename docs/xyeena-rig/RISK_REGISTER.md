@@ -31,3 +31,7 @@ The previous ledger accepted invalid (including negative and non-finite) usage a
 ## MCP payload and diagnostic boundary — PR #48
 
 Unbounded structured/direct-object Simpul MCP responses and raw upstream exception/submission errors could exhaust resources or expose private paths in diagnostics. Source now normalizes bounded UTF-8 JSON objects and returns generic transport/submission failures. Residual risk: real MCP server trust, authenticated execution, supervisor lifecycle and filesystem containment remain LIVE BLOCKED.
+
+## Native worker cancellation lifecycle (PR #49)
+
+Previously, an already-aborted native adapter signal could still dispatch a worker; successful runs left abort listeners attached and asynchronous cancel failures could surface as unhandled rejections. Source now blocks pre-aborted runs, cleans up listeners, handles rejected cancellation promises, and redacts host failure details. Remaining limits: actual OS descendant teardown, terminal signaling and provider settlement still need independent live evidence.

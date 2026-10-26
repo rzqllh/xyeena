@@ -4,7 +4,7 @@
 
 ## Current reconciled evidence — 2026-10-26
 
-The last verified integrated source checkpoint is [main `77c1d583`](https://github.com/rzqllh/xyeena/commit/77c1d58370fbeceee6e7ec8c01d901fbb127b9fa). PR #47 source budget-input hardening passed 9/9 final-head GitHub CI jobs ([run 40270476537](https://github.com/rzqllh/xyeena/actions/runs/40270476537)) before merging. PR [#44](https://github.com/rzqllh/xyeena/pull/44) (native worker diagnostic redaction) and PR [#45](https://github.com/rzqllh/xyeena/pull/45) (workspace write-lock queue cleanup) each passed **9/9** checks on their final PR head. Earlier CI result and live-acceptance history remain as separately dated records below; no new host acceptance is implied.
+The last verified integrated source checkpoint is [main `dc96a79c`](https://github.com/rzqllh/xyeena/commit/dc96a79c40632e558c8b12b9560e677b4fb91a49). PR #48 bounded Simpul MCP results and sanitized external errors; its final branch head passed 9/9 CI ([run 40270947152](https://github.com/rzqllh/xyeena/actions/runs/40270947152)) before merging. PR #47 source budget-input hardening passed 9/9 final-head GitHub CI jobs ([run 40270476537](https://github.com/rzqllh/xyeena/actions/runs/40270476537)) before merging. PR [#44](https://github.com/rzqllh/xyeena/pull/44) (native worker diagnostic redaction) and PR [#45](https://github.com/rzqllh/xyeena/pull/45) (workspace write-lock queue cleanup) each passed **9/9** checks on their final PR head. Earlier CI result and live-acceptance history remain as separately dated records below; no new host acceptance is implied.
 
 The **2026-10-26 native Antigravity CLI 1.4.7** session showed both an explicit Xyeena `force_ask` reason with human refusal and, separately, a host-enforced one-shot `deny` against harmless `git status --short`. The CLI returned the exact diagnostic error, the command produced no successful output, and the temporary probe was cleared. This closes **only the scoped CLI test**, not the general permissions boundary, native IDE support or other hosts.
 
@@ -283,3 +283,7 @@ The final PR #44 commit added adversarial invalid worker ID tests to confirm tha
 ### PR #48 source-only scope
 
 Simpul's structured/direct/text MCP payloads are bounded and untrusted transport/submission errors are redacted. Exact PR-head CI must be checked separately. This does not provide a connected authenticated supervisor, live cancellation, or independent evidence receipt.
+
+### PR #49 source-only native cancellation
+
+Negative tests address pre-aborted worker dispatch, listener cleanup, cooperative cancel rejection and error redaction. No live Windows native host or authenticated model call was made by this PR; exact final-head CI is required before source acceptance.
