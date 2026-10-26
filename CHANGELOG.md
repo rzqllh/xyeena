@@ -1,5 +1,7 @@
 # Changelog
 
+- Windows one-shot adapter cancellation now requests `taskkill /PID <owned-child-pid> /T /F` on the spawned child process tree with strict PID validation, no shell and direct-child fallback; controlled dummy descendant CI smoke is **not** real provider/IDE LIVE acceptance.
+
 - Harden Antigravity `PreToolUse`: read-only host tools no longer bypass workspace containment by name; explicit outside/symlink paths deny, ambiguous locations require fresh host approval. Includes adversarial source/installed-runner fixtures; no IDE native enforcement claim.
 
 - Source-only Antigravity diagnostic hardening: exact canonical single-hook registration matching replaces filename substring checks; decoy commands, extra hooks and disabling are regression-tested. IDE native enforcement remains unverified.
