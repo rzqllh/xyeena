@@ -117,3 +117,7 @@ The preflight helper now treats Git stderr progress such as `From github.com` an
 ## RIG-only native acceptance handoff
 
 The Windows evidence pack must report `project: xyeena-rig` and `acceptanceScope: rig-native-hosts`. Its core `remainingGates` are #34 (Antigravity IDE), #36 (Codex/Claude/Gemini), and #37 (Hermes native cancellation/authorization). It does not probe or report Simpul supervisor state or certify provider billing hard caps. The previously recorded Windows preflight for source `184e2d9` succeeded as a read-only **source prerequisite**; it did not validate native IDE interception. Rerunning on the updated source refreshes report scope, not native PASS.
+
+## Preflight exact-match interpretation
+
+`preToolUseRegistered:true` means the inspected workspace manifest contains the exact source-managed single PreToolUse hook invocation and timeout. `preToolUseEnabled:true` additionally requires it not to be disabled. Neither proves the Antigravity IDE or CLI loaded or executed that hook. A modified command, added hook, or mismatch must be diagnosed, not auto-repaired or treated as security enforcement. For native PASS, observe a host-side safe negative interception in the actual IDE.

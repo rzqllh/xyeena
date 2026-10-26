@@ -48,12 +48,12 @@ test('preflight summarizes owned hook shape but never reports hook commands, sec
   const config={
     'xyeena-rig-guided':{
       PreToolUse:[{matcher:'*',hooks:[{type:'command',
-        command:'node ../.xyeena/hooks/antigravity-guided.mjs PreToolUse'}]}]
+        command:'node ../.xyeena/hooks/antigravity-guided.mjs PreToolUse',timeout:3}]}]
     },
     unrelated:{debugSecret:'Bearer sk-DO-NOT-EXPOSE',file:'C:\\Users\\Private\\token.json'}
   };
   fs.writeFileSync(path.join(cwd,'.agents','hooks.json'),JSON.stringify(config));
-  const result=inspectOpsPreflight({cwd,env:{PATH:''}});
+  const result=inspectOpsPreflight({cwd,env:{PATH:''},platform:'win32'});
   assert.equal(result.guidedHook.manifest,'PRESENT');
   assert.equal(result.guidedHook.groupPresent,true);
   assert.equal(result.guidedHook.preToolUseRegistered,true);
@@ -64,6 +64,67 @@ test('preflight summarizes owned hook shape but never reports hook commands, sec
   assert.ok(!safe.includes('sk-DO-NOT-EXPOSE'));
   assert.ok(!safe.includes('Private'));
   assert.ok(!safe.includes('antigravity-guided.mjs'));
+});
+test('preflight does not mistake decoy, extra or disabled Antigravity hooks for valid registration',t=>{
+  const cwd=fixture(t);
+  fs.mkdirSync(path.join(cwd,'.agents'),{recursive:true});
+  fs.mkdirSync(path.join(cwd,'.xyeena','hooks'),{recursive:true});
+  fs.writeFileSync(path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs'),'// fixture');
+  const file=path.join(cwd,'.agents','hooks.json');
+  const canonical='node ../.xyeena/hooks/antigravity-guided.mjs PreToolUse';
+  const valid=()=>({'xyeena-rig-guided':{
+    PreToolUse:[{matcher:'*',hooks:[{type:'command',command:canonical,timeout:3}]}]
+  }});
+  const report=()=>inspectOpsPreflight({cwd,env:{PATH:''},platform:'win32'}).guidedHook;
+  fs.writeFileSync(file,JSON.stringify(valid()));
+  assert.equal(report().preToolUseRegistered,true);
+  assert.equal(report().preToolUseEnabled,true);
+  const decoy=valid();
+  decoy['xyeena-rig-guided'].PreToolUse[0].hooks[0].command=
+    'echo antigravity-guided.mjs PreToolUse';
+  fs.writeFileSync(file,JSON.stringify(decoy));
+  assert.equal(report().preToolUseRegistered,false);
+  assert.equal(report().preToolUseEnabled,false);
+  const extra=valid();
+  extra['xyeena-rig-guided'].PreToolUse[0].hooks.push({
+    type:'command',command:'echo bypass',timeout:3
+  });
+  fs.writeFileSync(file,JSON.stringify(extra));
+  assert.equal(report().preToolUseRegistered,false);
+  const wrongTimeout=valid();
+  wrongTimeout['xyeena-rig-guided'].PreToolUse[0].hooks[0].timeout=999;
+  fs.writeFileSync(file,JSON.stringify(wrongTimeout));
+  assert.equal(report().preToolUseRegistered,false);
+  const disabled=valid();
+  disabled['xyeena-rig-guided'].PreToolUse[0].hooks[0].enabled=false;
+  fs.writeFileSync(file,JSON.stringify(disabled));
+  assert.equal(report().preToolUseRegistered,true);
+  assert.equal(report().preToolUseEnabled,false);
+  const groupDisabled=valid();
+  groupDisabled['xyeena-rig-guided'].enabled=false;
+  fs.writeFileSync(file,JSON.stringify(groupDisabled));
+  assert.equal(report().preToolUseEnabled,false);
+  assert.equal(report().hostEnforcement,'UNVERIFIED');
+});
+test('preflight recognizes exact POSIX managed PreToolUse command but never host enforcement',t=>{
+  const cwd=fixture(t);
+  // macOS temp paths can contain /var -> /private/var symlink aliases.
+  // The installer and preflight both use the canonical workspace root.
+  const root=fs.realpathSync(cwd);
+  fs.mkdirSync(path.join(cwd,'.agents'),{recursive:true});
+  fs.mkdirSync(path.join(cwd,'.xyeena','hooks'),{recursive:true});
+  const runner=path.join(root,'.xyeena','hooks','antigravity-guided.mjs');
+  fs.writeFileSync(runner,'// fixture');
+  const command=`"${process.execPath}" "${runner}" PreToolUse`;
+  fs.writeFileSync(path.join(cwd,'.agents','hooks.json'),JSON.stringify({
+    'xyeena-rig-guided':{PreToolUse:[{
+      matcher:'*',hooks:[{type:'command',command,timeout:3}]
+    }]}
+  }));
+  const report=inspectOpsPreflight({cwd,env:{PATH:''},platform:'linux'});
+  assert.equal(report.guidedHook.preToolUseRegistered,true);
+  assert.equal(report.guidedHook.hostEnforcement,'UNVERIFIED');
+  assert.equal(report.guidedHook.hostActivationVerified,false);
 });
 test('preflight fails safely on invalid or oversized hook configurations',t=>{
   const cwd=fixture(t),folder=path.join(cwd,'.agents');

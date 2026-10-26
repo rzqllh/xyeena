@@ -117,3 +117,7 @@ The original PowerShell acceptance preflight could fail during an otherwise succ
 ## RIG scope correction and local Windows evidence (2026-10-26)
 
 The user ran the read-only Windows PowerShell 5.1 pack on `184e2d9abb73` successfully: `SOURCE_PREFLIGHT_PASS_LIVE_PENDING`, original checkout unchanged, Node v22.19.0. This is operator-provided source preflight output, not independently witnessed native host interception or permission enforcement. Subsequent RIG-native reports deliberately exclude the separate Simpul supervisor and provider billing hard-cap promises. Remaining host evidence gates are #34, #36, and #37; release draft [#52](https://github.com/rzqllh/xyeena/pull/52) remains unapproved for merge or publication.
+
+## Preflight hook matching hardening (source-only)
+
+`ops preflight` now treats registration as a **syntactic exact-match** of the managed Antigravity `PreToolUse` command and its single-event shape/timeout, rather than accepting unrelated commands that merely contain the runner filename or event string. Disabled groups/hook entries cannot be mistaken for enabled registration. Tampered/extra callbacks are reported as not exactly registered and require human review; the tool does not modify them. Even exact local registration is **not IDE interception evidence**; issue #34 stays LIVE BLOCKED.
