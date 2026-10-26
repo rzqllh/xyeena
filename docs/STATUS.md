@@ -6,10 +6,10 @@
 
 | Surface | Verified source state | Release boundary |
 | --- | --- | --- |
-| GitHub `main` | Source baseline [`f3336547`](https://github.com/rzqllh/xyeena/commit/f3336547e57a65850e13ee8f225e250a5cf9f7b0) (merged PR [#29](https://github.com/rzqllh/xyeena/pull/29) and [#30](https://github.com/rzqllh/xyeena/pull/30)) | Code, docs and tests on `main`; not automatically npm-published |
+| GitHub `main` | Source audit baseline [`2a673c64`](https://github.com/rzqllh/xyeena/commit/2a673c643ed3ab84fe55afed84165ef9faddb92e) (merged PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#33](https://github.com/rzqllh/xyeena/pull/33)) | Code, docs and tests on `main`; not automatically npm-published |
 | npm `xyeena-agent` | `0.4.1` is the last published baseline **recorded by this repository** | Registry cannot be authoritatively rechecked from this audit; verify the registry before a future release |
 | Candidate `0.5.0` | Not published, tagged, or authorized by the user | A future publication requires explicit human approval |
-| CI | PR #30's final source commit passed 9 of 9 GitHub required test/check jobs | CI is source/packaging assurance, not live host enforcement |
+| CI | PR #31 (public docs), #32 (agy detection), and #33 (Simpul contract) each passed 9 of 9 GitHub CI jobs at their final PR head | CI is source/packaging assurance, not live host enforcement |
 
 The package version remains `0.4.1` in `package.json`. Features implemented after that release—including compact skill setup, expanded adapters, native `PreToolUse` integration and new probe/runner commands—are **source-only until an authorized npm release**. Use `node bin/xyeena.mjs` from a source checkout, not `npx xyeena-agent@0.4.1`, when following source-only instructions. Node.js 22.14+ is required.
 
@@ -34,6 +34,17 @@ The source `setup check --runtime antigravity` now checks `agy` as the native CL
 ## Simpul submission-only contract
 
 The source Simpul MCP adapter now adheres to the upstream `submit_goal` parameter schema and refuses write-capable or ambiguous delegation. Neither a user-provided permission flag nor a model-generated response can establish write containment. FastMCP SDK JSON result wrappers are decoded with size/type checks. **`executionReady` remains false** on a connectivity probe, and there is no automatic `execute_run` invocation. This is engineering contract correctness, not proof of a live Simpul supervisor or native delegation.
+
+## Outstanding live acceptance — public issue tracker
+
+The remaining work needs target-host runtime observations or external dependencies, not more simulated PASS labels:
+
+- [#34 — Antigravity IDE native hook boundary](https://github.com/rzqllh/xyeena/issues/34): IDE 2.5.5 did not enforce an expected Xyeena decision; CLI results cannot substitute
+- [#35 — Simpul authenticated supervisor lifecycle](https://github.com/rzqllh/xyeena/issues/35): actual execution, terminal evidence, cancellation and write containment
+- [#36 — Codex / Claude Code / Gemini CLI native acceptance](https://github.com/rzqllh/xyeena/issues/36): binaries unavailable on the recorded test machine
+- [#37 — Hermes real cancellation and provider-side budget evidence](https://github.com/rzqllh/xyeena/issues/37): one-shot smoke passed previously, broader limits untested
+
+These tickets are not finished work; only independent observations on a running host can close them.
 
 ## What remains before a wider release
 
