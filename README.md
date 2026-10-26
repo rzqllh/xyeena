@@ -116,7 +116,7 @@ npm run test:consumer
 npm pack --dry-run
 ```
 
-Repository CI tests source and packaging on Windows, macOS and Linux with Node.js 22 and 24. These checks are not substitutes for live acceptance on all five agent hosts.
+Repository CI tests source and packaging on Windows, macOS and Linux with Node.js 22 and 24. [Native host acceptance handoff](docs/xyeena-rig/NATIVE_ACCEPTANCE_HANDOFF.md) distinguishes CI from in-IDE and other host evidence. These checks are not substitutes for live acceptance on all five agent hosts.
 
 The last published baseline **recorded by this repository** remains **`0.4.1`** (registry verification required before release); the post-merge source includes additional unreleased capabilities. The [release-readiness record](docs/xyeena-rig/ACCEPTANCE_MATRIX.md) distinguishes automated pass criteria from pending live validation. No `0.5.0` publication is implied by the source code.
 
