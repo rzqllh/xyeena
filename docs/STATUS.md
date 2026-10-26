@@ -6,7 +6,7 @@
 
 | Surface | Verified source state | Release boundary |
 | --- | --- | --- |
-| GitHub `main` | Source audit baseline [`5ae93e0e`](https://github.com/rzqllh/xyeena/commit/5ae93e0e4a1142fc66fc1a053fdf5e56467a94a0) (PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#45](https://github.com/rzqllh/xyeena/pull/45), excluding issue-only numbers) | Repository source is not automatically npm-published |
+| GitHub `main` | Source audit baseline [`77c1d583`](https://github.com/rzqllh/xyeena/commit/77c1d58370fbeceee6e7ec8c01d901fbb127b9fa) (PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#47](https://github.com/rzqllh/xyeena/pull/47), excluding issue-only numbers) | Repository source is not automatically npm-published |
 | npm `xyeena-agent` | `0.4.1` is the last published baseline **recorded by this repository** | Registry cannot be authoritatively rechecked from this audit; verify the registry before a future release |
 | Candidate `0.5.0` | Not published, tagged, or authorized by the user | A future publication requires explicit human approval |
 | CI | PR #31, #32, #33, #38–#45 (implemented PR numbers) each passed 9/9 GitHub CI jobs at their final PR heads | CI is source/packaging assurance, not live host enforcement |
@@ -93,4 +93,8 @@ Both were merged into the audited source checkpoint and passed **9/9** GitHub ch
 
 ## Post-run budget accounting hardening (PR #47, source change)
 
-A focused source patch now validates non-negative safe-integer budget limits, estimates, provider usage and distinct active worker IDs. It also refuses unreported or malformed Simpul usage when a ledger is attached, rather than silently settling it as zero. Adversarial tests cover negative/nonfinite/coerced quantities and arithmetic overflow. This is a post-run settlement check; it does **not** impose a provider-side spending cap or confer Simpul LIVE PASS. PR #47 is not included in the audited main baseline above until it is merged and CI is verified.
+A focused source patch now validates non-negative safe-integer budget limits, estimates, provider usage and distinct active worker IDs. It also refuses unreported or malformed Simpul usage when a ledger is attached, rather than silently settling it as zero. Adversarial tests cover negative/nonfinite/coerced quantities and arithmetic overflow. This is a post-run settlement check; it does **not** impose a provider-side spending cap or confer Simpul LIVE PASS. PR #47 merged as `77c1d583` after its exact final head passed 9/9 CI jobs (run 40270476537). No new native-host acceptance is implied.
+
+## MCP response privacy follow-up (PR #48)
+
+The source adapter now bounds legacy direct-object and structured FastMCP responses to 64 KiB of UTF-8 JSON (as with text responses) and avoids reflecting untrusted MCP transport/submission error details. Negative tests cover oversized multibyte content, malformed results and credential-like error strings. PR #48 remains a source change until CI and merge; authenticated supervisor execution (issue #35) is still **LIVE BLOCKED**.

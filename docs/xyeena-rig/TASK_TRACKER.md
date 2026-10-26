@@ -28,4 +28,8 @@ PR [#44](https://github.com/rzqllh/xyeena/pull/44) and PR [#45](https://github.c
 
 ## Source P1 follow-up — PR #47
 
-Budget-ledger input validation and fail-closed Simpul settlement address a source-integrity defect in OPS-06/accounting. Negative and malformed data regressions are covered by automated tests. This has no effect on the independent OPS-06 real provider/Windows cancellation gate or OPS-01 authenticated supervisor gate. CI PASS must be verified on PR #47 before merging.
+Budget-ledger input validation and fail-closed Simpul settlement address a source-integrity defect in OPS-06/accounting. Negative and malformed data regressions are covered by automated tests. This has no effect on the independent OPS-06 real provider/Windows cancellation gate or OPS-01 authenticated supervisor gate. PR #47 merged at `77c1d583` after 9/9 final-head CI PASS (run 40270476537).
+
+## Adapter privacy follow-up — PR #48
+
+A Simpul MCP response-shape and error-redaction hardening patch prevents oversized JSON objects and external transport secrets from crossing the adapter diagnostics boundary. Source regression tests are not proof of authenticated supervisor execution; OPS-01 stays LIVE BLOCKED.

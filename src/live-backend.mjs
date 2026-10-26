@@ -171,24 +171,39 @@ export async function acquireWorkspaceWriteLock(workspaceKey) {
 }
 
 /** Normalize only bounded FastMCP SDK call-tool results; do not infer execution readiness. */
+function boundedSimpulResult(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    throw new Error('Simpul MCP response is not a JSON object');
+  let serialized;
+  try { serialized = JSON.stringify(value); }
+  catch { throw new Error('Simpul MCP response is not serializable JSON'); }
+  if (typeof serialized !== 'string' || Buffer.byteLength(serialized, 'utf8') > 65536)
+    throw new Error('Simpul MCP response exceeded size limit');
+  // Return only the serializable bounded representation, not mutable SDK objects.
+  const result = JSON.parse(serialized);
+  if (!result || typeof result !== 'object' || Array.isArray(result))
+    throw new Error('Simpul MCP response is not a JSON object');
+  return result;
+}
+
 async function simpulCall(mcpClient, name, params) {
-  const response = await mcpClient.callTool(name, params);
+  let response;
+  try { response = await mcpClient.callTool(name, params); }
+  catch { throw new Error('Simpul MCP tool call failed'); }
   if (!response || typeof response !== 'object' || Array.isArray(response) || response.isError === true)
     throw new Error('Simpul MCP tool returned an invalid or failed response');
-  if (!Array.isArray(response.content)) return response;
+  if (!Array.isArray(response.content)) return boundedSimpulResult(response);
   if (response.structuredContent && typeof response.structuredContent === 'object' &&
       !Array.isArray(response.structuredContent))
-    return response.structuredContent;
+    return boundedSimpulResult(response.structuredContent);
   if (response.content.length !== 1 || response.content[0]?.type !== 'text' ||
       typeof response.content[0]?.text !== 'string' ||
-      response.content[0].text.length > 65536)
+      Buffer.byteLength(response.content[0].text, 'utf8') > 65536)
     throw new Error('Simpul MCP response content is not a bounded JSON object');
   let parsed;
   try { parsed = JSON.parse(response.content[0].text); }
   catch { throw new Error('Simpul MCP response is not JSON'); }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
-    throw new Error('Simpul MCP response is not a JSON object');
-  return parsed;
+  return boundedSimpulResult(parsed);
 }
 
 /**
@@ -258,7 +273,7 @@ export function createSimpulMcpAdapter({
       const submitRes = await simpulCall(mcpClient, 'submit_goal', submitParams);
 
       if (!submitRes || submitRes.status === 'ERROR' || !submitRes.run_id) {
-        throw new Error(`Simpul goal submission failed: ${submitRes?.error || 'No run_id returned'}`);
+        throw new Error('Simpul goal submission failed or returned no run identifier');
       }
 
       const runId = submitRes.run_id;
