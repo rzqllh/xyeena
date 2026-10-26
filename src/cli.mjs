@@ -1,4 +1,5 @@
 import path from 'node:path'; import fs from 'node:fs';
+import { withNativeCancelSignals } from './native-cancel.mjs';
 import { parseFlags } from './util.mjs'; import { VERSION, PACKAGE_ROOT } from './paths.mjs'; import { install, installSelective } from './install.mjs';
 import { explicitSelection, interactiveSelection } from './selection.mjs';
 import { runHarness } from './harness.mjs'; import { doctor } from './doctor.mjs'; import { validateSource } from './validate.mjs'; import { loadRegistry } from './registry.mjs'; import { resolveCapabilities } from './resolver.mjs'; import { runEvals } from './eval.mjs'; import { RunLedger } from './ledger.mjs';
@@ -186,11 +187,13 @@ export async function main(args){
       maxSupporting:f.maxSupporting===undefined?2:Number(f.maxSupporting)});
     if(f._[0]==='preview'){console.log(JSON.stringify(plan,null,2));return}
     if(!f.yes)throw new Error('Orchestrate run may invoke a real provider; pass --yes');
-    const dispatch=()=>executeOrchestration(plan,{yes:true,delegate:!!f.delegate,
-      ...(typeof f.command==='string'?{command:f.command}:{}),
-      ...(typeof f.python==='string'?{python:f.python}:{}),
-      ...(f.timeoutMs===undefined?{}:{timeoutMs:Number(f.timeoutMs)})});
-    const result=f.record===true ? await recordOrchestrationRun(plan,dispatch) : await dispatch();
+    const result=await withNativeCancelSignals(signal=>{
+      const dispatch=()=>executeOrchestration(plan,{yes:true,delegate:!!f.delegate,signal,
+        ...(typeof f.command==='string'?{command:f.command}:{}),
+        ...(typeof f.python==='string'?{python:f.python}:{}),
+        ...(f.timeoutMs===undefined?{}:{timeoutMs:Number(f.timeoutMs)})});
+      return f.record===true ? recordOrchestrationRun(plan,dispatch) : dispatch();
+    });
     console.log(JSON.stringify(result,null,2));return;
   }
  if(cmd==='host'){
@@ -206,8 +209,9 @@ export async function main(args){
       ...(f.timeoutMs!==undefined?{timeoutMs:Number(f.timeoutMs)}:{}),
       ...(f.tokenLimit!==undefined?{tokenLimit:Number(f.tokenLimit)}:{}),
       ...(f.maxTurns!==undefined?{maxTurns:Number(f.maxTurns)}:{})});
-    const result=await adapter.executeTask({id:'host-one-shot',title:f.goal,
-      scope:{readOnly:true,operationClass:'safe'}});
+    const result=await withNativeCancelSignals(signal=>adapter.executeTask({
+      id:'host-one-shot',title:f.goal,scope:{readOnly:true,operationClass:'safe'}
+    },{signal}));
     console.log(JSON.stringify(result,null,2));return;
   }
  if(cmd==='sdk'){
@@ -221,8 +225,9 @@ export async function main(args){
       enableSubagents:f.delegate===true,
       ...(typeof f.python==='string'?{python:f.python}:{}),
       ...(f.timeoutMs!==undefined?{timeoutMs:Number(f.timeoutMs)}:{})});
-    const result=await adapter.executeTask({id:'sdk-one-shot',title:f.goal,
-      scope:{readOnly:true,operationClass:'safe'}});
+    const result=await withNativeCancelSignals(signal=>adapter.executeTask({
+      id:'sdk-one-shot',title:f.goal,scope:{readOnly:true,operationClass:'safe'}
+    },{signal}));
     console.log(JSON.stringify({status:'REVIEW_REQUIRED', ...result, selectedSkills:preview.selectedSkills},null,2));
     return;
   }

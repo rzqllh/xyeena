@@ -69,7 +69,7 @@ export function previewOrchestration({ cwd = process.cwd(), runtime, goal, state
 
 /** Runs only supported, safe read-only one-shot adapters; never claims verification. */
 export async function executeOrchestration(plan, {
-  yes = false, command, python, timeoutMs, delegate = false,
+  yes = false, command, python, timeoutMs, delegate = false, signal,
   adaptiveFallback = false,
   portableAdapterFactory = createPortableHostAdapter,
   antigravityAdapterFactory = createAntigravitySdkAdapter
@@ -77,6 +77,11 @@ export async function executeOrchestration(plan, {
   if (!plan || plan.schema !== 1 || plan.mode !== 'preview-only' || plan.executed !== false)
     throw new Error('Use a fresh orchestration preview before execution');
   if (!yes) throw new Error('A real provider-backed call requires explicit --yes');
+  if (signal !== undefined && (typeof signal?.aborted !== 'boolean' ||
+      typeof signal?.addEventListener !== 'function'))
+    throw new Error('Invalid orchestration cancellation signal');
+  if (signal?.aborted)
+    throw Object.assign(new Error('Orchestration canceled'), {code:'ERR_ORCHESTRATION_CANCELED'});
   // Re-scan at execution time so a stale preview never asserts removed or untrusted skills.
   const fresh = previewOrchestration({ cwd: plan.cwd, runtime: plan.runtime, goal: plan.goal,
     state: plan.state, includeGlobal: plan.includeGlobal, maxSupporting: plan.maxSupporting,
@@ -142,7 +147,7 @@ export async function executeOrchestration(plan, {
     }
     let result = null, executionError = null;
     try {
-      result = await adapter.executeTask(taskPayload);
+      result = await adapter.executeTask(taskPayload, {signal});
     } catch (err) {
       executionError = err;
       throw err;
@@ -180,7 +185,7 @@ export async function executeOrchestration(plan, {
   }
   let result = null, executionError = null;
   try {
-    result = await adapter.executeTask(taskPayload);
+    result = await adapter.executeTask(taskPayload, {signal});
   } catch (err) {
     executionError = err;
     throw err;
