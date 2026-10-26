@@ -47,3 +47,7 @@ A caller-provided isolatedWorktrees flag could previously bypass write serializa
 ## Native read target leakage boundary
 
 The pre-existing read-tool allow-by-name behavior could permit a native host to read outside the trusted RIG workspace without an Xyeena approval request. Source policy now requires an explicit, contained canonical target for `allow`, denies outside/symlink destinations and asks the native host for approval when target schema is ambiguous. **Residual risk:** native IDE hooks have not been proven to run at all; a security boundary must not be asserted for IDE 2.5.5 without independent live negative acceptance (#34). OS-level sandboxing is not implemented by this policy.
+
+## Owned subprocess descendants on Windows
+
+Previously the portable and Python SDK one-shot adapters only signaled their direct child; spawned descendants could survive timeout or Ctrl+C. Unreleased source now requests Windows tree cleanup using only the owned child PID, with conservative fallback when taskkill is unavailable. Residual risk: a kill request does **not** authenticate full termination, a detached subprocess may escape the tree, PID reuse is theoretically possible, and remote provider requests/spending are not guaranteed to stop; independent host observation remains required for OPS-06/#37. The source handler still returns cancellation before receiving an OS confirmation.
