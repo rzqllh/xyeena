@@ -4,7 +4,7 @@
 
 ## Current reconciled evidence — 2026-10-26
 
-The latest merged source checkpoint audited for this document is [main `f3336547`](https://github.com/rzqllh/xyeena/commit/f3336547e57a65850e13ee8f225e250a5cf9f7b0). PR [#29](https://github.com/rzqllh/xyeena/pull/29) and [#30](https://github.com/rzqllh/xyeena/pull/30) have been merged. PR #30 final CI checks passed **9/9** (Windows, macOS, Linux and packaging/contract jobs).
+The latest source checkpoint audited for this record is [main `2a673c64`](https://github.com/rzqllh/xyeena/commit/2a673c643ed3ab84fe55afed84165ef9faddb92e). PRs [#29](https://github.com/rzqllh/xyeena/pull/29) through [#33](https://github.com/rzqllh/xyeena/pull/33) have merged. PR #31, #32 and #33 each passed **9/9** final-head GitHub CI checks (Windows, macOS, Linux and packaging/contract jobs). The exact commit still matters: later source is not covered by earlier job results.
 
 The **2026-10-26 native Antigravity CLI 1.4.7** session showed both an explicit Xyeena `force_ask` reason with human refusal and, separately, a host-enforced one-shot `deny` against harmless `git status --short`. The CLI returned the exact diagnostic error, the command produced no successful output, and the temporary probe was cleared. This closes **only the scoped CLI test**, not the general permissions boundary, native IDE support or other hosts.
 
@@ -250,3 +250,7 @@ The code in the pending feature PR adds the opt-in Antigravity native `PreToolUs
 - **Prior local adapter discrepancy:** Xyeena sent extra `scope`/`permissions` fields and could treat caller flags `enforceWriteScope`/`supportsPermissionEnforcement` as sufficient for write-capable delegation. That was neither contract compatible nor a trusted authorization boundary.
 - **Patch:** the adapter submits only exact signature fields, rejects all non-explicit-read-only scopes and attempted permissions overrides, and keeps `executionReady:false` even when `get_model_usage` succeeds. The adapter does **not** invoke `execute_run`. FastMCP structured/text outputs are size/type/error-checked; tests cover malformed results and forged permission flags.
 - **Verdict:** engineering contract and negative tests only. **OPS-01 LIVE BLOCKED** until a real authenticated Simpul supervisor completes a bounded task with independent evidence and verified cancellation. No source-level test is counted as live worker acceptance.
+
+## Latest public blockers — 2026-10-26
+
+External/live gates now have distinct traceable GitHub issues: [#34 Antigravity IDE](https://github.com/rzqllh/xyeena/issues/34), [#35 Simpul supervisor](https://github.com/rzqllh/xyeena/issues/35), [#36 Codex/Claude/Gemini CLI](https://github.com/rzqllh/xyeena/issues/36), and [#37 Hermes cancellation/usage](https://github.com/rzqllh/xyeena/issues/37). These do **not** imply their requirements have been met. Repo-native source hardening is complete through PR #33; end-to-end host actions remain unavailable from CI.

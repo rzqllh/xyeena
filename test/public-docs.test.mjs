@@ -100,3 +100,11 @@ test('live acceptance is distinct from historical test counts and missing host s
   assert.match(changelog,/Unreleased.*2026-10-26/);
   assert.match(changelog,/No `0\.5\.0` release/i);
 });
+
+test('public acceptance backlog keeps named external host gates visible',()=>{
+  const status=read('docs/STATUS.md');
+  for(const num of [34,35,36,37])
+    assert.ok(status.includes(`/issues/${num}`),`Missing external acceptance issue #${num}`);
+  assert.match(status,/cannot close|only independent observations|not finished work/i);
+  assert.match(status,/2a673c64/);
+});
