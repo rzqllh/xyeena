@@ -133,3 +133,7 @@ On timeout, Ctrl+C/SIGTERM, or excessive output, the unreleased source now attem
 ## Preflight interpretation: owned runner integrity
 
 In RIG-only `ops preflight` / Windows evidence JSON, examine `guidedHook.runnerIntegrity` and `guidedHook.probeEligible` in addition to registration/enabled hints. `MATCH` checks the local managed SHA-256 marker against actual installed bytes; if the marker is missing, modified, oversized or redirected, the read-only preflight must not call the hook probe eligible. The local marker is user-writable and therefore cannot prove a host loaded or enforced the hook. Do not auto-install or overwrite a modified user configuration; use the existing guarded preview/backup workflow after review.
+
+## Single operator acceptance reference
+
+Use [NATIVE_ACCEPTANCE_HANDOFF.md](NATIVE_ACCEPTANCE_HANDOFF.md) for the full **RIG-only** scope: preflight is read-only, an explicitly armed 5-minute native negative probe writes only its ignored local diagnostic, live IDE and other hosts require independent observations, and npm 0.5.0 remains unauthorized. Do not infer IDE security or any provider spending cap from a green CI job.

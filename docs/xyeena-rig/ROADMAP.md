@@ -28,3 +28,7 @@ Outstanding **RIG-native** live acceptance is tracked in [IDE #34](https://githu
 ## Source-to-operator checkpoint — 2026-10-26
 
 PRs #47–#50 harden budget arithmetic, bounded Simpul response/error transport, native cancellation lifecycle, and conservative shared write serialization/fencing. The read-only PowerShell source preflight does not resolve native host acceptance issues #34–#37 or authorize npm 0.5.0 publication.
+
+## Native acceptance operator handoff
+
+The remaining native-host evidence gates and strict source-only release boundary are consolidated in [NATIVE_ACCEPTANCE_HANDOFF.md](NATIVE_ACCEPTANCE_HANDOFF.md). Simulator/source CI is not an IDE permissions sign-off. Optional Simpul integration is outside core release acceptance.
