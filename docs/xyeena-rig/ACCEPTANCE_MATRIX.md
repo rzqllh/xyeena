@@ -71,3 +71,7 @@ A12/A25/A28 source diagnostics now refuse to report managed PreToolUse registrat
 ## Antigravity file read scope source regression
 
 A12/A25/A28 gain fail-closed source tests for read-only Antigravity file/directory/search operations. An explicit out-of-workspace target is denied; missing or alternate host path schema receives `force_ask`; an in-workspace canonical target remains subject to the host's native permission rules. This only guards the **hook when invoked**, not the IDE's registration or invocation of the hook. Native IDE LIVE BLOCKED is unchanged.
+
+## Windows process-tree source regression
+
+A15/A18/A26 gain a Windows-specific owned subprocess tree termination request and controlled OS CI dummy-parent/descendant smoke. Successful dummy process termination is **source/CI smoke only**, not proof of Hermes real Ctrl+C/provider-session cancellation on the operator's Windows host. OPS-06/#37 and A31 remain PARTIAL/PENDING; no unconditional native PASS or billing cap claim.
