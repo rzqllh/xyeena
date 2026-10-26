@@ -6,19 +6,28 @@ const HOOK_GROUP='xyeena-rig-guided';
 const FILE_MAX=65536;
 const issue=id=> 'https://github.com/rzqllh/xyeena/issues/'+id;
 
-function ordinaryFile(file) {
+function ordinaryFile(root,file) {
   try {
-    const s=fs.lstatSync(file);
-    return s.isFile()&&!s.isSymbolicLink()&&s.size<=FILE_MAX;
+    const relative=path.relative(root,file);
+    if (relative.startsWith('..')||path.isAbsolute(relative)) return false;
+    let current=root, last=null;
+    for(const segment of relative.split(path.sep)){
+      current=path.join(current,segment);
+      last=fs.lstatSync(current);
+      // Reject links and junctions at every level: never inspect a hook
+      // manifest/runner redirected to a third-party workspace.
+      if(last.isSymbolicLink()) return false;
+    }
+    return Boolean(last?.isFile()&&last.size<=FILE_MAX);
   } catch { return false; }
 }
 function inspectHook(root) {
   const config=path.join(root,'.agents','hooks.json');
   const runner=path.join(root,'.xyeena','hooks','antigravity-guided.mjs');
   const base={manifest:'MISSING',groupPresent:false,preToolUseRegistered:false,
-    preToolUseEnabled:null,runnerPresent:ordinaryFile(runner),
+    preToolUseEnabled:null,runnerPresent:ordinaryFile(root,runner),
     hostEnforcement:'UNVERIFIED',hostActivationVerified:false};
-  if (!ordinaryFile(config)) {
+  if (!ordinaryFile(root,config)) {
     if (fs.existsSync(config)) base.manifest='UNTRUSTED_OR_OVERSIZE';
     return base;
   }
