@@ -143,3 +143,7 @@ The consolidated [RIG-native acceptance handoff](xyeena-rig/NATIVE_ACCEPTANCE_HA
 ## Enterprise publication pipeline hardening — source only
 
 The npm publication workflow now requires an explicitly published stable GitHub Release with a `v<package-version>` tag pointing **exactly** to the current `main` SHA, a previously unpublished npm version, and the npm OIDC trusted-publishing path. Legacy main-push message triggers and long-lived npm token fallback have been removed. It declares a GitHub environment named `npm-publish`, but **the presence of an environment in workflow YAML does not prove that Settings → Environments has required reviewers configured**. Registry trusted-publisher configuration, required reviewers, tag protection, and human release authorization are external pending steps; no publish is being run. See [native and release handoff](xyeena-rig/NATIVE_ACCEPTANCE_HANDOFF.md).
+
+## Fail-closed delegation eligibility and write serialization
+
+Policy-only backend selection now requires positive, explicit execution readiness instead of treating absent readiness as true. External and native backends with incomplete probes remain unavailable; safe inline fallback continues. Parallel write eligibility is capped at one regardless of caller-asserted `isolatedWorktrees`; no independent host containment has been proven. Negative source tests cover both boundary cases. This is not native execution evidence or an acceptance closure for #34/#36/#37.
