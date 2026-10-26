@@ -207,3 +207,9 @@ The code in the pending feature PR adds the opt-in Antigravity native `PreToolUs
 - **Actual user action:** user selected `4. No, cancel`; the resulting CLI screenshot shows `Ran (git status --short) failed`, `User declined the tool call`, and `Interrupted · What should Antigravity CLI do instead?`. No command output was returned for this attempt.
 - **Verdict:** **CLI 1.4.7 REAL FORCE_ASK PROMPT + USER DENIAL ACCEPTED** for this scoped interaction (with temporary Ask-rule deletion not independently pictured). This is a **real native runtime observation**, distinct from local fixtures or a forged callback log.
 - **Separate unresolved safety gates:** Xyeena-generated unconditional `deny` was **not** demonstrated on the CLI; Antigravity IDE 2.5.5 remains **LIVE_BLOCKED** for native interception. Avoid describing OPS-07 as universally complete. Do not execute actual out-of-scope file writes to probe denial.
+
+## OPS-07 optional automatic deny acceptance harness — source PR (not live-tested)
+
+- Proposed follow-up provides a five-minute one-shot `guided probe deny-start` that returns `deny` for an exact, read-only `git status --short` tool call. It does not attempt any out-of-workspace write or change host permissions.
+- `PreToolUse` exact ownership/hash checks remain mandatory before arming; unrelated host config drift does not trigger an installer write. A denied callback is recorded locally without command arguments, but such a local record is not host attestation.
+- Source/CI verification establishes only simulation of the documented native response contract. **Real `agy 1.4.7` acceptance must observe the host block the command and report the Xyeena diagnostic deny reason.** An accepted command is a failure. No claim about IDE support or general command sandboxing.
