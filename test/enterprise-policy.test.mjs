@@ -27,7 +27,7 @@ test('subagent policy never creates synthetic workers or assumes healthy backend
   assert.equal(selectSubagentBackend({ task }).backend, 'inline');
   const available = {
     simpul: { enabled: true, healthy: false, adapterAvailable: true },
-    native: { enabled: true, healthy: true, adapterAvailable: true, supportsParallel: true }
+    native: { enabled: true, healthy: true, adapterAvailable: true, executionReady: true, supportsParallel: true }
   };
   assert.deepEqual(selectSubagentBackend({ task, backends: available }), {
     backend: 'native',
@@ -35,18 +35,44 @@ test('subagent policy never creates synthetic workers or assumes healthy backend
     reason: 'verified-backend-capability'
   });
   available.simpul.healthy = true;
+  available.simpul.executionReady = true;
   available.simpul.supportsParallel = true;
   assert.equal(selectSubagentBackend({ task, backends: available }).backend, 'simpul');
 });
 
 test('parallel writes require actual isolation and bounded budget', () => {
-  const backends = { simpul: { enabled: true, healthy: true, adapterAvailable: true, supportsWrites: true, supportsParallel: true } };
+  const backends = { simpul: { enabled: true, healthy: true, adapterAvailable: true, executionReady: true, supportsWrites: true, supportsParallel: true } };
   const task = { requiresDelegation: true, independent: true, readOnly: false };
   assert.equal(selectSubagentBackend({ task, backends, maxParallel: 5 }).parallelism, 1);
-  assert.equal(selectSubagentBackend({ task: { ...task, isolatedWorktrees: true }, backends, maxParallel: 5 }).parallelism, 5);
+  assert.equal(selectSubagentBackend({ task: { ...task, isolatedWorktrees: true }, backends, maxParallel: 5 }).parallelism, 1);
   assert.throws(() => selectSubagentBackend({ maxParallel: 17 }), /budget/);
 });
 
+test('backend selection fails closed when authenticated execution readiness is missing',()=>{
+  const task={requiresDelegation:true,readOnly:true,independent:true};
+  for(const readiness of [undefined,null,false,'true',0]) {
+    const candidate={enabled:true,healthy:true,adapterAvailable:true,supportsParallel:true};
+    if(readiness!==undefined) candidate.executionReady=readiness;
+    for(const kind of ['native','simpul']) {
+      const result=selectSubagentBackend({task,backends:{[kind]:candidate}});
+      assert.equal(result.backend,'inline',`${kind} with readiness ${String(readiness)}`);
+      assert.equal(result.parallelism,1);
+    }
+  }
+  const ready={enabled:true,healthy:true,adapterAvailable:true,executionReady:true,
+    supportsParallel:true};
+  assert.equal(selectSubagentBackend({task,backends:{native:ready}}).backend,'native');
+  assert.equal(selectSubagentBackend({task,backends:{simpul:ready}}).backend,'simpul');
+});
+test('caller-declared isolation never authorizes multi-writer selection',()=>{
+  const task={requiresDelegation:true,independent:true,readOnly:false,isolatedWorktrees:true};
+  const backend={enabled:true,healthy:true,adapterAvailable:true,executionReady:true,
+    supportsWrites:true,supportsParallel:true};
+  for(const kind of ['native','simpul']){
+    const choice=selectSubagentBackend({task,backends:{[kind]:backend},maxParallel:16});
+    assert.equal(choice.parallelism,1,`${kind} cannot grant parallel writes`);
+  }
+});
 test('core harness policy is present even without optional providers', () => {
   const policy = buildEnterprisePolicy({ goal: 'Fix a regression and verify tests', state: 'DEBUG', selectedSkills: ['xyeena-rig'] });
   assert.equal(policy.nativeFallbackAvailable, true);

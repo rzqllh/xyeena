@@ -55,3 +55,7 @@ Previously the portable and Python SDK one-shot adapters only signaled their dir
 ## Release pipeline supply-chain authorization
 
 Previously `publish.yml` contained legacy `main` push/commit-message triggers, credential-token fallback and no release-tag-to-current-main equality gate. The source workflow now accepts only explicit stable GitHub Release publication and refuses version/tag mismatches, non-main commits and registry duplicate versions. It delegates authentication to trusted OIDC. **Residual external prerequisites:** configure npm Trusted Publisher, required human reviewers for the `npm-publish` environment, GitHub tag protection/immutable releases and separate user approval. A YAML environment declaration is not an approval control until reviewers are configured.
+
+## Delegation capability/parallel write assertion hardening
+
+`selectSubagentBackend` now requires **`executionReady === true`** in addition to explicit opt-in, health, callable adapter and scope support. Undefined, false, null, or textual readiness cannot select native/optional workers; fallback stays inline. The selector also refuses parallel writes based on a caller-supplied `isolatedWorktrees` flag; actual host-enforced isolation is not established by that flag. This aligns the public policy view with RIG's shared workspace write fence. The distinct optional Simpul workspace remains outside core acceptance.

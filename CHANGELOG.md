@@ -1,5 +1,7 @@
 # Changelog
 
+- Fail closed on backend delegation unless `executionReady === true`; never grant multi-writer selection from caller-asserted `isolatedWorktrees` (source policy + adversarial regression).
+
 - Harden npm release pipeline: explicit stable GitHub Release only, exact current-main commit/tag/version check, no legacy commit-message publishing, no long-lived token fallback, official OIDC trusted publishing with provenance. External environment-reviewer and npm-side setup still required; no release performed.
 
 - Close out repository-side source work with one RIG-only native acceptance handoff: safe IDE negative probe, unavailable standalone CLI hosts, Hermes live cancel boundary, and explicit human npm release authorization. This adds **no** new host PASS.

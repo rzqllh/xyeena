@@ -75,3 +75,7 @@ A12/A25/A28 gain fail-closed source tests for read-only Antigravity file/directo
 ## Windows process-tree source regression
 
 A15/A18/A26 gain a Windows-specific owned subprocess tree termination request and controlled OS CI dummy-parent/descendant smoke. Successful dummy process termination is **source/CI smoke only**, not proof of Hermes real Ctrl+C/provider-session cancellation on the operator's Windows host. OPS-06/#37 and A31 remain PARTIAL/PENDING; no unconditional native PASS or billing cap claim.
+
+## Delegation readiness regression (source/CI)
+
+Optional and native backend selection rejects unreported/`null`/`false`/string readiness rather than selecting a callable but unproven execution route. Caller-declared worktree isolation cannot authorize parallel write selection. These are source policy regressions, not a real supervisor, native host write fence or enterprise LIVE PASS.
