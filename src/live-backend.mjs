@@ -23,10 +23,10 @@ function assertValidHostWorkerId(workerId) {
   }
   const trimmed = workerId.trim();
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]{2,127}$/.test(trimmed)) {
-    throw new Error(`Host runner returned invalid or fabricated worker identity: does not match required format "${trimmed}"`);
+    throw new Error("Host runner returned invalid or fabricated worker identity: does not match required format");
   }
   if (/^(fake|dummy|mock|placeholder|synthetic|fabricated)([-_.]|$)/i.test(trimmed)) {
-    throw new Error(`Host runner returned invalid or fabricated worker identity: placeholder rejected "${trimmed}"`);
+    throw new Error("Host runner returned invalid or fabricated worker identity: placeholder rejected");
   }
   return trimmed;
 }

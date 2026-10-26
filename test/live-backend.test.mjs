@@ -613,3 +613,24 @@ test('Simpul ignores caller claims of permission enforcement and rejects ambiguo
   }
   assert.equal(invoked,false);
 });
+
+test('host-provided invalid worker IDs are rejected without echoing hostile content into errors',async()=>{
+  const secret='sk-sensitive-worker-token-and-private-path';
+  const samples=[secret+'!', 'fake-'+secret, 'C:\\Users\\Private\\token-123',
+    'x'.repeat(512), 'fake-worker-id'];
+  for(const id of samples){
+    const adapter=createNativeSubagentAdapter({runner:{
+      async status(){return {available:true}},
+      async run(){return {workerId:id}}
+    }});
+    await assert.rejects(adapter.executeTask({id:'redaction',title:'Read-only review'},{
+      noNestedDelegation:true
+    }),err=>{
+      assert.match(err.message,/invalid or fabricated worker identity/i);
+      assert.ok(!err.message.includes(secret));
+      assert.ok(!err.message.includes('C:\\Users\\Private'));
+      assert.ok(!err.message.includes('fake-worker-id'));
+      return true;
+    });
+  }
+});
