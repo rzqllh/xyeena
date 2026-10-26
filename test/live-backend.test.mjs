@@ -779,3 +779,94 @@ test('P1: Simpul direct and structured MCP responses enforce byte limits and JSO
     }, { noNestedDelegation: true }), /Simpul MCP/);
   }
 });
+
+
+test('P1: native pre-aborted or malformed signal never dispatches a worker', async () => {
+  let launches = 0;
+  const adapter = createNativeSubagentAdapter({ runner: {
+    async spawn() { launches++; throw new Error('must not start'); }
+  } });
+  const controller = new AbortController();
+  controller.abort();
+  await assert.rejects(adapter.executeTask({ id: 'native-preabort', title: 'Read only' },
+    { noNestedDelegation: true, signal: controller.signal }), error => {
+    assert.equal(error.code, 'ERR_NATIVE_CANCELED');
+    return true;
+  });
+  await assert.rejects(adapter.executeTask({ id: 'native-invalid', title: 'Read only' },
+    { noNestedDelegation: true, signal: { aborted: false } }), /Invalid native worker cancellation signal/);
+  assert.equal(launches, 0);
+});
+
+test('P1: native cancellation listener is removed on completion and rejected cancels are handled', async () => {
+  let cancels = 0;
+  const completedSignal = new AbortController();
+  const completeAdapter = createNativeSubagentAdapter({ runner: {
+    async spawn() { return {
+      workerId: 'host-completed-worker',
+      async wait() { return { verified: false, evidenceRefs: [] }; },
+      async cancel() { cancels++; }
+    }; }
+  } });
+  const out = await completeAdapter.executeTask({ id: 'native-completed', title: 'Review' },
+    { noNestedDelegation: true, signal: completedSignal.signal });
+  assert.equal(out.workerId, 'host-completed-worker');
+  completedSignal.abort();
+  assert.equal(cancels, 0, 'completed task must not be canceled by later signal');
+
+  const controller = new AbortController();
+  let finishWait;
+  const pendingAdapter = createNativeSubagentAdapter({ runner: {
+    async spawn() { return {
+      workerId: 'host-active-worker',
+      wait() { return new Promise(resolve => { finishWait = resolve; }); },
+      cancel() { cancels++; return Promise.reject(new Error('sk-secret-in-cancel-error')); }
+    }; }
+  } });
+  const pending = pendingAdapter.executeTask({ id: 'native-pending', title: 'Review' },
+    { noNestedDelegation: true, signal: controller.signal });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(typeof finishWait, 'function');
+  controller.abort();
+  finishWait({ verified: true, evidenceRefs: ['evidence.txt'] });
+  await assert.rejects(pending, error => error.code === 'ERR_NATIVE_CANCELED');
+  assert.equal(cancels, 1);
+});
+
+test('P1: native host errors do not echo secrets from status, spawn, result or cancellation', async () => {
+  const secret = 'sk-secret-runtime-C:/Private/credential.json';
+  const statusAdapter = createNativeSubagentAdapter({ runner: {
+    async status() { throw new Error(secret); },
+    async run() { throw new Error(secret); }
+  } });
+  const status = await statusAdapter.probe();
+  assert.equal(status.healthy, false);
+  assert.ok(!status.reason.includes(secret));
+  for (const adapter of [
+    statusAdapter,
+    createNativeSubagentAdapter({ runner: { async spawn() { throw new Error(secret); } } }),
+    createNativeSubagentAdapter({ runner: { async run() {
+      return { workerId: 'host-worker-error', error: secret };
+    } } })
+  ]) {
+    let message = '';
+    try { await adapter.executeTask({ id: 'native-error', title: 'Review' },
+      { noNestedDelegation: true }); assert.fail('must reject'); }
+    catch (error) { message = error.message; }
+    assert.ok(!message.includes(secret));
+    assert.ok(!message.includes('credential.json'));
+  }
+  const cancelAdapter = createNativeSubagentAdapter({ runner: {
+    async spawn() { return {
+      workerId: 'host-cancel-worker',
+      async wait() { return {}; },
+      async cancel() { throw new Error(secret); }
+    }; }
+  } });
+  await cancelAdapter.executeTask({ id: 'native-cancel', title: 'Review' }, { noNestedDelegation: true });
+  await assert.rejects(cancelAdapter.cancelTask({ taskId: 'native-cancel' }), error => {
+    assert.match(error.message, /cancellation failed/i);
+    assert.ok(!error.message.includes(secret));
+    return true;
+  });
+});
