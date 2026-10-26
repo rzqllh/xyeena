@@ -21,3 +21,7 @@ All eight engineering phases are present in `main` with automated checks. The re
 For each operational item, add the test environment, host version, dated evidence, acceptance verdict, and known limitations to [Validation](EVIDENCE.md) and update [Acceptance](ACCEPTANCE_MATRIX.md). Fixture tests cannot close a live task. Privileged actions must remain fail-closed until a verified host boundary is available.
 
 Engineering coverage: [Requirements R01–R15](REQUIREMENTS_TRACEABILITY.md) and [Roadmap](ROADMAP.md).
+
+## Final source hardening record — 2026-10-26
+
+PR [#44](https://github.com/rzqllh/xyeena/pull/44) and PR [#45](https://github.com/rzqllh/xyeena/pull/45) were merged after 9/9 CI checks each. Worker-ID error redaction and workspace write-lock map cleanup are source fixes. The external acceptance blockers OPS-01/02/03/04/05/06/07 remain as listed; do not reclassify them on the strength of CI.
