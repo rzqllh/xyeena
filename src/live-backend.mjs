@@ -624,14 +624,13 @@ export async function dispatchScopedTask({
   const controller = new AbortController();
   let timer;
 
-  // Enforce worktree isolation for parallel writes:
-  // If not readOnly and isolatedWorktrees is not true, serialize to parallelism 1
-  const effectiveParallelism = (task.scope.readOnly === false && task.isolatedWorktrees !== true)
-    ? 1
-    : decision.parallelism;
+  // A caller's isolatedWorktrees flag is advisory, NOT native proof that
+  // filesystem writes are isolated. Until host-authenticated worktree
+  // containment is available, serialize and fence every write.
+  const effectiveParallelism = task.scope.readOnly === false ? 1 : decision.parallelism;
 
   let releaseWriteLock = null;
-  if (task.scope.readOnly === false && task.isolatedWorktrees !== true) {
+  if (task.scope.readOnly === false) {
     releaseWriteLock = await acquireWorkspaceWriteLock(task.cwd || 'default-workspace');
   }
 
