@@ -21,9 +21,16 @@ function ordinaryFile(root,file) {
     return Boolean(last?.isFile()&&last.size<=FILE_MAX);
   } catch { return false; }
 }
-function inspectHook(root) {
+function inspectHook(root,platform) {
   const config=path.join(root,'.agents','hooks.json');
   const runner=path.join(root,'.xyeena','hooks','antigravity-guided.mjs');
+  // The installer writes exactly these native host hook invocations.
+  // Substring checks would mistake `echo antigravity-guided.mjs PreToolUse`
+  // (or a different command that mentions that filename) for a live hook.
+  // Source registration is still NOT proof the host ever invokes it.
+  const expectedCommand=platform==='win32'
+    ? 'node ../.xyeena/hooks/antigravity-guided.mjs PreToolUse'
+    : `"${process.execPath}" "${runner}" PreToolUse`;
   const base={manifest:'MISSING',groupPresent:false,preToolUseRegistered:false,
     preToolUseEnabled:null,runnerPresent:ordinaryFile(root,runner),
     hostEnforcement:'UNVERIFIED',hostActivationVerified:false};
@@ -40,18 +47,19 @@ function inspectHook(root) {
   if(!group||typeof group!=='object'||Array.isArray(group))
     return {...base,manifest:'PRESENT'};
   const pre=group.PreToolUse;
-  const eligible=Array.isArray(pre)&&pre.some(x=>
-    x?.matcher==='*'&&Array.isArray(x.hooks)&&x.hooks.some(y=>
-      y?.type==='command'&&typeof y.command==='string'&&
-      y.command.includes('antigravity-guided.mjs')&&
-      y.command.includes('PreToolUse')
-    )
-  );
+  // Require the one managed safety event and one canonical command.
+  // Reject extra/different hook entries instead of reporting a broad
+  // false-positive registration for a partial or tampered hook group.
+  const event=Array.isArray(pre)&&pre.length===1 ? pre[0] : null;
+  const hook=Array.isArray(event?.hooks)&&event.hooks.length===1 ? event.hooks[0] : null;
+  const eligible=event?.matcher==='*'&&hook?.type==='command'&&
+    hook.command===expectedCommand&&hook.timeout===3;
   return {...base,manifest:'PRESENT',groupPresent:true,
     preToolUseRegistered:Boolean(eligible),
     // Enabled config is only a hint; it is never native host proof.
     preToolUseEnabled:eligible&&group.enabled!==false&&
-      !pre.some(x=>x?.enabled===false||x?.disabled===true)};
+      event.enabled!==false&&event.disabled!==true&&
+      hook.enabled!==false&&hook.disabled!==true};
 }
 
 /** Read-only, redacted prerequisites. Never invokes AI, MCP, hooks or host CLI. */
@@ -71,7 +79,7 @@ export function inspectOpsPreflight({cwd=process.cwd(),env=process.env,
     // Deliberately do not expose user home, workspace, auth files or command lines.
     workspace:{gitMetadataPresent:fs.existsSync(path.join(root,'.git'))},
     commands,
-    guidedHook:inspectHook(root),
+    guidedHook:inspectHook(root,platform),
     nativeAcceptance:{antigravityCli:'NOT_TESTED_BY_PREFLIGHT',
       antigravityIde:'NOT_TESTED_BY_PREFLIGHT',
       hermes:'NOT_TESTED_BY_PREFLIGHT',
