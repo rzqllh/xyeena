@@ -14,9 +14,25 @@ $sourceDir = ''
 
 function Invoke-GitOrFail {
   param([string[]]$GitArgs)
-  $output = @(& git -C $RepoDir @GitArgs 2>&1)
-  if ($LASTEXITCODE -ne 0) { throw ('Git step failed: ' + $GitArgs[0]) }
-  return ($output -join [Environment]::NewLine)
+  # Windows PowerShell 5.1 converts *normal* native Git stderr progress
+  # (for example "From github.com..." or "Preparing worktree") into a
+  # NativeCommandError record. With ErrorActionPreference=Stop, 2>&1
+  # would otherwise terminate this script despite git exit code 0.
+  # Relax the preference only inside this native invocation, then restore it.
+  $previousPreference = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = 'Continue'
+    $output = @(& git -C $RepoDir @GitArgs 2>&1)
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousPreference
+  }
+  if ($exitCode -ne 0) {
+    throw ('Git step failed: ' + $GitArgs[0] + ' (exit ' + $exitCode + ')')
+  }
+  # Git's progress/error records must never contaminate parsed stdout
+  # (e.g. the exact origin URL or SHA).
+  return (($output | Where-Object { $_ -is [string] }) -join [Environment]::NewLine)
 }
 
 try {
@@ -101,8 +117,9 @@ try {
   if ($createdWorktree) {
     # This was created here using a random unused temporary directory.
     # No -Force: if changed, Git refuses to remove it and preserves the files.
-    $remove = @(& git -C $RepoDir worktree remove $sourceDir 2>&1)
-    if ($LASTEXITCODE -ne 0) {
+    try {
+      Invoke-GitOrFail -GitArgs @('worktree','remove',$sourceDir) | Out-Null
+    } catch {
       Write-Warning 'Temporary worktree was not clean; inspect and remove it manually. No forced removal was attempted.'
     }
   }

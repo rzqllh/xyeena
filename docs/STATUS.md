@@ -112,3 +112,7 @@ If a shared-workspace write adapter times out but its invocation remains unsettl
 PR #49 passed 9/9 final-head checks (run 40271504759), merged as a27b4db1. PR #50 passed 9/9 final-head checks (run 40272104829), merged as 2c2f0cea. PR #50 also treats a caller's isolatedWorktrees flag as unverified: all writes are serialized until trusted host isolation exists. These are source CI results, not native process ownership, arbitrary privileged write interception, Antigravity IDE enforcement, authenticated Simpul execution or provider billing acceptance.
 
 A read-only Windows PowerShell handoff is provided at scripts/windows-acceptance-pack.ps1. It uses a unique temporary detached source worktree, verifies existing working tree status remains unchanged, and writes one redacted JSON report outside the project. No model call, hook install, supervisor execution, npm publication or new LIVE PASS occurs. The Windows CI exercises its current-source smoke mode. Issues #34–#37 still require native host evidence.
+
+## Windows 5.1 preflight compatibility correction
+
+The original PowerShell acceptance preflight could fail during an otherwise successful `git fetch` when Git progress on stderr was promoted to `NativeCommandError` under `ErrorActionPreference=Stop`. The source fix temporarily handles native Git stderr and validates its actual exit code, including owned-worktree cleanup. CI now tests the full detached-worktree path in Windows PowerShell 5.1. This only repairs prerequisite collection; issues #34–#37 retain their native acceptance statuses.
