@@ -33,3 +33,7 @@ Budget-ledger input validation and fail-closed Simpul settlement address a sourc
 ## Adapter privacy follow-up — PR #48
 
 A Simpul MCP response-shape and error-redaction hardening patch prevents oversized JSON objects and external transport secrets from crossing the adapter diagnostics boundary. Source regression tests are not proof of authenticated supervisor execution; OPS-01 stays LIVE BLOCKED.
+
+## Source native adapter follow-up — PR #49
+
+The native host adapter now validates and rejects pre-aborted signals, removes abort listeners, safely handles rejected cancel promises and redacts host-runner diagnostics. These source-only changes do not close OPS-06 (real Windows cancellation) or OPS-07 (IDE interception). Native acceptance must remain evidence-driven.
