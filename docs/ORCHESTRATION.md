@@ -4,6 +4,10 @@
 
 Xyeena Rig maintains a single workflow governor. Workers cannot create uncontrolled subagent trees or increase the permissions delegated to them.
 
+## Simpul MCP scope contract
+
+For the currently exposed Simpul FastMCP `submit_goal(goal, workspace_path, model, execute=False)`, no `scope` or `permissions` input is accepted. Xyeena therefore submits **explicit read-only task metadata only** and does not dispatch the PM/Developer/QA execution lifecycle from its adapter. Caller-authored `enforceWriteScope` booleans are rejected, not treated as consent. A successful `get_model_usage` probe is transport health, not execution readiness. Full supervisor dispatch/cancel/evidence validation still requires a real protected host.
+
 ## Task model
 
 Tasks have bounded scope, explicit dependencies, execution eligibility and acceptance conditions. Supported coordination types include `ASSIGN`, `STATUS`, `QUESTION`, `RESULT`, `FINDING`, `CHALLENGE`, `RESPONSE`, `EVIDENCE`, `BLOCKED`, `FAILED`, `CANCEL` and `CAPABILITY_REQUEST`.

@@ -31,6 +31,10 @@ The Antigravity CLI may modify `SessionStart` and `PostInvocation` in the manage
 
 The source `setup check --runtime antigravity` now checks `agy` as the native CLI executable in addition to any `antigravity` binary. This corrects a false negative seen on machines where only `agy` is on PATH. Results identify command candidates without launching a model and **do not change** the host acceptance matrix above: a discovered binary is not proof that either the CLI session is active or the IDE enforces hooks.
 
+## Simpul submission-only contract
+
+The source Simpul MCP adapter now adheres to the upstream `submit_goal` parameter schema and refuses write-capable or ambiguous delegation. Neither a user-provided permission flag nor a model-generated response can establish write containment. FastMCP SDK JSON result wrappers are decoded with size/type checks. **`executionReady` remains false** on a connectivity probe, and there is no automatic `execute_run` invocation. This is engineering contract correctness, not proof of a live Simpul supervisor or native delegation.
+
 ## What remains before a wider release
 
 - Verify real native IDE interception or explicitly document IDE as unsupported for security enforcement; do not infer support from vendor docs or a successful install.
