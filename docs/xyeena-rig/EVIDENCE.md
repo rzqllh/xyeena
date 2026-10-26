@@ -4,7 +4,7 @@
 
 ## Current reconciled evidence — 2026-10-26
 
-The latest source checkpoint audited for this record is [main `c84f7c45`](https://github.com/rzqllh/xyeena/commit/c84f7c456f12ec71826c32e58088ddc85df54d49). PRs [#29](https://github.com/rzqllh/xyeena/pull/29) through [#42](https://github.com/rzqllh/xyeena/pull/42) have merged (with separate issue numbers in between). PR #31, #32, #33, #38, #39, #40, #41 and #42 each passed **9/9** final-head GitHub CI checks (Windows, macOS, Linux and packaging/contract jobs). The exact commit still matters: later source is not covered by earlier job results.
+The latest audited source checkpoint is [main `5ae93e0e`](https://github.com/rzqllh/xyeena/commit/5ae93e0e4a1142fc66fc1a053fdf5e56467a94a0). PR [#44](https://github.com/rzqllh/xyeena/pull/44) (native worker diagnostic redaction) and PR [#45](https://github.com/rzqllh/xyeena/pull/45) (workspace write-lock queue cleanup) each passed **9/9** checks on their final PR head. Earlier CI result and live-acceptance history remain as separately dated records below; no new host acceptance is implied.
 
 The **2026-10-26 native Antigravity CLI 1.4.7** session showed both an explicit Xyeena `force_ask` reason with human refusal and, separately, a host-enforced one-shot `deny` against harmless `git status --short`. The CLI returned the exact diagnostic error, the command produced no successful output, and the temporary probe was cleared. This closes **only the scoped CLI test**, not the general permissions boundary, native IDE support or other hosts.
 
@@ -275,3 +275,7 @@ External/live gates now have distinct traceable GitHub issues: [#34 Antigravity 
 ## Reconciled source execution checkpoint — 2026-10-26
 
 GitHub `main` source: [`c84f7c456f12ec71826c32e58088ddc85df54d49`](https://github.com/rzqllh/xyeena/commit/c84f7c456f12ec71826c32e58088ddc85df54d49) (after merged PRs #39–#42). Those four PR final source heads each passed 9/9 GitHub Actions jobs, with real native Windows/macOS/Linux process-spawn fixtures in #41 (simulated provider JSON only). Source-only cancellation and preflight functions in #39–#42 are not a live user-host acceptance test; all issue #34–#37 gates remain open until independent native observations.
+
+## Source security/queue regressions — 2026-10-26
+
+The final PR #44 commit added adversarial invalid worker ID tests to confirm that rejected identifiers carrying secret-like tokens or local paths do not appear in thrown error messages. The final PR #45 commit added regression cases for FIFO write-lock ownership, repeated release, a new acquisition after queue drainage, and independent workspace keys. **CI 9/9 per final head**; these remain source checks, not live host tests.

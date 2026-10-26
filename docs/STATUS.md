@@ -6,10 +6,10 @@
 
 | Surface | Verified source state | Release boundary |
 | --- | --- | --- |
-| GitHub `main` | Source audit baseline [`c84f7c45`](https://github.com/rzqllh/xyeena/commit/c84f7c456f12ec71826c32e58088ddc85df54d49) (merged PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#42](https://github.com/rzqllh/xyeena/pull/42)) | Code, docs and tests on `main`; not automatically npm-published |
+| GitHub `main` | Source audit baseline [`5ae93e0e`](https://github.com/rzqllh/xyeena/commit/5ae93e0e4a1142fc66fc1a053fdf5e56467a94a0) (PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#45](https://github.com/rzqllh/xyeena/pull/45), excluding issue-only numbers) | Repository source is not automatically npm-published |
 | npm `xyeena-agent` | `0.4.1` is the last published baseline **recorded by this repository** | Registry cannot be authoritatively rechecked from this audit; verify the registry before a future release |
 | Candidate `0.5.0` | Not published, tagged, or authorized by the user | A future publication requires explicit human approval |
-| CI | PR #31, #32, #33 and #38–#42 each passed 9/9 GitHub CI jobs at their final PR heads | CI is source/packaging assurance, not live host enforcement |
+| CI | PR #31, #32, #33, #38–#45 (implemented PR numbers) each passed 9/9 GitHub CI jobs at their final PR heads | CI is source/packaging assurance, not live host enforcement |
 
 The package version remains `0.4.1` in `package.json`. Features implemented after that release—including compact skill setup, expanded adapters, native `PreToolUse` integration and new probe/runner commands—are **source-only until an authorized npm release**. Use `node bin/xyeena.mjs` from a source checkout, not `npx xyeena-agent@0.4.1`, when following source-only instructions. Node.js 22.14+ is required.
 
@@ -83,3 +83,10 @@ These tickets are not finished work; only independent observations on a running 
 For the audit trail see [OPS tracker](xyeena-rig/TASK_TRACKER.md), [acceptance matrix](xyeena-rig/ACCEPTANCE_MATRIX.md), [live evidence](xyeena-rig/EVIDENCE.md), [security policy](../SECURITY.md), and [guided hooks](ANTIGRAVITY-GUIDED.md).
 
 **Change discipline:** this status is dated evidence. Update it only when independent CI or host observations change; historical figures and demonstrations stay in their dated evidence sections.
+
+## Latest source safety fixes — 2026-10-26
+
+- [PR #44](https://github.com/rzqllh/xyeena/pull/44) removes untrusted host-returned worker IDs from error diagnostics while retaining fail-closed rejection of malformed/placeholder IDs.
+- [PR #45](https://github.com/rzqllh/xyeena/pull/45) corrects workspace write-lock tail cleanup (FIFO queue ownership and idempotent release). Previously, the retained map's promise and cleanup comparison could never match, leaving stale entries.
+
+Both were merged into the audited source checkpoint and passed **9/9** GitHub checks on their final PR heads. No additional native host, Simpul or billing acceptance is implied.
