@@ -5,6 +5,8 @@ The [dated source and host acceptance status](STATUS.md) distinguishes published
 
 Xyeena Rig packages Agent Skills and optional project Harness tools for five supported agent hosts. You need Node.js **22.14 or newer** and an installed agent host. No Git clone is required to use the published npm package.
 
+Run `node bin/xyeena.mjs setup check --runtime antigravity` from updated source to inspect the `agy` CLI command candidate and configured skills. The check does **not** launch the agent or test host permissions. For live evidence, use the [separately recorded acceptance](STATUS.md).
+
 ## Install with the wizard
 
 ```sh

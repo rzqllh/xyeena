@@ -54,3 +54,48 @@ test('setup check validates actual installed skill state but does not claim nati
   assert.equal(cmd.status,0,cmd.stderr);
   assert.equal(JSON.parse(cmd.stdout).filesystem.orchestratorFound,true);
 });
+
+test('agY host CLI executable is detected without claiming Antigravity IDE or native hook enforcement',t=>{
+  const cwd=fixture(t),tools=path.join(cwd,'tools');
+  fs.mkdirSync(tools,{recursive:true});
+  fs.writeFileSync(path.join(tools,'agy.cmd'),'@echo off\nexit 123\n');
+  const rows=inspectSetupHosts({cwd,env:{Path:tools},platform:'win32'});
+  const agy=rows.find(x=>x.host==='antigravity');
+  assert.equal(agy.hostCommandAvailable,true);
+  assert.deepEqual(agy.detectedCommands,['agy']);
+  assert.equal(agy.detectedSurface,'antigravity-cli-binary');
+  assert.equal(agy.level,'executable-on-PATH');
+  assert.equal(agy.confirmedRunning,false);
+  assert.equal(rows.find(x=>x.host==='gemini').hostCommandAvailable,false);
+  assert.equal(rows.find(x=>x.host==='codex').detectedSurface,'not-detected');
+});
+test('discovery reports CLI and legacy antigravity binaries separately and never invokes them',t=>{
+  const cwd=fixture(t),tools=path.join(cwd,'tools');
+  fs.mkdirSync(tools,{recursive:true});
+  for(const name of ['agy.exe','antigravity.cmd'])
+    fs.writeFileSync(path.join(tools,name),'not a valid executable');
+  const rows=inspectSetupHosts({cwd,env:{Path:tools},platform:'win32'});
+  const agy=rows.find(x=>x.host==='antigravity');
+  assert.deepEqual(agy.detectedCommands,['agy','antigravity']);
+  assert.equal(agy.hostCommandAvailable,true);
+  assert.equal(agy.confirmedRunning,false);
+});
+test('PATH directories and links cannot spoof real executables',t=>{
+  const cwd=fixture(t),tools=path.join(cwd,'tools');
+  fs.mkdirSync(tools,{recursive:true});
+  fs.mkdirSync(path.join(tools,'agy.cmd'));
+  const report=inspectSetupHosts({cwd,env:{Path:tools},platform:'win32'});
+  assert.equal(report.find(x=>x.host==='antigravity').hostCommandAvailable,false);
+  assert.equal(report.find(x=>x.host==='antigravity').detectedSurface,'not-detected');
+  // Windows file modes cannot accurately simulate POSIX executable bits:
+  // on win32 chmodSync does not set Unix mode 0o111. Test the POSIX branch
+  // only where the real filesystem supports it.
+  if (process.platform !== 'win32') {
+    fs.writeFileSync(path.join(tools,'gemini'), '#!/bin/sh\nexit 0\n',{mode:0o600});
+    const nonexecutable=inspectSetupHosts({cwd,env:{PATH:tools},platform:'linux'});
+    assert.equal(nonexecutable.find(x=>x.host==='gemini').hostCommandAvailable,false);
+    fs.chmodSync(path.join(tools,'gemini'),0o700);
+    const executable=inspectSetupHosts({cwd,env:{PATH:tools},platform:'linux'});
+    assert.equal(executable.find(x=>x.host==='gemini').hostCommandAvailable,true);
+  }
+});

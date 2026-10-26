@@ -3,6 +3,8 @@
 [Current source and native acceptance matrix](STATUS.md) (2026-10-26). Host-specific skill installation is not interchangeable with host-native hook enforcement.
 
 
+For Antigravity, the source-level read-only `setup check --runtime antigravity` considers the `agy` CLI executable as well as `antigravity`; this does not establish an IDE installation or verified runtime permission boundary.
+
 Xyeena Rig supports five agent hosts for skill packaging, inventory and routing. Their native trust and activation models differ. A filesystem-compatible installation is **not** proof of live host integration.
 
 | Host | Workspace skill roots | Typical global skill roots | Integration status |

@@ -88,7 +88,7 @@ node bin/xyeena.mjs setup compact --runtime codex --preset balanced --dry-run
 
 | Host | Typical workspace skill root | Notes |
 | --- | --- | --- |
-| Antigravity | `.agents/skills/` | CLI 1.4.7 scoped hook consent/deny live PASS; IDE 2.5.5 native hook enforcement BLOCKED. [Details](docs/STATUS.md) |
+| Antigravity | `.agents/skills/` | CLI 1.4.7 scoped hook consent/deny live PASS; IDE 2.5.5 native hook enforcement BLOCKED. `setup check` detects `agy` without assuming IDE activation. [Details](docs/STATUS.md) |
 | Codex | `.agents/skills/` | Read-only one-shot adapter available |
 | Claude Code | `.claude/skills/` | Host permissions and skill activation remain native |
 | Gemini CLI | `.gemini/skills/` / `.agents/skills/` | Native trust and Plan-mode behavior apply |

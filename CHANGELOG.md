@@ -9,6 +9,8 @@ All versions listed as released refer to published npm artifacts. Repository sou
 - Updated public status, runtime matrices, release gates and documentation consistency checks; CI is not a substitute for native host evidence. See [dated source/host status](docs/STATUS.md) and [OPS evidence](docs/xyeena-rig/EVIDENCE.md).
 - **No `0.5.0` release, tag or npm publication has been authorized.** The npm `0.4.1` baseline recorded in this repository does not include unreleased source additions.
 
+- Make `setup check --runtime antigravity` find the actual `agy` Antigravity CLI executable on PATH while preserving the separation from Antigravity IDE activation. Report detected command names only; executable presence does not prove hooks are invoked. Reject directory/nonexecutable false-positive hints.
+
 ## Earlier unreleased implementation work
 
 - Add opt-in compact skill installation, ownership-aware migration and restore workflows.
