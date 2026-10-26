@@ -4,6 +4,8 @@ All versions listed as released refer to published npm artifacts. Repository sou
 
 ## Unreleased — source after 0.4.1 (updated 2026-10-26)
 
+- Prepared an isolated, unmerged 0.5.0 source-candidate manifest bump (package, lock, CLI and plugin metadata) for reproducible CI/npm pack review. The npm installation instructions deliberately continue to show published 0.4.1. No 0.5.0 release, GitHub tag or npm publish is authorized.
+
 - Add a Windows PowerShell read-only operator preflight and Windows CI smoke for redacted prerequisites, preserving user working trees without invoking AI, installing hooks or asserting native LIVE PASS. Source only; no npm release.
 
 - Retain a shared-workspace write lock when cancellation/timeout occurs until the underlying adapter invocation settles. Cancel acknowledgements are not proof of stopped writes; a stuck adapter deliberately blocks subsequent writes rather than permit unsafe overlap (PR #50, source-only).

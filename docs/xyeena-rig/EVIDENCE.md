@@ -295,3 +295,7 @@ Source test simulates a still-running write whose cancel callback acknowledges b
 ### Read-only Windows operator handoff (source script)
 
 scripts/windows-acceptance-pack.ps1 creates a temporary source worktree and redacted preflight JSON outside the user checkout. It compares git-status snapshots. CI current-source mode performs an offline Windows smoke test without fetching, invoking model providers or treating hook inventory as native activation. The output verdict is SOURCE_PREFLIGHT_PASS_LIVE_PENDING, never LIVE PASS. Human-host approvals remain pending.
+
+### Versioned candidate packaging (separate branch, unmerged)
+
+The 0.5.0 draft source candidate aligns package, lockfile, CLI and plugin descriptor versions while retaining public npm install examples at published 0.4.1. Cross-platform CI/package metadata and tarball inventory must be validated against the candidate's exact PR head. This is not an npm registry provenance receipt or native host evidence.

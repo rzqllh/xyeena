@@ -112,3 +112,7 @@ If a shared-workspace write adapter times out but its invocation remains unsettl
 PR #49 passed 9/9 final-head checks (run 40271504759), merged as a27b4db1. PR #50 passed 9/9 final-head checks (run 40272104829), merged as 2c2f0cea. PR #50 also treats a caller's isolatedWorktrees flag as unverified: all writes are serialized until trusted host isolation exists. These are source CI results, not native process ownership, arbitrary privileged write interception, Antigravity IDE enforcement, authenticated Simpul execution or provider billing acceptance.
 
 A read-only Windows PowerShell handoff is provided at scripts/windows-acceptance-pack.ps1. It uses a unique temporary detached source worktree, verifies existing working tree status remains unchanged, and writes one redacted JSON report outside the project. No model call, hook install, supervisor execution, npm publication or new LIVE PASS occurs. The Windows CI exercises its current-source smoke mode. Issues #34–#37 still require native host evidence.
+
+## Isolated v0.5.0 release-candidate branch (not published)
+
+The release/candidate-0.5.0-source-20261026 branch prepares matched package.json, package-lock.json, CLI VERSION and plugin metadata for CI/package-content auditing. These are unmerged candidate metadata, not proof of an npm 0.5.0 publication or native host acceptance. Published install instructions remain pinned to the repository-recorded npm 0.4.1. No tag, GitHub Release, credential use or npm publish is authorized.

@@ -45,3 +45,7 @@ Concurrent writes in the same workspace remain serialized after a timeout until 
 ## Final source handoff — 2026-10-26
 
 PR #49 merged at a27b4db1 after 9/9 final-head CI (40271504759); PR #50 merged at 2c2f0cea after 9/9 final-head CI (40272104829). All writes remain serialized even when a caller asserts isolatedWorktrees; unresolved timed-out write adapters retain locks. The read-only PowerShell handoff only inventories prerequisites. OPS-01/03/04/05/06/07 native-host gates remain open; npm 0.5.0 publication remains unapproved.
+
+## OPS-09 candidate audit state
+
+The isolated 0.5.0 source-candidate PR prepares aligned metadata and CI/package smoke for human inspection. The branch remains unmerged and unpublished, pending explicit release/version promotion approval and native acceptance disposition. The main-branch npm 0.4.1 baseline is not overwritten.

@@ -12,6 +12,8 @@ Xyeena Rig is a local-first toolkit for developer workflows with coding agents. 
 
 **Latest recorded acceptance (2026-10-26):** Antigravity CLI 1.4.7 on Windows honored Xyeena `force_ask`, user cancellation, and a separate narrowly scoped automatic `deny` for a read-only command. Antigravity IDE 2.5.5 did **not** enforce the hook in the observed session. These source features are not automatically part of the separately published npm 0.4.1. [Status and limitations](docs/STATUS.md).
 
+**Unpublished release-candidate metadata:** this branch identifies its source-only candidate as `xyeena-agent@0.5.0` for CI/package auditing. It is **not** published on npm; the installation commands below intentionally remain pinned to the last repository-recorded npm `0.4.1` release. Do not install the candidate by npm version until human approval and independently verified publication.
+
 ## Install
 
 Requires **Node.js 22.14+**. The interactive setup requires no Git checkout or global npm installation.
