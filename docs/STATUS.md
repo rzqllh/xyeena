@@ -6,7 +6,7 @@
 
 | Surface | Verified source state | Release boundary |
 | --- | --- | --- |
-| GitHub `main` | Verified source checkpoint [`184e2d9`](https://github.com/rzqllh/xyeena/commit/184e2d9abb7385a670c22b53898a29cff7d6e769), through merged PR #53 | Repository source is not automatically npm-published |
+| GitHub `main` | Source checkpoint [`d1b29c2`](https://github.com/rzqllh/xyeena/commit/d1b29c279df0434ce420f3b9c2a6c7f67eaa9234), through merged PR #58; [post-merge CI](https://github.com/rzqllh/xyeena/actions/runs/40290814931) successful | Repository source is not automatically npm-published |
 | npm `xyeena-agent` | `0.4.1` is the last published baseline **recorded by this repository** | Registry cannot be authoritatively rechecked from this audit; verify the registry before a future release |
 | Candidate `0.5.0` | Not published, tagged, or authorized by the user | A future publication requires explicit human approval |
 | CI | PR #31, #32, #33, #38–#45 (implemented PR numbers) each passed 9/9 GitHub CI jobs at their final PR heads | CI is source/packaging assurance, not live host enforcement |
@@ -133,3 +133,9 @@ Portable CLI and Antigravity Python SDK one-shot adapters now request Windows `t
 ## Read-only managed hook runner integrity (source)
 
 The RIG native preflight now reports `runnerIntegrity` (`MATCH`, `MODIFIED`, `UNOWNED`, `INVALID_MANIFEST`, or `MISSING_OR_UNTRUSTED`) and `probeEligible`. `MATCH` means the installed runner bytes match the locally stored owned-manifest SHA-256; it is **not** a signed host attestation. Merely finding the exact `PreToolUse` command or runner file is no longer enough for a positive probe eligibility hint. Any modified, unowned, oversize or symlinked runner is excluded. No auto-repair, remote call or native IDE acceptance occurs. Host enforcement remains `UNVERIFIED`.
+
+## Final repository-side handoff — 2026-10-26
+
+The consolidated [RIG-native acceptance handoff](xyeena-rig/NATIVE_ACCEPTANCE_HANDOFF.md) specifies a narrowly safe in-IDE deny test, separate native host requirements, and the human-only release boundary. It is a **plan for obtaining evidence**, not a new live PASS. The original Windows read-only preflight remains a source prerequisite; local-owned SHA-256 marker matching does not prove IDE hook execution.
+
+**Source checkpoint verdict:** SOURCE_READY / LIVE_PENDING / RELEASE_NOT_AUTHORIZED. The native release gates are #34 (IDE), #36 (Codex/Claude/Gemini), and #37 (Hermes), with the separately optional Simpul integration #35 excluded from core gating. The draft [0.5.0 candidate PR #52](https://github.com/rzqllh/xyeena/pull/52) was based on an earlier source baseline and must be refreshed/audited if publication is later authorized. No tag, npm publish, or installation on the operator's machine has occurred.
