@@ -1,5 +1,8 @@
 # Getting started
 
+The [dated source and host acceptance status](STATUS.md) distinguishes published npm 0.4.1 from newer source-only features and separates native Antigravity CLI hook evidence from unverified IDE integration.
+
+
 Xyeena Rig packages Agent Skills and optional project Harness tools for five supported agent hosts. You need Node.js **22.14 or newer** and an installed agent host. No Git clone is required to use the published npm package.
 
 ## Install with the wizard

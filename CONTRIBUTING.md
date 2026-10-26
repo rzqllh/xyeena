@@ -1,5 +1,8 @@
 # Contributing
 
+Read the [dated source/host status](docs/STATUS.md) before making feature or security-readiness claims. Automated tests, local hook receipts and separately witnessed native host decisions must be reported as different evidence classes.
+
+
 Contributions should preserve compatibility, project data, and host permission boundaries.
 
 ## Before opening a pull request

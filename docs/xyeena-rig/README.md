@@ -1,5 +1,8 @@
 # Engineering assurance
 
+[Source and host status as of 2026-10-26](../STATUS.md) · [OPS tracker](TASK_TRACKER.md) · [Dated evidence](EVIDENCE.md). Native Antigravity CLI approval and narrowly scoped denial passed; IDE and other-host boundaries remain unaccepted.
+
+
 This directory contains the design contracts, acceptance criteria and operational release gates for Xyeena Rig. It is maintained alongside source code and CI. A passing test suite is not a claim of live readiness in every supported host.
 
 | Document | Purpose |

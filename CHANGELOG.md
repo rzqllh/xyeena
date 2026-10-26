@@ -2,7 +2,14 @@
 
 All versions listed as released refer to published npm artifacts. Repository source changes are not published until a matching release is authorized.
 
-## Unreleased — source after 0.4.1
+## Unreleased — source after 0.4.1 (updated 2026-10-26)
+
+- Added native Antigravity `PreToolUse` interception, fail-closed file/command decisions and explicit host-activation reporting. Windows Antigravity CLI 1.4.7 successfully showed native `force_ask` with user cancellation and a separate one-shot `deny` blocking a harmless command. **Antigravity IDE 2.5.5 remains LIVE BLOCKED** for hook enforcement.
+- Repaired the Windows CLI hook launcher to resolve relative to `.agents/` without quoted paths. Added an opt-in five-minute callback diagnostic, exact-match single-use automatic-deny probe, and a backed-up runner-only upgrade that preserves host-mutated event configuration.
+- Updated public status, runtime matrices, release gates and documentation consistency checks; CI is not a substitute for native host evidence. See [dated source/host status](docs/STATUS.md) and [OPS evidence](docs/xyeena-rig/EVIDENCE.md).
+- **No `0.5.0` release, tag or npm publication has been authorized.** The npm `0.4.1` baseline recorded in this repository does not include unreleased source additions.
+
+## Earlier unreleased implementation work
 
 - Add opt-in compact skill installation, ownership-aware migration and restore workflows.
 - Extend host skill/plugin discovery, dependency closure, provider arbitration and native fallback.

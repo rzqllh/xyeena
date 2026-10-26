@@ -1,5 +1,8 @@
 # Security policy
 
+[Latest tested host boundaries and release status](docs/STATUS.md) (reviewed 2026-10-26). A native Antigravity CLI 1.4.7 scoped `force_ask`/user-cancel and read-only `deny` have been demonstrated; Antigravity IDE 2.5.5 interception remains blocked. Neither result establishes general-purpose sandboxing.
+
+
 ## Vulnerability reporting
 
 Please use [GitHub's private vulnerability reporting](https://github.com/rzqllh/xyeena/security/advisories/new) if available for this repository. If private reporting is not enabled, contact a maintainer through a confidential channel before disclosing exploit details. Do not include credentials, sensitive logs or private workspace contents in a public issue.

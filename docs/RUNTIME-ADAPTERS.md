@@ -1,10 +1,13 @@
 # Runtime adapters and supported hosts
 
+[Current source and native acceptance matrix](STATUS.md) (2026-10-26). Host-specific skill installation is not interchangeable with host-native hook enforcement.
+
+
 Xyeena Rig supports five agent hosts for skill packaging, inventory and routing. Their native trust and activation models differ. A filesystem-compatible installation is **not** proof of live host integration.
 
 | Host | Workspace skill roots | Typical global skill roots | Integration status |
 | --- | --- | --- | --- |
-| Antigravity | `.agents/skills/` | `~/.gemini/config/skills/` | Skill inventory, guided-hook installer, optional SDK one-shot; native live validation required |
+| Antigravity | `.agents/skills/` | `~/.gemini/config/skills/` | Antigravity CLI 1.4.7: scoped `force_ask` / user-cancel and auto-`deny` native live PASS; IDE 2.5.5 hook enforcement BLOCKED; optional SDK one-shot separate |
 | Codex | `.agents/skills/` | `~/.agents/skills/` | Skill inventory and read-only one-shot path; host authority remains native |
 | Claude Code | `.claude/skills/` | `~/.claude/skills/` | Skill inventory and restricted one-shot path |
 | Gemini CLI | `.gemini/skills/` or `.agents/skills/` | `~/.gemini/skills/` | Inventory and Plan-mode one-shot path |

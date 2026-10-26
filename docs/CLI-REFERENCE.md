@@ -1,5 +1,8 @@
 # CLI reference
 
+See [current source/host status](STATUS.md) (2026-10-26). CLI 1.4.7 `force_ask`/user-cancel and a narrowly scoped auto-`deny` passed native Windows acceptance; IDE 2.5.5 interception remains blocked. Commands implemented after npm 0.4.1 are source-only.
+
+
 Commands can be invoked with `npx --yes xyeena-agent@0.4.1` for the published package or `node bin/xyeena.mjs` from a source checkout. Some documented source commands postdate the published package; they are marked **source**.
 
 ## Setup and inspection
@@ -77,6 +80,9 @@ See [Getting started](GETTING-STARTED.md), [Runtime adapters](RUNTIME-ADAPTERS.m
 `guided preview` / `guided install --yes` now include a native Antigravity `PreToolUse` hook in the managed hook group. Real host activation must be verified independently. The host decides approval; Xyeena never auto-approves or silently overrides permissions.
 
 ## Guided native-hook diagnostics
+
+**Native acceptance update (2026-10-26):** `agy 1.4.7` honored a Xyeena approval prompt/cancellation and independently blocked an exact, read-only command via Xyeena `deny`. The probe's local `hostEnforcement: UNVERIFIED` is intentional; see the [witnessed evidence](xyeena-rig/EVIDENCE.md) and [scope limits](STATUS.md). Use `guided runner-preview`, `guided runner-upgrade --yes`, and `guided probe deny-start --yes` only from a source checkout; the published 0.4.1 package predates them.
+
 
 `xyeena guided status --dir .` reports filesystem installation and enablement independently of `hostActivation` and `hostEnforcement`. Both status fields remain unverified without external native proof; even a locally observed callback is not an authenticated IDE host decision.
 
