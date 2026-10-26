@@ -6,7 +6,7 @@
 
 | Surface | Verified source state | Release boundary |
 | --- | --- | --- |
-| GitHub `main` | Source checkpoint [`d1b29c2`](https://github.com/rzqllh/xyeena/commit/d1b29c279df0434ce420f3b9c2a6c7f67eaa9234), through merged PR #58; [post-merge CI](https://github.com/rzqllh/xyeena/actions/runs/40290814931) successful | Repository source is not automatically npm-published |
+| GitHub `main` | Verified source checkpoint [`d1b29c2`](https://github.com/rzqllh/xyeena/commit/d1b29c279df0434ce420f3b9c2a6c7f67eaa9234), through merged PR #58; [post-merge CI](https://github.com/rzqllh/xyeena/actions/runs/40290814931) successful | Repository source is not automatically npm-published |
 | npm `xyeena-agent` | `0.4.1` is the last published baseline **recorded by this repository** | Registry cannot be authoritatively rechecked from this audit; verify the registry before a future release |
 | Candidate `0.5.0` | Not published, tagged, or authorized by the user | A future publication requires explicit human approval |
 | CI | PR #31, #32, #33, #38–#45 (implemented PR numbers) each passed 9/9 GitHub CI jobs at their final PR heads | CI is source/packaging assurance, not live host enforcement |
