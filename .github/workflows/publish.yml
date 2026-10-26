@@ -71,7 +71,7 @@ jobs:
       - run: npm run eval
       - run: npm pack --dry-run
       - name: Publish via npm trusted publisher OIDC, with provenance
-        # No NPM_TOKEN, no explicit OIDC token exchange, no persistent .npmrc.
+        # No long-lived credentials, manual OIDC exchange, or persistent auth file.
         run: npm publish --provenance --access public
       - name: Verify exact version becomes public
         timeout-minutes: 35
