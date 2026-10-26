@@ -921,3 +921,41 @@ test('P0: timeout cannot release the shared write lock while an adapter still ru
   assert.equal(result.status, 'REVIEW_REQUIRED');
   assert.equal(events.at(-1), 'second-start');
 });
+
+
+test('P0: caller-asserted isolatedWorktrees does not bypass shared write serialization', async () => {
+  const workspace = 'unverified-isolation-write-safety';
+  const events = [];
+  let finishFirst;
+  let startedFirst;
+  const firstStarted = new Promise(resolve => { startedFirst = resolve; });
+  const taskFor = id => ({
+    id, title: 'Write task', cwd: workspace,
+    scope: { readOnly: false, operationClass: 'safe' },
+    isolatedWorktrees: true // untrusted caller claim, not host evidence
+  });
+  const first = dispatchScopedTask({
+    task: taskFor('unverified-isolation-1'),
+    inlineAdapter: { async executeTask() {
+      events.push('first-start');
+      startedFirst();
+      return new Promise(resolve => { finishFirst = resolve; });
+    } },
+    approvedTaskIds: ['unverified-isolation-1'],
+    authorizeOperation: async () => 'allow-once'
+  });
+  await firstStarted;
+  const second = dispatchScopedTask({
+    task: taskFor('unverified-isolation-2'),
+    inlineAdapter: { async executeTask() { events.push('second-start'); return {}; } },
+    approvedTaskIds: ['unverified-isolation-2'],
+    authorizeOperation: async () => 'allow-once'
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(events, ['first-start']);
+  finishFirst({});
+  const [a,b] = await Promise.all([first,second]);
+  assert.equal(a.parallelism, 1);
+  assert.equal(b.parallelism, 1);
+  assert.deepEqual(events, ['first-start', 'second-start']);
+});
