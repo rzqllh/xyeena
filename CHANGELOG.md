@@ -4,6 +4,8 @@ All versions listed as released refer to published npm artifacts. Repository sou
 
 ## Unreleased — source after 0.4.1 (updated 2026-10-26)
 
+- Add a Windows PowerShell read-only operator preflight and Windows CI smoke for redacted prerequisites, preserving user working trees without invoking AI, installing hooks or asserting native LIVE PASS. Source only; no npm release.
+
 - Retain a shared-workspace write lock when cancellation/timeout occurs until the underlying adapter invocation settles. Cancel acknowledgements are not proof of stopped writes; a stuck adapter deliberately blocks subsequent writes rather than permit unsafe overlap (PR #50, source-only).
 
 - Reject pre-aborted native worker execution, remove completed-run abort listeners, handle rejected cancellation promises and avoid echoing untrusted runner failure text (PR #49; cooperative, source-only cancellation).

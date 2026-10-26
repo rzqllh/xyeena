@@ -4,7 +4,7 @@
 
 Xyeena Rig is a local-first toolkit for developer workflows with coding agents. It packages **19 Agent Skills**, optional project **Harness** guidance and verification tools, skill discovery, and guarded task orchestration. It supports Antigravity, Codex, Claude Code, Gemini CLI, and Hermes through host-specific installation paths. The npm package is `xyeena-agent`; both `xyeena` and `xyeena-agent` are CLI entry points.
 
-[Current source & host status](docs/STATUS.md) · [Getting started](docs/GETTING-STARTED.md) · [CLI reference](docs/CLI-REFERENCE.md) · [Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
+[Windows read-only source handoff](scripts/windows-acceptance-pack.ps1) · [Current source & host status](docs/STATUS.md) · [Getting started](docs/GETTING-STARTED.md) · [CLI reference](docs/CLI-REFERENCE.md) · [Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
 
 **Source concurrency note:** A shared-workspace write canceled by timeout retains its serialization lock until the adapter settles; an unresponsive adapter may intentionally block future writes pending recovery. This is not an OS sandbox or proof of descendant termination.
 

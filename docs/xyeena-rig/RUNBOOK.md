@@ -99,3 +99,13 @@ node bin/xyeena.mjs host run --runtime hermes --goal "Review README" --max-turns
 ```
 
 Hermes `--max-turns` caps iteration count. The token ceiling is a **settlement check after the provider has completed**, not provider-side hard spend enforcement. Missing or excessive `tokens.total` makes Xyeena reject the result with a typed error. Avoid treating this as a billing cap; configure provider-side spending limits and use bounded timeouts. The separate `ResourceBudgetLedger` is not automatically applied to the `host run` CLI. [Hermes CLI reference](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/reference/cli-commands.md).
+
+## Consolidated Windows PowerShell source preflight
+
+From a current source checkout:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\windows-acceptance-pack.ps1 -RepoDir .
+```
+
+This script fetches origin/main and uses a uniquely named detached temporary Git worktree. It never resets local changes, overwrites existing output, edits installed hooks or contacts model providers. It emits one redacted rig-windows-evidence.json in a new system-temp folder and removes only its own clean temporary worktree without force. The SOURCE_PREFLIGHT_PASS_LIVE_PENDING verdict establishes prerequisites only. Issues #34–#37 require host-verified IDE/CLI/supervisor/provider evidence with explicit human consent.

@@ -6,7 +6,7 @@
 
 | Surface | Verified source state | Release boundary |
 | --- | --- | --- |
-| GitHub `main` | Source audit baseline [`a27b4db1`](https://github.com/rzqllh/xyeena/commit/a27b4db167ceeac27095f991bbaff4de01562a6c) (PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#49](https://github.com/rzqllh/xyeena/pull/49), excluding issue-only numbers) | Repository source is not automatically npm-published |
+| GitHub `main` | Source audit baseline [`2c2f0cea`](https://github.com/rzqllh/xyeena/commit/2c2f0cea2ba75edd58aa8bd33c7cf952da5e1468) (PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#50](https://github.com/rzqllh/xyeena/pull/50), excluding issue-only numbers) | Repository source is not automatically npm-published |
 | npm `xyeena-agent` | `0.4.1` is the last published baseline **recorded by this repository** | Registry cannot be authoritatively rechecked from this audit; verify the registry before a future release |
 | Candidate `0.5.0` | Not published, tagged, or authorized by the user | A future publication requires explicit human approval |
 | CI | PR #31, #32, #33, #38–#45 (implemented PR numbers) each passed 9/9 GitHub CI jobs at their final PR heads | CI is source/packaging assurance, not live host enforcement |
@@ -106,3 +106,9 @@ The native subagent adapter refuses pre-aborted signals before host dispatch, re
 ## Fail-closed shared-write timeout fencing (PR #50)
 
 If a shared-workspace write adapter times out but its invocation remains unsettled, the dispatcher now retains the write lock until that invocation actually settles. An acknowledged cancellation alone does not release the write fence. A stuck adapter may therefore block subsequent writes until supervisor recovery or process restart; this deliberate fail-closed tradeoff prevents falsely assuming writes have stopped. Source negative tests are not evidence of Windows descendant teardown or trusted host fencing.
+
+## Integrated concurrency and operator handoff — 2026-10-26
+
+PR #49 passed 9/9 final-head checks (run 40271504759), merged as a27b4db1. PR #50 passed 9/9 final-head checks (run 40272104829), merged as 2c2f0cea. PR #50 also treats a caller's isolatedWorktrees flag as unverified: all writes are serialized until trusted host isolation exists. These are source CI results, not native process ownership, arbitrary privileged write interception, Antigravity IDE enforcement, authenticated Simpul execution or provider billing acceptance.
+
+A read-only Windows PowerShell handoff is provided at scripts/windows-acceptance-pack.ps1. It uses a unique temporary detached source worktree, verifies existing working tree status remains unchanged, and writes one redacted JSON report outside the project. No model call, hook install, supervisor execution, npm publication or new LIVE PASS occurs. The Windows CI exercises its current-source smoke mode. Issues #34–#37 still require native host evidence.

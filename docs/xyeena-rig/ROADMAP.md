@@ -24,3 +24,7 @@ The eight engineering phases are integrated into `main`. Source implementation a
 5. **Publication:** authorize a semantic version, tag/release and npm Trusted Publisher workflow only after preceding gates close.
 
 Outstanding live acceptance is tracked in [IDE #34](https://github.com/rzqllh/xyeena/issues/34), [Simpul #35](https://github.com/rzqllh/xyeena/issues/35), [other CLIs #36](https://github.com/rzqllh/xyeena/issues/36), and [Hermes #37](https://github.com/rzqllh/xyeena/issues/37). No numeric completion percentage is assigned to pending live gates. See [Task tracker](TASK_TRACKER.md), [Acceptance](ACCEPTANCE_MATRIX.md) and [Validation](EVIDENCE.md).
+
+## Source-to-operator checkpoint — 2026-10-26
+
+PRs #47–#50 harden budget arithmetic, bounded Simpul response/error transport, native cancellation lifecycle, and conservative shared write serialization/fencing. The read-only PowerShell source preflight does not resolve native host acceptance issues #34–#37 or authorize npm 0.5.0 publication.

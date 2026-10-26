@@ -55,3 +55,7 @@ A15/A26/A28 gain explicit source-level regression cases for abort-before-worker-
 ## P0 write timeout fence (PR #50)
 
 A16/A27 add a negative regression for shared-workspace write serialization after timed-out adapter execution. On unresolved work, subsequent shared writes remain blocked deliberately. CI PASS for the exact PR head must be verified independently; native process termination remains unverified.
+
+## Integrated source P0 validation and operator preflight
+
+PR #50 final-head GitHub CI [40272104829](https://github.com/rzqllh/xyeena/actions/runs/40272104829) passed 9/9 checks. Unverified isolatedWorktrees caller flags no longer enable parallel writes; unresolved timed-out write adapters retain serialization. The Windows preflight is source-only; A14, A18, A25, A28 and A31 native-host limitations remain. A33 still needs authorized, separately versioned release candidate and provenance evidence.
