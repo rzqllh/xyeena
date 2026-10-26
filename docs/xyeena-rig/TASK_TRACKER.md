@@ -6,7 +6,7 @@ All eight engineering phases are present in `main` with automated checks. The re
 
 | ID | Priority | Deliverable | Current state | Completion evidence |
 | --- | --- | --- | --- | --- |
-| OPS-01 | P0 | Real Simpul execution supervisor integration | LIVE BLOCKED | No live MCP transport (`rzqllh/SubagentBridge`). Native/inline fallback verified. |
+| OPS-01 | P0 | Real Simpul execution supervisor integration | LIVE BLOCKED; SOURCE CONTRACT HARDENED | Adapter now follows upstream submit_goal schema with read-only-only submission, bounded MCP result handling and no user-asserted write authorization. A real authenticated supervisor dispatch, completion, cancellation and independent evidence are still absent; native/inline fallback retained |
 | OPS-02 | P0 | Antigravity native host acceptance | LIVE PARTIAL | In-session read-only task `ops02-antigravity-live-read` executed under `xyeena-orchestrate`; live smoke PASS; native subagent delegation and independent host gate PENDING |
 | OPS-03 | P0 | Codex native host acceptance | LIVE BLOCKED | Standalone `codex` CLI not installed on host |
 | OPS-04 | P0 | Claude Code native host acceptance | LIVE BLOCKED | Standalone `claude` CLI not installed on host |

@@ -124,6 +124,7 @@ test('createSimpulMcpAdapter adheres to exact FastMCP signatures and uses server
   const mockMcpClient = {
     async callTool(name, params) {
       calls.push({ name, params });
+      if (name === 'submit_goal') assert.deepEqual(Object.keys(params).sort(), ['goal','workspace_path']);
       if (name === 'get_model_usage') return { tokens: 1500, costMicro: 3000 };
       if (name === 'submit_goal') {
         assert.ok(params.goal);
@@ -165,10 +166,11 @@ test('createSimpulMcpAdapter adheres to exact FastMCP signatures and uses server
   const probe = await adapter.probe();
   assert.equal(probe.healthy, true);
   assert.equal(probe.noNestedDelegation, true);
-  assert.equal(probe.supportsWrites, true);
+  assert.equal(probe.supportsWrites, false);
+  assert.equal(probe.supportsParallel, false);
   assert.equal(probe.executionReady, false); // Accurately reflects upstream candidate status
 
-  const exec = await adapter.executeTask({ id: 'task-42', title: 'Compile harness' }, { noNestedDelegation: true });
+  const exec = await adapter.executeTask({ id: 'task-42', title: 'Compile harness', scope: { readOnly: true } }, { noNestedDelegation: true });
   // Worker ID must be the server-confirmed run_id, NOT a locally fabricated string
   assert.equal(exec.workerId, 'simpul-server-run-uuid-1234');
   assert.equal(exec.verified, true);
@@ -401,7 +403,7 @@ test('Simpul MCP adapter bounded polling never interprets SUBMITTED or PENDING a
   };
 
   const adapter = createSimpulMcpAdapter({ mcpClient: mockMcpClient });
-  const execResult = await adapter.executeTask({ id: 't-simpul-pending', title: 'Pending task' }, {
+  const execResult = await adapter.executeTask({ id: 't-simpul-pending', title: 'Pending task', scope: { readOnly: true } }, {
     noNestedDelegation: true,
     maxPollAttempts: 2
   });
@@ -425,21 +427,22 @@ test('regression P04: Simpul adapter refuses write-capable delegation when proto
     /Refusing write-capable delegation to Simpul/
   );
 
-  // If write scope enforcement is supported, scope is propagated in submit_goal
-  let sentParams = null;
-  const mockClient = {
-    async callTool(tool, p) {
-      if (tool === 'submit_goal') {
-        sentParams = p;
-        return { run_id: 'r-scoped-1', status: 'COMPLETED', initial_task_id: 'init-1' };
-      }
-      if (tool === 'get_run') return { status: 'COMPLETED' };
-      return {};
-    }
-  };
+  // A caller-supplied enforceWriteScope flag is not an authenticated host
+  // boundary; the upstream submit_goal schema cannot carry it.
+  let callCount = 0;
+  const mockClient = { async callTool() { callCount++; return {}; } };
   const scopedAdapter = createSimpulMcpAdapter({ mcpClient: mockClient });
-  await scopedAdapter.executeTask(writeTask, { noNestedDelegation: true, enforceWriteScope: true });
-  assert.equal(sentParams.scope.readOnly, false);
+  await assert.rejects(
+    scopedAdapter.executeTask(writeTask, { noNestedDelegation: true, enforceWriteScope: true }),
+    /only explicit read-only submission/
+  );
+  assert.equal(callCount, 0);
+  await assert.rejects(
+    scopedAdapter.executeTask({ id: 'r', title: 'Review', scope: {readOnly:true} },
+      { noNestedDelegation: true, permissions: { allow: true } }),
+    /cannot enforce caller-supplied permissions/
+  );
+  assert.equal(callCount, 0);
 });
 
 test('regression P04: Simpul adapter fails when budget ceiling breached (never swallowed)', async () => {
@@ -454,7 +457,7 @@ test('regression P04: Simpul adapter fails when budget ceiling breached (never s
   };
   const adapter = createSimpulMcpAdapter({ mcpClient: mockClient, ledger });
   await assert.rejects(
-    adapter.executeTask({ id: 't-budget', title: 'Task' }, { noNestedDelegation: true }),
+    adapter.executeTask({ id: 't-budget', title: 'Task', scope: { readOnly: true } }, { noNestedDelegation: true }),
     /budget ceiling breached/
   );
 });
@@ -561,3 +564,52 @@ test('regression P04: write-lock is released on Harness denial, execution failur
 });
 
 
+
+test('Simpul MCP SDK content wrappers are parsed with exact submission arguments, without model execution',async()=>{
+  const calls=[];
+  const wrapped=data=>({content:[{type:'text',text:JSON.stringify(data)}]});
+  const client={async callTool(name,params){
+    calls.push({name,params});
+    switch(name){
+      case 'get_model_usage': return wrapped({tokens:0,costMicro:0});
+      case 'submit_goal':
+        assert.deepEqual(Object.keys(params).sort(),['goal','workspace_path']);
+        return wrapped({status:'SUBMITTED',run_id:'run_abcd1234abcd',initial_task_id:'task_ab123456'});
+      case 'get_run': return wrapped({status:'PENDING',run_id:params.run_id});
+      default: throw Error('Unexpected MCP call '+name);
+    }
+  }};
+  const adapter=createSimpulMcpAdapter({mcpClient:client});
+  assert.equal((await adapter.probe()).executionReady,false);
+  const out=await adapter.executeTask({id:'T1',title:'Read-only status',scope:{readOnly:true}},{
+    noNestedDelegation:true,maxPollAttempts:1,cwd:'/tmp/workspace'
+  });
+  assert.equal(out.status,'PENDING');
+  assert.equal(out.completed,false);
+  assert.equal(out.verified,false);
+  assert.deepEqual(out.evidenceRefs,[]);
+  assert.ok(!calls.some(x=>x.name==='execute_run'||x.name==='execute_task'));
+});
+test('Simpul MCP malformed/failed responses do not imply transport health or execution readiness',async()=>{
+  for(const bad of [{isError:true,content:[{type:'text',text:'error'}]},
+    {content:[{type:'text',text:'not-json'}]},
+    {content:[{type:'text',text:' '.repeat(65537)}]}]){
+    const adapter=createSimpulMcpAdapter({mcpClient:{async callTool(){return bad;}}});
+    const p=await adapter.probe();
+    assert.equal(p.healthy,false);
+    assert.equal(p.executionReady,undefined);
+    await assert.rejects(adapter.executeTask({id:'T1',title:'Review',scope:{readOnly:true}},{
+      noNestedDelegation:true,maxPollAttempts:1
+    }));
+  }
+});
+test('Simpul ignores caller claims of permission enforcement and rejects ambiguous task scope',async()=>{
+  let invoked=false;
+  const adapter=createSimpulMcpAdapter({mcpClient:{async callTool(){invoked=true;return {};}}});
+  for(const scope of [undefined,{}, {readOnly:false},{readOnly:'true'}]){
+    await assert.rejects(adapter.executeTask({id:'T1',title:'Audit',scope},{
+      noNestedDelegation:true,enforceWriteScope:true,supportsPermissionEnforcement:true
+    }),/only explicit read-only submission/);
+  }
+  assert.equal(invoked,false);
+});

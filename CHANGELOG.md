@@ -11,6 +11,8 @@ All versions listed as released refer to published npm artifacts. Repository sou
 
 - Make `setup check --runtime antigravity` find the actual `agy` Antigravity CLI executable on PATH while preserving the separation from Antigravity IDE activation. Report detected command names only; executable presence does not prove hooks are invoked. Reject directory/nonexecutable false-positive hints.
 
+- Correct Simpul FastMCP adapter to send only arguments accepted by upstream `submit_goal(goal, workspace_path, model, execute=False)`. Disallow write-capable or ambiguous scopes regardless of caller-authored permission flags; report submission-only status honestly and parse bounded SDK call-tool response wrappers without promoting transport health into execution readiness. Simpul live delegation remains BLOCKED.
+
 ## Earlier unreleased implementation work
 
 - Add opt-in compact skill installation, ownership-aware migration and restore workflows.
