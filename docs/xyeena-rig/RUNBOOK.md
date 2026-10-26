@@ -57,6 +57,10 @@ Check the local `.xyeena/runs/` journal for an interrupted run. Inspect task sta
 
 **Current status:** `0.5.0` is not published. No release tag or npm command is implied by this runbook. See [Task tracker](TASK_TRACKER.md).
 
+## Canceling source one-shot adapters
+
+For a direct API caller, pass an `AbortController` signal into `createPortableHostAdapter(...).executeTask(task, {signal})` or `createAntigravitySdkAdapter(...).executeTask(task, {signal})`. Abort before spawning prevents a provider call; abort during execution requests direct-child termination and rejects with `ERR_PORTABLE_CANCELED` or `ERR_SDK_CANCELED`. This is **not the same as CLI cancellation**, guaranteed Windows child-process tree termination, or proof that a provider immediately stops billing. Do not record it as a live OPS-06 acceptance test.
+
 ## Antigravity native PreToolUse hook
 
 **Live status update (2026-10-26):** On Windows, `agy 1.4.7` displayed the Xyeena `force_ask` prompt and honored user cancellation, and a separate temporary exact-match `deny` was enforced by the CLI. The probe was cleared. IDE 2.5.5 has an observed host-hook bypass and must not be treated as security-protected. Full testimony and limitations are in [EVIDENCE.md](EVIDENCE.md) and [public status](../STATUS.md).

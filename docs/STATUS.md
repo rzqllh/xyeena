@@ -35,6 +35,10 @@ The source `setup check --runtime antigravity` now checks `agy` as the native CL
 
 The source Simpul MCP adapter now adheres to the upstream `submit_goal` parameter schema and refuses write-capable or ambiguous delegation. Neither a user-provided permission flag nor a model-generated response can establish write containment. FastMCP SDK JSON result wrappers are decoded with size/type checks. **`executionReady` remains false** on a connectivity probe, and there is no automatic `execute_run` invocation. This is engineering contract correctness, not proof of a live Simpul supervisor or native delegation.
 
+## Programmatic one-shot cancellation (source-only)
+
+Portable host and Antigravity SDK adapters now accept `adapter.executeTask(task, {signal: abortController.signal})`; a pre-aborted signal prevents child launch, and an in-flight cancellation rejects the operation and requests direct-child termination. Received stdout/stderr byte caps are enforced, and raw SDK worker error messages are no longer echoed as exception details. These are **source-level API and CI guarantees only**; the `host run` CLI has not been wired to an operator-supplied AbortSignal. Descendant teardown, Windows native process ownership and provider-side hard spend limits remain unverified in live sessions (see [#37](https://github.com/rzqllh/xyeena/issues/37)).
+
 ## Outstanding live acceptance — public issue tracker
 
 The remaining work needs target-host runtime observations or external dependencies, not more simulated PASS labels:
