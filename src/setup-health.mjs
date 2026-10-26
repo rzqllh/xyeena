@@ -11,23 +11,33 @@ const MARKERS = Object.freeze({
   codex: ['.codex/config.toml','.agents/skills'],
   claude: ['.claude/settings.json','.claude/skills']
 });
-const COMMANDS={hermes:'hermes',gemini:'gemini',antigravity:'antigravity',codex:'codex',claude:'claude'};
+const COMMANDS={hermes:['hermes'],gemini:['gemini'],antigravity:['agy','antigravity'],codex:['codex'],claude:['claude']};
 function pathInfo(file) {
   try {const s=fs.lstatSync(file);return !s.isSymbolicLink()&&(s.isDirectory()||s.isFile());}
   catch{return false;}
 }
 function executableHint(command, env=process.env, platform=process.platform) {
-  const paths=String(env.Path||env.PATH||'').split(path.delimiter).filter(Boolean).slice(0,128);
+  const entries=String(env.Path||env.PATH||'').split(platform==='win32'?';':':').filter(Boolean).slice(0,128);
   const endings=platform==='win32'?['.exe','.com','.cmd','.bat','']:[''];
-  return paths.some(dir=>endings.some(ext=>pathInfo(path.join(dir,command+ext))));
+  return entries.some(dir=>endings.some(ext=>{
+    try {
+      const target=path.join(dir,command+ext), stat=fs.lstatSync(target);
+      return !stat.isSymbolicLink() && stat.isFile();
+    } catch { return false; }
+  }));
 }
 export function inspectSetupHosts({cwd=process.cwd(),env=process.env,platform=process.platform}={}) {
   const root=fs.realpathSync(path.resolve(cwd));
   return supportedSkillHosts().map(host=>{
     const markers=MARKERS[host].filter(marker=>pathInfo(path.join(root,marker)));
-    const hostCommandAvailable=executableHint(COMMANDS[host],env,platform);
+    const detectedCommands=COMMANDS[host].filter(command=>executableHint(command,env,platform));
+    const hostCommandAvailable=detectedCommands.length>0;
     const sharedOnly=markers.length>0&&markers.every(marker=>marker.startsWith('.agents/'));
-    return {host,projectMarkers:markers,hostCommandAvailable,
+    return {host,projectMarkers:markers,hostCommandAvailable,detectedCommands,
+      // Finding agy is evidence of a command on PATH, not proof of an IDE
+      // installation, native skill activation, or a live security boundary.
+      detectedSurface:host==='antigravity'&&detectedCommands.includes('agy')
+        ? 'antigravity-cli-binary' : 'unspecified-host-binary',
       level:hostCommandAvailable?'executable-on-PATH':sharedOnly?'shared-folder-only':
         markers.length?'project-markers-only':'undetected',
       confirmedRunning:false};
