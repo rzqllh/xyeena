@@ -149,7 +149,10 @@ export async function acquireWorkspaceWriteLock(workspaceKey) {
 /**
  * Simpul MCP Adapter Contract
  * Wraps communication with Simpul (SubagentBridge) FastMCP control plane.
- * Follows exact candidate signatures from rzqllh/SubagentBridge PR #2 / PR #3.
+ * Submission-only compatibility with the exposed upstream FastMCP signature:
+ * submit_goal(goal, workspace_path=None, model=None, execute=False).
+ * No write-scope or permission fields exist in that signature, so this
+ * adapter must not claim it can delegate write-capable tasks.
  */
 export function createSimpulMcpAdapter({
   mcpClient,
@@ -172,11 +175,11 @@ export function createSimpulMcpAdapter({
         return {
           healthy: ping !== null && typeof ping === 'object',
           noNestedDelegation: true,
-          supportsWrites: true,
-          supportsParallel: true,
+          supportsWrites: false,
+          supportsParallel: false,
           provider: 'simpul-mcp',
-          executionReady: false, // Upstream SubagentBridge candidate creates SUBMITTED/PENDING states; supervised execution pending
-          upstreamStatus: 'SUBAGENT_BRIDGE_PR3_CANDIDATE'
+          executionReady: false, // A ping or a callable submit_goal is NOT supervisor execution readiness
+          upstreamStatus: 'SUBMISSION_ONLY_UNVERIFIED'
         };
       } catch {
         return { healthy: false, noNestedDelegation: true };
@@ -191,26 +194,22 @@ export function createSimpulMcpAdapter({
         ledger.checkBudget();
       }
 
-      // Propagate bounded task scope and permission restrictions into Simpul,
-      // or refuse write-capable delegation when the protocol cannot enforce them
-      if (task.scope && task.scope.readOnly === false) {
-        if (options.supportsPermissionEnforcement !== true && options.enforceWriteScope !== true) {
-          throw new Error('Refusing write-capable delegation to Simpul: protocol cannot enforce bounded task scope and permission restrictions');
-        }
-      }
+      // FastMCP submit_goal has NO task-scope or permission parameters.
+      // Never treat caller-supplied booleans such as enforceWriteScope as
+      // proof of a host security boundary, and never silently discard an
+      // explicit permissions request.
+      if (task?.scope?.readOnly !== true)
+        throw new Error('Refusing write-capable delegation to Simpul: only explicit read-only submission is supported');
+      if (options.permissions !== undefined || options.supportsPermissionEnforcement === true ||
+          options.enforceWriteScope === true)
+        throw new Error('Simpul submit_goal cannot enforce caller-supplied permissions or write scope');
 
-      // 1. Submit goal to Simpul with exact FastMCP candidate signature:
-      // submit_goal(goal, workspace_path, model)
+      // Only submit metadata using the exact upstream FastMCP signature.
+      // This intentionally does NOT invoke execute_run or submit_goal(execute:true).
       const submitParams = {
         goal: task.title,
         workspace_path: options.cwd || ''
       };
-      if (task.scope) {
-        submitParams.scope = clone(task.scope);
-      }
-      if (options.permissions) {
-        submitParams.permissions = clone(options.permissions);
-      }
       const submitRes = await mcpClient.callTool('submit_goal', submitParams);
 
       if (!submitRes || submitRes.status === 'ERROR' || !submitRes.run_id) {
@@ -224,7 +223,8 @@ export function createSimpulMcpAdapter({
 
       // 2. Bounded polling for terminal state using get_run
       let runStatus = submitRes.status || 'SUBMITTED';
-      const maxPollAttempts = options.maxPollAttempts || 3;
+      const maxPollAttempts = Number.isSafeInteger(options.maxPollAttempts) &&
+        options.maxPollAttempts > 0 ? Math.min(10, options.maxPollAttempts) : 3;
 
       for (let attempt = 0; attempt < maxPollAttempts; attempt++) {
         if (options.signal?.aborted) {
