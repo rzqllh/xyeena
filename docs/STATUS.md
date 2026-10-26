@@ -6,10 +6,10 @@
 
 | Surface | Verified source state | Release boundary |
 | --- | --- | --- |
-| GitHub `main` | Source audit baseline [`2a673c64`](https://github.com/rzqllh/xyeena/commit/2a673c643ed3ab84fe55afed84165ef9faddb92e) (merged PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#33](https://github.com/rzqllh/xyeena/pull/33)) | Code, docs and tests on `main`; not automatically npm-published |
+| GitHub `main` | Source audit baseline [`c84f7c45`](https://github.com/rzqllh/xyeena/commit/c84f7c456f12ec71826c32e58088ddc85df54d49) (merged PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#42](https://github.com/rzqllh/xyeena/pull/42)) | Code, docs and tests on `main`; not automatically npm-published |
 | npm `xyeena-agent` | `0.4.1` is the last published baseline **recorded by this repository** | Registry cannot be authoritatively rechecked from this audit; verify the registry before a future release |
 | Candidate `0.5.0` | Not published, tagged, or authorized by the user | A future publication requires explicit human approval |
-| CI | PR #31 (public docs), #32 (agy detection), and #33 (Simpul contract) each passed 9 of 9 GitHub CI jobs at their final PR head | CI is source/packaging assurance, not live host enforcement |
+| CI | PR #31, #32, #33 and #38–#42 each passed 9/9 GitHub CI jobs at their final PR heads | CI is source/packaging assurance, not live host enforcement |
 
 The package version remains `0.4.1` in `package.json`. Features implemented after that release—including compact skill setup, expanded adapters, native `PreToolUse` integration and new probe/runner commands—are **source-only until an authorized npm release**. Use `node bin/xyeena.mjs` from a source checkout, not `npx xyeena-agent@0.4.1`, when following source-only instructions. Node.js 22.14+ is required.
 
@@ -43,6 +43,15 @@ Portable host and Antigravity SDK adapters now accept `adapter.executeTask(task,
 
 The latest source CLI wraps actual `host run`, `sdk run` and `orchestrate run` execution in temporary SIGINT/SIGTERM listeners, forwarding an `AbortSignal` to the owned native adapter. Preview commands do not start such a session, and handlers are removed after each operation. A Ctrl+C requests cancellation; it is not a guarantee that a Windows process tree, model-provider request, or billing has stopped. Signal delivery through the actual terminal and native descendant teardown remain [live acceptance #37](https://github.com/rzqllh/xyeena/issues/37).
 
+## Latest source-only work checkpoint — 2026-10-26
+
+- [PR #39](https://github.com/rzqllh/xyeena/pull/39): programmatic host/SDK cancellation, byte-accurate output limits and sanitized worker errors
+- [PR #40](https://github.com/rzqllh/xyeena/pull/40): CLI Ctrl+C/SIGTERM forwarding for `host run`, `sdk run` and `orchestrate run`
+- [PR #41](https://github.com/rzqllh/xyeena/pull/41): real OS subprocess smoke with **fake** provider protocol responses, not an authenticated provider test
+- [PR #42](https://github.com/rzqllh/xyeena/pull/42): read-only, redacted host prerequisites and issue links
+
+All four passed their GitHub CI matrices (9/9 each) and were merged. **No wider live-host, IDE interception, Simpul supervisor, Windows process-tree teardown or npm release acceptance is implied.**
+
 ## One-command local preflight (newer source, not npm 0.4.1)
 
 ```sh
@@ -50,6 +59,8 @@ node bin/xyeena.mjs ops preflight --dir .
 ```
 
 This read-only report is designed as the prerequisite inventory for the operator handoff: it shows available command names (not installation paths), minimal Xyeena hook structure, local runner file presence, and the corresponding open GitHub acceptance gates. It does not invoke `agy`, Python, Hermes, Codex, Claude, Gemini, Simpul, the installer, network calls, or user-approval dialogs. It makes **no new live PASS claims** and does not print tool command lines or credential values. Missing native evidence remains blocked.
+
+**For a local checkout with uncommitted edits or older source:** do not pull/reset it to run the new command. Instead fetch `origin` and use a fresh detached Git worktree under ignored `.tmp/`, invoke that worktree's `bin/xyeena.mjs` against the actual workspace with `--dir .`, and remove only the temporary worktree after the acceptance process is complete. See the [safe operator runbook](xyeena-rig/RUNBOOK.md).
 
 ## Outstanding live acceptance — public issue tracker
 

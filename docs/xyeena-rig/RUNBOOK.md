@@ -4,6 +4,19 @@
 
 Requirements: Node.js 22.14+, a Git checkout for source-only capabilities, and appropriate host permissions. Use isolated workspaces for migration or acceptance testing.
 
+## Operator handoff — preserve the existing Windows worktree
+
+The following PowerShell commands are intended only after the source-side patches are merged. They **fetch** a remote commit and add a fresh detached source worktree; they do not reset or overwrite tracked/untracked files, installed hooks, host settings or the modified root `.gitignore`.
+
+```powershell
+git fetch origin
+git worktree list
+git worktree add --detach .tmp\rig-ops-preflight origin/main
+node .tmp\rig-ops-preflight\bin\xyeena.mjs ops preflight --dir .
+```
+
+Use a different new `.tmp\rig-ops-preflight` directory name if that worktree already exists. Copy only the preflight JSON (which intentionally omits absolute paths/secrets). This is **not** a native permission test; `agy` and IDE workflows still require a separate in-host acceptance operation. No package login/API keys, npm install, `--yes`, or deletion of local hooks are involved. Do not run a destructive external-workspace test to verify containment. After the evidence is captured, `git worktree remove .tmp\rig-ops-preflight` removes only this temporary checkout if clean.
+
 ## Safe operator prerequisites (source-only)
 
 From the checkout containing the latest source, run `node bin/xyeena.mjs ops preflight --dir .`. It reads local binary hints and Xyeena hook metadata, prints redacted JSON with remaining acceptance issue links, and leaves all files unchanged. It does not call agents or prove native hook enforcement; operator-run native tests come later. If using an older checkout, use a **separate detached Git worktree** at `origin/main` rather than resetting local edits. The source-only command is not part of npm 0.4.1.

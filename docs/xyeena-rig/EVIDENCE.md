@@ -4,7 +4,7 @@
 
 ## Current reconciled evidence — 2026-10-26
 
-The latest source checkpoint audited for this record is [main `2a673c64`](https://github.com/rzqllh/xyeena/commit/2a673c643ed3ab84fe55afed84165ef9faddb92e). PRs [#29](https://github.com/rzqllh/xyeena/pull/29) through [#33](https://github.com/rzqllh/xyeena/pull/33) have merged. PR #31, #32 and #33 each passed **9/9** final-head GitHub CI checks (Windows, macOS, Linux and packaging/contract jobs). The exact commit still matters: later source is not covered by earlier job results.
+The latest source checkpoint audited for this record is [main `c84f7c45`](https://github.com/rzqllh/xyeena/commit/c84f7c456f12ec71826c32e58088ddc85df54d49). PRs [#29](https://github.com/rzqllh/xyeena/pull/29) through [#42](https://github.com/rzqllh/xyeena/pull/42) have merged (with separate issue numbers in between). PR #31, #32, #33, #38, #39, #40, #41 and #42 each passed **9/9** final-head GitHub CI checks (Windows, macOS, Linux and packaging/contract jobs). The exact commit still matters: later source is not covered by earlier job results.
 
 The **2026-10-26 native Antigravity CLI 1.4.7** session showed both an explicit Xyeena `force_ask` reason with human refusal and, separately, a host-enforced one-shot `deny` against harmless `git status --short`. The CLI returned the exact diagnostic error, the command produced no successful output, and the temporary probe was cleared. This closes **only the scoped CLI test**, not the general permissions boundary, native IDE support or other hosts.
 
@@ -271,3 +271,7 @@ External/live gates now have distinct traceable GitHub issues: [#34 Antigravity 
 - A new `ops preflight` source command inspects host command candidates, local hook metadata and unresolved acceptance issues without running CLI host tools, MCP, providers or hooks. The output removes workspace/user absolute paths and any raw hook commands or secrets.
 - The read-only safety tests include missing, invalid, linked and oversized local manifests and verify no filesystem writes. Command presence remains distinct from actual host activation.
 - Cross-platform `host run`/orchestration smoke tests use real native OS subprocesses that emit **simulated provider JSON**, testing invocation, stdin, output parsing, token settlement and failure handling without real AI accounts or calls. These fixtures do **not** close #34–#37.
+
+## Reconciled source execution checkpoint — 2026-10-26
+
+GitHub `main` source: [`c84f7c456f12ec71826c32e58088ddc85df54d49`](https://github.com/rzqllh/xyeena/commit/c84f7c456f12ec71826c32e58088ddc85df54d49) (after merged PRs #39–#42). Those four PR final source heads each passed 9/9 GitHub Actions jobs, with real native Windows/macOS/Linux process-spawn fixtures in #41 (simulated provider JSON only). Source-only cancellation and preflight functions in #39–#42 are not a live user-host acceptance test; all issue #34–#37 gates remain open until independent native observations.
