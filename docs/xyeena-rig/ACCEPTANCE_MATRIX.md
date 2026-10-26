@@ -47,3 +47,7 @@ This matrix retains each acceptance ID individually for auditable traceability. 
 ## PR #47 source-only regression boundary
 
 A26 gains negative input, numeric-overflow, and duplicate-worker identity regression cases for budget settlement. Simpul ledger reporting now fails closed when missing/malformed, without treating a provider-side spend cap as implemented. A14/A33 and native LIVE verdicts remain unchanged. PR #47 passed 9/9 CI jobs on its final branch HEAD (run 40270476537); no new live evidence. PR #48 adds bounded-MCP-result/privacy tests, subject to its own CI.
+
+## PR #49 native lifecycle source regression
+
+A15/A26/A28 gain explicit source-level regression cases for abort-before-worker-launch, in-flight cooperative cancellation, late-signal listener disposal and opaque host errors. These checks cannot demonstrate actual process-tree termination or native approval provenance. All previous LIVE statuses remain as documented; verify exact PR CI separately.
