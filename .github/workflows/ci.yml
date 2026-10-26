@@ -34,6 +34,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows acceptance pack failed' }
           $report = Get-Content -Raw (Join-Path $dest 'rig-windows-evidence.json') | ConvertFrom-Json
           if ($report.verdict -ne 'SOURCE_PREFLIGHT_PASS_LIVE_PENDING' -or
+              $report.project -ne 'xyeena-rig' -or
+              $report.acceptanceScope -ne 'rig-native-hosts' -or
+              $report.nativeAcceptance.PSObject.Properties.Name -contains 'simpul' -or
+              ($report.preflight.remainingGates | Where-Object { $_.issue -eq 35 }) -or
               $report.existingCheckoutUnchanged -ne $true -or
               $report.preflight.modelCallPerformed -ne $false) {
             throw 'Windows acceptance report made an unsupported claim'
@@ -49,6 +53,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows PowerShell 5.1 detached-worktree preflight failed' }
           $report = Get-Content -Raw (Join-Path $dest 'rig-windows-evidence.json') | ConvertFrom-Json
           if ($report.verdict -ne 'SOURCE_PREFLIGHT_PASS_LIVE_PENDING' -or
+              $report.project -ne 'xyeena-rig' -or
+              $report.acceptanceScope -ne 'rig-native-hosts' -or
+              $report.nativeAcceptance.PSObject.Properties.Name -contains 'simpul' -or
+              ($report.preflight.remainingGates | Where-Object { $_.issue -eq 35 }) -or
               $report.existingCheckoutUnchanged -ne $true -or
               $report.preflight.modelCallPerformed -ne $false -or
               $report.preflight.guidedHook.hostEnforcement -ne 'UNVERIFIED') {
