@@ -111,6 +111,29 @@ test('SDK bridge supports preflight and in-flight AbortSignal cancellation with 
   assert.equal(child.killCount,1);
   await assert.rejects(adapter.executeTask(task(),{signal:{aborted:false}}),/Invalid SDK cancellation signal/);
 });
+test('SDK Windows abort requests termination of its owned Python worker tree',async t=>{
+  const cwd=root(t);
+  const child=heldChild();
+  child.pid=5282;
+  let captured=null;
+  const controller=new AbortController();
+  const adapter=createAntigravitySdkAdapter({
+    cwd,platform:'win32',spawnImpl:()=>child,
+    terminateSpawnImpl:(exe,args,options)=>{
+      captured={exe,args,options};
+      const killer=new EventEmitter();
+      killer.unref=()=>{};
+      process.nextTick(()=>killer.emit('close',0));
+      return killer;
+    }
+  });
+  const pending=adapter.executeTask(task(),{signal:controller.signal});
+  controller.abort();
+  await assert.rejects(pending,e=>e.code==='ERR_SDK_CANCELED');
+  assert.deepEqual(captured.args,['/PID','5282','/T','/F']);
+  assert.equal(captured.options.shell,false);
+  assert.equal(child.killCount,0);
+});
 test('SDK bridge enforces received stdout and stderr byte caps instead of capped accumulation',async t=>{
   const cwd=root(t);
   for(const stream of ['stdout','stderr']){
