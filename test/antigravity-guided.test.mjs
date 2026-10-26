@@ -437,3 +437,103 @@ test('guided callback probe rejects modified runner even with exact PreToolUse',
     assert.throws(()=>guidedCommand('probe',{cwd,probeAction:'start',yes:true}),/Probe requires/);
   }finally{cleanup(cwd);}
 });
+
+test('opt-in safe native deny probe blocks exact harmless command once and nothing else', () => {
+  const cwd=fixture();
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    assert.throws(
+      ()=>guidedCommand('probe',{cwd,probeAction:'deny-start',yes:false}),
+      /Explicit --yes/
+    );
+    const result=guidedCommand('probe',{cwd,probeAction:'deny-start',yes:true});
+    assert.equal(result.state,'AWAITING_CALLBACK');
+    assert.equal(result.testMode,'deny-safe-command');
+    assert.equal(result.hostEnforcement,'UNVERIFIED');
+    const old=fs.readFileSync(config(cwd),'utf8');
+    const runner=path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs');
+    const invoke=(name, args, workspacePaths=[cwd])=>spawnSync(process.execPath,[runner,'PreToolUse'],{
+      input:JSON.stringify({workspacePaths,toolCall:{name,args}}),
+      cwd:path.join(cwd,'.agents'),encoding:'utf8',timeout:3000
+    });
+    // Incidental agent file reads and unrelated commands do not consume a deny.
+    const read=invoke('view_file',{AbsolutePath:path.join(cwd,'SKILL.md')});
+    assert.equal(read.status,0,read.stderr);
+    assert.equal(JSON.parse(read.stdout).decision,'allow');
+    const unrelated=invoke('run_command',{CommandLine:'git status'});
+    assert.equal(unrelated.status,0,unrelated.stderr);
+    assert.equal(JSON.parse(unrelated.stdout).decision,'force_ask');
+    assert.equal(guidedCommand('probe',{cwd,probeAction:'status'}).state,'AWAITING_CALLBACK');
+    const denied=invoke('run_command',{CommandLine:'git status --short'});
+    assert.equal(denied.status,0,denied.stderr);
+    assert.deepEqual(JSON.parse(denied.stdout),{
+      decision:'deny',reason:'Xyeena: native deny diagnostic blocked read-only git status'
+    });
+    const observed=guidedCommand('probe',{cwd,probeAction:'status'});
+    assert.equal(observed.state,'CALLBACK_OBSERVED_UNATTESTED');
+    assert.equal(observed.testMode,'deny-safe-command');
+    assert.equal(observed.observation.decision,'deny');
+    assert.equal(observed.observation.toolName,'run_command');
+    assert.equal(observed.hostEnforcement,'UNVERIFIED');
+    // Consumed exactly once; normal consent behavior resumes afterward.
+    const after=invoke('run_command',{CommandLine:'git status --short'});
+    assert.equal(after.status,0,after.stderr);
+    assert.equal(JSON.parse(after.stdout).decision,'force_ask');
+    assert.equal(fs.readFileSync(config(cwd),'utf8'),old);
+    const persisted=fs.readFileSync(path.join(cwd,'.xyeena','guided','probe','state.json'),'utf8');
+    assert.ok(!persisted.includes('git status --short'));
+    assert.ok(!persisted.includes(cwd));
+    assert.equal(guidedCommand('status',{cwd}).securityEnforcementVerified,false);
+  } finally { cleanup(cwd); }
+});
+test('native safe deny probe cannot trigger for other commands or escaped workspaces',()=>{
+  const cwd=fixture(),outside=fixture();
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    guidedCommand('probe',{cwd,probeAction:'deny-start',yes:true});
+    const runner=path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs');
+    const invoke=(args,roots=[cwd])=>spawnSync(process.execPath,[runner,'PreToolUse'],{
+      input:JSON.stringify({workspacePaths:roots,toolCall:{name:'run_command',args}}),
+      encoding:'utf8',timeout:3000
+    });
+    const extra=invoke({CommandLine:'git status --short && echo yes'});
+    assert.equal(JSON.parse(extra.stdout).decision,'force_ask');
+    const weird=invoke({CommandLine:'git status --short '});
+    assert.equal(JSON.parse(weird.stdout).decision,'force_ask');
+    const outsideCwd=invoke({CommandLine:'git status --short',Cwd:outside});
+    assert.equal(JSON.parse(outsideCwd.stdout).decision,'deny');
+    assert.match(JSON.parse(outsideCwd.stdout).reason,/outside trusted workspace/);
+    const workspaceMismatch=invoke({CommandLine:'git status --short'},[outside]);
+    assert.equal(JSON.parse(workspaceMismatch.stdout).decision,'deny');
+    assert.match(JSON.parse(workspaceMismatch.stdout).reason,/workspace identity/);
+    assert.equal(guidedCommand('probe',{cwd,probeAction:'status'}).state,'AWAITING_CALLBACK');
+  } finally {cleanup(cwd);cleanup(outside);}
+});
+test('deny probe expires without intercepting the read-only command',()=>{
+  const cwd=fixture();
+  try {
+    guidedCommand('install',{cwd,yes:true});
+    guidedCommand('probe',{cwd,probeAction:'deny-start',yes:true});
+    const statePath=path.join(cwd,'.xyeena','guided','probe','state.json');
+    const state=JSON.parse(fs.readFileSync(statePath,'utf8'));
+    state.startedAt=Date.now()-600000;
+    state.expiresAt=state.startedAt+300000;
+    fs.writeFileSync(statePath,JSON.stringify(state));
+    assert.equal(guidedCommand('probe',{cwd,probeAction:'status'}).state,'EXPIRED');
+    const result=preToolUse(cwd,{workspacePaths:[cwd],toolCall:{name:'run_command',args:{CommandLine:'git status --short'}}});
+    assert.equal(result.decision,'force_ask');
+  } finally {cleanup(cwd);}
+});
+test('deny-start rejects unsafe or changed PreToolUse and keeps config unchanged',()=>{
+  const cwd=fixture();
+  try{
+    guidedCommand('install',{cwd,yes:true});
+    const modified=JSON.parse(fs.readFileSync(config(cwd),'utf8'));
+    modified['xyeena-rig-guided'].PreToolUse[0].enabled=false;
+    fs.writeFileSync(config(cwd),JSON.stringify(modified));
+    const original=fs.readFileSync(config(cwd),'utf8');
+    assert.throws(()=>guidedCommand('probe',{cwd,probeAction:'deny-start',yes:true}),/Probe requires/);
+    assert.equal(fs.readFileSync(config(cwd),'utf8'),original);
+    assert.equal(guidedCommand('probe',{cwd,probeAction:'status'}).state,'NOT_STARTED');
+  } finally {cleanup(cwd);}
+});
