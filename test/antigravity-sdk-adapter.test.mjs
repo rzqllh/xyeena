@@ -13,6 +13,17 @@ const root = t => {
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   return dir;
 };
+
+function heldChild() {
+  const child=new EventEmitter();
+  child.stdin=new PassThrough();
+  child.stdout=new PassThrough();
+  child.stderr=new PassThrough();
+  child.killCount=0;
+  child.kill=()=>{child.killCount++;child.emit('close',130);return true;};
+  return child;
+}
+
 const task = (readOnly = true) => ({ id: 'A', title: 'Inspect unit test coverage',
   state: 'READY', depends_on: [], scope: { readOnly, operationClass: 'safe' } });
 const mockSpawn = (payload, exitCode = 0) => (_python, _argv, options) => {
@@ -72,11 +83,53 @@ test('native SDK worker result never automatically counts as verification', asyn
 test('SDK worker failures do not become success', async t => {
   const cwd = root(t);
   const adapter = createAntigravitySdkAdapter({cwd,spawnImpl:mockSpawn({ok:false,error:'Missing SDK'},1)});
-  await assert.rejects(adapter.executeTask(task()),/Missing SDK/);
+  await assert.rejects(adapter.executeTask(task()),/SDK worker failed or returned an unsuccessful status/);
   const malformed = createAntigravitySdkAdapter({cwd,spawnImpl:mockSpawn({status:'done'})});
   await assert.rejects(malformed.executeTask(task()), /SDK worker failed/);
   const invalid = createAntigravitySdkAdapter({cwd,spawnImpl:mockSpawn({
     ok:true,executed:false,report:''
   })});
   await assert.rejects(invalid.executeTask(task()),/did not confirm execution/);
+});
+
+
+test('SDK bridge supports preflight and in-flight AbortSignal cancellation with no success',async t=>{
+  const cwd=root(t);
+  let count=0,child;
+  const adapter=createAntigravitySdkAdapter({cwd,spawnImpl:()=>{
+    count++;child=heldChild();return child;
+  }});
+  const aborted=new AbortController();
+  aborted.abort();
+  await assert.rejects(adapter.executeTask(task(),{signal:aborted.signal}),e=>e.code==='ERR_SDK_CANCELED');
+  assert.equal(count,0);
+  const controller=new AbortController();
+  const pending=adapter.executeTask(task(),{signal:controller.signal});
+  controller.abort();
+  await assert.rejects(pending,e=>e.code==='ERR_SDK_CANCELED');
+  assert.equal(count,1);
+  assert.equal(child.killCount,1);
+  await assert.rejects(adapter.executeTask(task(),{signal:{aborted:false}}),/Invalid SDK cancellation signal/);
+});
+test('SDK bridge enforces received stdout and stderr byte caps instead of capped accumulation',async t=>{
+  const cwd=root(t);
+  for(const stream of ['stdout','stderr']){
+    const child=heldChild();
+    const adapter=createAntigravitySdkAdapter({cwd,spawnImpl:()=>child});
+    const pending=adapter.executeTask(task());
+    child[stream].write(Buffer.alloc(stream==='stdout'?100001:20001,65));
+    await assert.rejects(pending,stream==='stdout'?/output limit exceeded/:/stderr limit exceeded/);
+    assert.equal(child.killCount,1);
+  }
+});
+test('SDK bridge never exposes untrusted worker error text with private paths or credentials',async t=>{
+  const cwd=root(t);
+  const secret='Bearer sk-SECRETKEY private C:\\Users\\Someone\\AppData\\Local\\secret.json';
+  const adapter=createAntigravitySdkAdapter({cwd,spawnImpl:mockSpawn({ok:false,error:secret},1)});
+  await assert.rejects(adapter.executeTask(task()),e=>{
+    assert.match(e.message,/SDK worker failed/);
+    assert.ok(!e.message.includes('SECRETKEY'));
+    assert.ok(!e.message.includes('Someone'));
+    return true;
+  });
 });

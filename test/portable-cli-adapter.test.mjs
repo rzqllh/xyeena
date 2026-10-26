@@ -38,6 +38,17 @@ function mockProcess(output, { exitCode=0, expectedCommand=null, argsCheck=null,
     return child;
   };
 }
+
+function heldChild() {
+  const child=new EventEmitter();
+  child.stdin=new PassThrough();
+  child.stdout=new PassThrough();
+  child.stderr=new PassThrough();
+  child.killCount=0;
+  child.kill=()=>{child.killCount++;child.emit('close',130);return true;};
+  return child;
+}
+
 const makeTask=(safe=true)=>({id:'T',title:'Review tests for regression',state:'READY',depends_on:[],
   scope:{readOnly:safe,operationClass:'safe'}});
 
@@ -342,4 +353,37 @@ test('Hermes rejects invalid limits and preserves read-only execution restrictio
   const a=createPortableHostAdapter({cwd,runtime:'hermes',maxTurns:1,tokenLimit:1000,
     spawnImpl:()=>{throw Error('must not start')}});
   await assert.rejects(a.executeTask({...makeTask(),scope:{readOnly:false,operationClass:'safe'}}),/read-only/);
+});
+
+
+test('portable host supports preflight and in-flight AbortSignal cancellation without success',async t=>{
+  const cwd=fixture(t);
+  let spawned=0,child=null;
+  const abort=new AbortController();
+  abort.abort();
+  const adapter=createPortableHostAdapter({cwd,runtime:'hermes',spawnImpl:()=>{
+    spawned++;child=heldChild();return child;
+  }});
+  await assert.rejects(adapter.executeTask(makeTask(),{signal:abort.signal}),e=>e.code==='ERR_PORTABLE_CANCELED');
+  assert.equal(spawned,0);
+  const controller=new AbortController();
+  const pending=adapter.executeTask(makeTask(),{signal:controller.signal});
+  assert.equal(spawned,1);
+  controller.abort();
+  await assert.rejects(pending,e=>e.code==='ERR_PORTABLE_CANCELED');
+  assert.equal(child.killCount,1);
+  child.stdout.write('{"type":"result","exit_code":0,"text":"fake","tokens":{"total":1}}\n');
+  child.emit('close',0);
+  await assert.rejects(adapter.executeTask(makeTask(),{signal:{aborted:false}}),/Invalid host cancellation signal/);
+});
+test('portable host stdout/stderr byte budgets stop the child and prevent fabricated output',async t=>{
+  const cwd=fixture(t);
+  for(const stream of ['stdout','stderr']){
+    const child=heldChild();
+    const adapter=createPortableHostAdapter({cwd,runtime:'hermes',spawnImpl:()=>child});
+    const pending=adapter.executeTask(makeTask());
+    child[stream].write(Buffer.alloc(256*1024+1,65));
+    await assert.rejects(pending,stream==='stdout'?/Host output exceeded limit/:/Host diagnostic output exceeded limit/);
+    assert.equal(child.killCount,1);
+  }
 });
