@@ -1,5 +1,7 @@
 # Changelog
 
+- Harden Antigravity `PreToolUse`: read-only host tools no longer bypass workspace containment by name; explicit outside/symlink paths deny, ambiguous locations require fresh host approval. Includes adversarial source/installed-runner fixtures; no IDE native enforcement claim.
+
 - Source-only Antigravity diagnostic hardening: exact canonical single-hook registration matching replaces filename substring checks; decoy commands, extra hooks and disabling are regression-tested. IDE native enforcement remains unverified.
 
 - Scope correction: `ops preflight` and Windows evidence pack now report only RIG-native host gates (#34/#36/#37); optional Simpul supervisor readiness and provider-side billing caps are no longer mixed into core release acceptance. Tests assert machine-readable project/scope fields and no Simpul gate leakage. Core adapter behavior is unchanged.
