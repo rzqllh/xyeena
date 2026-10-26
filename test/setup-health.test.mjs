@@ -87,10 +87,15 @@ test('PATH directories and links cannot spoof real executables',t=>{
   const report=inspectSetupHosts({cwd,env:{Path:tools},platform:'win32'});
   assert.equal(report.find(x=>x.host==='antigravity').hostCommandAvailable,false);
   assert.equal(report.find(x=>x.host==='antigravity').detectedSurface,'not-detected');
-  fs.writeFileSync(path.join(tools,'gemini'), '#!/bin/sh\nexit 0\n',{mode:0o600});
-  const nonexecutable=inspectSetupHosts({cwd,env:{PATH:tools},platform:'linux'});
-  assert.equal(nonexecutable.find(x=>x.host==='gemini').hostCommandAvailable,false);
-  fs.chmodSync(path.join(tools,'gemini'),0o700);
-  const executable=inspectSetupHosts({cwd,env:{PATH:tools},platform:'linux'});
-  assert.equal(executable.find(x=>x.host==='gemini').hostCommandAvailable,true);
+  // Windows file modes cannot accurately simulate POSIX executable bits:
+  // on win32 chmodSync does not set Unix mode 0o111. Test the POSIX branch
+  // only where the real filesystem supports it.
+  if (process.platform !== 'win32') {
+    fs.writeFileSync(path.join(tools,'gemini'), '#!/bin/sh\nexit 0\n',{mode:0o600});
+    const nonexecutable=inspectSetupHosts({cwd,env:{PATH:tools},platform:'linux'});
+    assert.equal(nonexecutable.find(x=>x.host==='gemini').hostCommandAvailable,false);
+    fs.chmodSync(path.join(tools,'gemini'),0o700);
+    const executable=inspectSetupHosts({cwd,env:{PATH:tools},platform:'linux'});
+    assert.equal(executable.find(x=>x.host==='gemini').hostCommandAvailable,true);
+  }
 });
