@@ -39,6 +39,10 @@ The source Simpul MCP adapter now adheres to the upstream `submit_goal` paramete
 
 Portable host and Antigravity SDK adapters now accept `adapter.executeTask(task, {signal: abortController.signal})`; a pre-aborted signal prevents child launch, and an in-flight cancellation rejects the operation and requests direct-child termination. Received stdout/stderr byte caps are enforced, and raw SDK worker error messages are no longer echoed as exception details. These are **source-level API and CI guarantees only**; the `host run` CLI has not been wired to an operator-supplied AbortSignal. Descendant teardown, Windows native process ownership and provider-side hard spend limits remain unverified in live sessions (see [#37](https://github.com/rzqllh/xyeena/issues/37)).
 
+## CLI signal propagation (source-only)
+
+The latest source CLI wraps actual `host run`, `sdk run` and `orchestrate run` execution in temporary SIGINT/SIGTERM listeners, forwarding an `AbortSignal` to the owned native adapter. Preview commands do not start such a session, and handlers are removed after each operation. A Ctrl+C requests cancellation; it is not a guarantee that a Windows process tree, model-provider request, or billing has stopped. Signal delivery through the actual terminal and native descendant teardown remain [live acceptance #37](https://github.com/rzqllh/xyeena/issues/37).
+
 ## Outstanding live acceptance — public issue tracker
 
 The remaining work needs target-host runtime observations or external dependencies, not more simulated PASS labels:

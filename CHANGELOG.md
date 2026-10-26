@@ -15,6 +15,8 @@ All versions listed as released refer to published npm artifacts. Repository sou
 
 - Add programmatic `AbortSignal` cancellation to portable CLI and Antigravity SDK one-shot adapters, checked before process start and during execution. Enforce actual received stdout/stderr byte ceilings and avoid surfacing arbitrary provider/worker error contents. Direct-child termination remains best effort and full descendant teardown still needs live Windows acceptance.
 
+- Wire Ctrl+C/SIGINT and SIGTERM from source CLI `host run`, `sdk run` and `orchestrate run` (including `--record`) into the previously added one-shot AbortSignal handlers; remove signal listeners when each run ends. Native OS process-tree teardown is still unverified.
+
 ## Earlier unreleased implementation work
 
 - Add opt-in compact skill installation, ownership-aware migration and restore workflows.

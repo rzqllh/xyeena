@@ -260,3 +260,8 @@ External/live gates now have distinct traceable GitHub issues: [#34 Antigravity 
 - Portable Gemini/Hermes/Codex/Claude and Antigravity SDK adapters accept optional programmatic `AbortSignal`; pre-aborted work cannot spawn a child. In-flight abort returns a typed cancellation error and **requests direct-child termination**.
 - Both adapters enforce total received byte ceilings rather than repeatedly accumulating unbounded strings. The SDK stderr byte ceiling had previously been unreachable due to truncation before counting; this is now covered with a negative test. Unexpected SDK worker-provided error text no longer enters exception messages.
 - Unit tests model held processes, abort, large stdout/stderr and redaction; they do not attest process-tree teardown, Windows OS behavior, a real CLI Ctrl+C flow, or provider billing caps. **OPS-06 remains LIVE PARTIAL** ([#37](https://github.com/rzqllh/xyeena/issues/37)).
+
+## CLI SIGINT/SIGTERM wiring — source-only, 2026-10-26
+
+- `host run`, `sdk run` and `orchestrate run` now wrap actual native execution in a scoped `AbortController`, forward its signal through `executeOrchestration` and the one-shot adapters, and remove SIGINT/SIGTERM listeners after completion/failure.
+- Unit tests validate abort propagation, pre-aborted rejection, listener cleanup and no self-reported `VERIFIED`. This does **not** attest native Ctrl+C behavior on the Windows target host or successful descendant process-tree shutdown; OPS-06 [#37](https://github.com/rzqllh/xyeena/issues/37) remains LIVE PARTIAL.
