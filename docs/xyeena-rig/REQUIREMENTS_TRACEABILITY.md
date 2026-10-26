@@ -11,7 +11,7 @@ The identifiers R01–R15 name functional and operational contracts. Test execut
 | R03 | Single-governor Superpowers/Superior coordination | E02-02, E04-01, E04-02 | P02 | CI validated |
 | R04 | Native fallback when optional providers are unavailable | E02-01, E04-03 | P02 | CI validated; live paths pending |
 | R05 | Scope, consent and Harness operation boundaries | E05-01, E05-02, E05-03 | P03 | CI validated; CLI 1.4.7 scoped force_ask and automatic deny live accepted; IDE and other hosts pending |
-| R06 | Authenticated Simpul worker lifecycle | E06-02 | P04 | Protocol validated; execution blocked |
+| R06 | Optional external Simpul transport lifecycle | E06-02 | P04 | Adapter contract validated; cross-project execution unverified; **NOT a RIG-native release gate** |
 | R07 | Host-native subagent lifecycle and isolation | E06-03 | P04 | Contract validated; live host pending |
 | R08 | Adaptive executor and budget limits | E06-01, E06-04, E06-05 | P04 | CI validated |
 | R09 | Durable DAG checkpoint and guarded recovery | E07-02, E07-03 | P05 | CI validated |
