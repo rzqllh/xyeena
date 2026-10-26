@@ -131,7 +131,10 @@ export async function acquireWorkspaceWriteLock(workspaceKey) {
   let release;
   const waitPromise = new Promise(resolve => { release = resolve; });
   const prev = workspaceWriteQueues.get(key) || Promise.resolve();
-  workspaceWriteQueues.set(key, prev.then(() => waitPromise, () => waitPromise));
+  // Every queue entry points to its own tail; comparing it to
+  // waitPromise would never match and would leak one settled entry per key.
+  const tail = prev.then(() => waitPromise, () => waitPromise);
+  workspaceWriteQueues.set(key, tail);
   try {
     await prev;
   } catch {}
@@ -140,7 +143,8 @@ export async function acquireWorkspaceWriteLock(workspaceKey) {
     if (released) return;
     released = true;
     release();
-    if (workspaceWriteQueues.get(key) === waitPromise) {
+    // A newer waiter owns the key if it replaced our tail. Never delete it.
+    if (workspaceWriteQueues.get(key) === tail) {
       workspaceWriteQueues.delete(key);
     }
   };

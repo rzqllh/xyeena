@@ -4,7 +4,8 @@ import {
   dispatchScopedTask,
   createSimpulMcpAdapter,
   createNativeSubagentAdapter,
-  ResourceBudgetLedger
+  ResourceBudgetLedger,
+  acquireWorkspaceWriteLock
 } from '../src/live-backend.mjs';
 
 const task = (scope = { readOnly: true, operationClass: 'safe' }) => ({
@@ -633,4 +634,40 @@ test('host-provided invalid worker IDs are rejected without echoing hostile cont
       return true;
     });
   }
+});
+
+test('workspace write-lock queue serializes waiting callers and survives duplicate release',async()=>{
+  const key='write-lock-queue-order-'+Date.now();
+  const one=await acquireWorkspaceWriteLock(key);
+  let secondEntered=false,thirdEntered=false;
+  const second=acquireWorkspaceWriteLock(key).then(release=>{
+    secondEntered=true;
+    return release;
+  });
+  const third=acquireWorkspaceWriteLock(key).then(release=>{
+    thirdEntered=true;
+    return release;
+  });
+  await Promise.resolve();
+  assert.equal(secondEntered,false);
+  assert.equal(thirdEntered,false);
+  one();
+  one(); // idempotent release must not leapfrog queue
+  const releaseSecond=await second;
+  assert.equal(secondEntered,true);
+  assert.equal(thirdEntered,false);
+  releaseSecond();
+  const releaseThird=await third;
+  assert.equal(thirdEntered,true);
+  releaseThird();
+  const releaseFresh=await acquireWorkspaceWriteLock(key);
+  releaseFresh();
+});
+test('workspace lock isolation permits unrelated workspaces to acquire immediately',async()=>{
+  const a=await acquireWorkspaceWriteLock('write-lock-test-a');
+  const b=await acquireWorkspaceWriteLock('write-lock-test-b');
+  b();
+  a();
+  const again=await acquireWorkspaceWriteLock('write-lock-test-a');
+  again();
 });
