@@ -671,3 +671,66 @@ test('workspace lock isolation permits unrelated workspaces to acquire immediate
   const again=await acquireWorkspaceWriteLock('write-lock-test-a');
   again();
 });
+
+
+test('P1: ledger rejects negative, fractional, nonfinite and coerced usage without state corruption', () => {
+  const ledger = new ResourceBudgetLedger({ tokenLimit: 100, costLimitMicro: 1000, maxConcurrency: 2 });
+  ledger.recordUsage({ taskId: 'valid', tokens: 30, costMicro: 100 });
+  const baseline = ledger.summary;
+  for (const invalid of [-1, Number.NaN, Number.POSITIVE_INFINITY, 0.5, '10', null, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.throws(() => ledger.checkBudget({ estimatedTokens: invalid }), /Invalid estimatedTokens/);
+    assert.throws(() => ledger.checkBudget({ estimatedCostMicro: invalid }), /Invalid estimatedCostMicro/);
+    assert.throws(() => ledger.recordUsage({ taskId: 'invalid', tokens: invalid }), /Invalid estimatedTokens/);
+    assert.throws(() => ledger.recordUsage({ taskId: 'invalid', costMicro: invalid }), /Invalid estimatedCostMicro/);
+  }
+  assert.deepEqual(ledger.summary, baseline);
+  assert.throws(() => ledger.recordUsage({ tokens: 71 }), /ceiling breached/);
+  assert.throws(() => ledger.recordUsage({ costMicro: 901 }), /ceiling breached/);
+  assert.deepEqual(ledger.summary, baseline);
+});
+
+test('P1: budget constructor, worker identity and integer overflow fail closed', () => {
+  for (const options of [
+    { tokenLimit: -1 }, { tokenLimit: '100' }, { costLimitMicro: Infinity },
+    { maxConcurrency: 0 }, { maxConcurrency: 1.5 }, { maxConcurrency: '2' }
+  ]) assert.throws(() => new ResourceBudgetLedger(options), /Invalid/);
+
+  const ledger = new ResourceBudgetLedger({
+    tokenLimit: Number.MAX_SAFE_INTEGER, costLimitMicro: Number.MAX_SAFE_INTEGER
+  });
+  ledger.recordUsage({ tokens: Number.MAX_SAFE_INTEGER, costMicro: Number.MAX_SAFE_INTEGER });
+  assert.throws(() => ledger.recordUsage({ tokens: 1 }), /ceiling breached/);
+  assert.throws(() => ledger.recordUsage({ costMicro: 1 }), /ceiling breached/);
+  assert.equal(ledger.summary.usedTokens, Number.MAX_SAFE_INTEGER);
+  assert.equal(ledger.summary.usedCostMicro, Number.MAX_SAFE_INTEGER);
+  assert.throws(() => ledger.acquireWorker(''), /Invalid budget worker/);
+  ledger.acquireWorker('host-real-worker-1');
+  assert.throws(() => ledger.acquireWorker('host-real-worker-1'), /already active/);
+  ledger.releaseWorker('host-real-worker-1');
+  assert.equal(ledger.summary.activeWorkers, 0);
+});
+
+test('P1: Simpul rejects missing, negative and coerced provider usage when ledger is enabled', async () => {
+  const badReports = [
+    null, {}, { tokens: -25, costMicro: 0 }, { tokens: '50', costMicro: 1 },
+    { tokens: 2, costMicro: -10 }, { tokens: Number.NaN, costMicro: 0 },
+    { tokens: 1, costMicro: Number.POSITIVE_INFINITY }
+  ];
+  for (const bad of badReports) {
+    const ledger = new ResourceBudgetLedger({ tokenLimit: 1000, costLimitMicro: 2000 });
+    const adapter = createSimpulMcpAdapter({
+      mcpClient: { async callTool(name) {
+        if (name === 'submit_goal') return { run_id: 'run-server-01', status: 'PENDING' };
+        if (name === 'get_run') return { status: 'PENDING' };
+        if (name === 'get_model_usage') return bad;
+        throw Error('Unexpected call');
+      } },
+      ledger
+    });
+    await assert.rejects(adapter.executeTask({
+      id: 'test-usage', title: 'Read-only task', scope: { readOnly: true }
+    }, { noNestedDelegation: true, maxPollAttempts: 1 }), /Simpul usage accounting (invalid|unavailable)/);
+    assert.equal(ledger.summary.usedTokens, 0);
+    assert.equal(ledger.summary.usedCostMicro, 0);
+  }
+});

@@ -90,3 +90,7 @@ For the audit trail see [OPS tracker](xyeena-rig/TASK_TRACKER.md), [acceptance m
 - [PR #45](https://github.com/rzqllh/xyeena/pull/45) corrects workspace write-lock tail cleanup (FIFO queue ownership and idempotent release). Previously, the retained map's promise and cleanup comparison could never match, leaving stale entries.
 
 Both were merged into the audited source checkpoint and passed **9/9** GitHub checks on their final PR heads. No additional native host, Simpul or billing acceptance is implied.
+
+## Post-run budget accounting hardening (PR #47, source change)
+
+A focused source patch now validates non-negative safe-integer budget limits, estimates, provider usage and distinct active worker IDs. It also refuses unreported or malformed Simpul usage when a ledger is attached, rather than silently settling it as zero. Adversarial tests cover negative/nonfinite/coerced quantities and arithmetic overflow. This is a post-run settlement check; it does **not** impose a provider-side spending cap or confer Simpul LIVE PASS. PR #47 is not included in the audited main baseline above until it is merged and CI is verified.

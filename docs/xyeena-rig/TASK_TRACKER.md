@@ -25,3 +25,7 @@ Engineering coverage: [Requirements R01–R15](REQUIREMENTS_TRACEABILITY.md) and
 ## Final source hardening record — 2026-10-26
 
 PR [#44](https://github.com/rzqllh/xyeena/pull/44) and PR [#45](https://github.com/rzqllh/xyeena/pull/45) were merged after 9/9 CI checks each. Worker-ID error redaction and workspace write-lock map cleanup are source fixes. The external acceptance blockers OPS-01/02/03/04/05/06/07 remain as listed; do not reclassify them on the strength of CI.
+
+## Source P1 follow-up — PR #47
+
+Budget-ledger input validation and fail-closed Simpul settlement address a source-integrity defect in OPS-06/accounting. Negative and malformed data regressions are covered by automated tests. This has no effect on the independent OPS-06 real provider/Windows cancellation gate or OPS-01 authenticated supervisor gate. CI PASS must be verified on PR #47 before merging.

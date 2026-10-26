@@ -59,11 +59,22 @@ export async function healthyAdapter(adapter, probeTimeoutMs = 3000) {
 
 /**
  * ResourceBudgetLedger tracks per-run tokens, micro-costs, and concurrency limits.
+ * Never coerce untrusted provider usage into valid budget arithmetic.
  */
+function nonNegativeSafeInteger(value, name) {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new Error(`Invalid ${name}: expected a non-negative safe integer`);
+  }
+  return value;
+}
+
 export class ResourceBudgetLedger {
   constructor({ tokenLimit = 200000, costLimitMicro = 1000000, maxConcurrency = 4 } = {}) {
-    this.tokenLimit = tokenLimit;
-    this.costLimitMicro = costLimitMicro;
+    this.tokenLimit = nonNegativeSafeInteger(tokenLimit, 'tokenLimit');
+    this.costLimitMicro = nonNegativeSafeInteger(costLimitMicro, 'costLimitMicro');
+    if (!Number.isSafeInteger(maxConcurrency) || maxConcurrency < 1) {
+      throw new Error('Invalid maxConcurrency: expected a positive safe integer');
+    }
     this.maxConcurrency = maxConcurrency;
     this.usedTokens = 0;
     this.usedCostMicro = 0;
@@ -72,10 +83,13 @@ export class ResourceBudgetLedger {
   }
 
   checkBudget({ estimatedTokens = 0, estimatedCostMicro = 0 } = {}) {
-    if (this.usedTokens + estimatedTokens > this.tokenLimit) {
+    nonNegativeSafeInteger(estimatedTokens, 'estimatedTokens');
+    nonNegativeSafeInteger(estimatedCostMicro, 'estimatedCostMicro');
+    // Subtraction avoids unsafe integer overflow during cap comparisons.
+    if (estimatedTokens > this.tokenLimit - this.usedTokens) {
       throw new Error(`Token budget ceiling breached: ${this.usedTokens + estimatedTokens} > ${this.tokenLimit}`);
     }
-    if (this.usedCostMicro + estimatedCostMicro > this.costLimitMicro) {
+    if (estimatedCostMicro > this.costLimitMicro - this.usedCostMicro) {
       throw new Error(`Cost budget ceiling breached: ${this.usedCostMicro + estimatedCostMicro} > ${this.costLimitMicro}`);
     }
     return true;
@@ -97,6 +111,12 @@ export class ResourceBudgetLedger {
   }
 
   acquireWorker(workerId) {
+    if (typeof workerId !== 'string' || !workerId.trim() || workerId.length > 128) {
+      throw new Error('Invalid budget worker identifier');
+    }
+    if (this.activeWorkers.has(workerId)) {
+      throw new Error('Budget worker identifier is already active');
+    }
     if (this.activeWorkers.size >= this.maxConcurrency) {
       throw new Error(`Concurrency ceiling exceeded: max ${this.maxConcurrency} parallel workers`);
     }
@@ -298,20 +318,23 @@ export function createSimpulMcpAdapter({
       }
 
       // 4. Track model usage and account against budget (fail on budget violation)
-      try {
-        const usage = await simpulCall(mcpClient, 'get_model_usage', {});
-        if (usage && typeof usage === 'object' && ledger) {
-          ledger.recordUsage({
-            taskId: task.id,
-            backend: 'simpul',
-            tokens: usage.tokens || 0,
-            costMicro: usage.costMicro || 0
-          });
+      if (ledger) {
+        // A failed/malformed usage report must not silently become zero spend.
+        // This is post-run settlement, never a provider-enforced spending cap.
+        let usage;
+        try { usage = await simpulCall(mcpClient, 'get_model_usage', {}); }
+        catch { throw new Error('Simpul usage accounting unavailable'); }
+        if (!usage || typeof usage !== 'object' || Array.isArray(usage) ||
+            !Number.isSafeInteger(usage.tokens) || usage.tokens < 0 ||
+            !Number.isSafeInteger(usage.costMicro) || usage.costMicro < 0) {
+          throw new Error('Simpul usage accounting invalid');
         }
-      } catch (err) {
-        if (err.message && err.message.includes('ceiling breached')) {
-          throw err;
-        }
+        ledger.recordUsage({
+          taskId: task.id,
+          backend: 'simpul',
+          tokens: usage.tokens,
+          costMicro: usage.costMicro
+        });
       }
 
       activeRuns.delete(task.id);
