@@ -376,6 +376,30 @@ test('portable host supports preflight and in-flight AbortSignal cancellation wi
   child.emit('close',0);
   await assert.rejects(adapter.executeTask(makeTask(),{signal:{aborted:false}}),/Invalid host cancellation signal/);
 });
+test('portable Windows abort requests owned CLI process-tree termination',async t=>{
+  const cwd=fixture(t);
+  const controller=new AbortController();
+  let captured=null;
+  const child=heldChild();
+  child.pid=5191;
+  const adapter=createPortableHostAdapter({
+    cwd,runtime:'hermes',platform:'win32',
+    spawnImpl:()=>child,
+    terminateSpawnImpl:(exe,args,options)=>{
+      captured={exe,args,options};
+      const killer=new EventEmitter();
+      killer.unref=()=>{};
+      process.nextTick(()=>killer.emit('close',0));
+      return killer;
+    }
+  });
+  const pending=adapter.executeTask(makeTask(),{signal:controller.signal});
+  controller.abort();
+  await assert.rejects(pending,e=>e.code==='ERR_PORTABLE_CANCELED');
+  assert.deepEqual(captured.args,['/PID','5191','/T','/F']);
+  assert.equal(captured.options.shell,false);
+  assert.equal(child.killCount,0);
+});
 test('portable host stdout/stderr byte budgets stop the child and prevent fabricated output',async t=>{
   const cwd=fixture(t);
   for(const stream of ['stdout','stderr']){
