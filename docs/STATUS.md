@@ -6,7 +6,7 @@
 
 | Surface | Verified source state | Release boundary |
 | --- | --- | --- |
-| GitHub `main` | Source audit baseline [`77c1d583`](https://github.com/rzqllh/xyeena/commit/77c1d58370fbeceee6e7ec8c01d901fbb127b9fa) (PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#47](https://github.com/rzqllh/xyeena/pull/47), excluding issue-only numbers) | Repository source is not automatically npm-published |
+| GitHub `main` | Source audit baseline [`dc96a79c`](https://github.com/rzqllh/xyeena/commit/dc96a79c40632e558c8b12b9560e677b4fb91a49) (PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#48](https://github.com/rzqllh/xyeena/pull/48), excluding issue-only numbers) | Repository source is not automatically npm-published |
 | npm `xyeena-agent` | `0.4.1` is the last published baseline **recorded by this repository** | Registry cannot be authoritatively rechecked from this audit; verify the registry before a future release |
 | Candidate `0.5.0` | Not published, tagged, or authorized by the user | A future publication requires explicit human approval |
 | CI | PR #31, #32, #33, #38–#45 (implemented PR numbers) each passed 9/9 GitHub CI jobs at their final PR heads | CI is source/packaging assurance, not live host enforcement |
@@ -97,4 +97,8 @@ A focused source patch now validates non-negative safe-integer budget limits, es
 
 ## MCP response privacy follow-up (PR #48)
 
-The source adapter now bounds legacy direct-object and structured FastMCP responses to 64 KiB of UTF-8 JSON (as with text responses) and avoids reflecting untrusted MCP transport/submission error details. Negative tests cover oversized multibyte content, malformed results and credential-like error strings. PR #48 remains a source change until CI and merge; authenticated supervisor execution (issue #35) is still **LIVE BLOCKED**.
+The source adapter now bounds legacy direct-object and structured FastMCP responses to 64 KiB of UTF-8 JSON (as with text responses) and avoids reflecting untrusted MCP transport/submission error details. Negative tests cover oversized multibyte content, malformed results and credential-like error strings. PR #48 passed 9/9 final-head CI jobs (run 40270947152) and merged as dc96a79c; authenticated supervisor execution (issue #35) is still **LIVE BLOCKED**.
+
+## Native runner cancellation and diagnostic integrity (PR #49, source-only)
+
+The native subagent adapter refuses pre-aborted signals before host dispatch, removes per-run cancellation listeners after completion and absorbs rejected cooperative cancel requests without unhandled rejections. It also redacts host-returned status, execution, crash and cancellation error details. Tests exercise cancellation after completion, abort during wait and synthetic credential-like errors. No Windows process-tree or provider-side termination assertion follows from these tests; issue #37 remains LIVE PARTIAL.
