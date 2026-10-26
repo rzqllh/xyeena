@@ -27,14 +27,14 @@ test('internal planning files are not part of maintained repository documentatio
 });
 test('required security notices and product reference files are present',()=>{
   for(const file of ['LICENSE','NOTICE.md','SECURITY.md','CONTRIBUTING.md',
-    'docs/GETTING-STARTED.md','docs/ARCHITECTURE.md','docs/CLI-REFERENCE.md',
+    'docs/STATUS.md','docs/GETTING-STARTED.md','docs/ARCHITECTURE.md','docs/CLI-REFERENCE.md',
     'docs/xyeena-rig/ROADMAP.md','docs/xyeena-rig/ACCEPTANCE_MATRIX.md',
     'docs/xyeena-rig/EVIDENCE.md']){
     assert.ok(fs.statSync(path.join(PACKAGE_ROOT,file)).isFile(),file);
   }
 });
 test('relative links in maintained Markdown resolve to files or directories',()=>{
-  const docs=['README.md','CONTRIBUTING.md','SECURITY.md',
+  const docs=['README.md','CONTRIBUTING.md','SECURITY.md','docs/STATUS.md',
     'docs/GETTING-STARTED.md','docs/ARCHITECTURE.md','docs/CLI-REFERENCE.md',
     'docs/INTELLIGENT-ROUTING.md','docs/RUNTIME-ADAPTERS.md',
     'docs/ANTIGRAVITY-GUIDED.md','docs/BRANDING.md',
@@ -51,4 +51,52 @@ test('relative links in maintained Markdown resolve to files or directories',()=
       assert.ok(fs.existsSync(path.resolve(PACKAGE_ROOT,path.dirname(file),decodeURIComponent(target))),`${file}: ${target}`);
     }
   }
+});
+
+test('public status is dated and independently separates npm baseline, CLI host evidence and IDE blocker',()=>{
+  const status=read('docs/STATUS.md');
+  const readme=read('README.md'),site=read('site/index.html');
+  const packageVersion=JSON.parse(read('package.json')).version;
+  assert.match(status,/2026-10-26/);
+  assert.match(status,/Antigravity CLI.*1\.4\.7/i);
+  assert.match(status,/force_ask/);
+  assert.match(status,/auto|automatic|deny/i);
+  assert.match(status,/2\.5\.5/);
+  assert.match(status,/LIVE BLOCKED/);
+  assert.match(status,/UNVERIFIED/);
+  assert.match(status,/Simpul.*BLOCKED/s);
+  assert.match(status,/explicit human approval/i);
+  assert.ok(readme.includes(`@${packageVersion}`));
+  assert.ok(site.includes(`@${packageVersion}`));
+  assert.ok(site.includes('id="source-status"'));
+  assert.ok(site.includes('docs/STATUS.md'));
+  assert.match(site,/IDE 2\.5\.5:[^<]*<\/strong> the expected native hook denial was not enforced/i);
+});
+test('all maintained product/engineering guides link to the single public source-status reference',()=>{
+  const groups=['docs','docs/xyeena-rig'];
+  for (const dir of groups) {
+    for (const item of fs.readdirSync(path.join(PACKAGE_ROOT,dir),{withFileTypes:true})) {
+      if (!item.isFile() || !item.name.endsWith('.md') || item.name==='STATUS.md') continue;
+      const file=path.join(dir,item.name);
+      assert.match(read(file),/\]\((?:\.\.\/)?STATUS\.md\)/,file);
+    }
+  }
+  assert.match(read('SECURITY.md'),/\]\(docs\/STATUS\.md\)/);
+  assert.match(read('CONTRIBUTING.md'),/\]\(docs\/STATUS\.md\)/);
+});
+test('live acceptance is distinct from historical test counts and missing host support',()=>{
+  const tracker=read('docs/xyeena-rig/TASK_TRACKER.md');
+  const acceptance=read('docs/xyeena-rig/ACCEPTANCE_MATRIX.md');
+  const evidence=read('docs/xyeena-rig/EVIDENCE.md');
+  const changelog=read('CHANGELOG.md');
+  const ops07=tracker.split('\n').find(line=>line.startsWith('| OPS-07 |'));
+  assert.ok(ops07);
+  assert.match(ops07,/CLI 1\.4\.7/);
+  assert.match(ops07,/AUTO-DENY LIVE PASS/);
+  assert.match(ops07,/IDE 2\.5\.5 LIVE BLOCKED/);
+  assert.doesNotMatch(tracker.split('\n').find(line=>line.startsWith('| OPS-08 |'))||'',/327\/327/);
+  assert.match(acceptance,/SCOPED AUTO-DENY LIVE PASS/);
+  assert.match(evidence,/historical snapshots/i);
+  assert.match(changelog,/Unreleased.*2026-10-26/);
+  assert.match(changelog,/No `0\.5\.0` release/i);
 });

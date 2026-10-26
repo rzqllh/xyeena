@@ -22,6 +22,7 @@
         <a href="#safeguards">Safeguards</a>
         <a href="#runtimes">Runtimes</a>
         <a href="#commands">Commands</a>
+        <a href="#source-status">Status</a>
         <a href="https://github.com/rzqllh/xyeena" class="nav-ext" target="_blank" rel="noopener noreferrer">GitHub</a>
       </nav>
     </div>
@@ -54,6 +55,20 @@
         <div class="hero-actions">
           <a href="#commands" class="btn btn-secondary">Explore Commands</a>
           <a href="https://github.com/rzqllh/xyeena#readme" class="btn btn-tertiary" target="_blank" rel="noopener noreferrer">View Documentation</a>
+        </div>
+      </div>
+    </section>
+
+
+    <section id="source-status" class="content-section" aria-labelledby="source-status-title">
+      <div class="container">
+        <div class="section-intro">
+          <h2 id="source-status-title">Source and host acceptance · 26 October 2026</h2>
+          <p>The source and the published package are separate. These findings cover specific native tests, not all agent tools.</p>
+        </div>
+        <div class="selection-notice">
+          <strong>Antigravity CLI 1.4.7 · Windows:</strong> live native Xyeena <code>force_ask</code> + user cancellation and a separate scoped <code>deny</code> on read-only <code>git status --short</code> were observed. <strong>Antigravity IDE 2.5.5:</strong> the expected native hook denial was not enforced. Hermes is partial; Simpul and three other host CLIs remain blocked or not live-accepted.
+          <p><a href="https://github.com/rzqllh/xyeena/blob/main/docs/STATUS.md" target="_blank" rel="noopener noreferrer">Read the dated acceptance and release status</a></p>
         </div>
       </div>
     </section>
@@ -215,7 +230,7 @@
           <p>The published CLI includes installation and diagnostics. Some orchestration and compact-layout commands are available in current source but not yet in the published npm version.</p>
         </div>
 
-        <p class="install-footnote">Published npm: 0.4.1. Live multi-host interception and the Simpul upstream worker supervisor remain subject to separate acceptance.</p>
+        <p class="install-footnote">Repository-recorded npm baseline: 0.4.1 (check registry before release). CLI-specific native consent/deny accepted on Windows; IDE interception, other runtimes and Simpul remain gated. Source-only features are not npm-published.</p>
         <div class="command-table-wrap">
           <table class="data-table">
             <thead>

@@ -1,5 +1,7 @@
 # Capability Contract
 
+[Current source and host acceptance (2026-10-26)](STATUS.md). Live Antigravity CLI 1.4.7 approvals and scoped automatic denial passed; IDE 2.5.5 interception, broader security boundaries, and remaining runtimes are not live-accepted.
+
 Each capability owns a `capability.json` machine contract and a `SKILL.md` model-facing instruction.
 
 The machine contract is Xyeena-specific; it is not a replacement for the Agent Skills standard. Runtime adapters translate portable Xyeena semantics into the primitives each host supports.

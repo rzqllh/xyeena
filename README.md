@@ -4,7 +4,9 @@
 
 Xyeena Rig is a local-first toolkit for developer workflows with coding agents. It packages **19 Agent Skills**, optional project **Harness** guidance and verification tools, skill discovery, and guarded task orchestration. It supports Antigravity, Codex, Claude Code, Gemini CLI, and Hermes through host-specific installation paths. The npm package is `xyeena-agent`; both `xyeena` and `xyeena-agent` are CLI entry points.
 
-[Getting started](docs/GETTING-STARTED.md) · [CLI reference](docs/CLI-REFERENCE.md) · [Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
+[Current source & host status](docs/STATUS.md) · [Getting started](docs/GETTING-STARTED.md) · [CLI reference](docs/CLI-REFERENCE.md) · [Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
+
+**Latest recorded acceptance (2026-10-26):** Antigravity CLI 1.4.7 on Windows honored Xyeena `force_ask`, user cancellation, and a separate narrowly scoped automatic `deny` for a read-only command. Antigravity IDE 2.5.5 did **not** enforce the hook in the observed session. These source features are not automatically part of the separately published npm 0.4.1. [Status and limitations](docs/STATUS.md).
 
 ## Install
 
@@ -86,7 +88,7 @@ node bin/xyeena.mjs setup compact --runtime codex --preset balanced --dry-run
 
 | Host | Typical workspace skill root | Notes |
 | --- | --- | --- |
-| Antigravity | `.agents/skills/` | IDE activation and Guided hooks require native confirmation |
+| Antigravity | `.agents/skills/` | CLI 1.4.7 scoped hook consent/deny live PASS; IDE 2.5.5 native hook enforcement BLOCKED. [Details](docs/STATUS.md) |
 | Codex | `.agents/skills/` | Read-only one-shot adapter available |
 | Claude Code | `.claude/skills/` | Host permissions and skill activation remain native |
 | Gemini CLI | `.gemini/skills/` / `.agents/skills/` | Native trust and Plan-mode behavior apply |
@@ -108,7 +110,7 @@ npm pack --dry-run
 
 Repository CI tests source and packaging on Windows, macOS and Linux with Node.js 22 and 24. These checks are not substitutes for live acceptance on all five agent hosts.
 
-The published package remains **`0.4.1`**; the post-merge source includes additional unreleased capabilities. The [release-readiness record](docs/xyeena-rig/ACCEPTANCE_MATRIX.md) distinguishes automated pass criteria from pending live validation. No `0.5.0` publication is implied by the source code.
+The last published baseline **recorded by this repository** remains **`0.4.1`** (registry verification required before release); the post-merge source includes additional unreleased capabilities. The [release-readiness record](docs/xyeena-rig/ACCEPTANCE_MATRIX.md) distinguishes automated pass criteria from pending live validation. No `0.5.0` publication is implied by the source code.
 
 ## Contributing, security and licensing
 

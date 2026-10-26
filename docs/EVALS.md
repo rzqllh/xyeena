@@ -1,5 +1,8 @@
 # Evaluation and validation
 
+See the [current source/host acceptance status](STATUS.md). PR #30's final source commit passed 9/9 CI check jobs, and a user-observed native CLI `deny` test provided separate host evidence. Neither is an all-host security certification.
+
+
 Xyeena Rig uses layered validation rather than a single aggregate test count.
 
 | Layer | Purpose | Evidence |

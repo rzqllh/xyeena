@@ -1,5 +1,7 @@
 # Operations runbook
 
+[Current source and host acceptance (2026-10-26)](../STATUS.md). Live Antigravity CLI 1.4.7 approvals and scoped automatic denial passed; IDE 2.5.5 interception, broader security boundaries, and remaining runtimes are not live-accepted.
+
 Requirements: Node.js 22.14+, a Git checkout for source-only capabilities, and appropriate host permissions. Use isolated workspaces for migration or acceptance testing.
 
 ## Validate source
@@ -56,6 +58,8 @@ Check the local `.xyeena/runs/` journal for an interrupted run. Inspect task sta
 **Current status:** `0.5.0` is not published. No release tag or npm command is implied by this runbook. See [Task tracker](TASK_TRACKER.md).
 
 ## Antigravity native PreToolUse hook
+
+**Live status update (2026-10-26):** On Windows, `agy 1.4.7` displayed the Xyeena `force_ask` prompt and honored user cancellation, and a separate temporary exact-match `deny` was enforced by the CLI. The probe was cleared. IDE 2.5.5 has an observed host-hook bypass and must not be treated as security-protected. Full testimony and limitations are in [EVIDENCE.md](EVIDENCE.md) and [public status](../STATUS.md).
 
 Run `node bin/xyeena.mjs guided preview --dir .` and inspect the proposed `PreToolUse` group before installation. The `guided install --yes` workflow preserves unrelated hook groups and takes managed backups. The policy returns only `allow`, `force_ask` or `deny`: it never bypasses existing host user-approval rules.
 

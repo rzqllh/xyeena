@@ -1,5 +1,7 @@
 # Architecture
 
+[Current source and host acceptance (2026-10-26)](STATUS.md). Live Antigravity CLI 1.4.7 approvals and scoped automatic denial passed; IDE 2.5.5 interception, broader security boundaries, and remaining runtimes are not live-accepted.
+
 Xyeena Rig separates skill discovery, host-controlled permissions, workflow decisions and evidence verification. The project is a toolkit, not a replacement for an agent IDE or a privileged background service.
 
 ## Components

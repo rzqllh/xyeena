@@ -1,5 +1,8 @@
 # Antigravity Guided hooks
 
+**Latest acceptance (2026-10-26):** Windows `agy 1.4.7` demonstrated live Xyeena approval + human cancellation and a separate safe, exact-match automatic `deny`. **Antigravity IDE 2.5.5 remains BLOCKED** for hook enforcement. The later live test supersedes the earlier 2026-10-25 pending state **only for the tested CLI scope**. [Public status](STATUS.md) · [Evidence](xyeena-rig/EVIDENCE.md).
+
+
 Guided hooks are an optional, workspace-scoped integration. They help carry bounded task context across supported session lifecycle events without taking over the host's approval system.
 
 ## Inspect and install
