@@ -870,3 +870,54 @@ test('P1: native host errors do not echo secrets from status, spawn, result or c
     return true;
   });
 });
+
+
+test('P0: timeout cannot release the shared write lock while an adapter still runs', async () => {
+  const workspace = 'write-timeout-fence-regression';
+  const events = [];
+  let finishFirst;
+  let startFirst;
+  const firstStarted = new Promise(resolve => { startFirst = resolve; });
+  const writeTask = (id) => ({
+    id, title: 'Bounded write task', cwd: workspace,
+    scope: { readOnly: false, operationClass: 'safe' },
+    isolatedWorktrees: false
+  });
+  const firstAdapter = {
+    async executeTask() {
+      events.push('first-start');
+      startFirst();
+      return new Promise(resolve => { finishFirst = resolve; });
+    },
+    async cancelTask() {
+      events.push('cancel-requested');
+      // A cooperative cancel returning does not prove the write stopped.
+      return true;
+    }
+  };
+  const first = dispatchScopedTask({
+    task: writeTask('write-timeout-1'),
+    inlineAdapter: firstAdapter,
+    approvedTaskIds: ['write-timeout-1'],
+    authorizeOperation: async () => 'allow-once',
+    timeoutMs: 1000
+  });
+  await firstStarted;
+  await assert.rejects(first, /timed out/);
+  assert.deepEqual(events, ['first-start', 'cancel-requested']);
+
+  const second = dispatchScopedTask({
+    task: writeTask('write-timeout-2'),
+    inlineAdapter: { async executeTask() { events.push('second-start'); return {}; } },
+    approvedTaskIds: ['write-timeout-2'],
+    authorizeOperation: async () => 'allow-once',
+    timeoutMs: 2000
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.ok(!events.includes('second-start'), 'new write started despite unresolved prior adapter');
+
+  finishFirst({});
+  const result = await second;
+  assert.equal(result.status, 'REVIEW_REQUIRED');
+  assert.equal(events.at(-1), 'second-start');
+});
