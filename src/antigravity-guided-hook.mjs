@@ -219,6 +219,10 @@ export function preToolUse(root, payload) {
       if (!safeHostTarget(root, args.Cwd || root)) return denyHook('Xyeena: command Cwd outside trusted workspace');
       if (typeof args.CommandLine !== 'string' || !args.CommandLine.trim())
         return denyHook('Xyeena: missing shell command');
+      // Explicit, expiring one-shot challenge; the only matching command is
+      // harmless and read-only even if the host ignores the deny decision.
+      if (safeDenyDiagnosticRequested(root, name, args))
+        return denyHook('Xyeena: native deny diagnostic blocked read-only git status');
       return { decision: 'force_ask', reason: 'Xyeena: review shell command; host sandbox and fresh user consent required' };
     }
     if (name === 'ask_permission') return { decision: 'allow' }; // host's native permission UI
@@ -261,6 +265,7 @@ function readProbe(root) {
       typeof value.probeId !== 'string' || !/^[a-f0-9-]{36}$/.test(value.probeId) ||
       !Number.isSafeInteger(value.startedAt) || !Number.isSafeInteger(value.expiresAt) ||
       value.expiresAt - value.startedAt !== 300000 ||
+      (value.mode !== undefined && !['observe', 'deny-safe-command'].includes(value.mode)) ||
       (value.observation !== null && (!object(value.observation) ||
         !['allow', 'deny', 'force_ask', 'ask'].includes(value.observation.decision) ||
         typeof value.observation.toolName !== 'string' ||
@@ -269,7 +274,9 @@ function readProbe(root) {
     throw new Error('Invalid Xyeena probe state');
   return value;
 }
-export function startHookProbe(root) {
+export function startHookProbe(root, { mode = 'observe' } = {}) {
+  if (!['observe', 'deny-safe-command'].includes(mode))
+    throw new Error('Unsupported hook probe mode');
   const f = probeFiles(root);
   // Refuse to overwrite unrelated content in the private diagnostic folder.
   const previous = readProbe(root);
@@ -282,25 +289,30 @@ export function startHookProbe(root) {
       throw new Error('Unowned probe ignore file; refusing changes');
   } else fs.writeFileSync(f.ignore, PROBE_IGNORE, { flag: 'wx', mode: 0o600 });
   const state = { schema: 1, probeId: crypto.randomUUID(),
-    startedAt: Date.now(), expiresAt: Date.now() + 300000, observation: null };
+    startedAt: Date.now(), expiresAt: Date.now() + 300000, observation: null, mode };
   // Maintain exactly five minutes rather than two separate timestamp samples.
   state.expiresAt = state.startedAt + 300000;
   atomicJson(f.state, state);
   return { state: 'AWAITING_CALLBACK', probeId: state.probeId,
+    testMode: mode,
     expiresAt: new Date(state.expiresAt).toISOString(),
     hostEnforcement: 'UNVERIFIED',
-    instructions: 'In a fresh native Antigravity session run a harmless run_command via the agent, then check guided probe status. Do not simulate stdin or call the hook directly.' };
+    instructions: mode === 'deny-safe-command'
+      ? 'In fresh agy CLI request only native run_command git status --short without Cwd. The armed hook should deny once; verify the host blocks execution. Do not call the runner manually.'
+      : 'In a fresh native Antigravity session run a harmless run_command via the agent, then check guided probe status. Do not simulate stdin or call the hook directly.' };
 }
 export function hookProbeStatus(root) {
   const state = readProbe(root);
   if (!state) return { state: 'NOT_STARTED', hostEnforcement: 'UNVERIFIED' };
   if (state.expiresAt <= Date.now()) return {
-    state: 'EXPIRED', probeId: state.probeId, hostEnforcement: 'UNVERIFIED' };
+    state: 'EXPIRED', probeId: state.probeId, testMode: state.mode ?? 'observe', hostEnforcement: 'UNVERIFIED' };
   if (state.observation) return {
     state: 'CALLBACK_OBSERVED_UNATTESTED', probeId: state.probeId,
+    testMode: state.mode ?? 'observe',
     observation: state.observation, hostEnforcement: 'UNVERIFIED',
     note: 'Callback observed locally; manual invocation can spoof this record. Verify real native host denial separately.' };
   return { state: 'AWAITING_CALLBACK', probeId: state.probeId,
+    testMode: state.mode ?? 'observe',
     expiresAt: new Date(state.expiresAt).toISOString(), hostEnforcement: 'UNVERIFIED' };
 }
 export function clearHookProbe(root) {
@@ -309,6 +321,20 @@ export function clearHookProbe(root) {
   fs.rmSync(f.state);
   return { cleared: true, hostEnforcement: 'UNVERIFIED' };
 }
+/** A local receipt cannot certify native enforcement; the user must observe CLI output. */
+function safeDenyDiagnosticRequested(root, name, args) {
+  const state = readProbe(root);
+  if (!state || state.mode !== 'deny-safe-command' || state.observation ||
+      state.expiresAt <= Date.now() || name !== 'run_command') return false;
+  // Restrict to the exact read-only command. The real CLI lacks a Cwd arg;
+  // if another host supplies one, it must be the canonical workspace root.
+  return args.CommandLine === 'git status --short' &&
+    (args.Cwd === undefined || (
+      typeof args.Cwd === 'string' &&
+      safeHostTarget(root, args.Cwd) &&
+      fs.realpathSync(path.resolve(root, args.Cwd)) === root
+    ));
+}
 function recordHookProbe(root, payload, result) {
   const state = readProbe(root);
   if (!state || state.observation || state.expiresAt <= Date.now() ||
@@ -316,6 +342,13 @@ function recordHookProbe(root, payload, result) {
       typeof payload.toolCall.name !== 'string' ||
       !/^[a-z0-9_]{1,64}$/.test(payload.toolCall.name) ||
       !['allow', 'deny', 'force_ask', 'ask'].includes(result?.decision)) return;
+  // Do not consume a deny challenge on incidental reads of SKILL.md.
+  if (state.mode === 'deny-safe-command' && !(
+    payload.toolCall.name === 'run_command' &&
+    payload.toolCall.args?.CommandLine === 'git status --short' &&
+    result.decision === 'deny' &&
+    result.reason === 'Xyeena: native deny diagnostic blocked read-only git status'
+  )) return;
   state.observation = { at: Date.now(), toolName: payload.toolCall.name,
     decision: result.decision };
   atomicJson(probeFiles(root).state, state);
