@@ -57,7 +57,7 @@ Binding and unbinding are explicit: `guided bind --id RUN_ID --conversation UUID
 
 ## Limits and verification
 
-This policy is **not** an operating-system sandbox and does not parse shell commands to prevent shell-internal path escapes. Approval remains a decision of the user and the host; `force_ask` requests a fresh dialog rather than granting permission. A successful installation, `guided status`, callback receipt or unit test does **not** prove native interception has been activated. Verify the hook in Antigravity IDE > Customizations > Hooks and observe a real read, denied write and freshly prompted shell command before marking OPS-07 LIVE_ACCEPTED. The native hook contract is documented at [Antigravity Hooks](https://www.antigravity.google/docs/hooks). Hook setup and unit tests are not substitutes for host activation evidence.
+This policy is **not** an operating-system sandbox and does not parse shell commands to prevent shell-internal path escapes. Approval remains a decision of the user and the host; `force_ask` requests a fresh dialog rather than granting permission. A successful installation, `guided status`, callback receipt or unit test does **not** prove native interception has been activated. IDE 2.5.5 did not expose an active Hooks panel in the observed Customizations UI and failed a native interception negative test. Verify IDE hook support with a real native denial, not by assuming a menu exists. CLI host acceptance is tracked separately. The native hook contract is documented at [Antigravity Hooks](https://www.antigravity.google/docs/hooks). Hook setup and unit tests are not substitutes for host activation evidence.
 
 See [Runtime adapters](RUNTIME-ADAPTERS.md) and [Security](../SECURITY.md).
 
@@ -70,3 +70,7 @@ The CLI's `run_command` tool schema in the user's October 25 session rejected `C
 ## Real CLI callback is not real consent — 2026-10-25
 
 The five-minute probe captured `PreToolUse(run_command)` returning `force_ask` during a real `agy 1.4.7` `git status --short` invocation; the command then ran and displayed the modified `.gitignore` entry. This is **CLI callback observed**, not evidence that the CLI presented or honored a fresh user-approval dialog. The official [hook response contract](https://www.antigravity.google/docs/hooks) supports `force_ask`; do not rewrite it speculatively. First inspect the **current CLI permissions mode** (not the IDE preset), especially `always-proceed` or `--dangerously-skip-permissions`, and require native consent/deny observation. Never infer safety from the presence of a hook or receipt, and never apply privileged actions based solely on `CALLBACK_OBSERVED_UNATTESTED`.
+
+## Native CLI user-cancellation accepted — 2026-10-26
+
+A new `agy 1.4.7` run displayed the Xyeena-specific `force_ask` reason during native `git status --short` interception. The user chose `No, cancel` and the CLI returned `User declined the tool call` without command output. This is **live CLI approval-and-user-cancel evidence**, not a simulated runner test. The user had been instructed to remove the temporary Project Ask rule before the repeat; absence of the rule was not separately pictured in the final interaction. CLI **automatic `deny`** and Antigravity **IDE hook enforcement** remain unverified or blocked independently; neither is implied by this positive CLI approval test.
