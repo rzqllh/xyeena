@@ -299,3 +299,7 @@ scripts/windows-acceptance-pack.ps1 creates a temporary source worktree and reda
 ## Operator source-preflight result and scope reconciliation — 2026-10-26
 
 The Windows PowerShell 5.1 acceptance pack running source `184e2d9abb73` returned `SOURCE_PREFLIGHT_PASS_LIVE_PENDING` with checkout unchanged. Its earlier JSON included a Simpul supervisor field despite the separate project's optional status. This is a **report-scope defect**, not evidence of working Simpul. The newer RIG preflight contract enumerates native host gates #34/#36/#37 only; tests assert the optional supervisor name/issue and billing-hard-cap claim are not included. Source checks cannot close these live gates.
+
+## Exact native hook registration diagnostic — source regression
+
+Adversarial fixtures now distinguish the intended single Antigravity `PreToolUse` command from a decoy shell echo containing its name, extra hook entries, mismatched timeout and disabled entries. Cross-platform canonical Windows and POSIX shapes are exercised without invoking any host tool. This prevents an incorrect **registration hint**, not a native host bypass. Antigravity IDE 2.5.5 remains LIVE BLOCKED until witnessed in-IDE denial.
