@@ -122,5 +122,15 @@ test('release status separates current source CI from unverified native host acc
   assert.match(status,/No wider live-host/i);
   assert.match(runbook,/git worktree add --detach/);
   assert.match(runbook,/ops preflight --dir/);
+  const handoff=read('docs/xyeena-rig/NATIVE_ACCEPTANCE_HANDOFF.md');
+  assert.match(handoff,/SOURCE_READY \/ LIVE_PENDING \/ RELEASE_NOT_AUTHORIZED/);
+  assert.match(handoff,/issues\/34/);
+  assert.match(handoff,/issues\/36/);
+  assert.match(handoff,/issues\/37/);
+  assert.match(handoff,/Simpul.*separate/i);
+  assert.match(handoff,/git status --short/);
+  assert.match(handoff,/Do not.*publish/i);
+  assert.match(handoff,/host.*native/i);
+
   assert.match(status,/0\.4\.1/);
 });
