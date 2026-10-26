@@ -22,6 +22,8 @@ All versions listed as released refer to published npm artifacts. Repository sou
 
 - Redact untrusted, malformed host-returned worker identity values from rejection messages, retaining strict format/placeholder checks; prevent secrets or private paths from being echoed to logs.
 
+- Fix workspace write-lock queue tail cleanup to remove the correct map entry only when no newer waiter owns it; preserve FIFO and idempotent release. This avoids indefinite retention of released workspace keys during long-lived orchestration.
+
 ## Earlier unreleased implementation work
 
 - Add opt-in compact skill installation, ownership-aware migration and restore workflows.
