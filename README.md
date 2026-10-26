@@ -6,6 +6,8 @@ Xyeena Rig is a local-first toolkit for developer workflows with coding agents. 
 
 [Current source & host status](docs/STATUS.md) · [Getting started](docs/GETTING-STARTED.md) · [CLI reference](docs/CLI-REFERENCE.md) · [Architecture](docs/ARCHITECTURE.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
 
+**Source accounting note:** Current unreleased source development hardens token/cost budget validation, but all usage-based acceptance checks occur *after* provider execution; they do not cap provider billing. [Source and host status](docs/STATUS.md).
+
 **Latest recorded acceptance (2026-10-26):** Antigravity CLI 1.4.7 on Windows honored Xyeena `force_ask`, user cancellation, and a separate narrowly scoped automatic `deny` for a read-only command. Antigravity IDE 2.5.5 did **not** enforce the hook in the observed session. These source features are not automatically part of the separately published npm 0.4.1. [Status and limitations](docs/STATUS.md).
 
 ## Install
