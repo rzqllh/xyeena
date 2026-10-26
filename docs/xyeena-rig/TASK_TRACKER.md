@@ -37,3 +37,7 @@ A Simpul MCP response-shape and error-redaction hardening patch prevents oversiz
 ## Source native adapter follow-up — PR #49
 
 The native host adapter now validates and rejects pre-aborted signals, removes abort listeners, safely handles rejected cancel promises and redacts host-runner diagnostics. These source-only changes do not close OPS-06 (real Windows cancellation) or OPS-07 (IDE interception). Native acceptance must remain evidence-driven.
+
+## Shared write timeout fencing — PR #50
+
+Concurrent writes in the same workspace remain serialized after a timeout until the underlying adapter actually settles. Tests simulate an early cancellation acknowledgement with a still-running write. This is source-level conservative fencing, not proof of descendant cleanup, and does not complete OPS-06 native acceptance.

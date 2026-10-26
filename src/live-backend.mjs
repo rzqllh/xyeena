@@ -624,17 +624,19 @@ export async function dispatchScopedTask({
   const controller = new AbortController();
   let timer;
 
-  // Enforce worktree isolation for parallel writes:
-  // If not readOnly and isolatedWorktrees is not true, serialize to parallelism 1
-  const effectiveParallelism = (task.scope.readOnly === false && task.isolatedWorktrees !== true)
-    ? 1
-    : decision.parallelism;
+  // A caller's isolatedWorktrees flag is advisory, NOT native proof that
+  // filesystem writes are isolated. Until host-authenticated worktree
+  // containment is available, serialize and fence every write.
+  const effectiveParallelism = task.scope.readOnly === false ? 1 : decision.parallelism;
 
   let releaseWriteLock = null;
-  if (task.scope.readOnly === false && task.isolatedWorktrees !== true) {
+  if (task.scope.readOnly === false) {
     releaseWriteLock = await acquireWorkspaceWriteLock(task.cwd || 'default-workspace');
   }
 
+  // Retain the write fence until the adapter operation actually settles.
+  // A timeout or best-effort cancel is not proof that work has stopped.
+  let invoke = null;
   try {
     // Enforce Harness gate check on dispatch if gate is provided
     if (harnessGate && task.scope?.operationClass && task.scope.operationClass !== 'safe') {
@@ -649,7 +651,7 @@ export async function dispatchScopedTask({
     }
 
     onEvent?.({ type: 'task.started', taskId: task.id, backend: decision.backend });
-    const invoke = Promise.resolve().then(() => adapter.executeTask(clone(task), {
+    invoke = Promise.resolve().then(() => adapter.executeTask(clone(task), {
       signal: controller.signal,
       noNestedDelegation: true,
       parallelism: effectiveParallelism,
@@ -701,6 +703,15 @@ export async function dispatchScopedTask({
       } catch {
         /* best-effort */
       }
+    }
+    if (releaseWriteLock && invoke) {
+      // The failed/timed-out promise can still be executing writes.
+      // Keep subsequent workspace writers queued until it settles.
+      // If the adapter never settles, fail closed and require host
+      // intervention rather than allowing potentially concurrent writes.
+      const releaseAfterSettlement = releaseWriteLock;
+      releaseWriteLock = null;
+      Promise.resolve(invoke).then(releaseAfterSettlement, releaseAfterSettlement);
     }
     onEvent?.({ type: 'task.failed', taskId: task.id, backend: decision.backend });
     throw error;
