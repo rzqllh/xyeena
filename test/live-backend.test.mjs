@@ -734,3 +734,48 @@ test('P1: Simpul rejects missing, negative and coerced provider usage when ledge
     assert.equal(ledger.summary.usedCostMicro, 0);
   }
 });
+
+
+test('P1: Simpul MCP never echoes upstream error fields or thrown transport secrets', async () => {
+  const secret = 'sk-secret-token-C:\\Users\\Private\\credential.json';
+  for (const client of [
+    { async callTool(name) {
+      if (name === 'submit_goal') return { status: 'ERROR', error: secret };
+      return { tokens: 0, costMicro: 0 };
+    } },
+    { async callTool(name) {
+      if (name === 'submit_goal') throw new Error(secret);
+      return { tokens: 0, costMicro: 0 };
+    } }
+  ]) {
+    const adapter = createSimpulMcpAdapter({ mcpClient: client });
+    let message;
+    try {
+      await adapter.executeTask({ id: 'safe-1', title: 'Read only', scope: { readOnly: true } },
+        { noNestedDelegation: true });
+      assert.fail('External failure must be rejected');
+    } catch (error) { message = error.message; }
+    assert.match(message, /Simpul/);
+    assert.ok(!message.includes(secret), 'secret error text must not appear');
+    assert.ok(!message.includes('credential.json'));
+  }
+});
+
+test('P1: Simpul direct and structured MCP responses enforce byte limits and JSON object shape', async () => {
+  const giant = 'q'.repeat(70000);
+  const variants = [
+    { structuredContent: { tokens: 0, costMicro: 0, debug: giant }, content: [] },
+    { tokens: 0, costMicro: 0, debug: giant },
+    { structuredContent: ['not-an-object'], content: [{ type: 'text', text: '[]' }] },
+    { content: [{ type: 'text', text: JSON.stringify({ debug: '界'.repeat(23000) }) }] }
+  ];
+  for (const response of variants) {
+    const adapter = createSimpulMcpAdapter({ mcpClient: { async callTool() { return response; } } });
+    const probe = await adapter.probe();
+    assert.equal(probe.healthy, false);
+    assert.notEqual(probe.executionReady, true);
+    await assert.rejects(adapter.executeTask({
+      id: 'read-only', title: 'Review', scope: { readOnly: true }
+    }, { noNestedDelegation: true }), /Simpul MCP/);
+  }
+});
