@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { hookPlan, applyHookPlan, guidedCommand } from '../src/antigravity-guided.mjs';
 import { sessionStart, resumeCapsule, preToolUse } from '../src/antigravity-guided-hook.mjs';
@@ -536,4 +537,59 @@ test('deny-start rejects unsafe or changed PreToolUse and keeps config unchanged
     assert.equal(fs.readFileSync(config(cwd),'utf8'),original);
     assert.equal(guidedCommand('probe',{cwd,probeAction:'status'}).state,'NOT_STARTED');
   } finally {cleanup(cwd);}
+});
+
+test('runner upgrade preserves host-mutated events and creates a verified backup',()=>{
+ const cwd=fixture();
+ try {
+  fs.mkdirSync(path.dirname(config(cwd)),{recursive:true});
+  fs.writeFileSync(config(cwd),'{}\n');
+  guidedCommand('install',{cwd,yes:true});
+  const cfg=read(config(cwd));
+  cfg['xyeena-rig-guided'].SessionStart=[];
+  cfg['xyeena-rig-guided'].PostInvocation=[{type:'command',command:'echo host-custom',timeout:3}];
+  fs.writeFileSync(config(cwd),JSON.stringify(cfg,null,2)+'\n');
+  const originalConfig=fs.readFileSync(config(cwd),'utf8');
+  const runner=path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs');
+  const latest=fs.readFileSync(runner,'utf8');
+  const previous=latest+'\n// legacy installed runner\n';
+  fs.writeFileSync(runner,previous);
+  const mf=path.join(cwd,'.xyeena','antigravity-guided.json');
+  const manifest=read(mf),groupHash=manifest.groupHash;
+  manifest.scriptHash=crypto.createHash('sha256').update(previous).digest('hex');
+  fs.writeFileSync(mf,JSON.stringify(manifest,null,2)+'\n');
+  assert.equal(guidedCommand('status',{cwd}).probeEligible,true);
+  assert.equal(guidedCommand('status',{cwd}).managedIntegrity,'MODIFIED');
+  assert.equal(guidedCommand('runner-preview',{cwd}).changed,true);
+  assert.throws(()=>guidedCommand('runner-upgrade',{cwd}),/Explicit --yes/);
+  assert.equal(fs.readFileSync(config(cwd),'utf8'),originalConfig);
+  const upgraded=guidedCommand('runner-upgrade',{cwd,yes:true});
+  assert.equal(upgraded.result.changed,true);
+  assert.equal(upgraded.result.backupCreated,true);
+  assert.equal(fs.readFileSync(config(cwd),'utf8'),originalConfig);
+  assert.equal(fs.readFileSync(runner,'utf8'),latest);
+  assert.equal(read(mf).groupHash,groupHash);
+  assert.equal(guidedCommand('status',{cwd}).runnerIntegrity,'MATCH');
+  assert.equal(guidedCommand('status',{cwd}).managedIntegrity,'MODIFIED');
+  assert.ok(fs.readdirSync(path.join(cwd,'.xyeena','backups','antigravity')).some(x=>x.startsWith('runner-')&&x.endsWith('.mjs')));
+  assert.equal(fs.existsSync(path.join(cwd,'.gitignore')),false);
+  assert.equal(guidedCommand('runner-upgrade',{cwd,yes:true}).result.changed,false);
+ } finally {cleanup(cwd);}
+});
+test('runner upgrade refuses tampered script and modified PreToolUse',()=>{
+ const cwd=fixture();
+ try {
+  fs.mkdirSync(path.dirname(config(cwd)),{recursive:true});
+  fs.writeFileSync(config(cwd),'{}\n');
+  guidedCommand('install',{cwd,yes:true});
+  const runner=path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs');
+  const latest=fs.readFileSync(runner,'utf8');
+  fs.appendFileSync(runner,'\n// unowned tampering\n');
+  assert.throws(()=>guidedCommand('runner-upgrade',{cwd,yes:true}),/unmodified current runner/);
+  fs.writeFileSync(runner,latest);
+  const cfg=read(config(cwd));
+  cfg['xyeena-rig-guided'].PreToolUse[0].matcher='none';
+  fs.writeFileSync(config(cwd),JSON.stringify(cfg));
+  assert.throws(()=>guidedCommand('runner-upgrade',{cwd,yes:true}),/exact PreToolUse/);
+ } finally {cleanup(cwd);}
 });
