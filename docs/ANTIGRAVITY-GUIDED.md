@@ -101,3 +101,15 @@ Call run_command with git status --short. Do not write files or run commands you
 **PASS only if the actual CLI tool attempt is rejected with the Xyeena native diagnostic `deny` reason and no successful command output.** If the command runs, even if `guided probe status` says `CALLBACK_OBSERVED_UNATTESTED`, native enforcement did **not** pass. The local record can be forged by invoking Node directly, so it cannot attest host enforcement by itself. Run `guided probe status` to inspect the observed hook decision and `guided probe clear --dir . --yes` after testing. If another probe is active, inspect or clear it first; never force a replacement of the owned hook group.
 
 This is **not** a proof that arbitrary shell commands cannot escape a workspace, that native IDE hooks run, or that all privileged tool calls are safe. It is only one narrowly scoped, non-destructive acceptance test of the CLI's enforcement of `decision: "deny"`. Do not merge or publish any security claims before real host evidence.
+
+## Upgrading an owned runner after Antigravity host drift
+
+Antigravity CLI can rewrite unrelated event groups in `.agents/hooks.json` (e.g. `SessionStart` and `PostInvocation`). The general installer **must continue to refuse** modifications when its full managed group integrity hash differs. To update only the owned runner for this diagnostic after examining `guided status`:
+
+```powershell
+node bin/xyeena.mjs guided runner-preview --dir .
+node bin/xyeena.mjs guided runner-upgrade --dir . --yes
+node bin/xyeena.mjs guided status --dir .
+```
+
+This path requires an **exact, enabled, workspace-owned `PreToolUse`**, a matching existing runner hash, and the already-established ignored backup destination. It backs up the prior verified runner, updates only `.xyeena/hooks/antigravity-guided.mjs` plus the matching `scriptHash` in `.xyeena/antigravity-guided.json`, and **never modifies `.agents/hooks.json`, other hook groups, global settings, or the root `.gitignore`**. If the current runner was modified outside Xyeena, or the expected backup ignore rule was removed, the operation fails rather than adopting unknown code. The stale full-group hash remains stale by design because Antigravity owns its in-place event modifications. This procedure is not a native hook acceptance test.

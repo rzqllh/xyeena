@@ -213,3 +213,9 @@ The code in the pending feature PR adds the opt-in Antigravity native `PreToolUs
 - Proposed follow-up provides a five-minute one-shot `guided probe deny-start` that returns `deny` for an exact, read-only `git status --short` tool call. It does not attempt any out-of-workspace write or change host permissions.
 - `PreToolUse` exact ownership/hash checks remain mandatory before arming; unrelated host config drift does not trigger an installer write. A denied callback is recorded locally without command arguments, but such a local record is not host attestation.
 - Source/CI verification establishes only simulation of the documented native response contract. **Real `agy 1.4.7` acceptance must observe the host block the command and report the Xyeena diagnostic deny reason.** An accepted command is a failure. No claim about IDE support or general command sandboxing.
+
+## Guarded runner-only update for OPS-07 negative acceptance
+
+- The user has a legitimately drifted managed group (`SessionStart` removed; `PostInvocation` appeared) while `PreToolUse` remained exact and the installed runner matched its owner manifest. The installer correctly refused an unsafe overwrite.
+- Follow-up PR adds read-only `guided runner-preview` and explicit `guided runner-upgrade --yes` to safely introduce the one-shot automatic-deny runner without resetting `.agents/hooks.json`. Requires exact enabled PreToolUse, untampered old runner, and a Git-ignored backup directory. Only the runner and its manifest script hash are updated.
+- Still no native `agy` automatic-deny result. CLI auto-deny remains **PENDING** until a real native tool call is blocked and observed by the user.
