@@ -19,7 +19,7 @@ This matrix retains each acceptance ID individually for auditable traceability. 
 | A11 | Distinguish skill presence from activation | PARTIAL; LIVE SMOKE | Host skill inventory and read-only in-session task observed; native plugin activation telemetry not independently proven |
 | A12 | Core Harness operation boundaries | CI PASS; CLI FORCE_ASK + SCOPED AUTO-DENY LIVE PASS; IDE LIVE BLOCKED | CLI 1.4.7 honored Xyeena reason for human consent and canceled on No; separately blocked native read-only git status command with exact Xyeena pre-tool deny reason. IDE 2.5.5 previously did not enforce interception |
 | A13 | Contextual project Harness opt-in | CI PASS | Guide selection tests |
-| A14 | Simpul dispatch/cancel/timeout lifecycle | CONTRACT PASS; LIVE BLOCKED | Upstream supervisor unavailable; native fallback active |
+| A14 | Optional Simpul transport dispatch/cancel/timeout | CONTRACT PASS; OPTIONAL INTEGRATION — NOT A RIG RELEASE GATE | Upstream supervisor unavailable; opt-in transport cannot be claimed live-ready. RIG-native fallback does not depend on Simpul |
 | A14a | Verified adapter or safe inline fallback | CI PASS | Adapter tests |
 | A15 | Native worker lifecycle and health | CONTRACT PASS; LIVE PENDING | Host-issued handles in live runtime pending |
 | A16 | Bound recursion and shared writes | CI PASS | Concurrency fixtures |
@@ -42,7 +42,7 @@ This matrix retains each acceptance ID individually for auditable traceability. 
 | A33 | Release artifact/provenance and publication | CONDITIONAL GO | Package candidate verified (sha512, 236 files); v0.5.0 publication requires separate human authorization |
 
 
-**Release blockers:** Antigravity CLI's narrowly tested authorization/deny has live evidence for A12/A25/A28, but IDE 2.5.5 interception and wider host authorization (A18/A31) are still blocked; Simpul execution when advertised as a live backend (A14), final release authorization (A33), and unresolved material security risk remain. Limited use can exclude Simpul, but must state that limitation.
+**Release blockers:** Antigravity CLI's narrowly tested authorization/deny has live evidence for A12/A25/A28, but IDE 2.5.5 interception and wider host authorization (A18/A31) are still blocked; final release authorization (A33), and unresolved material security risk remain. Optional Simpul integration (A14) is separately gated only if explicitly enabled and advertised; it is **not** required for RIG-native release.
 
 ## PR #47 source-only regression boundary
 
@@ -59,3 +59,7 @@ A16/A27 add a negative regression for shared-workspace write serialization after
 ## Integrated source P0 validation and operator preflight
 
 PR #50 final-head GitHub CI [40272104829](https://github.com/rzqllh/xyeena/actions/runs/40272104829) passed 9/9 checks. Unverified isolatedWorktrees caller flags no longer enable parallel writes; unresolved timed-out write adapters retain serialization. The Windows preflight is source-only; A14, A18, A25, A28 and A31 native-host limitations remain. A33 still needs authorized, separately versioned release candidate and provenance evidence.
+
+## RIG-only host acceptance scope (2026-10-26)
+
+Source `ops preflight` and the Windows acceptance JSON enumerate only native RIG host requirements (#34, #36, #37). A14/OPS-01/#35 document an **optional external adapter** and cannot block RIG-native release. Hermes native cancellation and user authorization remain in RIG scope; a separately operated provider billing hard cap is not a RIG-native capability claim. This scope correction does **not** turn any untested native host into LIVE PASS.
