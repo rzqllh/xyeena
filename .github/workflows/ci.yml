@@ -48,8 +48,10 @@ jobs:
         run: |
           # Exercise the non-UseCurrentSource path under legacy powershell.exe,
           # including git fetch/worktree stderr progress, as on the owner's PC.
+          # On a PR, HEAD selects that PR's tested CLI contract while still
+          # fetching main; normal operator execution defaults to origin/main.
           $dest = Join-Path $env:RUNNER_TEMP ('xyeena-ps51-' + [guid]::NewGuid().ToString('N'))
-          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/windows-acceptance-pack.ps1 -RepoDir . -OutputDir $dest
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/windows-acceptance-pack.ps1 -RepoDir . -SourceRef HEAD -OutputDir $dest
           if ($LASTEXITCODE -ne 0) { throw 'Windows PowerShell 5.1 detached-worktree preflight failed' }
           $report = Get-Content -Raw (Join-Path $dest 'rig-windows-evidence.json') | ConvertFrom-Json
           if ($report.verdict -ne 'SOURCE_PREFLIGHT_PASS_LIVE_PENDING' -or
