@@ -418,13 +418,22 @@ export function createNativeSubagentAdapter({
           provider: 'host-native'
         };
       } catch (err) {
-        return { healthy: false, executionReady: false, noNestedDelegation: true, reason: err.message };
+        return { healthy: false, executionReady: false, noNestedDelegation: true, reason: 'Host runner status unavailable' };
       }
     },
 
     async executeTask(task, options = {}) {
       if (options.noNestedDelegation !== true) {
         throw new Error('Nested delegation prohibited');
+      }
+      if (options.signal !== undefined) {
+        if (typeof options.signal?.aborted !== 'boolean' ||
+            typeof options.signal?.addEventListener !== 'function' ||
+            typeof options.signal?.removeEventListener !== 'function')
+          throw new Error('Invalid native worker cancellation signal');
+        // Abort before dispatch must never launch a paid or tool-capable worker.
+        if (options.signal.aborted)
+          throw Object.assign(new Error('Native worker canceled before launch'), { code: 'ERR_NATIVE_CANCELED' });
       }
       if (ledger) {
         ledger.checkBudget();
@@ -446,14 +455,17 @@ export function createNativeSubagentAdapter({
       // The host runner must provide the real worker identity, validated positively
       let runResult;
       let hostWorkerId = null;
+      let onAbort = null;
 
       try {
         if (typeof runner.spawn === 'function') {
-          const handle = await runner.spawn(clone(task), {
+          let handle;
+          try { handle = await runner.spawn(clone(task), {
             noNestedDelegation: true,
             parallelism: options.parallelism || 1,
             signal: options.signal
-          });
+          }); }
+          catch { throw new Error('Native host runner spawn failed'); }
           if (!handle || typeof handle !== 'object') {
             throw new Error('Host runner spawn() must return an active worker handle object');
           }
@@ -462,25 +474,36 @@ export function createNativeSubagentAdapter({
           recentWorkers.set(task.id, { workerId: hostWorkerId, handle });
 
           if (options.signal) {
-            options.signal.addEventListener('abort', () => {
-              if (typeof handle.cancel === 'function') {
-                handle.cancel('aborted');
-              } else if (typeof runner.cancel === 'function') {
-                runner.cancel({ workerId: hostWorkerId, taskId: task.id, reason: 'aborted' });
-              }
-            }, { once: true });
+            onAbort = () => {
+              // Host cancellation is cooperative. Never surface a rejected
+              // cancel promise as an unhandled rejection or log host secrets.
+              try {
+                const request = typeof handle.cancel === 'function'
+                  ? handle.cancel('aborted')
+                  : (typeof runner.cancel === 'function'
+                    ? runner.cancel({ workerId: hostWorkerId, taskId: task.id, reason: 'aborted' })
+                    : null);
+                Promise.resolve(request).catch(() => {});
+              } catch { /* best effort */ }
+            };
+            options.signal.addEventListener('abort', onAbort, { once: true });
+            if (options.signal.aborted) onAbort();
           }
 
-          runResult = typeof handle.wait === 'function'
-            ? await handle.wait()
-            : (typeof handle.then === 'function' ? await handle : handle);
+          try {
+            runResult = typeof handle.wait === 'function'
+              ? await handle.wait()
+              : (typeof handle.then === 'function' ? await handle : handle);
+          } catch { throw new Error('Native host worker wait failed'); }
         } else {
           activeWorkers.set(task.id, { workerId: null });
-          runResult = await runner.run(clone(task), {
-            noNestedDelegation: true,
-            parallelism: options.parallelism || 1,
-            signal: options.signal
-          });
+          try {
+            runResult = await runner.run(clone(task), {
+              noNestedDelegation: true,
+              parallelism: options.parallelism || 1,
+              signal: options.signal
+            });
+          } catch { throw new Error('Native host runner execution failed'); }
           hostWorkerId = assertValidHostWorkerId(runResult?.workerId);
           activeWorkers.set(task.id, { workerId: hostWorkerId });
           recentWorkers.set(task.id, { workerId: hostWorkerId });
@@ -488,12 +511,16 @@ export function createNativeSubagentAdapter({
       } catch (err) {
         activeWorkers.delete(task.id);
         throw err;
+      } finally {
+        if (onAbort) options.signal.removeEventListener('abort', onAbort);
       }
 
       activeWorkers.delete(task.id);
+      if (options.signal?.aborted)
+        throw Object.assign(new Error('Native worker cancellation requested'), { code: 'ERR_NATIVE_CANCELED' });
 
       if (runResult?.crashed === true || runResult?.status === 'CRASHED' || runResult?.error) {
-        throw new Error(`Host worker crashed or encountered error: ${runResult.error || 'Worker crash'}`);
+        throw new Error('Host worker crashed or returned a failed result');
       }
 
       const evidenceRefs = safeEvidence(runResult?.evidenceRefs);
@@ -514,7 +541,7 @@ export function createNativeSubagentAdapter({
           await active.handle.cancel(reason);
           return true;
         } catch (err) {
-          throw new Error(`Worker handle cancellation failed: ${err.message}`);
+          throw new Error('Worker handle cancellation failed');
         }
       }
       if (typeof runner.cancel === 'function') {
@@ -522,7 +549,7 @@ export function createNativeSubagentAdapter({
           await runner.cancel({ workerId: effectiveWorkerId, taskId, reason });
           return true;
         } catch (err) {
-          throw new Error(`Runner cancellation failed: ${err.message}`);
+          throw new Error('Runner cancellation failed');
         }
       }
       throw new Error('Runner lacks cancellation API: unable to cancel active worker safely');
