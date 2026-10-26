@@ -103,10 +103,12 @@ test('live acceptance is distinct from historical test counts and missing host s
 
 test('public acceptance backlog keeps named external host gates visible',()=>{
   const status=read('docs/STATUS.md');
-  for(const num of [34,35,36,37])
-    assert.ok(status.includes(`/issues/${num}`),`Missing external acceptance issue #${num}`);
+  for(const num of [34,36,37])
+    assert.ok(status.includes(`/issues/${num}`),`Missing RIG-native acceptance issue #${num}`);
+  const rigSection=status.split('## Outstanding live acceptance — public issue tracker')[1].split('## What remains before a wider release')[0];
+  assert.ok(!rigSection.includes('/issues/35'), 'Optional Simpul integration must not appear in RIG-native backlog');
   assert.match(status,/cannot close|only independent observations|not finished work/i);
-  assert.match(status,/Source audit baseline/);
+  assert.match(status,/Verified source checkpoint/);
   assert.match(status,/\/commit\/[0-9a-f]{40}/);
 });
 
@@ -114,7 +116,7 @@ test('release status separates current source CI from unverified native host acc
   const status=read('docs/STATUS.md');
   const runbook=read('docs/xyeena-rig/RUNBOOK.md');
   for(const pr of [39,40,41,42]) assert.ok(status.includes('/pull/'+pr));
-  assert.match(status,/Source audit baseline/);
+  assert.match(status,/Verified source checkpoint/);
   assert.match(status,/\/commit\/[0-9a-f]{40}/);
   assert.match(status,/fake.*provider/i);
   assert.match(status,/No wider live-host/i);

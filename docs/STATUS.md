@@ -6,7 +6,7 @@
 
 | Surface | Verified source state | Release boundary |
 | --- | --- | --- |
-| GitHub `main` | Source audit baseline [`2c2f0cea`](https://github.com/rzqllh/xyeena/commit/2c2f0cea2ba75edd58aa8bd33c7cf952da5e1468) (PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#50](https://github.com/rzqllh/xyeena/pull/50), excluding issue-only numbers) | Repository source is not automatically npm-published |
+| GitHub `main` | Verified source checkpoint [`184e2d9`](https://github.com/rzqllh/xyeena/commit/184e2d9abb7385a670c22b53898a29cff7d6e769), through merged PR #53 | Repository source is not automatically npm-published |
 | npm `xyeena-agent` | `0.4.1` is the last published baseline **recorded by this repository** | Registry cannot be authoritatively rechecked from this audit; verify the registry before a future release |
 | Candidate `0.5.0` | Not published, tagged, or authorized by the user | A future publication requires explicit human approval |
 | CI | PR #31, #32, #33, #38–#45 (implemented PR numbers) each passed 9/9 GitHub CI jobs at their final PR heads | CI is source/packaging assurance, not live host enforcement |
@@ -20,7 +20,6 @@ The package version remains `0.4.1` in `package.json`. Features implemented afte
 | **Antigravity CLI `agy 1.4.7` (Windows)** | Native `PreToolUse` callback observed; `force_ask` displayed Xyeena-specific approval reason and user `No, cancel` blocked the tool; a separate one-shot `deny` returned `tool call denied by pre-tool hook: Xyeena: native deny diagnostic blocked read-only git status` without executing `git status --short`. Probe was cleared after test. | **LIVE PASS for those specific CLI consent/deny interactions** |
 | **Antigravity IDE `2.5.5` (Windows)** | A native read-only tool was permitted despite an expected workspace-boundary hook denial; no native Xyeena approval dialog. | **LIVE BLOCKED** — installation does not enforce IDE security |
 | **Hermes** | Previous one-shot Windows host run and budget post-run checks. Hard provider spend and native cancellation unproven. | **LIVE PARTIAL** |
-| **Simpul supervisor** | Adapter/transport contracts only; no authenticated, complete live dispatch/cancel lifecycle. | **LIVE BLOCKED** |
 | **Codex / Claude Code / Gemini CLI** | Source adapters and fixtures; corresponding standalone binaries unavailable in recorded Windows acceptance environment. | **LIVE BLOCKED / untested on that host** |
 
 **Scope of PASS:** The CLI test used one exact, harmless read-only command and a user-canceled command. It is not proof of OS sandboxing, arbitrary privileged writes, multi-host enforcement, IDE hooks, or universally safe execution. `guided status` deliberately reports `hostEnforcement: UNVERIFIED` because a writable local diagnostic receipt does not independently authenticate a host. The separately witnessed native CLI tool rejection is the acceptance evidence.
@@ -31,9 +30,9 @@ The Antigravity CLI may modify `SessionStart` and `PostInvocation` in the manage
 
 The source `setup check --runtime antigravity` now checks `agy` as the native CLI executable in addition to any `antigravity` binary. This corrects a false negative seen on machines where only `agy` is on PATH. Results identify command candidates without launching a model and **do not change** the host acceptance matrix above: a discovered binary is not proof that either the CLI session is active or the IDE enforces hooks.
 
-## Simpul submission-only contract
+## Optional cross-project worker integration (outside RIG-native acceptance)
 
-The source Simpul MCP adapter now adheres to the upstream `submit_goal` parameter schema and refuses write-capable or ambiguous delegation. Neither a user-provided permission flag nor a model-generated response can establish write containment. FastMCP SDK JSON result wrappers are decoded with size/type checks. **`executionReady` remains false** on a connectivity probe, and there is no automatic `execute_run` invocation. This is engineering contract correctness, not proof of a live Simpul supervisor or native delegation.
+Simpul is a **separate workspace and optional MCP transport**. The adapter remains in source for opt-in compatibility, with execution readiness unverified; its authenticated supervisor lifecycle is **not** part of core RIG acceptance or a blocker for a RIG-native release. RIG preflight does not probe or enumerate Simpul. The [historical interface issue #35](https://github.com/rzqllh/xyeena/issues/35) is tracked separately.
 
 ## Programmatic one-shot cancellation (source-only)
 
@@ -52,22 +51,21 @@ The latest source CLI wraps actual `host run`, `sdk run` and `orchestrate run` e
 
 All four passed their GitHub CI matrices (9/9 each) and were merged. **No wider live-host, IDE interception, Simpul supervisor, Windows process-tree teardown or npm release acceptance is implied.**
 
-## One-command local preflight (newer source, not npm 0.4.1)
+## One-command RIG-only local preflight (newer source, not npm 0.4.1)
 
 ```sh
 node bin/xyeena.mjs ops preflight --dir .
 ```
 
-This read-only report is designed as the prerequisite inventory for the operator handoff: it shows available command names (not installation paths), minimal Xyeena hook structure, local runner file presence, and the corresponding open GitHub acceptance gates. It does not invoke `agy`, Python, Hermes, Codex, Claude, Gemini, Simpul, the installer, network calls, or user-approval dialogs. It makes **no new live PASS claims** and does not print tool command lines or credential values. Missing native evidence remains blocked.
+This read-only report is designed as the prerequisite inventory for the operator handoff: it shows available command names (not installation paths), minimal Xyeena hook structure, local runner file presence, and the three RIG-native acceptance issue links (#34, #36, #37), excluding optional worker integration. It does not invoke `agy`, Python, Hermes, Codex, Claude, Gemini, Simpul, the installer, network calls, or user-approval dialogs. It makes **no new live PASS claims** and does not print tool command lines or credential values. Missing native evidence remains blocked.
 
 **For a local checkout with uncommitted edits or older source:** do not pull/reset it to run the new command. Instead fetch `origin` and use a fresh detached Git worktree under ignored `.tmp/`, invoke that worktree's `bin/xyeena.mjs` against the actual workspace with `--dir .`, and remove only the temporary worktree after the acceptance process is complete. See the [safe operator runbook](xyeena-rig/RUNBOOK.md).
 
 ## Outstanding live acceptance — public issue tracker
 
-The remaining work needs target-host runtime observations or external dependencies, not more simulated PASS labels:
+The remaining **core RIG** work needs target-host runtime observations or external dependencies, not more simulated PASS labels:
 
 - [#34 — Antigravity IDE native hook boundary](https://github.com/rzqllh/xyeena/issues/34): IDE 2.5.5 did not enforce an expected Xyeena decision; CLI results cannot substitute
-- [#35 — Simpul authenticated supervisor lifecycle](https://github.com/rzqllh/xyeena/issues/35): actual execution, terminal evidence, cancellation and write containment
 - [#36 — Codex / Claude Code / Gemini CLI native acceptance](https://github.com/rzqllh/xyeena/issues/36): binaries unavailable on the recorded test machine
 - [#37 — Hermes real cancellation and provider-side budget evidence](https://github.com/rzqllh/xyeena/issues/37): one-shot smoke passed previously, broader limits untested
 
@@ -77,7 +75,6 @@ These tickets are not finished work; only independent observations on a running 
 
 - Verify real native IDE interception or explicitly document IDE as unsupported for security enforcement; do not infer support from vendor docs or a successful install.
 - Complete host-specific authorization, skill activation, worker lifecycle and negative tests for the other declared runtimes, where practical.
-- Exercise an authenticated Simpul supervisor from submission through completion/cancellation before advertising live Simpul delegation; native or inline fallback remains available.
 - Recheck npm registry, package inventory and provenance for the exact candidate; receive explicit approval before any tag, GitHub Release or npm publication.
 
 For the audit trail see [OPS tracker](xyeena-rig/TASK_TRACKER.md), [acceptance matrix](xyeena-rig/ACCEPTANCE_MATRIX.md), [live evidence](xyeena-rig/EVIDENCE.md), [security policy](../SECURITY.md), and [guided hooks](ANTIGRAVITY-GUIDED.md).
@@ -116,3 +113,7 @@ A read-only Windows PowerShell handoff is provided at scripts/windows-acceptance
 ## Windows 5.1 preflight compatibility correction
 
 The original PowerShell acceptance preflight could fail during an otherwise successful `git fetch` when Git progress on stderr was promoted to `NativeCommandError` under `ErrorActionPreference=Stop`. The source fix temporarily handles native Git stderr and validates its actual exit code, including owned-worktree cleanup. CI now tests the full detached-worktree path in Windows PowerShell 5.1. This only repairs prerequisite collection; issues #34–#37 retain their native acceptance statuses.
+
+## RIG scope correction and local Windows evidence (2026-10-26)
+
+The user ran the read-only Windows PowerShell 5.1 pack on `184e2d9abb73` successfully: `SOURCE_PREFLIGHT_PASS_LIVE_PENDING`, original checkout unchanged, Node v22.19.0. This is operator-provided source preflight output, not independently witnessed native host interception or permission enforcement. Subsequent RIG-native reports deliberately exclude the separate Simpul supervisor and provider billing hard-cap promises. Remaining host evidence gates are #34, #36, and #37; release draft [#52](https://github.com/rzqllh/xyeena/pull/52) remains unapproved for merge or publication.

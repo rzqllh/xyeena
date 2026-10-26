@@ -65,13 +65,13 @@ export function inspectOpsPreflight({cwd=process.cwd(),env=process.env,
     nativeActivationVerified:false
   }));
   return {
-    schema:1,mode:'read-only-prerequisite-inventory',modelCallPerformed:false,
+    schema:1,project:'xyeena-rig',acceptanceScope:'rig-native-hosts',
+    mode:'read-only-prerequisite-inventory',modelCallPerformed:false,
     filesModified:false,configurationChanged:false,
     // Deliberately do not expose user home, workspace, auth files or command lines.
     workspace:{gitMetadataPresent:fs.existsSync(path.join(root,'.git'))},
     commands,
     guidedHook:inspectHook(root),
-    simpul:{connectionTested:false,executionReady:'UNVERIFIED'},
     nativeAcceptance:{antigravityCli:'NOT_TESTED_BY_PREFLIGHT',
       antigravityIde:'NOT_TESTED_BY_PREFLIGHT',
       hermes:'NOT_TESTED_BY_PREFLIGHT',
@@ -79,10 +79,9 @@ export function inspectOpsPreflight({cwd=process.cwd(),env=process.env,
       gemini:'NOT_TESTED_BY_PREFLIGHT'},
     remainingGates:[
       {issue:34,link:issue(34),purpose:'Antigravity IDE native interception'},
-      {issue:35,link:issue(35),purpose:'Simpul real supervised execution'},
       {issue:36,link:issue(36),purpose:'Codex, Claude, Gemini native host acceptance'},
-      {issue:37,link:issue(37),purpose:'Hermes native cancellation and billing controls'}
+      {issue:37,link:issue(37),purpose:'Hermes native cancellation and host authorization'}
     ],
-    note:'Command presence and hook files do not establish native activation, interception, or authorization.'
+    note:'RIG-native host prerequisites only. Optional external worker integrations and provider billing acceptance are outside this report. Command presence and hook files do not establish native activation, interception, or authorization.'
   };
 }

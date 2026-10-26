@@ -1,5 +1,7 @@
 # Changelog
 
+- Scope correction: `ops preflight` and Windows evidence pack now report only RIG-native host gates (#34/#36/#37); optional Simpul supervisor readiness and provider-side billing caps are no longer mixed into core release acceptance. Tests assert machine-readable project/scope fields and no Simpul gate leakage. Core adapter behavior is unchanged.
+
 All versions listed as released refer to published npm artifacts. Repository source changes are not published until a matching release is authorized.
 
 ## Unreleased — source after 0.4.1 (updated 2026-10-26)

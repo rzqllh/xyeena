@@ -20,6 +20,8 @@ test('preflight inspects command hints without launching anything or leaking pat
   const before=fs.readdirSync(cwd).sort();
   const report=inspectOpsPreflight({cwd,env:{Path:dir},platform:'win32'});
   assert.equal(report.mode,'read-only-prerequisite-inventory');
+  assert.equal(report.project,'xyeena-rig');
+  assert.equal(report.acceptanceScope,'rig-native-hosts');
   assert.equal(report.filesModified,false);
   assert.equal(report.configurationChanged,false);
   assert.equal(report.modelCallPerformed,false);
@@ -31,7 +33,10 @@ test('preflight inspects command hints without launching anything or leaking pat
   assert.equal(agy.candidateDetected,true);
   assert.equal(agy.confirmedRunning,false);
   assert.equal(agy.nativeActivationVerified,false);
-  assert.equal(report.remainingGates.length,4);
+  assert.deepEqual(report.remainingGates.map(g=>g.issue),[34,36,37]);
+  assert.equal(Object.hasOwn(report,'simpul'),false);
+  assert.ok(!JSON.stringify(report).toLowerCase().includes('simpul'));
+  assert.ok(!JSON.stringify(report).toLowerCase().includes('billing controls'));
   assert.deepEqual(fs.readdirSync(cwd).sort(),before);
   assert.ok(!JSON.stringify(report).includes(cwd),'No workspace paths in output');
 });
@@ -82,6 +87,8 @@ test('source ops preflight CLI is read-only with strict usage and no remote proc
   const report=JSON.parse(run.stdout);
   assert.equal(report.modelCallPerformed,false);
   assert.equal(report.nativeAcceptance.hermes,'NOT_TESTED_BY_PREFLIGHT');
+  assert.equal(report.acceptanceScope,'rig-native-hosts');
+  assert.equal(Object.hasOwn(report,'simpul'),false);
   assert.equal(fs.readdirSync(cwd).join(),before.join());
   assert.ok(!run.stdout.includes(cwd));
   const unsupported=spawnSync(process.execPath,[entry,'ops','preflight','--yes'],

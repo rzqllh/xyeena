@@ -66,7 +66,7 @@ Check the local `.xyeena/runs/` journal for an interrupted run. Inspect task sta
 ## Release
 
 1. Verify all automated checks and recorded approval gates on the intended release commit.
-2. Complete configured-host live acceptance and dependent Simpul supervisor verification, or document a restricted release scope.
+2. Complete RIG-native configured-host live acceptance, or document a restricted host-support scope. Optional Simpul supervisor verification belongs to separately enabled integration acceptance and is **not** a prerequisite for core RIG.
 3. Inspect `npm pack --dry-run` and verify the package contents.
 4. Update the package and lockfile version together; validate plugin metadata consistency.
 5. Obtain separate authorization for GitHub Release/tag and npm publication.
@@ -113,3 +113,7 @@ This script fetches origin/main and uses a uniquely named detached temporary Git
 ## Windows PowerShell 5.1 Git progress compatibility (2026-10-26)
 
 The preflight helper now treats Git stderr progress such as `From github.com` and `Preparing worktree` as expected diagnostics, checking actual Git exit status instead of treating PowerShell 5.1 `NativeCommandError` as a failed fetch. A targeted Windows CI smoke exercises `powershell.exe` without `-UseCurrentSource`, covering both temporary source worktree creation and cleanup. No host acceptance, provider spending limit or privileged tool interception is implied.
+
+## RIG-only native acceptance handoff
+
+The Windows evidence pack must report `project: xyeena-rig` and `acceptanceScope: rig-native-hosts`. Its core `remainingGates` are #34 (Antigravity IDE), #36 (Codex/Claude/Gemini), and #37 (Hermes native cancellation/authorization). It does not probe or report Simpul supervisor state or certify provider billing hard caps. The previously recorded Windows preflight for source `184e2d9` succeeded as a read-only **source prerequisite**; it did not validate native IDE interception. Rerunning on the updated source refreshes report scope, not native PASS.
