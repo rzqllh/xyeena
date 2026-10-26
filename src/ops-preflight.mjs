@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import {inspectSetupHosts} from './setup-health.mjs';
 
@@ -21,6 +22,23 @@ function ordinaryFile(root,file) {
     return Boolean(last?.isFile()&&last.size<=FILE_MAX);
   } catch { return false; }
 }
+// Read-only ownership check. Registration/runner presence alone cannot
+// establish that the installed script matches Xyeena's managed manifest.
+function ownedRunnerIntegrity(root,runner) {
+  const marker=path.join(root,'.xyeena','antigravity-guided.json');
+  if(!ordinaryFile(root,runner)) return 'MISSING_OR_UNTRUSTED';
+  if(!fs.existsSync(marker)) return 'UNOWNED';
+  if(!ordinaryFile(root,marker)) return 'INVALID_MANIFEST';
+  try {
+    const m=JSON.parse(fs.readFileSync(marker,'utf8'));
+    if(!m||typeof m!=='object'||Array.isArray(m)||m.schema!==1||
+        m.group!==HOOK_GROUP||typeof m.scriptHash!=='string'||
+        !/^[a-f0-9]{64}$/.test(m.scriptHash))
+      return 'INVALID_MANIFEST';
+    const actual=crypto.createHash('sha256').update(fs.readFileSync(runner)).digest('hex');
+    return actual===m.scriptHash ? 'MATCH':'MODIFIED';
+  } catch { return 'INVALID_MANIFEST'; }
+}
 function inspectHook(root,platform) {
   const config=path.join(root,'.agents','hooks.json');
   const runner=path.join(root,'.xyeena','hooks','antigravity-guided.mjs');
@@ -31,8 +49,10 @@ function inspectHook(root,platform) {
   const expectedCommand=platform==='win32'
     ? 'node ../.xyeena/hooks/antigravity-guided.mjs PreToolUse'
     : `"${process.execPath}" "${runner}" PreToolUse`;
+  const runnerPresent=ordinaryFile(root,runner);
+  const runnerIntegrity=ownedRunnerIntegrity(root,runner);
   const base={manifest:'MISSING',groupPresent:false,preToolUseRegistered:false,
-    preToolUseEnabled:null,runnerPresent:ordinaryFile(root,runner),
+    preToolUseEnabled:null,runnerPresent,runnerIntegrity,probeEligible:false,
     hostEnforcement:'UNVERIFIED',hostActivationVerified:false};
   if (!ordinaryFile(root,config)) {
     if (fs.existsSync(config)) base.manifest='UNTRUSTED_OR_OVERSIZE';
@@ -59,7 +79,10 @@ function inspectHook(root,platform) {
     // Enabled config is only a hint; it is never native host proof.
     preToolUseEnabled:eligible&&group.enabled!==false&&
       event.enabled!==false&&event.disabled!==true&&
-      hook.enabled!==false&&hook.disabled!==true};
+      hook.enabled!==false&&hook.disabled!==true,
+    probeEligible:Boolean(eligible&&group.enabled!==false&&
+      event.enabled!==false&&event.disabled!==true&&
+      hook.enabled!==false&&hook.disabled!==true&&runnerIntegrity==='MATCH')};
 }
 
 /** Read-only, redacted prerequisites. Never invokes AI, MCP, hooks or host CLI. */
