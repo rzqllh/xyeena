@@ -231,8 +231,8 @@ export function guidedCommand(command, { cwd = process.cwd(), yes = false, id = 
   if (command === 'probe') {
     const root = paths(cwd).root;
     if (probeAction === 'status') return hookProbeStatus(root);
-    if (!['start', 'clear'].includes(probeAction))
-      throw new Error('Expected guided probe start|status|clear');
+    if (!['start', 'deny-start', 'clear'].includes(probeAction))
+      throw new Error('Expected guided probe start|deny-start|status|clear');
     if (!yes) throw new Error('Explicit --yes required for hook probe changes');
     if (probeAction === 'clear') return clearHookProbe(root);
     const info = guidedIntegrity(root);
@@ -240,7 +240,7 @@ export function guidedCommand(command, { cwd = process.cwd(), yes = false, id = 
     // or repairs .agents/hooks.json. Drift in other event types is preserved.
     if (!info.probeEligible)
       throw new Error('Probe requires an owned, enabled, exact PreToolUse event and matching managed runner; review guided status');
-    return { ...startHookProbe(root),
+    return { ...startHookProbe(root, { mode: probeAction === 'deny-start' ? 'deny-safe-command' : 'observe' }),
       managedIntegrity: info.managedIntegrity,
       otherManagedChanges: info.changedManagedFields };
   }
