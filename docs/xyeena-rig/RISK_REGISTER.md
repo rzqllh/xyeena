@@ -39,3 +39,7 @@ Previously, an already-aborted native adapter signal could still dispatch a work
 ## Shared write lock after timeout (PR #50)
 
 Before this source fix, a timeout could release the shared workspace write lock immediately after best-effort cancellation, even with an unresolved adapter operation. Source now retains the lock until the invocation settles. Residual operational risk: an unresponsive worker can block subsequent writes indefinitely within the process, requiring controlled recovery; there is still no OS-native guarantee that descendants stop writing after their parent resolves. Continue LIVE BLOCKED on unverified host containment.
+
+## Unverified isolation claims (PR #50)
+
+A caller-provided isolatedWorktrees flag could previously bypass write serialization without host-proven worktree containment. All writes are now fenced and limited to parallelism one, regardless of that flag. A canceled, unresponsive write can block that workspace pending controlled recovery: this is an intentional fail-closed tradeoff. Host-authenticated worktree isolation and OS descendant ownership remain unverified.

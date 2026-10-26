@@ -25,6 +25,19 @@ jobs:
       - run: npm run check
       - run: npm run eval
       - run: npm pack --dry-run
+      - name: Windows acceptance pack read-only smoke
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $dest = Join-Path $env:RUNNER_TEMP ('xyeena-pack-' + [guid]::NewGuid().ToString('N'))
+          pwsh -NoProfile -File scripts/windows-acceptance-pack.ps1 -RepoDir . -UseCurrentSource -OutputDir $dest
+          if ($LASTEXITCODE -ne 0) { throw 'Windows acceptance pack failed' }
+          $report = Get-Content -Raw (Join-Path $dest 'rig-windows-evidence.json') | ConvertFrom-Json
+          if ($report.verdict -ne 'SOURCE_PREFLIGHT_PASS_LIVE_PENDING' -or
+              $report.existingCheckoutUnchanged -ne $true -or
+              $report.preflight.modelCallPerformed -ne $false) {
+            throw 'Windows acceptance report made an unsupported claim'
+          }
   skills-ref:
     runs-on: ubuntu-latest
     steps:

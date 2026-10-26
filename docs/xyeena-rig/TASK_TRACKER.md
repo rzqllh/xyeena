@@ -41,3 +41,7 @@ The native host adapter now validates and rejects pre-aborted signals, removes a
 ## Shared write timeout fencing — PR #50
 
 Concurrent writes in the same workspace remain serialized after a timeout until the underlying adapter actually settles. Tests simulate an early cancellation acknowledgement with a still-running write. This is source-level conservative fencing, not proof of descendant cleanup, and does not complete OPS-06 native acceptance.
+
+## Final source handoff — 2026-10-26
+
+PR #49 merged at a27b4db1 after 9/9 final-head CI (40271504759); PR #50 merged at 2c2f0cea after 9/9 final-head CI (40272104829). All writes remain serialized even when a caller asserts isolatedWorktrees; unresolved timed-out write adapters retain locks. The read-only PowerShell handoff only inventories prerequisites. OPS-01/03/04/05/06/07 native-host gates remain open; npm 0.5.0 publication remains unapproved.
