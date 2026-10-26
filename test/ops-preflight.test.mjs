@@ -6,6 +6,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {inspectOpsPreflight} from '../src/ops-preflight.mjs';
+import {guidedCommand} from '../src/antigravity-guided.mjs';
 
 const entry=fileURLToPath(new URL('../bin/xyeena.mjs',import.meta.url));
 const fixture=t=>{
@@ -59,6 +60,8 @@ test('preflight summarizes owned hook shape but never reports hook commands, sec
   assert.equal(result.guidedHook.preToolUseRegistered,true);
   assert.equal(result.guidedHook.preToolUseEnabled,true);
   assert.equal(result.guidedHook.runnerPresent,true);
+  assert.equal(result.guidedHook.runnerIntegrity,'UNOWNED');
+  assert.equal(result.guidedHook.probeEligible,false);
   assert.equal(result.guidedHook.hostEnforcement,'UNVERIFIED');
   const safe=JSON.stringify(result);
   assert.ok(!safe.includes('sk-DO-NOT-EXPOSE'));
@@ -125,6 +128,58 @@ test('preflight recognizes exact POSIX managed PreToolUse command but never host
   assert.equal(report.guidedHook.preToolUseRegistered,true);
   assert.equal(report.guidedHook.hostEnforcement,'UNVERIFIED');
   assert.equal(report.guidedHook.hostActivationVerified,false);
+});
+test('preflight reports verified local runner ownership without calling a host',t=>{
+  const cwd=fixture(t);
+  guidedCommand('install',{cwd,yes:true});
+  const report=()=>inspectOpsPreflight({cwd,env:{PATH:''}}).guidedHook;
+  const installed=report();
+  assert.equal(installed.runnerPresent,true);
+  assert.equal(installed.runnerIntegrity,'MATCH');
+  assert.equal(installed.preToolUseRegistered,true);
+  assert.equal(installed.probeEligible,true);
+  assert.equal(installed.hostEnforcement,'UNVERIFIED');
+  const runner=path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs');
+  const original=fs.readFileSync(runner,'utf8');
+  fs.writeFileSync(runner,original+'\n// unexpected drift\n');
+  assert.equal(report().runnerIntegrity,'MODIFIED');
+  assert.equal(report().probeEligible,false);
+  fs.writeFileSync(runner,original);
+  const marker=path.join(cwd,'.xyeena','antigravity-guided.json');
+  const content=fs.readFileSync(marker,'utf8');
+  fs.writeFileSync(marker,'{invalid');
+  assert.equal(report().runnerIntegrity,'INVALID_MANIFEST');
+  assert.equal(report().probeEligible,false);
+  fs.writeFileSync(marker,content);
+  fs.rmSync(marker);
+  assert.equal(report().runnerIntegrity,'UNOWNED');
+  assert.equal(report().probeEligible,false);
+  assert.equal(report().preToolUseRegistered,true,
+    'Exact local hook command is a syntax hint, not proof of owned runner');
+  const safe=JSON.stringify(inspectOpsPreflight({cwd,env:{PATH:''}}));
+  assert.ok(!safe.includes(cwd));
+  assert.ok(!safe.includes('antigravity-guided.mjs'));
+});
+test('preflight rejects linked and oversized runner/ownership manifests',t=>{
+  const cwd=fixture(t);
+  guidedCommand('install',{cwd,yes:true});
+  const report=()=>inspectOpsPreflight({cwd,env:{PATH:''}}).guidedHook;
+  const marker=path.join(cwd,'.xyeena','antigravity-guided.json');
+  const original=fs.readFileSync(marker,'utf8');
+  fs.writeFileSync(marker,' '.repeat(65537));
+  assert.equal(report().runnerIntegrity,'INVALID_MANIFEST');
+  assert.equal(report().probeEligible,false);
+  fs.writeFileSync(marker,original);
+  const runner=path.join(cwd,'.xyeena','hooks','antigravity-guided.mjs');
+  fs.rmSync(runner);
+  try {
+    fs.symlinkSync(path.join(cwd,'.agents','hooks.json'),runner,'file');
+    assert.equal(report().runnerPresent,false);
+    assert.equal(report().runnerIntegrity,'MISSING_OR_UNTRUSTED');
+    assert.equal(report().probeEligible,false);
+  } catch(e) {
+    if(!['EPERM','EACCES'].includes(e.code)) throw e;
+  }
 });
 test('preflight fails safely on invalid or oversized hook configurations',t=>{
   const cwd=fixture(t),folder=path.join(cwd,'.agents');
