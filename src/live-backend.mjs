@@ -635,6 +635,9 @@ export async function dispatchScopedTask({
     releaseWriteLock = await acquireWorkspaceWriteLock(task.cwd || 'default-workspace');
   }
 
+  // Retain the write fence until the adapter operation actually settles.
+  // A timeout or best-effort cancel is not proof that work has stopped.
+  let invoke = null;
   try {
     // Enforce Harness gate check on dispatch if gate is provided
     if (harnessGate && task.scope?.operationClass && task.scope.operationClass !== 'safe') {
@@ -649,7 +652,7 @@ export async function dispatchScopedTask({
     }
 
     onEvent?.({ type: 'task.started', taskId: task.id, backend: decision.backend });
-    const invoke = Promise.resolve().then(() => adapter.executeTask(clone(task), {
+    invoke = Promise.resolve().then(() => adapter.executeTask(clone(task), {
       signal: controller.signal,
       noNestedDelegation: true,
       parallelism: effectiveParallelism,
@@ -701,6 +704,15 @@ export async function dispatchScopedTask({
       } catch {
         /* best-effort */
       }
+    }
+    if (releaseWriteLock && invoke) {
+      // The failed/timed-out promise can still be executing writes.
+      // Keep subsequent workspace writers queued until it settles.
+      // If the adapter never settles, fail closed and require host
+      // intervention rather than allowing potentially concurrent writes.
+      const releaseAfterSettlement = releaseWriteLock;
+      releaseWriteLock = null;
+      Promise.resolve(invoke).then(releaseAfterSettlement, releaseAfterSettlement);
     }
     onEvent?.({ type: 'task.failed', taskId: task.id, backend: decision.backend });
     throw error;
