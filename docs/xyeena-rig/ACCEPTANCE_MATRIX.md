@@ -43,3 +43,7 @@ This matrix retains each acceptance ID individually for auditable traceability. 
 
 
 **Release blockers:** Antigravity CLI's narrowly tested authorization/deny has live evidence for A12/A25/A28, but IDE 2.5.5 interception and wider host authorization (A18/A31) are still blocked; Simpul execution when advertised as a live backend (A14), final release authorization (A33), and unresolved material security risk remain. Limited use can exclude Simpul, but must state that limitation.
+
+## PR #47 source-only regression boundary
+
+A26 gains negative input, numeric-overflow, and duplicate-worker identity regression cases for budget settlement. Simpul ledger reporting now fails closed when missing/malformed, without treating a provider-side spend cap as implemented. A14/A33 and native LIVE verdicts remain unchanged. PR CI evidence must be checked independently before claiming CI PASS for this patch.
