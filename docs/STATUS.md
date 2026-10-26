@@ -6,7 +6,7 @@
 
 | Surface | Verified source state | Release boundary |
 | --- | --- | --- |
-| GitHub `main` | Audited source checkpoint [`5ae93e0e`](https://github.com/rzqllh/xyeena/commit/5ae93e0e4a1142fc66fc1a053fdf5e56467a94a0) (PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#45](https://github.com/rzqllh/xyeena/pull/45), excluding issue-only numbers) | Repository source is not automatically npm-published |
+| GitHub `main` | Source audit baseline [`5ae93e0e`](https://github.com/rzqllh/xyeena/commit/5ae93e0e4a1142fc66fc1a053fdf5e56467a94a0) (PRs [#29](https://github.com/rzqllh/xyeena/pull/29)–[#45](https://github.com/rzqllh/xyeena/pull/45), excluding issue-only numbers) | Repository source is not automatically npm-published |
 | npm `xyeena-agent` | `0.4.1` is the last published baseline **recorded by this repository** | Registry cannot be authoritatively rechecked from this audit; verify the registry before a future release |
 | Candidate `0.5.0` | Not published, tagged, or authorized by the user | A future publication requires explicit human approval |
 | CI | PR #31, #32, #33, #38–#45 (implemented PR numbers) each passed 9/9 GitHub CI jobs at their final PR heads | CI is source/packaging assurance, not live host enforcement |
