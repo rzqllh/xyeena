@@ -23,3 +23,7 @@ Critical impact is not equivalent to a known active critical vulnerability. Auto
 ## Worker identifier diagnostics — source hardening (2026-10-26)
 
 Native host adapters continue to reject missing, malformed or placeholder worker identities. Validation errors no longer include raw host-supplied identifiers, preventing incidental credential/path leakage through error messages. This is a source-level defensive change verified by tests, not a live host containment claim.
+
+## Budget ledger input integrity — source fix in PR #47
+
+The previous ledger accepted invalid (including negative and non-finite) usage and estimates, potentially understating consumption. Source validation now rejects those values and prevents duplicate active worker IDs; Simpul with an attached ledger rejects missing or invalid post-run usage. Residual risk remains **provider-side over-consumption before settlement**; these checks are not upstream spending enforcement and require live provider verification before changing OPS-06.
