@@ -7,8 +7,9 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const cli=fileURLToPath(new URL('../bin/xyeena.mjs',import.meta.url));
-const call=(cwd,args)=>spawnSync(process.execPath,[cli,...args],{
+const call=(cwd,args,envOverrides={})=>spawnSync(process.execPath,[cli,...args],{
   cwd,encoding:'utf8',timeout:10000,windowsHide:true,
+  env:{...process.env,...envOverrides},
 });
 function workspace(t) {
   const cwd=fs.mkdtempSync(path.join(os.tmpdir(),'xyeena-host-cli-'));
@@ -85,11 +86,15 @@ test('real subprocess CLI smoke: Gemini read-only host run consumes stdin and pa
 });
 test('real subprocess CLI smoke: Hermes requires settled token accounting and respects configured limit',t=>{
   const cwd=workspace(t);
+  // The profile directory is a genuine Hermes global-skill source; do not
+  // bypass the product's project trust gate merely to make a mock pass.
   skill(cwd,'hermes');
+  const isolatedHermesHome=path.join(cwd,'.hermes');
+  const env={HERMES_HOME:isolatedHermesHome};
   const executable=mockHostExecutable(cwd,{type:'result',exit_code:0,
     text:'Fake Hermes status',tokens:{total:1250}});
   const good=call(cwd,['host','run','--runtime','hermes','--goal','Review source only',
-    '--command',executable,'--yes','--local-only','--token-limit','2000','--max-turns','1']);
+    '--command',executable,'--yes','--token-limit','2000','--max-turns','1'],env);
   assert.equal(good.status,0,good.stderr);
   const result=JSON.parse(good.stdout);
   assert.equal(result.status,'REVIEW_REQUIRED');
@@ -97,7 +102,7 @@ test('real subprocess CLI smoke: Hermes requires settled token accounting and re
   assert.equal(result.budget.usedTokens,1250);
   assert.equal(result.budget.maxTurns,1);
   const denied=call(cwd,['host','run','--runtime','hermes','--goal','Review source only',
-    '--command',executable,'--yes','--local-only','--token-limit','1000']);
+    '--command',executable,'--yes','--token-limit','1000'],env);
   assert.notEqual(denied.status,0);
   assert.match(denied.stderr,/one-shot token budget exceeded/);
   assert.equal(denied.stdout.trim(),'');
