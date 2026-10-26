@@ -159,12 +159,17 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
   const root = fs.realpathSync(path.resolve(cwd));
   const executable = command || runtime;
   return {
-    async executeTask(task) {
+    async executeTask(task, { signal } = {}) {
       if (!object(task) || !object(task.scope) || task.scope.readOnly !== true ||
           (task.scope.operationClass || 'safe') !== 'safe')
         throw new Error('Portable host accepts safe read-only tasks only');
       if (typeof task.title !== 'string' || !task.title.trim() || task.title.length > MAX_PROMPT)
         throw new Error('Invalid task title');
+      if (signal !== undefined && (typeof signal?.addEventListener !== 'function' ||
+          typeof signal?.removeEventListener !== 'function' || typeof signal?.aborted !== 'boolean'))
+        throw new Error('Invalid host cancellation signal');
+      const cancelled = () => Object.assign(new Error('Host one-shot canceled'), { code: 'ERR_PORTABLE_CANCELED' });
+      if (signal?.aborted) throw cancelled();
       const prompt = [
         'Xyeena Rig read-only orchestration request for the current workspace.',
         'Use only available and trusted native Agent Skills. Do not invent or install missing skills.',
@@ -190,31 +195,49 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
             : ['--output-format', 'json', '--approval-mode', 'plan'];
       const launch = portableLaunchPlan({ runtime, args, executable, platform, env });
       return new Promise((resolve, reject) => {
-        let finished = false, stdout = '', stderrLength = 0, child;
+        let finished = false, stdout = '', stdoutLength = 0, stderrLength = 0, child;
+        let timer = null, onAbort = null;
         const done = (error, result) => {
           if (finished) return;
           finished = true;
           clearTimeout(timer);
+          if (onAbort) signal?.removeEventListener('abort', onAbort);
           if (error) reject(error); else resolve(result);
+        };
+        // Cancellation/timeout requests termination of the directly spawned
+        // process. A separate host-native teardown test is needed to prove
+        // descendants are gone; never report that as verified here.
+        const stopChild = error => {
+          if (finished) return;
+          done(error);
+          try { child.kill(); } catch { /* termination is best effort */ }
         };
         try {
           child = spawnImpl(launch.command, launch.args, { cwd: root, shell: false, windowsHide: true,
             stdio: ['pipe','pipe','pipe'],
             windowsVerbatimArguments: Boolean(launch.windowsVerbatimArguments) });
         } catch { reject(new Error('Cannot launch host executable')); return; }
-        const timer = setTimeout(() => { child.kill(); done(new Error('Host execution timeout')); }, timeoutMs);
+        timer = setTimeout(() => stopChild(new Error('Host execution timeout')), timeoutMs);
+        if (signal) {
+          onAbort = () => stopChild(cancelled());
+          signal.addEventListener('abort', onAbort, { once: true });
+          if (signal.aborted) onAbort();
+        }
         child.on('error', () => done(new Error('Cannot launch host executable')));
         child.stdout.on('data', chunk => {
-          stdout += chunk.toString('utf8');
-          if (Buffer.byteLength(stdout) > MAX_OUTPUT) {
-            child.kill(); done(new Error('Host output exceeded limit'));
+          if (finished) return;
+          stdoutLength += chunk.length;
+          if (stdoutLength > MAX_OUTPUT) {
+            stopChild(new Error('Host output exceeded limit')); return;
           }
+          stdout += chunk.toString('utf8');
         });
         let stderrText = '';
         child.stderr.on('data', chunk => {
+          if (finished) return;
           stderrLength += chunk.length;
           if (stderrLength > MAX_OUTPUT) {
-            child.kill(); done(new Error('Host diagnostic output exceeded limit'));
+            stopChild(new Error('Host diagnostic output exceeded limit')); return;
           }
           if (stderrText.length < 2048) stderrText += chunk.toString('utf8');
         });
@@ -248,7 +271,7 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
           } catch (e) { done(e); }
         });
         child.stdin.on('error', () => {}); // EPIPE after early CLI failure must not crash parent.
-        child.stdin.end(prompt);
+        if (!finished) child.stdin.end(prompt);
       });
     }
   };
