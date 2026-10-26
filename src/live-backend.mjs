@@ -146,6 +146,27 @@ export async function acquireWorkspaceWriteLock(workspaceKey) {
   };
 }
 
+/** Normalize only bounded FastMCP SDK call-tool results; do not infer execution readiness. */
+async function simpulCall(mcpClient, name, params) {
+  const response = await mcpClient.callTool(name, params);
+  if (!response || typeof response !== 'object' || Array.isArray(response) || response.isError === true)
+    throw new Error('Simpul MCP tool returned an invalid or failed response');
+  if (!Array.isArray(response.content)) return response;
+  if (response.structuredContent && typeof response.structuredContent === 'object' &&
+      !Array.isArray(response.structuredContent))
+    return response.structuredContent;
+  if (response.content.length !== 1 || response.content[0]?.type !== 'text' ||
+      typeof response.content[0]?.text !== 'string' ||
+      response.content[0].text.length > 65536)
+    throw new Error('Simpul MCP response content is not a bounded JSON object');
+  let parsed;
+  try { parsed = JSON.parse(response.content[0].text); }
+  catch { throw new Error('Simpul MCP response is not JSON'); }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+    throw new Error('Simpul MCP response is not a JSON object');
+  return parsed;
+}
+
 /**
  * Simpul MCP Adapter Contract
  * Wraps communication with Simpul (SubagentBridge) FastMCP control plane.
@@ -171,7 +192,7 @@ export function createSimpulMcpAdapter({
   return {
     async probe() {
       try {
-        const ping = await mcpClient.callTool('get_model_usage', {});
+        const ping = await simpulCall(mcpClient, 'get_model_usage', {});
         return {
           healthy: ping !== null && typeof ping === 'object',
           noNestedDelegation: true,
@@ -210,7 +231,7 @@ export function createSimpulMcpAdapter({
         goal: task.title,
         workspace_path: options.cwd || ''
       };
-      const submitRes = await mcpClient.callTool('submit_goal', submitParams);
+      const submitRes = await simpulCall(mcpClient, 'submit_goal', submitParams);
 
       if (!submitRes || submitRes.status === 'ERROR' || !submitRes.run_id) {
         throw new Error(`Simpul goal submission failed: ${submitRes?.error || 'No run_id returned'}`);
@@ -234,7 +255,7 @@ export function createSimpulMcpAdapter({
         }
 
         try {
-          const runInfo = await mcpClient.callTool('get_run', { run_id: runId });
+          const runInfo = await simpulCall(mcpClient, 'get_run', { run_id: runId });
           if (runInfo?.status) {
             runStatus = runInfo.status;
             if (['COMPLETED', 'FAILED', 'CANCELED'].includes(runStatus)) {
@@ -253,7 +274,7 @@ export function createSimpulMcpAdapter({
 
       if (isComplete) {
         try {
-          const evidenceResult = await mcpClient.callTool('get_task_evidence', {
+          const evidenceResult = await simpulCall(mcpClient, 'get_task_evidence', {
             run_id: runId,
             task_id: initialTaskId
           });
@@ -274,7 +295,7 @@ export function createSimpulMcpAdapter({
 
       // 4. Track model usage and account against budget (fail on budget violation)
       try {
-        const usage = await mcpClient.callTool('get_model_usage', {});
+        const usage = await simpulCall(mcpClient, 'get_model_usage', {});
         if (usage && typeof usage === 'object' && ledger) {
           ledger.recordUsage({
             taskId: task.id,
@@ -307,7 +328,7 @@ export function createSimpulMcpAdapter({
       activeRuns.delete(taskId);
       if (effectiveRunId) {
         try {
-          await mcpClient.callTool('cancel_run', { run_id: effectiveRunId, reason });
+          await simpulCall(mcpClient, 'cancel_run', { run_id: effectiveRunId, reason });
         } catch {
           // Best effort
         }
