@@ -6,6 +6,7 @@ import path from 'node:path';
 import { previewSetup, applySetup, guidedSetup } from '../src/setup.mjs';
 import { portableSkillTarget } from '../src/setup-portable.mjs';
 import { discoverWorkspaceSkills } from '../src/workspace-skills.mjs';
+import { VERSION } from '../src/paths.mjs';
 
 function sandbox(t){
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'xyeena-portable-'));
@@ -160,7 +161,7 @@ test('upgrades an earlier Xyeena-managed global junction without replacing forei
   assert.equal(fs.realpathSync(destination),fs.realpathSync(old));
   const updated=applySetup({...opts,yes:true,update:true});
   assert.notEqual(fs.realpathSync(destination),fs.realpathSync(old));
-  assert.ok(fs.realpathSync(destination).includes('v0.4.1'));
+  assert.ok(fs.realpathSync(destination).includes('v'+VERSION));
   assert.ok(updated.backupDirectory);
   const backupNames=fs.readdirSync(updated.backupDirectory).filter(x=>x.endsWith('.link-target'));
   assert.ok(backupNames.length>0);
