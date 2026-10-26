@@ -311,3 +311,7 @@ The source `PreToolUse` handler previously returned `allow` for all read tools s
 ## Owned Windows child-tree cancellation — controlled CI only
 
 A source helper now requests `taskkill.exe /PID <child.pid> /T /F` without a shell for Windows children created by RIG's portable or SDK adapter. Invariants: `child.pid` must be a positive bounded integer from the owned spawn handle; missing/invalid/exited PID never enters taskkill arguments, failure falls back to best-effort direct kill, and no untrusted diagnostics appear. Source negative fixtures exercise both adapters and mock failure modes; Windows CI additionally runs a disposable Node dummy parent/grandchild with a heartbeat and expects that heartbeat to stop. This smoke must not be confused with native Hermes cancellation, Ctrl+C host signal receipt or provider-billing proof on the operator's system. OPS-06/#37 stays LIVE PARTIAL.
+
+## Antigravity runner integrity prerequisite (read-only source test)
+
+The source preflight records an owned manifest/script SHA-256 match separately from syntax-only `PreToolUse` registration. Fixture coverage exercises the actual installer-owned manifest, modified JS runner bytes, invalid/oversized/missing ownership markers and symlinked runner. A valid local hash only makes a subsequent optional safe native probe *eligible*; it is not an independent runtime approval/deny observation. Antigravity IDE #34 remains blocked.
