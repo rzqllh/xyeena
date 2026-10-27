@@ -16,7 +16,10 @@ test('npm publishing requires explicit reviewed GitHub Release only',()=>{
   assert.match(file,/test "\$ACTUAL" = "\$GITHUB_SHA"/);
   assert.match(file,/test "\$ACTUAL" = "\$EXPECTED"/);
   assert.match(file,/refs\/heads\/main:refs\/remotes\/origin\/main/);
-  assert.match(file,/npm view "xyeena-agent@\$VERSION"/);
+  assert.match(file,/npm view xyeena-agent versions --json/);
+  assert.match(file,/Cannot verify npm registry versions; publication blocked/);
+  assert.ok(file.includes('versions.includes(process.argv[2])'));
+  assert.doesNotMatch(file,/if npm view "xyeena-agent@/);
 });
 
 test('npm publishing is OIDC-only without long-lived secrets or raw token logging',()=>{
