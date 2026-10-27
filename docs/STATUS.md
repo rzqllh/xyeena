@@ -159,3 +159,7 @@ The guided hook no longer treats an in-scope `TargetFile` as proof that addition
 ## One-shot provider result integrity (source-only)
 
 Claude Code `--output-format json` now requires an explicit `type: result`, `subtype: success`, `is_error: false`, a nonempty final text and no nonempty `permission_denials`. A process exit code 0 alone is no longer accepted as complete evidence. Gemini rejects a nonempty `error` field and treats missing, negative, coerced or overflowing per-model token counters as **unknown**, not a fabricated settled zero. Claude usage counters likewise require safe nonnegative integers and no overflow. Hermes must return a nonempty final text and valid typed JSONL events. These checks require **actual native host compatibility evidence (#36/#37)** before declaring live acceptance; source mocks are not a live test.
+
+## Rebased 0.5.0 release-candidate metadata — 2026-10-27
+
+The isolated release candidate aligns package, lockfile, CLI version constant, and three plugin manifests at `0.5.0`, **only in the release candidate branch**, rebased from the latest merged RIG source. Public installation commands and published baseline references remain `xyeena-agent@0.4.1` until an independently verified npm publication. The candidate is not merged, tagged or published and has no new native host acceptance. Consult [release-candidate gates](xyeena-rig/RELEASE-CANDIDATE-0.5.0.md) for CI/consumer verification and required approval. Simpul remains a separate optional workspace.
