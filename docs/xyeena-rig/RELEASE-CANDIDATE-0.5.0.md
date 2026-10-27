@@ -2,9 +2,9 @@
 
 [Current source and host status](../STATUS.md) · [Native operator acceptance](NATIVE_ACCEPTANCE_HANDOFF.md) · [Security risks](RISK_REGISTER.md)
 
-**State: SOURCE_RC_PENDING_FINAL_CI / NATIVE_LIVE_PENDING / PUBLICATION_NOT_AUTHORIZED.**
+**State: SOURCE_RC_CI_PASS / SCOPED_PUBLIC_RELEASE_APPROVED / FINAL_PUBLICATION_NOT_AUTHORIZED.**
 
-**Source CI checkpoint:** This candidate is based on `main` `bd99d7b5d862d6db61959347a7a751ba5ae118ef`, including Hermes budget diagnostics (#66) and fail-closed npm version probing (#67). Require a successful complete CI run on this candidate's **exact HEAD**; earlier PR #65 CI is historical only.
+**Source CI checkpoint:** Candidate #68 based on main `bd99d7b5d862d6db61959347a7a751ba5ae118ef` passed **9/9** source CI jobs at head `e825c6c9ded90009cf91a75f07652f985483c8a9` ([run 40454069557](https://github.com/rzqllh/xyeena/actions/runs/40454069557)). Any later candidate edit needs a fresh successful CI on its **exact HEAD**. CI cannot establish native host behavior.
 
 This is an **unpublished, isolated metadata candidate** prepared on 27 October 2026 from the merged Xyeena Rig source through PR #67. Simpul is a separate optional workspace and does not block RIG-native release qualification.
 
@@ -16,14 +16,14 @@ This is an **unpublished, isolated metadata candidate** prepared on 27 October 2
 - Public docs must keep the published `@0.4.1` installation instructions and identify `@0.5.0` as **not yet available on npm**.
 - Publish workflow in `main` does not trigger on push/commit-message. A future tag and explicitly published stable GitHub Release must reference the identical, versioned **current `main` HEAD**, and `npm-publish` reviewers and Trusted Publisher OIDC must be configured externally.
 
-## Release support tiers proposed (NOT APPROVED)
+## Approved scoped public release — 2026-10-27 (scope approval, not publish authorization)
  
 - **Native test observed:** Antigravity CLI `agy 1.4.7` on Windows, narrow hook `force_ask` with user cancellation and `deny` for a harmless exact-match command. This is not general shell isolation.
 - **Explicit security limitation:** Antigravity IDE 2.5.5 has no observable Hooks UI in the user's installation and failed a prior IDE-originated deny test. Never market IDE-native hook enforcement as supported.
 - **Experimental/unverified:** Codex, Claude Code, Gemini CLI adapters have source/regression tests only; native binaries were unavailable at the operator's preflight. Hermes detected 47 skills and completed a provider-backed result but the native one-shot was rejected for post-run >5000 token accounting; no cancellation/tree teardown PASS.
 - **No universal 'five-host native security' promise:** installation paths, skill discovery and read-only adapters have different evidence levels from host enforcement.
 
-**Release scope requires one affirmative operator choice:** either ship a limited public `0.5.0` with these explicit unsupported/experimental native boundaries, or hold the release until all hosts pass native acceptance. A requested delivery date does not silently waive this choice.
+**Operator scope decision recorded:** public `0.5.0` may ship with the above limitations prominently disclosed; native tests remain open and unverified features must not be advertised as protected. **This approves the product's support scope only.** It explicitly does **not** authorize merging candidate code to main, creating `v0.5.0`, publishing a GitHub Release, or executing npm publication. Those require a separate final GO after release controls are confirmed.
 
 ## Native/runtime acceptance still missing
 
@@ -52,4 +52,4 @@ No access to the operator's Windows IDE, private GitHub repository settings or n
 3. Protected publication workflow runs tests and npm OIDC publish. On npm publish failure, do not reuse an existing version or fabricate a provenance receipt.
 4. On application regressions, revert the source and issue a new patch version; npm versions are immutable. Never rewrite/delete audit receipts to imply success.
 
-**Decision required:** `GO` only after exact CI HEAD, native support claims, admin controls and human release authorization are satisfied. Until then **NO-GO for publication**, even when source engineering and artifact packaging pass.
+**Current gate:** scope A is approved. **Publication remains NO-GO** until exact-head CI, GitHub/n​pm environment and trusted publisher setup, and a separate final human release authorization are verified. The remaining native issue tickets stay open by design.
