@@ -74,21 +74,35 @@ function decodeResponse(host, output) {
     let parsed;
     try { parsed = JSON.parse(output.trim()); }
     catch { throw new Error('Gemini CLI did not return JSON'); }
-    if (!object(parsed) || typeof parsed.response !== 'string' || parsed.error)
+    if (!object(parsed) || typeof parsed.response !== 'string' ||
+        !parsed.response.trim() || (parsed.error !== undefined && parsed.error !== null))
       throw new Error('Gemini CLI reported an error or missing response');
-    const tokens = parsed.stats?.models ? Object.values(parsed.stats.models).reduce(
-      (count, m) => count + (Number.isSafeInteger(m?.tokens?.total) ? m.tokens.total : 0), 0) : null;
+    // Incomplete provider stats are unknown, never silently settled as zero.
+    const totals = object(parsed.stats?.models)
+      ? Object.values(parsed.stats.models).map(m => m?.tokens?.total) : [];
+    let tokens = null;
+    if (totals.length && totals.every(v => Number.isSafeInteger(v) && v >= 0)) {
+      const sum = totals.reduce((a, b) => a + b, 0);
+      if (Number.isSafeInteger(sum)) tokens = sum;
+    }
     return { report: parsed.response, usageTokens: tokens };
   }
   if (host === 'claude') {
     let parsed;
     try { parsed = JSON.parse(output.trim()); }
     catch { throw new Error('Claude Code did not return JSON'); }
-    if (!object(parsed) || parsed.is_error === true || typeof parsed.result !== 'string')
-      throw new Error('Claude Code returned an error or missing result');
+    // Claude's print-mode --output-format json returns a terminal result
+    // envelope. A partial output, permission denial or error subtype can
+    // still have exit code 0; none constitutes a successful one-shot.
+    if (!object(parsed) || parsed.type !== 'result' || parsed.subtype !== 'success' ||
+        parsed.is_error !== false || typeof parsed.result !== 'string' ||
+        !parsed.result.trim() || (Array.isArray(parsed.permission_denials) &&
+          parsed.permission_denials.length > 0))
+      throw new Error('Claude Code returned an error or missing successful result');
     const usage = parsed.usage || {};
-    const total = Number.isSafeInteger(usage.input_tokens) && Number.isSafeInteger(usage.output_tokens)
-      ? usage.input_tokens + usage.output_tokens : null;
+    const i = usage.input_tokens, o = usage.output_tokens;
+    const total = Number.isSafeInteger(i) && i >= 0 && Number.isSafeInteger(o) && o >= 0 &&
+      Number.isSafeInteger(i + o) ? i + o : null;
     return { report: parsed.result, usageTokens: total };
   }
   const lines = output.trim().split(/\r?\n/).filter(Boolean);
@@ -136,6 +150,8 @@ function decodeResponse(host, output) {
     }
     let event;
     try { event = JSON.parse(trimmed); } catch { throw new Error('Hermes CLI returned invalid JSONL'); }
+    if (!object(event) || typeof event.type !== 'string')
+      throw new Error('Hermes CLI returned invalid JSONL event');
     if (event?.type === 'error' || event?.type === 'turn.failed' || (event?.type !== 'tool_result' && event?.error)) {
       errorEvent = event;
     }
@@ -144,9 +160,11 @@ function decodeResponse(host, output) {
     }
   }
   if (errorEvent) throw new Error('Hermes CLI reported an error event');
-  if (!last || last.exit_code !== 0 || typeof last.text !== 'string' || last.error)
+  if (!last || last.exit_code !== 0 || typeof last.text !== 'string' ||
+      !last.text.trim() || last.error)
     throw new Error('Hermes CLI did not return a successful final result');
-  return { report: last.text, usageTokens: Number.isSafeInteger(last.tokens?.total) ? last.tokens.total : null };
+  return { report: last.text, usageTokens: Number.isSafeInteger(last.tokens?.total) &&
+    last.tokens.total >= 0 ? last.tokens.total : null };
 }
 
 function classifyStderr(text) {
