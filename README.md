@@ -1,5 +1,7 @@
 # Xyeena Rig
 
+**Release candidate (unpublished):** this branch prepares `xyeena-agent@0.5.0` from current RIG source. **Do not install `@0.5.0` from npm yet.** The known published baseline remains `@0.4.1` until registry publication is independently verified. Native Antigravity IDE/Codex/Claude/Gemini/Hermes acceptance remains limited; see [0.5.0 release candidate gate](docs/xyeena-rig/RELEASE-CANDIDATE-0.5.0.md).
+
 **Equip your agent. Guard your project.**
 
 Xyeena Rig is a local-first toolkit for developer workflows with coding agents. It packages **19 Agent Skills**, optional project **Harness** guidance and verification tools, skill discovery, and guarded task orchestration. It supports Antigravity, Codex, Claude Code, Gemini CLI, and Hermes through host-specific installation paths. The npm package is `xyeena-agent`; both `xyeena` and `xyeena-agent` are CLI entry points.
