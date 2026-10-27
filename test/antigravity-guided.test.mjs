@@ -122,6 +122,27 @@ test('PreToolUse host hook requests fresh user approval without auto-approval',(
     catch(e){if(!['EPERM','EACCES'].includes(e.code))throw e;}
   }finally{cleanup(cwd);}
 });
+test('native write policy does not describe multi-destination payload as one trusted file',()=>{
+  const cwd=fixture();
+  try {
+    const root=fs.realpathSync(cwd);
+    const outside=path.dirname(root);
+    const payload=(name,args)=>({workspacePaths:[cwd],toolCall:{name,args}});
+    for(const name of ['write_to_file','replace_file_content','multi_replace_file_content']){
+      const base={TargetFile:path.join(root,'safe.md')};
+      assert.equal(preToolUse(root,payload(name,base)).decision,'force_ask');
+      const hidden={...base,DestinationPath:path.join(outside,'secret.md')};
+      const decision=preToolUse(root,payload(name,hidden));
+      assert.equal(decision.decision,'deny');
+      assert.match(decision.reason,/additional write target outside/i);
+      assert.equal(preToolUse(root,payload(name,{...base,FileList:[outside]})).decision,'force_ask');
+      assert.equal(preToolUse(root,payload(name,{...base,OtherFile:path.join(root,'local.md')})).decision,'force_ask');
+      assert.match(preToolUse(root,payload(name,{...base,OtherFile:path.join(root,'local.md')})).reason,/all locations/i);
+      assert.equal(preToolUse(root,payload(name,{...base,OtherPath:null})).decision,'force_ask');
+      assert.equal(preToolUse(root,payload(name,{...base,OtherFile:outside})).decision,'deny');
+    }
+  } finally {cleanup(cwd);}
+});
 test('read-only native tools cannot silently read outside the trusted workspace',()=>{
   const cwd=fixture();
   try {
