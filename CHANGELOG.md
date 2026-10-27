@@ -24,6 +24,10 @@
 
 All versions listed as released refer to published npm artifacts. Repository source changes are not published until a matching release is authorized.
 
+## Unpublished candidate 0.5.0 — metadata only (2026-10-27)
+
+The candidate branch aligns CLI/package/plugin versions after source security fixes. **No npm `0.5.0` release, GitHub tag or native host sign-off has occurred.** Public `@0.4.1` commands remain unchanged. Details: [candidate gate](docs/xyeena-rig/RELEASE-CANDIDATE-0.5.0.md).
+
 ## Unreleased — source after 0.4.1 (updated 2026-10-26)
 
 - Fix source preflight on Windows PowerShell 5.1: normal Git fetch/worktree stderr progress no longer aborts the script under strict error preference. Add a real Windows legacy-shell Git fetch/worktree CI smoke; no live host permission acceptance is claimed.
