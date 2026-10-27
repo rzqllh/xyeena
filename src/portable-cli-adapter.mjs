@@ -93,20 +93,36 @@ function decodeResponse(host, output) {
   }
   const lines = output.trim().split(/\r?\n/).filter(Boolean);
   if (host === 'codex') {
-    let last = null, usageTokens = null, failed = false;
+    let last = null, usageTokens = null, failed = false, completed = false;
     for (const line of lines) {
       let event;
       try { event = JSON.parse(line); } catch { throw new Error('Codex returned invalid JSONL'); }
-      if (event?.type === 'turn.failed' || event?.type === 'error') failed = true;
-      if (event?.type === 'item.completed' && event?.item?.type === 'agent_message' &&
-          typeof event.item.text === 'string') last = event.item.text;
-      if (event?.type === 'turn.completed') {
+      if (!object(event) || typeof event.type !== 'string')
+        throw new Error('Codex returned an invalid event');
+      if (event.type === 'turn.failed' || event.type === 'error') failed = true;
+      if (event.type === 'turn.started') {
+        // A previous turn's completion never certifies a later partial turn.
+        completed = false;
+        last = null;
+        usageTokens = null;
+      }
+      if (event.type === 'item.completed' && event.item?.type === 'agent_message' &&
+          typeof event.item.text === 'string') {
+        last = event.item.text;
+        completed = false;
+      }
+      if (event.type === 'turn.completed') {
+        // The final successful event must seal a preceding agent message.
+        completed = typeof last === 'string' && last.trim().length > 0;
         const u = event.usage;
-        if (Number.isSafeInteger(u?.input_tokens) && Number.isSafeInteger(u?.output_tokens))
+        if (Number.isSafeInteger(u?.input_tokens) && u.input_tokens >= 0 &&
+            Number.isSafeInteger(u?.output_tokens) && u.output_tokens >= 0 &&
+            Number.isSafeInteger(u.input_tokens + u.output_tokens))
           usageTokens = u.input_tokens + u.output_tokens;
       }
     }
-    if (failed || !last) throw new Error('Codex CLI did not return a successful agent message');
+    if (failed || !completed || !last)
+      throw new Error('Codex CLI did not return a successful completed turn');
     return { report: last, usageTokens };
   }
 
