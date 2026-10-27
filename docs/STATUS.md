@@ -1,17 +1,17 @@
 # Source and release status
 
-**Evidence reviewed: 2026-10-26 (Asia/Jakarta).** This page describes the public Xyeena Rig repository and the recorded Windows acceptance session; it is not a promise that every host has been tested.
+**Evidence reviewed: 2026-10-27 (Asia/Jakarta).** This page describes the public Xyeena Rig repository and the recorded Windows acceptance session; it is not a promise that every host has been tested.
 
 ## Source versus published npm
 
 | Surface | Verified source state | Release boundary |
 | --- | --- | --- |
-| GitHub `main` | Verified source checkpoint [`d1b29c2`](https://github.com/rzqllh/xyeena/commit/d1b29c279df0434ce420f3b9c2a6c7f67eaa9234), through merged PR #58; [post-merge CI](https://github.com/rzqllh/xyeena/actions/runs/40290814931) successful | Repository source is not automatically npm-published |
+| GitHub `main` | Verified source checkpoint [`4f902ca`](https://github.com/rzqllh/xyeena/commit/4f902ca16b83d187c8d2fdbecd68b335519b2c64), through merged PR #64; [post-merge CI](https://github.com/rzqllh/xyeena/actions/runs/40439369815) successful | Repository source is not automatically npm-published |
 | npm `xyeena-agent` | `0.4.1` is the last published baseline **recorded by this repository** | Registry cannot be authoritatively rechecked from this audit; verify the registry before a future release |
 | Candidate `0.5.0` | Not published, tagged, or authorized by the user | A future publication requires explicit human approval |
 | CI | PR #31, #32, #33, #38–#45 (implemented PR numbers) each passed 9/9 GitHub CI jobs at their final PR heads | CI is source/packaging assurance, not live host enforcement |
 
-The package version remains `0.4.1` in `package.json`. Features implemented after that release—including compact skill setup, expanded adapters, native `PreToolUse` integration and new probe/runner commands—are **source-only until an authorized npm release**. Use `node bin/xyeena.mjs` from a source checkout, not `npx xyeena-agent@0.4.1`, when following source-only instructions. Node.js 22.14+ is required.
+The **published npm baseline recorded by this repo** is `0.4.1`, while this isolated candidate branch uses `0.5.0` metadata in `package.json`. Features implemented after that release—including compact skill setup, expanded adapters, native `PreToolUse` integration and new probe/runner commands—are **source-only until an authorized npm release**. Use `node bin/xyeena.mjs` from a source checkout, not `npx xyeena-agent@0.4.1`, when following source-only instructions. Node.js 22.14+ is required.
 
 ## Host acceptance as observed
 
