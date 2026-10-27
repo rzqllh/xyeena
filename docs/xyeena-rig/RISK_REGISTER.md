@@ -71,3 +71,7 @@ The Antigravity PreToolUse policy now checks extra path-bearing write arguments 
 ## CLI result envelopes and usage integrity
 
 Prior source code could accept a Claude JSON result string without a terminal success subtype, or calculate invalid/negative provider token totals. Updated adapters check documented successful Claude terminal envelopes and permission-denial absence, and preserve unknown usage as `null` if Gemini/Claude counters are missing, negative, malformed or overflowing. This prevents false completion/accounting claims from output streams but does not authenticate a real provider response or enforce a hard spend limit. Host version/real session evidence remains pending.
+
+## Hermes post-run budget ceiling evidence — 2026-10-27
+
+A real operator-initiated read-only, one-turn Hermes one-shot with a post-run `5000`-token acceptance threshold returned `ERR_PORTABLE_BUDGET_EXCEEDED`. Source inspection shows this is emitted only after the successful Hermes terminal result reports usage above the configured threshold; the actual token count was not exposed by the original CLI. The fix reports only bounded numeric usage and limit to enable cost audit, retains fail-closed success semantics and never exposes provider output. This guard cannot stop upstream provider billing or guarantee cancellation. Do not treat rejection as an enforced spending limit; keep #37 open.
