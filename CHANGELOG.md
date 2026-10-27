@@ -1,5 +1,7 @@
 # Changelog
 
+- Tighten provider result settlement: require explicit successful Claude Code JSON terminal envelope without permission denial, require nonempty Hermes/Gemini/Claude reports, and reject invalid/negative/overflowed Gemini/Claude token accounting rather than treating it as valid usage. CI fixture only; host compatibility requires native tests.
+
 - Require explicit review of all path-bearing destinations in native Antigravity write payloads; deny additional outside-workspace destinations and avoid misleading single-target approvals. Source-level only.
 
 - Fail closed on Codex JSONL partial or reordered turns: require a terminal `turn.completed` after the final agent message and ignore invalid/overflowing token totals. Regression tests cover successful OS exits without host-completion evidence; no native acceptance implied.
