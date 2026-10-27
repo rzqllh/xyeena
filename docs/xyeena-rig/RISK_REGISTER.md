@@ -67,3 +67,7 @@ A one-shot Codex JSONL parser previously considered a final agent-message item s
 ## Ambiguous native write destinations — source guard
 
 The Antigravity PreToolUse policy now checks extra path-bearing write arguments in addition to `TargetFile`. An explicitly outside-workspace additional location returns `deny`; an opaque/compound or additional in-scope location receives an explicit `force_ask` describing *all* locations instead of presenting the request as a single-file modification. This only governs a loaded hook: IDE enforcement is still not proven (#34).
+
+## CLI result envelopes and usage integrity
+
+Prior source code could accept a Claude JSON result string without a terminal success subtype, or calculate invalid/negative provider token totals. Updated adapters check documented successful Claude terminal envelopes and permission-denial absence, and preserve unknown usage as `null` if Gemini/Claude counters are missing, negative, malformed or overflowing. This prevents false completion/accounting claims from output streams but does not authenticate a real provider response or enforce a hard spend limit. Host version/real session evidence remains pending.

@@ -106,6 +106,58 @@ test('Gemini headless uses plan mode, JSON and stdin rather than prompt args',as
   assert.equal(result.verified,false);
   assert.match(captured.join(''),/read-only/);
 });
+test('Gemini response accounting rejects invalid totals instead of silently settling partial usage',async t=>{
+  const cwd=fixture(t);
+  for(const stats of [
+    {models:{alpha:{tokens:{total:10}},beta:{tokens:{total:-5}}}},
+    {models:{alpha:{tokens:{total:10}},beta:{tokens:{total:'20'}}}},
+    {models:{alpha:{tokens:{total:Number.MAX_SAFE_INTEGER}},beta:{tokens:{total:1}}}},
+    {models:{}},
+  ]) {
+    const adapter=createPortableHostAdapter({cwd,runtime:'gemini',
+      spawnImpl:mockProcess(JSON.stringify({response:'Review complete',stats}))});
+    const result=await adapter.executeTask(makeTask());
+    assert.equal(result.report,'Review complete');
+    assert.equal(result.usageTokens,null);
+  }
+  for(const response of [
+    {response:' ',stats:{}},
+    {response:'fake success',error:{type:'FatalAuthenticationError',message:'private credentials'}},
+    {response:'fake success',error:false}
+  ]) {
+    const adapter=createPortableHostAdapter({cwd,runtime:'gemini',
+      spawnImpl:mockProcess(JSON.stringify(response))});
+    await assert.rejects(adapter.executeTask(makeTask()),e=>
+      /Gemini CLI reported/.test(e.message)&&!e.message.includes('credentials'));
+  }
+});
+test('Claude read-only adapter requires successful terminal JSON, no denied tool and safe accounting',async t=>{
+  const cwd=fixture(t);
+  const good={type:'result',subtype:'success',is_error:false,result:'Reviewed tests'};
+  for(const change of [
+    {type:'system'}, {subtype:'error_max_turns'}, {subtype:'error_during_execution'},
+    {is_error:true}, {is_error:null}, {result:' '},
+    {permission_denials:[{tool_name:'Write',tool_use_id:'bad'}]}
+  ]) {
+    const adapter=createPortableHostAdapter({cwd,runtime:'claude',
+      spawnImpl:mockProcess(JSON.stringify({...good,...change}))});
+    await assert.rejects(adapter.executeTask(makeTask()),/successful result/);
+  }
+  for(const usage of [
+    {input_tokens:-1,output_tokens:4},
+    {input_tokens:3,output_tokens:'5'},
+    {input_tokens:Number.MAX_SAFE_INTEGER,output_tokens:1},
+  ]) {
+    const adapter=createPortableHostAdapter({cwd,runtime:'claude',
+      spawnImpl:mockProcess(JSON.stringify({...good,usage}))});
+    const result=await adapter.executeTask(makeTask());
+    assert.equal(result.report,'Reviewed tests');
+    assert.equal(result.usageTokens,null);
+  }
+  const positive=createPortableHostAdapter({cwd,runtime:'claude',
+    spawnImpl:mockProcess(JSON.stringify({...good,usage:{input_tokens:8,output_tokens:3}}))});
+  assert.equal((await positive.executeTask(makeTask())).usageTokens,11);
+});
 test('host adapter refuses workspace mutations and external operations',async t=>{
   const cwd=fixture(t);
   const adapter=createPortableHostAdapter({cwd,runtime:'hermes',spawnImpl:()=>{throw Error('must not spawn')}});
@@ -228,7 +280,7 @@ test('Codex accounting ignores invalid or overflowing token totals',async t=>{
 });
 test('Claude Code launches in bare plan mode without project hooks and parses JSON',async t=>{
   const cwd=fixture(t), captured=[];
-  const output=JSON.stringify({type:'result',is_error:false,result:'Reviewed tests',
+  const output=JSON.stringify({type:'result',subtype:'success',is_error:false,result:'Reviewed tests',
     usage:{input_tokens:8,output_tokens:3}});
   const adapter=createPortableHostAdapter({cwd,runtime:'claude',
     selectedSkills:['xyeena-orchestrate'],spawnImpl:mockProcess(output,{
@@ -250,7 +302,7 @@ test('Codex/Claude malformed or failed response is not a verified result',async 
   await assert.rejects(codex.executeTask(makeTask()),/successful completed turn/);
   const claude=createPortableHostAdapter({cwd,runtime:'claude',
     spawnImpl:mockProcess('{"is_error":true,"result":"bad"}')});
-  await assert.rejects(claude.executeTask(makeTask()),/missing result/);
+  await assert.rejects(claude.executeTask(makeTask()),/missing successful result/);
 });
 
 test('headless preview does not select platform-incompatible orchestrator or supporting skills', t => {
