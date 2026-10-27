@@ -1,5 +1,7 @@
 # Changelog
 
+- Fail closed on Codex JSONL partial or reordered turns: require a terminal `turn.completed` after the final agent message and ignore invalid/overflowing token totals. Regression tests cover successful OS exits without host-completion evidence; no native acceptance implied.
+
 - Fail closed on backend delegation unless `executionReady === true`; never grant multi-writer selection from caller-asserted `isolatedWorktrees` (source policy + adversarial regression).
 
 - Harden npm release pipeline: explicit stable GitHub Release only, exact current-main commit/tag/version check, no legacy commit-message publishing, no long-lived token fallback, official OIDC trusted publishing with provenance. External environment-reviewer and npm-side setup still required; no release performed.
