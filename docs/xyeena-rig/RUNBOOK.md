@@ -137,3 +137,7 @@ In RIG-only `ops preflight` / Windows evidence JSON, examine `guidedHook.runnerI
 ## Single operator acceptance reference
 
 Use [NATIVE_ACCEPTANCE_HANDOFF.md](NATIVE_ACCEPTANCE_HANDOFF.md) for the full **RIG-only** scope: preflight is read-only, an explicitly armed 5-minute native negative probe writes only its ignored local diagnostic, live IDE and other hosts require independent observations, and npm 0.5.0 remains unauthorized. Do not infer IDE security or any provider spending cap from a green CI job.
+
+### Inspect a rejected Hermes token ceiling without increasing spend
+
+The current source CLI prints `Hermes one-shot token budget exceeded: Hermes-reported tokens=N, post-run acceptance limit=L; provider execution already completed` when the native Hermes terminal event reports a valid integer total above the configured threshold. N and L are numeric, secret-free metadata; no model text, API key, path or session ID is echoed. The one-shot result is rejected, not a successful task. **This happens only after execution, and the billable provider call may already have finished.** A larger `--token-limit` does not protect against overspend and must never be suggested as the automatic resolution. Review actual provider billing/account telemetry and separately authorize any follow-up native call. Missing/invalid token totals continue to fail closed.

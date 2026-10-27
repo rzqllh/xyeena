@@ -443,8 +443,20 @@ test('Hermes one-shot bounds tool turns and reports settled usage against config
 test('Hermes rejects reported token overage and missing accounting rather than claiming completion', async t=>{
   const cwd=fixture(t);
   const tooMany=createPortableHostAdapter({cwd,runtime:'hermes',tokenLimit:2000,
-    spawnImpl:mockProcess(JSON.stringify({type:'result',exit_code:0,text:'ok',tokens:{total:2001}})+'\n')});
-  await assert.rejects(tooMany.executeTask(makeTask()),e=>e.code==='ERR_PORTABLE_BUDGET_EXCEEDED');
+    spawnImpl:mockProcess(JSON.stringify({type:'result',exit_code:0,
+      text:'SECRET-DO-NOT-DISCLOSE',session_id:'PRIVATE-SESSION',
+      tokens:{total:2001}})+'\n')});
+  await assert.rejects(tooMany.executeTask(makeTask()),error=>{
+    assert.equal(error.code,'ERR_PORTABLE_BUDGET_EXCEEDED');
+    assert.equal(error.reportedUsageTokens,2001);
+    assert.equal(error.tokenLimit,2000);
+    assert.equal(error.enforcement,'reported-usage-settlement');
+    assert.match(error.message,/Hermes-reported tokens=2001/);
+    assert.match(error.message,/post-run acceptance limit=2000/);
+    assert.match(error.message,/provider execution already completed/);
+    assert.doesNotMatch(error.message,/SECRET|PRIVATE-SESSION|Bearer|session_id/);
+    return true;
+  });
   const missing=createPortableHostAdapter({cwd,runtime:'hermes',
     spawnImpl:mockProcess(JSON.stringify({type:'result',exit_code:0,text:'ok'})+'\n')});
   await assert.rejects(missing.executeTask(makeTask()),e=>e.code==='ERR_PORTABLE_USAGE_UNAVAILABLE');

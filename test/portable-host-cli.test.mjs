@@ -105,6 +105,10 @@ test('real subprocess CLI smoke: Hermes requires settled token accounting and re
     '--command',executable,'--yes','--token-limit','1000'],env);
   assert.notEqual(denied.status,0);
   assert.match(denied.stderr,/one-shot token budget exceeded/);
+  assert.match(denied.stderr,/Hermes-reported tokens=1250/);
+  assert.match(denied.stderr,/post-run acceptance limit=1000/);
+  assert.match(denied.stderr,/provider execution already completed/);
+  assert.doesNotMatch(denied.stderr,/Fake Hermes status|session_id|HERMES_HOME/);
   assert.equal(denied.stdout.trim(),'');
 });
 test('real subprocess CLI smoke: orchestrate run remains unverified and never records without opt-in',t=>{

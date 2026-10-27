@@ -293,8 +293,20 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
                 done(err); return;
               }
               if (result.usageTokens > tokenLimit) {
-                const err = new Error('Hermes one-shot token budget exceeded');
+                // A valid terminal result is already settled when this check
+                // runs. Report only bounded numeric counters, never the model
+                // output, provider diagnostics, credentials or session IDs.
+                // This is a post-run acceptance ceiling, NOT a billing cap.
+                const err = new Error(
+                  'Hermes one-shot token budget exceeded: ' +
+                  'Hermes-reported tokens=' + result.usageTokens +
+                  ', post-run acceptance limit=' + tokenLimit +
+                  '; provider execution already completed'
+                );
                 err.code = 'ERR_PORTABLE_BUDGET_EXCEEDED';
+                err.reportedUsageTokens = result.usageTokens;
+                err.tokenLimit = tokenLimit;
+                err.enforcement = 'reported-usage-settlement';
                 done(err); return;
               }
             }
