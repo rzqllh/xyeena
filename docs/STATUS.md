@@ -147,3 +147,7 @@ The npm publication workflow now requires an explicitly published stable GitHub 
 ## Fail-closed delegation eligibility and write serialization
 
 Policy-only backend selection now requires positive, explicit execution readiness instead of treating absent readiness as true. External and native backends with incomplete probes remain unavailable; safe inline fallback continues. Parallel write eligibility is capped at one regardless of caller-asserted `isolatedWorktrees`; no independent host containment has been proven. Negative source tests cover both boundary cases. This is not native execution evidence or an acceptance closure for #34/#36/#37.
+
+## Codex JSONL terminal-evidence hardening — 2026-10-27 (source only)
+
+The portable Codex one-shot adapter previously accepted an `item.completed/agent_message` as an executed report when the child exited with OS status 0, even if no `turn.completed` followed. It now requires a successful terminal `turn.completed` **after** the final agent message, rejects interrupted/reordered/event-error streams and prevents earlier turn completions from certifying a new partial turn. Invalid, negative or overflowing token counts remain unavailable rather than becoming settled totals. Adversarial fixtures exercise all cases. This does **not** authenticate real Codex host execution or satisfy native issue #36; only actual host evidence can close it.
