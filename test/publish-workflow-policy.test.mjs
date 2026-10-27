@@ -18,7 +18,7 @@ test('npm publishing requires explicit reviewed GitHub Release only',()=>{
   assert.match(file,/refs\/heads\/main:refs\/remotes\/origin\/main/);
   assert.match(file,/npm view xyeena-agent versions --json/);
   assert.match(file,/Cannot verify npm registry versions; publication blocked/);
-  assert.match(file,/versions\\.includes\\(process\\.argv\\[2\\]\\)/);
+  assert.ok(file.includes('versions.includes(process.argv[2])'));
   assert.doesNotMatch(file,/if npm view "xyeena-agent@/);
 });
 
