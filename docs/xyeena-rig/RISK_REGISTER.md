@@ -59,3 +59,7 @@ Previously `publish.yml` contained legacy `main` push/commit-message triggers, c
 ## Delegation capability/parallel write assertion hardening
 
 `selectSubagentBackend` now requires **`executionReady === true`** in addition to explicit opt-in, health, callable adapter and scope support. Undefined, false, null, or textual readiness cannot select native/optional workers; fallback stays inline. The selector also refuses parallel writes based on a caller-supplied `isolatedWorktrees` flag; actual host-enforced isolation is not established by that flag. This aligns the public policy view with RIG's shared workspace write fence. The distinct optional Simpul workspace remains outside core acceptance.
+
+## Codex partial-completion false positive
+
+A one-shot Codex JSONL parser previously considered a final agent-message item sufficient without a `turn.completed` event. Exit code 0 could then be misinterpreted as successful execution after a truncated stream. The source parser now requires an ordered terminal event and invalidates prior completion on any later incomplete turn; malformed/missing final evidence is an error, not `executed:true`. The result still requires independent verification and real-host acceptance #36.
