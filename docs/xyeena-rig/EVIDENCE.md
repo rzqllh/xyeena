@@ -315,3 +315,7 @@ A source helper now requests `taskkill.exe /PID <child.pid> /T /F` without a she
 ## Antigravity runner integrity prerequisite (read-only source test)
 
 The source preflight records an owned manifest/script SHA-256 match separately from syntax-only `PreToolUse` registration. Fixture coverage exercises the actual installer-owned manifest, modified JS runner bytes, invalid/oversized/missing ownership markers and symlinked runner. A valid local hash only makes a subsequent optional safe native probe *eligible*; it is not an independent runtime approval/deny observation. Antigravity IDE #34 remains blocked.
+
+## Codex host one-shot completion integrity — 2026-10-27
+
+Source-only negative tests reject a Codex JSONL trace that contains an agent message but lacks its matching terminal `turn.completed`, has terminal events out of order, starts another incomplete turn, reports an error after completion, or includes malformed events. A valid fixture remains `executed: true, verified: false, status: REVIEW_REQUIRED`. Token usage outside nonnegative safe-integer bounds is reported as unavailable. No live Codex binary/account was invoked; OPS-03/#36 remains native LIVE_PENDING.
