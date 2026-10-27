@@ -302,7 +302,7 @@ test('Codex/Claude malformed or failed response is not a verified result',async 
   await assert.rejects(codex.executeTask(makeTask()),/successful completed turn/);
   const claude=createPortableHostAdapter({cwd,runtime:'claude',
     spawnImpl:mockProcess('{"is_error":true,"result":"bad"}')});
-  await assert.rejects(claude.executeTask(makeTask()),/missing result/);
+  await assert.rejects(claude.executeTask(makeTask()),/missing successful result/);
 });
 
 test('headless preview does not select platform-incompatible orchestrator or supporting skills', t => {
