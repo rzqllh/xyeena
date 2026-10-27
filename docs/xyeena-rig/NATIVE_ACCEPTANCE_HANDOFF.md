@@ -57,3 +57,7 @@ The updated `.github/workflows/publish.yml` removes legacy push/commit-message p
 4. Validate the released tarball, provenance and fresh registry consumer install after publication. A clean source CI alone cannot attest npm registry contents.
 
 No environment protection state or npm Trusted Publisher account settings were read or changed by this repository patch. Publication remains `RELEASE_NOT_AUTHORIZED`.
+
+## v0.5.0 final source candidate (2026-10-27)
+
+The [current candidate](RELEASE-CANDIDATE-0.5.0.md) is refreshed from main after Hermes PR #66 and protected-registry PR #67. Native CLI source/readiness alone is not automatic IDE, Hermes teardown, or user approval. The operator has approved a narrowly scoped public release with native IDE enforcement clearly unsupported and other hosts unverified/experimental. This **does not** authorize merge, tagging or publishing; final human GO is still required after confirming GitHub/npm controls. The branch is not a tag, GitHub Release or npm artifact.

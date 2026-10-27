@@ -1,5 +1,7 @@
 # Changelog
 
+- Prepared fresh unpublished 0.5.0 candidate from the latest RIG source through PR #67; includes sanitized Hermes token overage diagnostics (PR #66) and a fail-closed npm registry version uniqueness check (PR #67). This is **release-candidate metadata only**, not a published npm version or completed native-host acceptance.
+
 - Clarify Hermes one-shot overage failures with sanitized numeric `Hermes-reported tokens` and the configured post-run acceptance limit. Explicitly identify settlement as *after* provider execution, not spend prevention. Contract + real dummy subprocess CLI tests assert no provider output or private session identifiers are disclosed; no additional native cancellation acceptance.
 
 - Tighten provider result settlement: require explicit successful Claude Code JSON terminal envelope without permission denial, require nonempty Hermes/Gemini/Claude reports, and reject invalid/negative/overflowed Gemini/Claude token accounting rather than treating it as valid usage. CI fixture only; host compatibility requires native tests.
