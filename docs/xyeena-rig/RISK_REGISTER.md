@@ -63,3 +63,7 @@ Previously `publish.yml` contained legacy `main` push/commit-message triggers, c
 ## Codex partial-completion false positive
 
 A one-shot Codex JSONL parser previously considered a final agent-message item sufficient without a `turn.completed` event. Exit code 0 could then be misinterpreted as successful execution after a truncated stream. The source parser now requires an ordered terminal event and invalidates prior completion on any later incomplete turn; malformed/missing final evidence is an error, not `executed:true`. The result still requires independent verification and real-host acceptance #36.
+
+## Ambiguous native write destinations — source guard
+
+The Antigravity PreToolUse policy now checks extra path-bearing write arguments in addition to `TargetFile`. An explicitly outside-workspace additional location returns `deny`; an opaque/compound or additional in-scope location receives an explicit `force_ask` describing *all* locations instead of presenting the request as a single-file modification. This only governs a loaded hook: IDE enforcement is still not proven (#34).

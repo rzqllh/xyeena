@@ -230,6 +230,25 @@ function readToolDecision(root, name, args) {
     return { decision: 'force_ask', reason: 'Xyeena: verify additional read locations with the native host' };
   return { decision: 'allow' };
 }
+// A host schema may grow additional file destinations. A safe primary
+// TargetFile is not proof that another path-bearing argument is in scope.
+// Do not ask the operator to approve a deceptively single-file description.
+function scopedWriteDecision(root, args) {
+  if (!safeHostTarget(root, args.TargetFile))
+    return denyHook('Xyeena: write target outside trusted workspace');
+  for (const [key, value] of Object.entries(args)) {
+    if (key === 'TargetFile' || !/(?:path|file|dir|cwd|root|folder|destination)/i.test(key))
+      continue;
+    // An alternate explicit location is forbidden if it escapes. Opaque or
+    // compound location fields cannot be verified by a single-target policy.
+    if (typeof value === 'string' && !safeHostTarget(root, value))
+      return denyHook('Xyeena: additional write target outside trusted workspace');
+    return { decision: 'force_ask',
+      reason: 'Xyeena: review all locations in this file modification; native consent required' };
+  }
+  return { decision: 'force_ask',
+    reason: 'Xyeena: confirm this specific workspace file modification' };
+}
 /** Native host PreToolUse policy. It never auto-approves, overrides permissions, or runs tools. */
 export function preToolUse(root, payload) {
   try {
@@ -239,10 +258,7 @@ export function preToolUse(root, payload) {
         !object(payload.toolCall.args)) return denyHook('Xyeena: invalid tool payload');
     const { name, args } = payload.toolCall;
     if (readOnlyTargets.has(name)) return readToolDecision(root, name, args); // no native-policy override
-    if (scopedWrites.has(name)) {
-      if (!safeHostTarget(root, args.TargetFile)) return denyHook('Xyeena: write target outside trusted workspace');
-      return { decision: 'force_ask', reason: 'Xyeena: confirm this specific workspace file modification' };
-    }
+    if (scopedWrites.has(name)) return scopedWriteDecision(root, args);
     if (name === 'run_command') {
       if (!safeHostTarget(root, args.Cwd || root)) return denyHook('Xyeena: command Cwd outside trusted workspace');
       if (typeof args.CommandLine !== 'string' || !args.CommandLine.trim())
