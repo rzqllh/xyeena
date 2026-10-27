@@ -4,7 +4,7 @@
 
 **State: SOURCE_RC_PENDING_FINAL_CI / NATIVE_LIVE_PENDING / PUBLICATION_NOT_AUTHORIZED.**
 
-****Source CI checkpoint:** This replacement candidate is based on `main` `bd99d7b5d862d6db61959347a7a751ba5ae118ef`, including Hermes numeric budget diagnostics (#66) and fail-closed npm version probing (#67). It must pass its own full **exact HEAD** CI. Prior candidate #65 CI is historical only.na/pull/65) passed all 9 jobs on its first fully versioned head ([run 40439901165](https://github.com/rzqllh/xyeena/actions/runs/40439901165)). Every subsequent candidate edit must independently pass its *new* exact-head CI before promotion. Passing source CI does not establish live acceptance.
+**Source CI checkpoint:** This candidate is based on `main` `bd99d7b5d862d6db61959347a7a751ba5ae118ef`, including Hermes budget diagnostics (#66) and fail-closed npm version probing (#67). Require a successful complete CI run on this candidate's **exact HEAD**; earlier PR #65 CI is historical only.
 
 This is an **unpublished, isolated metadata candidate** prepared on 27 October 2026 from the merged Xyeena Rig source through PR #67. Simpul is a separate optional workspace and does not block RIG-native release qualification.
 
