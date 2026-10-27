@@ -57,3 +57,7 @@ The updated `.github/workflows/publish.yml` removes legacy push/commit-message p
 4. Validate the released tarball, provenance and fresh registry consumer install after publication. A clean source CI alone cannot attest npm registry contents.
 
 No environment protection state or npm Trusted Publisher account settings were read or changed by this repository patch. Publication remains `RELEASE_NOT_AUTHORIZED`.
+
+## Updated isolated release candidate (2026-10-27)
+
+The rebased, draft [0.5.0 candidate gate](RELEASE-CANDIDATE-0.5.0.md) aligns source/package version metadata without publishing. It is not the live host acceptance ticket resolution. GitHub environment reviewers, npm Trusted Publisher settings and native tests remain external prerequisites. Do not confuse an isolated candidate's green CI with user authorization to publish or proof that the IDE enforces policies.
