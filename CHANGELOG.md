@@ -1,5 +1,7 @@
 # Changelog
 
+- Clarify Hermes one-shot overage failures with sanitized numeric `Hermes-reported tokens` and the configured post-run acceptance limit. Explicitly identify settlement as *after* provider execution, not spend prevention. Contract + real dummy subprocess CLI tests assert no provider output or private session identifiers are disclosed; no additional native cancellation acceptance.
+
 - Tighten provider result settlement: require explicit successful Claude Code JSON terminal envelope without permission denial, require nonempty Hermes/Gemini/Claude reports, and reject invalid/negative/overflowed Gemini/Claude token accounting rather than treating it as valid usage. CI fixture only; host compatibility requires native tests.
 
 - Require explicit review of all path-bearing destinations in native Antigravity write payloads; deny additional outside-workspace destinations and avoid misleading single-target approvals. Source-level only.
