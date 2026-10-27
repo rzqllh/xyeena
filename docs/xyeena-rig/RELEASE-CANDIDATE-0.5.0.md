@@ -52,4 +52,4 @@ No access to the operator's Windows IDE, private GitHub repository settings or n
 3. Protected publication workflow runs tests and npm OIDC publish. On npm publish failure, do not reuse an existing version or fabricate a provenance receipt.
 4. On application regressions, revert the source and issue a new patch version; npm versions are immutable. Never rewrite/delete audit receipts to imply success.
 
-**Current gate:** scope A is approved. **Publication remains NO-GO** until exact-head CI, GitHub/n​pm environment and trusted publisher setup, and a separate final human release authorization are verified. The remaining native issue tickets stay open by design.
+**Current gate:** scope A is approved. **Publication remains NO-GO** until exact-head CI, GitHub/npm environment and trusted publisher setup, and a separate final human release authorization are verified. The remaining native issue tickets stay open by design.
