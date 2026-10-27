@@ -155,3 +155,7 @@ The portable Codex one-shot adapter previously accepted an `item.completed/agent
 ## Additional native write destinations (source-only)
 
 The guided hook no longer treats an in-scope `TargetFile` as proof that additional path-bearing write parameters are safe. Explicit out-of-workspace alternate destinations are denied; ambiguous/multiple destinations require expanded native approval language. Adversarial tests exercise all three managed write tool types. No standalone IDE LIVE PASS is implied.
+
+## One-shot provider result integrity (source-only)
+
+Claude Code `--output-format json` now requires an explicit `type: result`, `subtype: success`, `is_error: false`, a nonempty final text and no nonempty `permission_denials`. A process exit code 0 alone is no longer accepted as complete evidence. Gemini rejects a nonempty `error` field and treats missing, negative, coerced or overflowing per-model token counters as **unknown**, not a fabricated settled zero. Claude usage counters likewise require safe nonnegative integers and no overflow. Hermes must return a nonempty final text and valid typed JSONL events. These checks require **actual native host compatibility evidence (#36/#37)** before declaring live acceptance; source mocks are not a live test.
