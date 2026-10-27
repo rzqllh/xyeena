@@ -151,3 +151,7 @@ Policy-only backend selection now requires positive, explicit execution readines
 ## Codex JSONL terminal-evidence hardening — 2026-10-27 (source only)
 
 The portable Codex one-shot adapter previously accepted an `item.completed/agent_message` as an executed report when the child exited with OS status 0, even if no `turn.completed` followed. It now requires a successful terminal `turn.completed` **after** the final agent message, rejects interrupted/reordered/event-error streams and prevents earlier turn completions from certifying a new partial turn. Invalid, negative or overflowing token counts remain unavailable rather than becoming settled totals. Adversarial fixtures exercise all cases. This does **not** authenticate real Codex host execution or satisfy native issue #36; only actual host evidence can close it.
+
+## Additional native write destinations (source-only)
+
+The guided hook no longer treats an in-scope `TargetFile` as proof that additional path-bearing write parameters are safe. Explicit out-of-workspace alternate destinations are denied; ambiguous/multiple destinations require expanded native approval language. Adversarial tests exercise all three managed write tool types. No standalone IDE LIVE PASS is implied.
