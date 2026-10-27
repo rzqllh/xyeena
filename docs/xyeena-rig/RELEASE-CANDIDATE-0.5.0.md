@@ -2,7 +2,9 @@
 
 [Current source and host status](../STATUS.md) · [Native operator acceptance](NATIVE_ACCEPTANCE_HANDOFF.md) · [Security risks](RISK_REGISTER.md)
 
-**State: SOURCE_RC_PENDING_CI / NATIVE_LIVE_PENDING / PUBLICATION_NOT_AUTHORIZED.**
+**State: SOURCE_RC_CI_PASS / NATIVE_LIVE_PENDING / PUBLICATION_NOT_AUTHORIZED.**
+
+**Source CI checkpoint:** [RC PR #65](https://github.com/rzqllh/xyeena/pull/65) passed all 9 jobs on its first fully versioned head ([run 40439901165](https://github.com/rzqllh/xyeena/actions/runs/40439901165)). Every subsequent candidate edit must independently pass its *new* exact-head CI before promotion. Passing source CI does not establish live acceptance.
 
 This is an **unpublished, isolated metadata candidate** prepared on 27 October 2026 from the merged Xyeena Rig source. Simpul is a separate optional workspace and does not block RIG-native release qualification.
 
