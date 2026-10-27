@@ -319,3 +319,7 @@ The source preflight records an owned manifest/script SHA-256 match separately f
 ## Codex host one-shot completion integrity — 2026-10-27
 
 Source-only negative tests reject a Codex JSONL trace that contains an agent message but lacks its matching terminal `turn.completed`, has terminal events out of order, starts another incomplete turn, reports an error after completion, or includes malformed events. A valid fixture remains `executed: true, verified: false, status: REVIEW_REQUIRED`. Token usage outside nonnegative safe-integer bounds is reported as unavailable. No live Codex binary/account was invoked; OPS-03/#36 remains native LIVE_PENDING.
+
+## One-shot provider protocol negative fixtures
+
+Source CI checks Claude JSON error subtype, omitted success evidence, permission denials and negative/overflowed usage; Gemini errors, empty response and multi-model accounting anomalies; Hermes malformed event and nonempty text requirements. No actual Codex/Claude/Gemini/Hermes native host was launched by these fixtures. #36/#37 remain pending live host evidence.
