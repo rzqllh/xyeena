@@ -174,6 +174,58 @@ test('Codex exec uses native read-only sandbox, stdin and structured events',asy
   assert.equal(result.verified,false);
   assert.match(captured.join(''),/\$xyeena-orchestrate/);
 });
+test('Codex cannot report executed result from a partial or reordered JSONL turn',async t=>{
+  const cwd=fixture(t);
+  const msg={type:'item.completed',item:{type:'agent_message',text:'Unfinished output'}};
+  const done={type:'turn.completed',usage:{input_tokens:2,output_tokens:1}};
+  const started={type:'turn.started'};
+  const encode=events=>events.map(e=>JSON.stringify(e)).join('\n')+'\n';
+  const invalidStreams=[
+    [started,msg],                          // clean process exit, no completion
+    [done,msg],                             // terminal event before result
+    [msg,done,started],                     // a new unfinished turn after completion
+    [started,msg,done,{type:'error',message:'secret-token'}],
+    [started,msg,{type:'turn.failed'}],
+    [msg,done,{type:'item.completed',item:{type:'agent_message',text:'Late output'}}],
+    [msg,{type:'turn.completed'},started,msg],
+    [{type:'thread.started'},null]
+  ];
+  for(const events of invalidStreams){
+    const adapter=createPortableHostAdapter({cwd,runtime:'codex',
+      spawnImpl:mockProcess(encode(events))});
+    await assert.rejects(adapter.executeTask(makeTask()),
+      e=>/Codex/.test(e.message)&&!e.message.includes('secret-token'));
+  }
+  const valid=createPortableHostAdapter({cwd,runtime:'codex',
+    spawnImpl:mockProcess(encode([
+      {type:'thread.started'},started,msg,done
+    ]))});
+  const result=await valid.executeTask(makeTask());
+  assert.equal(result.report,'Unfinished output');
+  assert.equal(result.usageTokens,3);
+  assert.equal(result.verified,false);
+  assert.equal(result.status,'REVIEW_REQUIRED');
+});
+test('Codex accounting ignores invalid or overflowing token totals',async t=>{
+  const cwd=fixture(t);
+  const payload=usage=>[
+    {type:'item.completed',item:{type:'agent_message',text:'Review complete'}},
+    {type:'turn.completed',usage}
+  ].map(x=>JSON.stringify(x)).join('\n')+'\n';
+  for(const u of [
+    {input_tokens:-1,output_tokens:1},
+    {input_tokens:Number.MAX_SAFE_INTEGER,output_tokens:1},
+    {input_tokens:'4',output_tokens:1},
+    {input_tokens:4.25,output_tokens:1}
+  ]) {
+    const adapter=createPortableHostAdapter({cwd,runtime:'codex',
+      spawnImpl:mockProcess(payload(u))});
+    const out=await adapter.executeTask(makeTask());
+    assert.equal(out.report,'Review complete');
+    assert.equal(out.usageTokens,null);
+    assert.equal(out.verified,false);
+  }
+});
 test('Claude Code launches in bare plan mode without project hooks and parses JSON',async t=>{
   const cwd=fixture(t), captured=[];
   const output=JSON.stringify({type:'result',is_error:false,result:'Reviewed tests',
@@ -195,7 +247,7 @@ test('Codex/Claude malformed or failed response is not a verified result',async 
   const cwd=fixture(t);
   const codex=createPortableHostAdapter({cwd,runtime:'codex',
     spawnImpl:mockProcess('{"type":"turn.failed"}\n')});
-  await assert.rejects(codex.executeTask(makeTask()),/successful agent message/);
+  await assert.rejects(codex.executeTask(makeTask()),/successful completed turn/);
   const claude=createPortableHostAdapter({cwd,runtime:'claude',
     spawnImpl:mockProcess('{"is_error":true,"result":"bad"}')});
   await assert.rejects(claude.executeTask(makeTask()),/missing result/);
