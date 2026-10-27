@@ -28,7 +28,12 @@ test('0.5.0 candidate cannot be mistaken for an already published npm install',(
   assert.match(readme,/xyeena-agent@0\.4\.1/);
   assert.match(site,/npm v0\.4\.1/);
   assert.match(site,/xyeena-agent@0\.5\.0 is an unpublished release candidate/);
-  assert.match(gate,/PUBLICATION_NOT_AUTHORIZED/);
+  assert.match(gate,/SCOPED_PUBLIC_RELEASE_APPROVED/);
+  assert.match(gate,/FINAL_PUBLICATION_NOT_AUTHORIZED/);
+  assert.match(gate,/scope A is approved/);
+  assert.match(gate,/does \*\*not\*\* authorize merging candidate code/);
+  assert.match(readme,/Antigravity IDE 2\.5\.5 hook enforcement is not supported/);
+  assert.match(site,/Antigravity IDE hook enforcement is NOT supported/);
   assert.match(gate,/issues\/34/);
   assert.match(gate,/issues\/36/);
   assert.match(gate,/issues\/37/);
