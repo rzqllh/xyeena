@@ -26,6 +26,6 @@ The published npm package and the current `main` source may have different capab
 
 ## Release assurance
 
-Automated CI, contract tests, package smoke tests and static checks provide useful evidence but do not establish live host integration, penetration-test certification, or a security warranty. Outstanding operational acceptance is recorded in [the acceptance matrix](docs/xyeena-rig/ACCEPTANCE_MATRIX.md).
+Automated CI, contract tests, package smoke tests and static checks provide useful evidence but do not establish live host integration, penetration-test certification, or a security warranty. Outstanding operational acceptance is recorded in [the acceptance matrix](docs/STATUS.md).
 
 Source is provided under the [MIT License](LICENSE), without warranty.

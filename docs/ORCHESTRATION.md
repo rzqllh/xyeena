@@ -30,4 +30,4 @@ Task state is distinct from worker process state. Checkpoints and per-run lockin
 
 Anti-loop safeguards stop repeated failing execution/review cycles and return control to the operator when authorization or new evidence is required.
 
-See [Architecture](ARCHITECTURE.md), [Orchestration routing](INTELLIGENT-ROUTING.md) and [Operational acceptance](xyeena-rig/ACCEPTANCE_MATRIX.md).
+See [Architecture](ARCHITECTURE.md), [Orchestration routing](INTELLIGENT-ROUTING.md) and [Support and release status](STATUS.md).

@@ -14,4 +14,4 @@
 
 Brand descriptions must not imply that current repository source is available in the published package. The latest published baseline is `0.4.1`; later source changes are awaiting a separate release. Historical npm releases and Git tags are immutable.
 
-For product scope, see the [README](../README.md). For distribution policy, see [the release record](xyeena-rig/EVIDENCE.md).
+For product scope, see the [README](../README.md). For distribution policy, see [the release record](STATUS.md).

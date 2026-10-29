@@ -24,7 +24,7 @@ npm run test:consumer
 npm pack --dry-run
 ```
 
-Source layout: `skills/` contains distributable skills; `src/` runtime code; `harness/` project safeguards; `test/` automated checks; `docs/` maintained documentation. Release-readiness tracking is in `docs/xyeena-rig/`.
+Source layout: `skills/` contains distributable skills; `src/` runtime code; `harness/` project safeguards; `test/` automated checks; `docs/` maintained documentation. Support and release requirements are maintained in [STATUS.md](docs/STATUS.md).
 
 Do not commit local sessions, tokens, credentials, checkpoints, backups, scratch files, or generated logs. Preserve licenses and [NOTICE.md](NOTICE.md). Follow [SECURITY.md](SECURITY.md) for confidential vulnerability reporting.
 

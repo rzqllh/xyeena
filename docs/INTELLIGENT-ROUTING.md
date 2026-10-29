@@ -32,4 +32,4 @@ This command creates a **new read-only one-shot session** after explicit consent
 
 Simpul is an optional FastMCP integration whose contract can be validated independently of its upstream worker supervisor. A transport probe is insufficient to select it for live execution; native/inline fallback remains available. Output becomes VERIFIED only after an independent checker evaluates evidence against the task contract.
 
-See [Architecture](ARCHITECTURE.md), [Runtime adapters](RUNTIME-ADAPTERS.md), [Security](../SECURITY.md) and [Acceptance](xyeena-rig/ACCEPTANCE_MATRIX.md).
+See [Architecture](ARCHITECTURE.md), [Runtime adapters](RUNTIME-ADAPTERS.md), [Security](../SECURITY.md) and [Support and release status](STATUS.md).

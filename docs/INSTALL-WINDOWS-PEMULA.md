@@ -1,4 +1,4 @@
-# Xyeena Rig — Panduan Instalasi Windows dari Nol
+# Xyeena Rig : Panduan Instalasi Windows dari Nol
 
 [Current source and host acceptance (2026-10-26)](STATUS.md). Live Antigravity CLI 1.4.7 approvals and scoped automatic denial passed; IDE 2.5.5 interception, broader security boundaries, and remaining runtimes are not live-accepted.
 
@@ -24,7 +24,7 @@ Tidak perlu GitHub URL, Git clone, atau instalasi npm global. npx mengunduh dan 
 
 Xyeena tidak menginstal aplikasi AI, tidak melakukan login akun, tidak membuat Git hooks, dan tidak menjalankan model saat setup.
 
-Setelah instalasi Global, Xyeena menampilkan lokasi dan jumlah file skill yang cocok dengan paket untuk setiap AI. **Pemeriksaan file ini berbeda dari aktivasi skill di aplikasi**—buka ulang aplikasi AI untuk memastikannya.
+Setelah instalasi Global, Xyeena menampilkan lokasi dan jumlah file skill yang cocok dengan paket untuk setiap AI. **Pemeriksaan file ini berbeda dari aktivasi skill di aplikasi**:buka ulang aplikasi AI untuk memastikannya.
 
 ## Bedanya Copy dan Symlink
 
