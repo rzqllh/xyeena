@@ -1,4 +1,4 @@
-# Xyeena Rig — Global installation and symlink mode
+# Xyeena Rig : Global installation and symlink mode
 
 [Current source and host acceptance (2026-10-26)](STATUS.md). Live Antigravity CLI 1.4.7 approvals and scoped automatic denial passed; IDE 2.5.5 interception, broader security boundaries, and remaining runtimes are not live-accepted.
 
@@ -23,7 +23,7 @@ No administrator privileges, Git clone, API key, Git hook installation, or envir
 
 **Symlink** means every chosen AI directory contains folder links to a shared, **permanent** source at <user home>/.xyeena/skill-store/v<VERSION>/. On Windows, folder links are created as junctions to avoid requiring Developer Mode in typical setups. The installer first copies the actual skill data from the npm package into the durable user-home store. Your npx cache can be cleared later without breaking it.
 
-### Global directories — actual host-specific destinations
+### Global directories : actual host-specific destinations
 
 | AI host | Global user-scoped location |
 | --- | --- |
@@ -39,7 +39,7 @@ Official provider documentation:
 - Antigravity global IDE skills: https://www.antigravity.google/docs/skills?tab=ide
 - Gemini CLI user skills: https://geminicli.com/docs/cli/using-agent-skills/
 
-### Terminal examples — optional, not required for beginners
+### Terminal examples : optional, not required for beginners
 
 ~~~powershell
 # Preview a global Antigravity installation

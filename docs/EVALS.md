@@ -18,4 +18,4 @@ Representative test cases include: relevant and irrelevant skill triggers, depen
 
 The source test suite and deterministic evaluator do not establish end-to-end behavioral improvements in real models. Host-native conformance must be assessed separately for Antigravity, Codex, Claude Code, Gemini CLI and Hermes.
 
-See [Validation record](xyeena-rig/EVIDENCE.md), [Acceptance matrix](xyeena-rig/ACCEPTANCE_MATRIX.md) and [Security](../SECURITY.md).
+See [Support and release status](STATUS.md), [Support and release status](STATUS.md) and [Security](../SECURITY.md).

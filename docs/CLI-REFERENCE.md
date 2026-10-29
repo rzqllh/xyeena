@@ -95,7 +95,7 @@ For source-only `host run`, `sdk run`, and `orchestrate run` (including `--recor
 
 ## Guided native-hook diagnostics
 
-**Native acceptance update (2026-10-26):** `agy 1.4.7` honored a Xyeena approval prompt/cancellation and independently blocked an exact, read-only command via Xyeena `deny`. The probe's local `hostEnforcement: UNVERIFIED` is intentional; see the [witnessed evidence](xyeena-rig/EVIDENCE.md) and [scope limits](STATUS.md). Use `guided runner-preview`, `guided runner-upgrade --yes`, and `guided probe deny-start --yes` only from a source checkout; the published 0.4.1 package predates them.
+**Native acceptance update (2026-10-26):** `agy 1.4.7` honored a Xyeena approval prompt/cancellation and independently blocked an exact, read-only command via Xyeena `deny`. The probe's local `hostEnforcement: UNVERIFIED` is intentional; see the [witnessed evidence](STATUS.md) and [scope limits](STATUS.md). Use `guided runner-preview`, `guided runner-upgrade --yes`, and `guided probe deny-start --yes` only from a source checkout; the published 0.4.1 package predates them.
 
 
 `xyeena guided status --dir .` reports filesystem installation and enablement independently of `hostActivation` and `hostEnforcement`. Both status fields remain unverified without external native proof; even a locally observed callback is not an authenticated IDE host decision.

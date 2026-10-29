@@ -46,4 +46,4 @@ Host-visible skill roots differ by runtime. Compact installation has one entry a
 
 ## Validation boundaries
 
-CI covers Windows/macOS/Linux and compatible Node.js releases, package integrity, deterministic contracts and fixtures. It does **not** prove live activation in every host or live execution of the upstream Simpul supervisor. Consult [runtime adapters](RUNTIME-ADAPTERS.md), [security policy](../SECURITY.md) and [acceptance matrix](xyeena-rig/ACCEPTANCE_MATRIX.md).
+CI covers Windows/macOS/Linux and compatible Node.js releases, package integrity, deterministic contracts and fixtures. It does **not** prove live activation in every host or live execution of the upstream Simpul supervisor. Consult [runtime adapters](RUNTIME-ADAPTERS.md), [security policy](../SECURITY.md) and [acceptance matrix](STATUS.md).

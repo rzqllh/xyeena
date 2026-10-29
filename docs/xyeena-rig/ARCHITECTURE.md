@@ -46,4 +46,4 @@ Third-party Superpowers and Superior Skills are optional. They supply eligible m
 
 ## Deployment limitations
 
-Automated contracts and CLI/sandbox smoke tests pass on supported CI operating systems. Their results are not evidence that each IDE's live tool interception, worker lifecycle and approval dialogs have been exercised. See [Runtime adapters](../RUNTIME-ADAPTERS.md), [Security](../../SECURITY.md) and [Acceptance](ACCEPTANCE_MATRIX.md).
+Automated contracts and CLI/sandbox smoke tests pass on supported CI operating systems. Their results are not evidence that each IDE's live tool interception, worker lifecycle and approval dialogs have been exercised. See [Runtime adapters](../RUNTIME-ADAPTERS.md), [Security](../../SECURITY.md) and [Support and release status](../STATUS.md).
