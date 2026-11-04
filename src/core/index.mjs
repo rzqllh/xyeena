@@ -4,7 +4,7 @@
  */
 
 export { ERROR_CODES, XyeenaError } from './errors.mjs';
-export { BUDGET_LIMITS, METRIC_TYPES, estimateTokens, measurePromptMetrics, EffortBudgetGovernor } from './budget.mjs';
+export { BUDGET_LIMITS, METRIC_TYPES, estimateTokens, measurePromptMetrics, reconcileTokenMetrics, EffortBudgetGovernor } from './budget.mjs';
 export { EVIDENCE_TIERS, VERDICT_STATUS, EvidenceRecord, EvidenceLedger } from './evidence.mjs';
 export { PERMISSION_TYPES, EXECUTION_MODES, PolicyGovernor } from './policy.mjs';
 export { CAPABILITY_LAYERS, CapabilityRegistry } from './registry.mjs';

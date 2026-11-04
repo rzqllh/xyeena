@@ -81,10 +81,14 @@ export class CapabilityResolver {
       candidateIds.add('engineering.migration');
     }
 
-    // 7. Security (Passive Guidance)
+    // 7. Security (Guidance vs Scoped Review vs Full Audit)
     if (/\b(security|auth|cors|jwt|csrf|session|token|credential)\b/i.test(lower)) {
       candidateIds.add('security.guidance');
       candidateIds.add('security.threat-model');
+    }
+    // Targeted / Scoped Security Review (inspects diffs, commits, PRs without full repo sweep)
+    if (/\b(security|auth|vulnerability|audit)\b/i.test(lower) && /\b(diff|patch|commit|pr|scoped|file|line|function)\b/i.test(lower)) {
+      candidateIds.add('security.scoped-review');
     }
 
     // 8. Planning, Modeling & Research

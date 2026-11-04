@@ -16,6 +16,7 @@ import {
   CAPABILITY_LAYERS,
   EffortBudgetGovernor,
   measurePromptMetrics,
+  reconcileTokenMetrics,
   METRIC_TYPES
 } from '../../src/core/index.mjs';
 
@@ -107,6 +108,44 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
       assert.ok(!pkgJson.dependencies || Object.keys(pkgJson.dependencies).length === 0, 'Must have zero runtime dependencies');
     });
 
+    it('executes real npm install of local tarball in disposable environment, verifying binary links and imports', () => {
+      const disposableNpmDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xyeena-p07-npm-install-'));
+      fs.writeFileSync(path.join(disposableNpmDir, 'package.json'), JSON.stringify({ name: 'disposable-app', version: '1.0.0' }, null, 2));
+
+      const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+      const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+
+      // Execute actual npm install from local tarball
+      execFileSync(npmCmd, ['install', `"${tarballPath}"`], {
+        cwd: disposableNpmDir,
+        encoding: 'utf8',
+        shell: process.platform === 'win32'
+      });
+
+      // Verify npx xyeena --version
+      const npxVersion = execFileSync(npxCmd, ['xyeena', '--version'], {
+        cwd: disposableNpmDir,
+        encoding: 'utf8',
+        shell: process.platform === 'win32'
+      }).trim();
+      assert.equal(npxVersion, VERSION, 'Installed xyeena binary via npx must report current version');
+
+      // Verify npx xyeena-agent --version
+      const npxAgentVersion = execFileSync(npxCmd, ['xyeena-agent', '--version'], {
+        cwd: disposableNpmDir,
+        encoding: 'utf8',
+        shell: process.platform === 'win32'
+      }).trim();
+      assert.equal(npxAgentVersion, VERSION, 'Installed xyeena-agent binary via npx must report current version');
+
+      // Cleanup
+      try {
+        fs.rmSync(disposableNpmDir, { recursive: true, force: true });
+      } catch {
+        // ignore lock
+      }
+    });
+
     it('executes fresh installation, repeated installation (idempotency), and safe rollback in mock workspace', () => {
       mockWorkspaceDir = path.join(tempDir, 'mock-user-project');
       fs.mkdirSync(mockWorkspaceDir, { recursive: true });
@@ -153,9 +192,9 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
   });
 
   // =========================================================================
-  // 2. REAL AGY HOST ACCEPTANCE
+  // 2. REAL AGY HOST ACCEPTANCE & BOUNDARY DISTINCTION
   // =========================================================================
-  describe('2. Real AGY Host Acceptance', () => {
+  describe('2. Real AGY Host Acceptance & Boundary Distinction', () => {
     let agyWorkspace;
 
     it('verifies skill discovery and routing in an AGY workspace without modifying global host', () => {
@@ -164,12 +203,12 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
       fs.mkdirSync(path.join(skillsDir, 'xyeena-core'), { recursive: true });
       fs.writeFileSync(path.join(skillsDir, 'xyeena-core', 'SKILL.md'), '---\nname: xyeena-core\ndescription: Core skills\n---\n# Kernel');
 
-      // Test discovery
+      // Test discovery at workspace level (VERIFIED)
       const discovered = discoverWorkspaceSkills(agyWorkspace);
       assert.ok(discovered.length >= 1, 'Must discover skills in workspace or package');
       assert.ok(discovered.some(s => s.name === 'xyeena-core'), 'Must include xyeena-core in discovered skills');
 
-      // Test routing
+      // Test routing at workspace level (VERIFIED)
       const routeResult = routeWorkspaceSkills({
         cwd: agyWorkspace,
         home: path.join(agyWorkspace, '.home'),
@@ -204,12 +243,28 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
       assert.equal(overlay.ephemeralOnly, true, 'Overlay must be explicitly ephemeralOnly');
     });
 
-    it('verifies negative triggers: full security audit is gated when not explicitly requested', () => {
+    it('strictly separates security.scoped-review from security.full-audit; full audit requires explicit request', () => {
+      const router = new IntentRouter();
+      const registry = new CapabilityRegistry();
+      const resolver = new CapabilityResolver(registry, router);
+      resolver.registry.register({ id: 'security.scoped-review', layer: CAPABILITY_LAYERS.L1 });
+      resolver.registry.register({ id: 'security.full-audit', layer: CAPABILITY_LAYERS.L2, negative_trigger: 'Must not activate on passive queries' });
+      resolver.registry.register({ id: 'security.guidance', layer: CAPABILITY_LAYERS.L1 });
+      resolver.registry.register({ id: 'security.threat-model', layer: CAPABILITY_LAYERS.L1 });
+
+      // Scoped query: should resolve security.scoped-review and NOT security.full-audit
+      const scopedResolved = resolver.resolve('Audit diff ini untuk keamanan autentikasi');
+      const scopedIds = scopedResolved.map(c => c.id);
+      assert.ok(scopedIds.includes('security.scoped-review'), 'Must resolve security.scoped-review on diff security query');
+      assert.ok(!scopedIds.includes('security.full-audit'), 'Must NOT trigger security.full-audit on scoped query');
+
+      // Passive query: negative trigger blocks full-audit
       const unapproved = SecurityMethods.assertAuditActivationAllowed(false);
       assert.equal(unapproved.allowed, false);
       assert.equal(unapproved.status, 'BLOCKED');
       assert.ok(unapproved.reason.includes('Full Security Audit requires explicit owner instruction'));
 
+      // Explicit repository-wide query: activates full-audit
       const approved = SecurityMethods.assertAuditActivationAllowed(true);
       assert.equal(approved.allowed, true);
       assert.equal(approved.status, 'ACTIVATED');
@@ -286,7 +341,7 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
     });
 
     // --- C. Anti-Slop Golden Scenario ---
-    it('Golden Scenario C (Anti-Slop): Comment hygiene, copywriting cliches, and WCAG accessibility', () => {
+    it('Golden Scenario C (Anti-Slop): Comment hygiene, copywriting cliches, and WCAG 2.2 AA (24px) vs AAA (44px)', () => {
       // 1. Code comments sanitization
       const sloppyCode = `
         // This function calculates total revenue
@@ -310,17 +365,33 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
       assert.ok(copyAudit.detectedCliches.includes('testament to'));
       assert.ok(copyAudit.detectedCliches.includes('tapestry'));
 
-      // 3. WCAG contrast and tap target
+      // 3. WCAG contrast
       const contrast = DesignMethods.calculateWcagContrast([255, 255, 255], [0, 0, 0]);
       assert.equal(contrast.ratio, 21);
       assert.equal(contrast.passesAA, true);
 
-      const compliantTarget = QualityMethods.auditTouchTargets('button { width: 48px; height: 48px; }');
-      assert.equal(compliantTarget.compliant, true);
+      // 4. WCAG 2.2 AA (24x24px) vs AAA (44x44px) touch target mapping (NO false failure on AA)
+      // 24px button: passes AA, does not meet enhanced AAA
+      const target24px = QualityMethods.auditTouchTargets('button { width: 24px; height: 24px; }');
+      assert.equal(target24px.passesAA, true, '24px must satisfy WCAG 2.2 AA');
+      assert.equal(target24px.compliant, true, '24px must be compliant under default AA standard');
+      assert.equal(target24px.passesAAA, false, '24px must be flagged as non-AAA');
 
-      const smallTarget = QualityMethods.auditTouchTargets('button { width: 32px; height: 32px; }');
-      assert.equal(smallTarget.compliant, false);
-      assert.ok(smallTarget.advice.includes('44x44px'));
+      // Sub-24px button (16px): fails AA
+      const target16px = QualityMethods.auditTouchTargets('button { width: 16px; height: 16px; }');
+      assert.equal(target16px.passesAA, false, '16px must fail WCAG 2.2 AA');
+      assert.equal(target16px.compliant, false);
+
+      // 48px button: satisfies both AA and AAA
+      const target48px = QualityMethods.auditTouchTargets('button { width: 48px; height: 48px; }');
+      assert.equal(target48px.passesAA, true);
+      assert.equal(target48px.passesAAA, true);
+      assert.equal(target48px.compliant, true);
+
+      // Inline link exception: <a href> inside text flow is exempt from AA 24px minimum
+      const inlineLink = QualityMethods.auditTouchTargets('<p>Read our <a href="/terms" style="font-size: 14px">terms</a> here.</p>');
+      assert.equal(inlineLink.isInlineException, true);
+      assert.equal(inlineLink.passesAA, true);
     });
 
     // --- D. Ponytail Golden Scenario ---
@@ -415,15 +486,33 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
   // 4. SECURITY & TOKEN GATES ACCEPTANCE
   // =========================================================================
   describe('4. Security & Token Gates Acceptance', () => {
-    it('micro task does not trigger heavy workflows; stays well under 1,500 token budget', () => {
-      const metrics = measurePromptMetrics('Fix typo in README.md');
-      assert.equal(metrics.metricType, METRIC_TYPES.ESTIMATED_BPE_SUBWORD);
-      assert.equal(metrics.isExactModelTokenizer, false);
-      assert.ok(metrics.estimatedTokens < 50, 'Micro prompt must be under 50 tokens');
-
+    it('reconciles token metrics, separating empirical characters, subword BPE estimates, and actual usage', () => {
       const kernel = new BehavioralKernel();
-      const invariantMetrics = measurePromptMetrics(kernel.formatKernelPrompt());
-      assert.ok(invariantMetrics.estimatedTokens <= 450, 'L0 Kernel prompt must be <= 450 tokens (budget ceiling is 1,500)');
+      const kernelPrompt = kernel.formatKernelPrompt();
+
+      const reconciled = reconcileTokenMetrics({
+        kernelText: kernelPrompt,
+        domainText: 'Review diff for authorization bugs',
+        taskInputText: 'Fix typo in README.md'
+      });
+
+      // 1. Empirical character measurements
+      assert.equal(reconciled.empirical.kernelChars, 1345);
+      assert.ok(reconciled.empirical.domainChars > 0);
+      assert.ok(reconciled.empirical.taskChars > 0);
+      assert.equal(
+        reconciled.empirical.fullPayloadChars,
+        reconciled.empirical.kernelChars + reconciled.empirical.domainChars + reconciled.empirical.taskChars
+      );
+
+      // 2. Subword BPE estimates (clearly tagged, not conflated with exact tokenizer API)
+      assert.equal(reconciled.subwordEstimate.metricType, METRIC_TYPES.ESTIMATED_BPE_SUBWORD);
+      assert.equal(reconciled.subwordEstimate.isExactModelTokenizer, false);
+      assert.ok(reconciled.subwordEstimate.kernelTokens <= 400, 'Kernel token estimate must stay well within 1,500 ceiling');
+
+      // 3. Actual model usage (transparently acknowledges unavailability without live host API)
+      assert.equal(reconciled.actualUsage.available, false);
+      assert.equal(reconciled.actualUsage.status, 'NOT_MEASURED_WITHOUT_HOST_API');
     });
 
     it('blocks prompt injection and prevents privilege escalation', () => {
@@ -438,10 +527,10 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
   });
 
   // =========================================================================
-  // 5. RELEASE CANDIDATE AUDIT & EVIDENCE LEVEL MAPPING
+  // 5. EVIDENCE RECONCILIATION & CAPABILITY COVERAGE AUDIT
   // =========================================================================
-  describe('5. Release Candidate Audit & Evidence Level Mapping', () => {
-    it('audits all 64 capabilities into strict evidence levels', () => {
+  describe('5. Evidence Reconciliation & Capability Coverage Audit', () => {
+    it('audits all 64 capabilities, strictly separating COMPARATIVE_PARITY from BEHAVIOR_VERIFIED', () => {
       const registryPath = path.join(PACKAGE_ROOT, 'docs', 'xyeena_rebuild_workspace_2026-11-03', '03-capabilities', 'CAPABILITY_COVERAGE_MATRIX.csv');
       assert.ok(fs.existsSync(registryPath), 'Capability coverage matrix must exist');
 
@@ -451,19 +540,33 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
 
       assert.equal(rows.length, 64, 'Must have exactly 64 capability contracts');
 
+      // P0 upstream baseline comparative families
+      const COMPARATIVE_CAPABILITY_IDS = new Set([
+        'quality.anti-slop',
+        'quality.lean',
+        'quality.context-economy',
+        'thinking.plan',
+        'coordination.graph',
+        'thinking.discovery',
+        'engineering.architecture',
+        'engineering.code-review',
+        'security.findings-validation',
+        'security.retest',
+        'knowledge.reasoning-discipline',
+        'knowledge.research-quality'
+      ]);
+
       const stats = {
         COMPARATIVE_PARITY_VERIFIED: 0,
         BEHAVIOR_VERIFIED: 0,
         CONTRACT_VERIFIED: 0,
-        IMPLEMENTED: 0,
         NOT_TESTED: 0
       };
 
       for (const row of rows) {
-        // Parse CSV fields
         const match = row.match(/^"([^"]+)","([^"]+)","([^"]+)","([^"]+)","([^"]+)"$/);
         assert.ok(match, `Invalid CSV row format: ${row}`);
-        const [_, id, sourcePath, executionMethod, testFile, status] = match;
+        const [_, id, sourcePath, executionMethod, testFile] = match;
 
         // Verify implementation file exists on disk
         const fullSourcePath = path.join(PACKAGE_ROOT, sourcePath);
@@ -473,22 +576,22 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
         const fullTestPath = path.join(PACKAGE_ROOT, testFile);
         assert.ok(fs.existsSync(fullTestPath), `Test file for ${id} must exist: ${testFile}`);
 
-        // Evidence level breakdown based on test verification depth:
-        // P0 golden scenario tests -> COMPARATIVE_PARITY_VERIFIED
-        // Behavioral integration tests -> BEHAVIOR_VERIFIED
-        // Native methods unit tests -> CONTRACT_VERIFIED
-        if (testFile.includes('full-capability-parity.test.mjs') || testFile.includes('behavioral-scenarios.test.mjs')) {
+        // Rigorous classification:
+        // COMPARATIVE_PARITY_VERIFIED only if matched against upstream baseline family
+        if (COMPARATIVE_CAPABILITY_IDS.has(id)) {
           stats.COMPARATIVE_PARITY_VERIFIED++;
-        } else if (testFile.includes('native-methods.test.mjs')) {
-          stats.CONTRACT_VERIFIED++;
-        } else {
+        } else if (testFile.includes('behavioral-scenarios.test.mjs') || testFile.includes('full-capability-parity.test.mjs')) {
           stats.BEHAVIOR_VERIFIED++;
+        } else {
+          stats.CONTRACT_VERIFIED++;
         }
       }
 
-      // Check distribution: every single capability is verified with real code and real tests!
-      assert.equal(stats.NOT_TESTED, 0, 'No capability should be NOT_TESTED');
-      assert.ok(stats.COMPARATIVE_PARITY_VERIFIED >= 45, 'Majority must have full behavioral/comparative parity');
+      // Verified exact counts
+      assert.equal(stats.COMPARATIVE_PARITY_VERIFIED, 12, 'Must have exactly 12 comparative parity verified against upstream baselines');
+      assert.equal(stats.BEHAVIOR_VERIFIED, 41, 'Remaining integration capabilities must be behavior verified');
+      assert.equal(stats.CONTRACT_VERIFIED, 11, 'Unit contract capabilities must be contract verified');
+      assert.equal(stats.NOT_TESTED, 0, 'Zero capability contracts untested');
     });
   });
 

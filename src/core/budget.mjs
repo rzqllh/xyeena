@@ -58,6 +58,62 @@ export function measurePromptMetrics(promptText = '', options = {}) {
   };
 }
 
+/**
+ * Reconcile prompt token metrics across kernel, domain overhead, full prompt payload,
+ * and actual host model usage without conflating empirical character counts, BPE estimates,
+ * and external tokenizer measurements.
+ * @param {object} params
+ * @param {string} [params.kernelText='']
+ * @param {string} [params.domainText='']
+ * @param {string} [params.taskInputText='']
+ * @param {object|null} [params.actualModelUsage=null]
+ * @returns {object}
+ */
+export function reconcileTokenMetrics({
+  kernelText = '',
+  domainText = '',
+  taskInputText = '',
+  actualModelUsage = null
+} = {}) {
+  const kernelChars = kernelText ? kernelText.length : 0;
+  const domainChars = domainText ? domainText.length : 0;
+  const taskChars = taskInputText ? taskInputText.length : 0;
+  const fullPayloadChars = kernelChars + domainChars + taskChars;
+
+  const kernelEstTokens = estimateTokens(kernelText);
+  const domainEstTokens = estimateTokens(domainText);
+  const taskEstTokens = estimateTokens(taskInputText);
+  const fullPayloadEstTokens = kernelEstTokens + domainEstTokens + taskEstTokens;
+
+  return {
+    empirical: {
+      kernelChars,
+      domainChars,
+      taskChars,
+      fullPayloadChars
+    },
+    subwordEstimate: {
+      metricType: METRIC_TYPES.ESTIMATED_BPE_SUBWORD,
+      ratio: '~3.8 char/token (cl100k/gemini heuristic)',
+      isExactModelTokenizer: false,
+      kernelTokens: kernelEstTokens,
+      domainTokens: domainEstTokens,
+      taskTokens: taskEstTokens,
+      fullPayloadTokens: fullPayloadEstTokens
+    },
+    actualUsage: actualModelUsage !== null ? {
+      available: true,
+      promptTokens: actualModelUsage.promptTokens,
+      completionTokens: actualModelUsage.completionTokens,
+      totalTokens: actualModelUsage.totalTokens
+    } : {
+      available: false,
+      status: 'NOT_MEASURED_WITHOUT_HOST_API',
+      reason: 'Host native tokenizer API is not accessible in local offline Node test runner'
+    }
+  };
+}
+
 export class EffortBudgetGovernor {
   /**
    * @param {object} [options={}]

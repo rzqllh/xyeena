@@ -120,30 +120,53 @@ export class QualityMethods {
   }
 
   /**
-   * Audit touch targets for interactive elements (WCAG 2.5.5 / Apple HIG: min 44x44px).
+   * Audit touch targets for interactive elements:
+   * - WCAG 2.2 Level AA (SC 2.5.8): Minimum 24x24 CSS px (with inline/spacing exceptions).
+   * - WCAG Level AAA (SC 2.5.5 / Apple HIG): Enhanced 44x44 CSS px target size.
    * @param {string} cssOrMarkup
+   * @param {object} [options={}]
+   * @param {'AA' | 'AAA'} [options.targetLevel='AA']
    * @returns {object}
    */
-  static auditTouchTargets(cssOrMarkup = '') {
-    const smallTargetPatterns = [
-      /(?:width|height|size)\s*:\s*(?:[1-3][0-9]|0|[1-9])px/gi,
-      /h-[1-9]\b|w-[1-9]\b|size-[1-9]\b/gi
-    ];
+  static auditTouchTargets(cssOrMarkup = '', options = {}) {
+    const targetLevel = options.targetLevel || 'AA';
+    const isInline = /<a\s+[^>]*href|display\s*:\s*inline|class=["'][^"']*inline/i.test(cssOrMarkup);
 
-    const findings = [];
-    for (const pat of smallTargetPatterns) {
-      const matches = cssOrMarkup.match(pat);
-      if (matches) {
-        findings.push(...matches);
-      }
+    // Regex to capture explicit pixel dimensions
+    const pxMatches = Array.from(cssOrMarkup.matchAll(/(?:width|height|size|min-width|min-height)\s*:\s*([0-9]+)px/gi));
+    // Tailwind classes
+    const twMatches = Array.from(cssOrMarkup.matchAll(/(?:^|\s)(?:w|h|size)-([0-9]+)\b/gi));
+
+    const dimensions = [];
+    for (const m of pxMatches) {
+      dimensions.push(parseInt(m[1], 10));
+    }
+    for (const m of twMatches) {
+      // Tailwind scale: 1 unit = 4px (e.g. w-6 = 24px, w-4 = 16px, w-11 = 44px)
+      dimensions.push(parseInt(m[1], 10) * 4);
     }
 
+    const sub24px = dimensions.filter(d => d < 24);
+    const sub44px = dimensions.filter(d => d < 44);
+
+    const passesAA = isInline || sub24px.length === 0;
+    const passesAAA = sub44px.length === 0;
+    const compliant = targetLevel === 'AAA' ? passesAAA : passesAA;
+
     return {
-      compliant: findings.length === 0,
-      findings,
-      advice: findings.length === 0
-        ? 'Interactive elements satisfy minimum 44x44px target bounds.'
-        : `Potential tap target violation: detected sub-44px dimensions (${findings.slice(0, 3).join(', ')}). Interactive elements should have at least 44x44px touch bounding boxes.`
+      compliant,
+      passesAA,
+      passesAAA,
+      targetLevel,
+      isInlineException: isInline,
+      dimensionsDetected: dimensions,
+      sub24Count: sub24px.length,
+      sub44Count: sub44px.length,
+      advice: !passesAA
+        ? `WCAG 2.2 Level AA (SC 2.5.8) violation: target dimensions < 24px detected (${sub24px.join('px, ')}px). Interactive targets must be at least 24x24px unless inline.`
+        : (!passesAAA
+          ? 'Passes WCAG 2.2 Level AA (>= 24x24px). Recommendation for Level AAA (SC 2.5.5 / Apple HIG): increase touch bounding box to at least 44x44px.'
+          : 'Interactive elements satisfy enhanced 44x44px target bounds (WCAG AAA & Apple HIG compliant).')
     };
   }
 

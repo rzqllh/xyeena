@@ -200,21 +200,35 @@ describe('Xyeena Rebuild: Behavioral & Scenario Integration Suite', () => {
       assert.strictEqual(cleanAudit.detectedCliches.length, 0);
     });
 
-    it('Scenario: Accessibility audits flag sub-44px tap targets and outline suppression', () => {
-      const badCss = `
-        .close-btn { width: 24px; height: 24px; outline: none; }
+    it('Scenario: Accessibility audits map WCAG 2.2 AA (24x24px) and Enhanced AAA (44x44px) without false failures', () => {
+      // Sub-24px fails WCAG 2.2 AA
+      const sub24Css = `
+        .tiny-icon { width: 16px; height: 16px; outline: none; }
       `;
-      const tapAudit = QualityMethods.auditTouchTargets(badCss);
-      assert.strictEqual(tapAudit.compliant, false);
+      const sub24Audit = QualityMethods.auditTouchTargets(sub24Css);
+      assert.strictEqual(sub24Audit.passesAA, false);
+      assert.strictEqual(sub24Audit.compliant, false);
 
-      const focusAudit = QualityMethods.auditFocusIndicators(badCss);
+      const focusAudit = QualityMethods.auditFocusIndicators(sub24Css);
       assert.strictEqual(focusAudit.compliant, false);
 
+      // 24px passes WCAG 2.2 AA (SC 2.5.8) but alerts on enhanced AAA (SC 2.5.5)
+      const aaOnlyCss = `
+        .close-btn { width: 24px; height: 24px; }
+      `;
+      const aaAudit = QualityMethods.auditTouchTargets(aaOnlyCss);
+      assert.strictEqual(aaAudit.passesAA, true, '24px must satisfy WCAG 2.2 AA');
+      assert.strictEqual(aaAudit.compliant, true, '24px must not trigger false failure on default AA compliance');
+      assert.strictEqual(aaAudit.passesAAA, false, '24px should not be marked as Enhanced AAA');
+
+      // 44px satisfies both AA and Enhanced AAA
       const goodCss = `
         .action-btn { min-width: 44px; min-height: 44px; outline: none; }
         .action-btn:focus-visible { ring-2 ring-blue-500; }
       `;
       const goodTap = QualityMethods.auditTouchTargets(goodCss);
+      assert.strictEqual(goodTap.passesAA, true);
+      assert.strictEqual(goodTap.passesAAA, true);
       assert.strictEqual(goodTap.compliant, true);
 
       const goodFocus = QualityMethods.auditFocusIndicators(goodCss);
