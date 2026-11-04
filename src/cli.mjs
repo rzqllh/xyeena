@@ -14,9 +14,14 @@ import { interactiveSetup, previewSetup, applySetup, previewSetupDiff } from './
 import { listSetupBackups, previewSetupRollback, runSetupRollback } from './setup-rollback.mjs';
 import { setupHealthCheck } from './setup-health.mjs';
 import { previewCompactSetup, applyCompactSetup } from './compact-setup.mjs';
-const help=`Xyeena Rig ${VERSION}
+import { InstallationTransaction, BRAND_METADATA } from './installer/index.mjs';
+const help=`Xyeena Rig ${VERSION} (Axioven - ${BRAND_METADATA.brand})
+${BRAND_METADATA.tagline}
 
 Usage:
+  xyeena install [--runtime HOST] [--scope workspace|global] [--mode copy|symlink] [--dry-run|--yes] [--force]
+  xyeena uninstall [--runtime HOST] [--scope workspace|global] [--dry-run|--yes]
+  xyeena repair [--runtime HOST] [--scope workspace|global] [--dry-run|--yes]
   xyeena setup                                  # guided: global/workspace, copy/symlink, AI runtimes
   xyeena setup --scope global --mode copy --runtime antigravity --preset complete --dry-run
   xyeena setup --scope global --mode symlink --runtime "gemini,hermes" --preset balanced --yes
@@ -68,6 +73,39 @@ export async function main(args){
  const cmd=args[0]||'help', f=parseFlags(args.slice(1));
  if(['help','--help','-h'].includes(cmd) || f.help || f._.includes('-h') || f._.includes('help')){console.log(help);return}
  if(['version','--version','-v'].includes(cmd)){console.log(VERSION);return}
+ if(cmd==='install'||cmd==='installer'){
+    const cwd=path.resolve(f.dir||process.cwd());
+    const tx=new InstallationTransaction({
+      cwd,runtime:f.runtime||'antigravity',scope:f.scope||'workspace',
+      mode:f.mode||'copy',home:f.home
+    });
+    if(f.dryRun){console.log(JSON.stringify(tx.plan(),null,2));return}
+    if(!f.yes)throw new Error('Pass --dry-run to preview or --yes to execute installation; no files written');
+    console.log(JSON.stringify(tx.execute({force:f.force===true}),null,2));return;
+ }
+ if(cmd==='repair'){
+    const cwd=path.resolve(f.dir||process.cwd());
+    const tx=new InstallationTransaction({
+      cwd,runtime:f.runtime||'antigravity',scope:f.scope||'workspace',
+      mode:f.mode||'copy',home:f.home
+    });
+    if(f.dryRun){console.log(JSON.stringify(tx.plan(),null,2));return}
+    if(!f.yes)throw new Error('Pass --dry-run to preview or --yes to execute repair; no files written');
+    console.log(JSON.stringify(tx.execute({force:true}),null,2));return;
+ }
+ if(cmd==='uninstall'){
+    const cwd=path.resolve(f.dir||process.cwd());
+    const tx=new InstallationTransaction({
+      cwd,runtime:f.runtime||'antigravity',scope:f.scope||'workspace',home:f.home
+    });
+    if(f.dryRun){
+      const p=tx.plan();
+      console.log(JSON.stringify({brand:BRAND_METADATA.brand,dryRun:true,willRemove:p.willReplace,willPreserve:p.willPreserve},null,2));
+      return;
+    }
+    if(!f.yes)throw new Error('Pass --dry-run to preview or --yes to execute uninstall; no files changed');
+    console.log(JSON.stringify(tx.uninstall(),null,2));return;
+ }
  if(cmd==='setup'){
     const sub=f._[0];
     if(sub==='compact'){
