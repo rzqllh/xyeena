@@ -35,3 +35,64 @@ export {
   ResourceBudgetLedger,
   healthyAdapter
 } from './live-backend.mjs';
+
+export * as core from './core/index.mjs';
+export * as methods from './methods/index.mjs';
+export * as runtime from './runtime/index.mjs';
+export * as adapters from './adapters/index.mjs';
+export {
+  ThinkingMethods,
+  EngineeringMethods,
+  DesignMethods,
+  QualityMethods,
+  SecurityMethods,
+  DeliveryMethods
+} from './methods/index.mjs';
+export {
+  MEMORY_SCOPES,
+  MEMORY_CATEGORIES,
+  MemoryStore,
+  ContextCompactor,
+  TASK_STATUS,
+  TaskNode,
+  TaskGraph,
+  CheckpointManager,
+  AgentOverlayManager
+} from './runtime/index.mjs';
+export {
+  AntigravityAdapter,
+  ClaudeCodeAdapter,
+  CodexAdapter,
+  HermesAdapter,
+  SkillInstaller
+} from './adapters/index.mjs';
+
+
+
+export {
+  ERROR_CODES,
+  XyeenaError,
+  BUDGET_LIMITS,
+  estimateTokens,
+  EffortBudgetGovernor,
+  EVIDENCE_TIERS,
+  VERDICT_STATUS,
+  EvidenceRecord,
+  EvidenceLedger,
+  PERMISSION_TYPES,
+  EXECUTION_MODES,
+  PolicyGovernor,
+  CAPABILITY_LAYERS,
+  CapabilityRegistry,
+  TASK_TIERS,
+  IntentRouter,
+  CapabilityResolver,
+  HOST_NAMES,
+  SUPPORT_LEVELS,
+  HostNegotiator,
+  FallbackHandler,
+  L0_INVARIANTS,
+  BehavioralKernel,
+  WorkflowComposer
+} from './core/index.mjs';
+

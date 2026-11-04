@@ -9,7 +9,7 @@
   },
   "exports": {
     ".": "./src/index.mjs",
-    "./core": "./src/index.mjs"
+    "./core": "./src/core/index.mjs"
   },
   "files": [
     "bin/",
