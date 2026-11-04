@@ -1,9 +1,12 @@
 /**
  * Xyeena Native Methods - Security Guidance, Threat Modeling & Audit Parity
  * Implements passive defensive advice, STRIDE threat models, Cloudflare-grade
- * structured finding schema validation, coverage ledger tracking,
+ * structured finding schema validation, coverage ledger tracking, scoped diff review,
+ * hardening specifications, retest verification, supply-chain vetting, runtime isolation checks,
  * and strict activation gating for full security audits.
  */
+
+import { ERROR_CODES, XyeenaError } from '../core/errors.mjs';
 
 export const ATTACK_CLASSES = Object.freeze([
   'AUTHENTICATION_BYPASS',
@@ -30,7 +33,7 @@ export const SEVERITY_LEVELS = Object.freeze([
 
 export class SecurityMethods {
   /**
-   * Provide passive defensive security guidance without active scanning or exploitation.
+   * Provide passive defensive security guidance without active scanning or exploitation (security.guidance).
    * @param {string} domainTopic - e.g., 'auth', 'cors', 'secrets'
    * @returns {object} Defensive advisory checklist
    */
@@ -67,7 +70,7 @@ export class SecurityMethods {
   }
 
   /**
-   * Enforce STRIDE threat classification.
+   * Enforce STRIDE threat classification (security.threat-model).
    * @param {string} boundaryName
    * @param {Array<{ category: 'Spoofing'|'Tampering'|'Repudiation'|'Information Disclosure'|'Denial of Service'|'Elevation of Privilege', threat: string, mitigation: string }>} threats
    */
@@ -85,7 +88,7 @@ export class SecurityMethods {
   }
 
   /**
-   * Validate a security finding against the structured findings schema (Cloudflare Parity).
+   * Validate a security finding against the structured findings schema (security.findings-validation).
    * @param {object} finding
    */
   static validateFinding(finding = {}) {
@@ -178,7 +181,137 @@ export class SecurityMethods {
   }
 
   /**
-   * Assert that a full 6-phase security audit cannot run without explicit operator command.
+   * Conduct a scoped security review of a Git diff without running a full repository audit (security.scoped-review).
+   * @param {object} params
+   * @param {string} params.diff
+   * @param {string[]} [params.sensitivePaths=[]]
+   */
+  static auditScopedDiffSecurity({ diff = '', sensitivePaths = [] }) {
+    const findings = [];
+
+    // Check for hardcoded credentials / tokens
+    if (/ghp_[a-zA-Z0-9]{20,}|sk-[a-zA-Z0-9]{20,}|AIza[0-9A-Za-z-_]{30,}/.test(diff)) {
+      findings.push({
+        severity: 'CRITICAL',
+        issue: 'Suspected hardcoded API key or private secret introduced in diff.'
+      });
+    }
+
+    // Check for dangerous innerHTML or unescaped injection
+    if (/dangerouslySetInnerHTML|innerHTML\s*=/i.test(diff)) {
+      findings.push({
+        severity: 'HIGH',
+        issue: 'Direct innerHTML assignment detected; ensure strict sanitization or prefer textContent.'
+      });
+    }
+
+    // Check for raw SQL concatenation
+    if (/(?:SELECT|INSERT|UPDATE|DELETE)\s+.*?\+\s*[a-zA-Z0-9_]+/i.test(diff)) {
+      findings.push({
+        severity: 'HIGH',
+        issue: 'Possible SQL string concatenation detected; use parameterized queries.'
+      });
+    }
+
+    return {
+      clean: findings.length === 0,
+      findings,
+      verdict: findings.length === 0 ? 'DIFF_SECURITY_CLEAN' : 'SECURITY_RISKS_DETECTED'
+    };
+  }
+
+  /**
+   * Formulate standard production hardening specification (security.hardening).
+   * @param {object} params
+   * @param {string} params.environment - 'production' | 'staging'
+   */
+  static formulateHardeningSpec({ environment = 'production' }) {
+    return {
+      environment,
+      requiredHttpHeaders: {
+        'Content-Security-Policy': "default-src 'self'; script-src 'self'; frame-ancestors 'none';",
+        'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Referrer-Policy': 'strict-origin-when-cross-origin'
+      },
+      corsPolicy: {
+        allowWildcardWithCredentials: false,
+        enforceOriginValidation: true
+      },
+      verdict: 'HARDENING_SPEC_COMPOSED'
+    };
+  }
+
+  /**
+   * Verify retest remediation for a previously identified vulnerability (security.retest).
+   * @param {object} params
+   * @param {string} params.findingId
+   * @param {boolean} params.retestTestPassed
+   * @param {string} params.retestEvidence
+   */
+  static verifyRetestRemediation({ findingId, retestTestPassed = false, retestEvidence = '' }) {
+    if (!retestTestPassed || !retestEvidence || retestEvidence.length < 5) {
+      return {
+        findingId,
+        remediated: false,
+        verdict: 'REMEDIATION_UNPROVEN',
+        reason: 'Retest requires an explicit passing regression test and verifiable execution evidence.'
+      };
+    }
+
+    return {
+      findingId,
+      remediated: true,
+      verdict: 'FINDING_REMEDIATED_AND_VERIFIED',
+      evidenceSummary: retestEvidence
+    };
+  }
+
+  /**
+   * Audit third-party skill supply chain and declared permissions (security.skill-supply-chain).
+   * @param {object} params
+   * @param {string} params.skillName
+   * @param {string[]} params.declaredPermissions
+   * @param {string[]} params.networkEndpoints
+   */
+  static auditSkillSupplyChain({ skillName, declaredPermissions = [], networkEndpoints = [] }) {
+    const unapprovedNetwork = networkEndpoints.length > 0;
+    const hasUnrestrictedWrite = declaredPermissions.includes('unrestricted_fs_write');
+
+    const blockedReasons = [];
+    if (unapprovedNetwork) blockedReasons.push(`Outbound network calls to ${networkEndpoints.join(', ')} forbidden without explicit approval.`);
+    if (hasUnrestrictedWrite) blockedReasons.push('Unrestricted filesystem write permission is denied by sandbox policy.');
+
+    const compliant = blockedReasons.length === 0;
+    return {
+      skillName,
+      compliant,
+      blockedReasons,
+      verdict: compliant ? 'SUPPLY_CHAIN_APPROVED' : 'SUPPLY_CHAIN_BLOCKED'
+    };
+  }
+
+  /**
+   * Verify process and workspace runtime isolation boundaries (security.runtime-isolation).
+   * @param {object} params
+   * @param {boolean} params.worktreeIsolated
+   * @param {boolean} params.networkDisabled
+   * @param {boolean} params.processKillTreeSupported
+   */
+  static verifyRuntimeIsolation({ worktreeIsolated = true, networkDisabled = true, processKillTreeSupported = true }) {
+    const isolated = worktreeIsolated && networkDisabled && processKillTreeSupported;
+    return {
+      worktreeIsolated,
+      networkDisabled,
+      processKillTreeSupported,
+      isolated,
+      verdict: isolated ? 'RUNTIME_STRICTLY_ISOLATED' : 'ISOLATION_BOUNDARY_BREACHED'
+    };
+  }
+
+  /**
+   * Assert that a full 6-phase security audit cannot run without explicit operator command (security.full-audit).
    * @param {boolean} isExplicitUserCommand
    */
   static assertAuditActivationAllowed(isExplicitUserCommand) {

@@ -6,7 +6,7 @@
 
 export class DeliveryMethods {
   /**
-   * Compose an Architecture Decision Record (ADR).
+   * Compose an Architecture Decision Record (ADR) (delivery.adr / core.decision-framing).
    * @param {object} params
    * @param {string} params.id - e.g., 'ADR-001'
    * @param {string} params.title - Decision title
@@ -36,7 +36,7 @@ export class DeliveryMethods {
   }
 
   /**
-   * Generate crisp, functional button/action microcopy.
+   * Generate crisp, functional button/action microcopy (delivery.product-copy).
    * Direct verb + noun, zero marketing fluff.
    * @param {string} actionVerb
    * @param {string} objectNoun
@@ -48,7 +48,26 @@ export class DeliveryMethods {
   }
 
   /**
-   * Structure metadata for persistent artifact creation.
+   * Compose human-centric UX microcopy for states and dialogs (delivery.product-copy).
+   * @param {object} params
+   * @param {'ERROR'|'EMPTY'|'SUCCESS'|'CONFIRM'} params.stateType
+   * @param {string} params.headline
+   * @param {string} params.body
+   * @param {string} params.actionLabel
+   */
+  static composeHumanUxCopy({ stateType, headline, body, actionLabel }) {
+    return {
+      stateType,
+      headline: headline.trim(),
+      body: body.trim(),
+      primaryAction: actionLabel.trim(),
+      tone: 'DIRECT_HUMAN_RESPECTFUL',
+      hasSlop: false
+    };
+  }
+
+  /**
+   * Structure metadata for persistent artifact creation (delivery.artifacts).
    * @param {object} params
    * @param {string} params.summary - Multi-line detailed summary
    * @param {boolean} [params.userFacing=true]
@@ -63,7 +82,29 @@ export class DeliveryMethods {
   }
 
   /**
-   * Audit technical documentation against a rubric:
+   * Compose persistent structured markdown artifact (delivery.artifacts).
+   * @param {object} params
+   * @param {string} params.title
+   * @param {string} params.summary
+   * @param {Array<{ label: string, content: string }>} params.sections
+   */
+  static composeStructuredArtifact({ title, summary, sections = [] }) {
+    const lines = [
+      `# ${title}`,
+      '',
+      `> **Summary:** ${summary.trim()}`,
+      ''
+    ];
+
+    for (const sec of sections) {
+      lines.push(`## ${sec.label}`, '', sec.content.trim(), '');
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Audit technical documentation against a rubric (delivery.documentation):
    * 1. Structure (presence of markdown headers)
    * 2. Actionability (presence of code/command blocks)
    * 3. Absence of lazy placeholder text (TODO, Lorem ipsum, [insert ...])

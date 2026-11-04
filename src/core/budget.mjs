@@ -1,6 +1,7 @@
 /**
  * Xyeena Core - Adaptive Token & Effort Budget Governor
- * Enforces token ceilings, effort limits, and recursion circuit breakers.
+ * Enforces token ceilings, effort limits, metric differentiation,
+ * and recursion circuit breakers.
  */
 
 import { ERROR_CODES, XyeenaError } from './errors.mjs';
@@ -13,6 +14,12 @@ export const BUDGET_LIMITS = Object.freeze({
   MAX_RETRY_COUNT: 3
 });
 
+export const METRIC_TYPES = Object.freeze({
+  ESTIMATED_BPE_SUBWORD: 'ESTIMATED_BPE_SUBWORD',
+  EXACT_CHARACTER_COUNT: 'EXACT_CHARACTER_COUNT',
+  RUNTIME_CONTEXT_OVERHEAD: 'RUNTIME_CONTEXT_OVERHEAD'
+});
+
 /**
  * Estimate token count using empirical character/word subword BPE ratios.
  * @param {string} text - Input text
@@ -23,6 +30,32 @@ export function estimateTokens(text) {
   const chars = text.length;
   // BPE average ratio for English/code is approximately 3.8 chars per token.
   return Math.ceil(chars / 3.8);
+}
+
+/**
+ * Measure comprehensive prompt metrics, separating character count, estimated BPE tokens,
+ * and context overhead without conflating estimates with native tokenizer measurements.
+ * @param {string} promptText
+ * @param {object} [options={}]
+ * @param {number} [options.budgetCeiling=BUDGET_LIMITS.STANDARD_TASK_MAX_TOKENS]
+ */
+export function measurePromptMetrics(promptText = '', options = {}) {
+  const chars = promptText ? promptText.length : 0;
+  const estimatedTokens = estimateTokens(promptText);
+  const ceiling = options.budgetCeiling || BUDGET_LIMITS.STANDARD_TASK_MAX_TOKENS;
+  const headroom = ceiling - estimatedTokens;
+
+  return {
+    characterCount: chars,
+    estimatedTokens,
+    metricType: METRIC_TYPES.ESTIMATED_BPE_SUBWORD,
+    targetTokenizer: 'cl100k_base / gemini_bpe_subword_estimate (~3.8 char/token)',
+    isExactModelTokenizer: false, // Transparent: explicitly distinguishes estimates from true tokenizer API counts
+    budgetCeiling: ceiling,
+    headroomTokens: headroom,
+    headroomPercent: ceiling > 0 ? Math.round((headroom / ceiling) * 100) : 0,
+    withinBudget: estimatedTokens <= ceiling
+  };
 }
 
 export class EffortBudgetGovernor {

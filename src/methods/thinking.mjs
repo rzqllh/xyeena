@@ -1,8 +1,11 @@
 /**
  * Xyeena Native Methods - Thinking, Reasoning & Systematic Debugging Suite
  * Implements structured discovery, 4-phase systematic debugging, falsifiable hypothesis tracking,
- * phased planning, domain modeling, and adversarial counterexample generation.
+ * phased planning, domain modeling, adversarial counterexample generation, primary-source research evaluation,
+ * and relentless grilling/stress-testing.
  */
+
+import { ERROR_CODES, XyeenaError } from '../core/errors.mjs';
 
 export class ThinkingMethods {
   /**
@@ -127,6 +130,129 @@ export class ThinkingMethods {
         potentialFailure: ec.expectedFailure,
         mitigationRequired: true
       }))
+    };
+  }
+
+  /**
+   * Conduct structured primary-source research evaluation (thinking.research).
+   * Rejects ungrounded claims and verifies citations against high-trust sources.
+   * @param {object} params
+   * @param {string} params.topic
+   * @param {Array<{ urlOrPath: string, type: 'OFFICIAL_DOC'|'SPECIFICATION'|'SOURCE_CODE'|'SECONDARY_BLOG' }>} params.sources
+   * @param {Array<{ claim: string, sourceRef: string }>} params.findings
+   */
+  static conductResearchEvaluation({ topic, sources = [], findings = [] }) {
+    if (!topic || typeof topic !== 'string') {
+      throw new XyeenaError(ERROR_CODES.INVALID_CONTRACT, 'Research evaluation requires a valid topic.');
+    }
+
+    const sourceMap = new Map(sources.map(s => [s.urlOrPath, s]));
+    const verifiedFindings = [];
+    const ungroundedClaims = [];
+
+    for (const f of findings) {
+      const source = sourceMap.get(f.sourceRef);
+      if (!source) {
+        ungroundedClaims.push({ claim: f.claim, reason: `Cites missing or unregistered source: ${f.sourceRef}` });
+      } else if (source.type === 'SECONDARY_BLOG') {
+        ungroundedClaims.push({ claim: f.claim, reason: `Cites low-trust secondary blog instead of primary source: ${f.sourceRef}` });
+      } else {
+        verifiedFindings.push({
+          claim: f.claim,
+          source: f.sourceRef,
+          trustLevel: 'PRIMARY_SOURCE_GROUNDED'
+        });
+      }
+    }
+
+    return {
+      topic,
+      totalSources: sources.length,
+      verifiedFindingsCount: verifiedFindings.length,
+      ungroundedClaimsCount: ungroundedClaims.length,
+      groundedRatio: findings.length > 0 ? verifiedFindings.length / findings.length : 1,
+      verifiedFindings,
+      ungroundedClaims,
+      verdict: ungroundedClaims.length === 0 ? 'RESEARCH_GROUNDED' : 'EVIDENCE_INSUFFICIENT'
+    };
+  }
+
+  /**
+   * Relentless grilling / stress-testing of a plan or architectural decision (thinking.grill).
+   * Challenges assumptions, single points of failure, failure modes, and rollback viability.
+   * @param {object} params
+   * @param {string} params.title
+   * @param {Array<{ name: string, rollbackAvailable: boolean }>} params.steps
+   * @param {Array<{ statement: string, verifiedByTest: boolean }>} params.assumptions
+   */
+  static grillPlanOrDecision({ title, steps = [], assumptions = [] }) {
+    const challengeQuestions = [];
+    let riskScore = 0;
+
+    for (const step of steps) {
+      if (!step.rollbackAvailable) {
+        challengeQuestions.push(`Step "${step.name}" has no rollback path. What happens if this fails midway in production?`);
+        riskScore += 25;
+      }
+    }
+
+    for (const asm of assumptions) {
+      if (!asm.verifiedByTest) {
+        challengeQuestions.push(`Assumption "${asm.statement}" is unproven by executable test evidence. What disproves this assumption?`);
+        riskScore += 20;
+      }
+    }
+
+    if (steps.length === 0) {
+      challengeQuestions.push('Plan has zero discrete execution steps. How will progress be measured?');
+      riskScore += 40;
+    }
+
+    const resilient = challengeQuestions.length === 0;
+    return {
+      title,
+      resilient,
+      riskScore: Math.min(100, riskScore),
+      challengeQuestions,
+      verdict: resilient ? 'BATTLE_TESTED_RESILIENT' : 'REVISION_REQUIRED_UNDER_GRILLING'
+    };
+  }
+
+  /**
+   * Detect requirement drift between original specification and proposed/actual implementation (core.requirement-drift).
+   * @param {object} params
+   * @param {string[]} params.agreedScope - Explicit user requirements
+   * @param {string[]} params.actualChanges - Implemented changes / files
+   */
+  static detectRequirementDrift({ agreedScope = [], actualChanges = [] }) {
+    const unfulfilledRequirements = [];
+    const speculativeAdditions = [];
+
+    const lowerScope = agreedScope.map(s => s.toLowerCase());
+    const lowerChanges = actualChanges.map(c => c.toLowerCase());
+
+    for (const req of agreedScope) {
+      const words = req.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+      const isRepresented = lowerChanges.some(change => words.some(w => change.includes(w)));
+      if (!isRepresented) {
+        unfulfilledRequirements.push(req);
+      }
+    }
+
+    for (const change of actualChanges) {
+      const words = change.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+      const matchesAgreed = lowerScope.some(req => words.some(w => req.includes(w)));
+      if (!matchesAgreed) {
+        speculativeAdditions.push(change);
+      }
+    }
+
+    const hasDrift = unfulfilledRequirements.length > 0 || speculativeAdditions.length > 0;
+    return {
+      hasDrift,
+      unfulfilledRequirements,
+      speculativeAdditions,
+      verdict: hasDrift ? 'DRIFT_DETECTED' : 'STRICT_SCOPE_ALIGNED'
     };
   }
 }
