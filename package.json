@@ -26,6 +26,8 @@
     ".agents/plugins/",
     "rules/",
     "docs/",
+    "!docs/xyeena_rebuild_workspace_*",
+    "!docs/*.zip",
     "README.md",
     "LICENSE",
     "NOTICE.md",

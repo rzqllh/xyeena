@@ -1,7 +1,7 @@
 /**
- * Xyeena Native Methods - Thinking & Reasoning Suite
- * Implements structured discovery, falsifiable hypothesis tracking, phased planning,
- * domain modeling, and adversarial counterexample generation.
+ * Xyeena Native Methods - Thinking, Reasoning & Systematic Debugging Suite
+ * Implements structured discovery, 4-phase systematic debugging, falsifiable hypothesis tracking,
+ * phased planning, domain modeling, and adversarial counterexample generation.
  */
 
 export class ThinkingMethods {
@@ -35,6 +35,49 @@ export class ThinkingMethods {
       disproofCommand: c.testCommand,
       status: 'UNTESTED'
     }));
+  }
+
+  /**
+   * Enforce 4-phase systematic debugging discipline:
+   * REPRODUCE -> ISOLATE -> PROPOSE_FIX -> VERIFY_FIX
+   * @param {object} params
+   * @param {'REPRODUCE'|'ISOLATE'|'PROPOSE_FIX'|'VERIFY_FIX'} params.stage
+   * @param {object} params.evidence
+   * @param {string} [params.evidence.reproduceCommand] - Executable command reproducing the failure
+   * @param {string} [params.evidence.rootCauseLocation] - File/line/module boundary
+   * @param {string} [params.evidence.fixDiff] - Proposed smallest fix
+   * @param {boolean} [params.evidence.regressionPassed] - Clean regression test proof
+   */
+  static trackDebuggingInvestigation({ stage, evidence = {} }) {
+    if (stage === 'ISOLATE' && !evidence.reproduceCommand) {
+      return {
+        compliant: false,
+        stage,
+        reason: 'Debugging discipline violation: Cannot isolate root cause without first having a reliable reproduction command.'
+      };
+    }
+
+    if (stage === 'PROPOSE_FIX' && (!evidence.reproduceCommand || !evidence.rootCauseLocation)) {
+      return {
+        compliant: false,
+        stage,
+        reason: 'Debugging discipline violation: Cannot propose a fix before isolating root cause location.'
+      };
+    }
+
+    if (stage === 'VERIFY_FIX' && (!evidence.reproduceCommand || !evidence.rootCauseLocation || !evidence.regressionPassed)) {
+      return {
+        compliant: false,
+        stage,
+        reason: 'Debugging discipline violation: Cannot declare fix verified without executable regression test pass.'
+      };
+    }
+
+    return {
+      compliant: true,
+      stage,
+      status: 'DISCIPLINE_SATISFIED'
+    };
   }
 
   /**

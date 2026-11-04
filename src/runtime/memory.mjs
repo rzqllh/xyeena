@@ -1,9 +1,11 @@
 /**
  * Xyeena Runtime - Scoped Persistent Memory Engine
  * Enforces local-first memory, explicit user consent, scope isolation,
- * and secret sanitization across workspace, global, and agent scopes.
+ * project-level segregation, and secret sanitization across workspace, global, and agent scopes.
  */
 
+import fs from 'fs';
+import path from 'path';
 import { ERROR_CODES, XyeenaError } from '../core/errors.mjs';
 
 export const MEMORY_SCOPES = Object.freeze({
@@ -23,10 +25,18 @@ export class MemoryStore {
   /**
    * @param {object} [options={}]
    * @param {string} [options.scope=MEMORY_SCOPES.WORKSPACE]
+   * @param {string} [options.storageDir] - Optional directory path for file-backed disk persistence
+   * @param {string} [options.projectId='default'] - Project namespace for cross-project isolation
    */
   constructor(options = {}) {
     this.defaultScope = options.scope || MEMORY_SCOPES.WORKSPACE;
-    this.entries = new Map(); // key -> Entry
+    this.storageDir = options.storageDir || null;
+    this.projectId = (options.projectId || 'default').replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+    this.entries = new Map(); // storageKey -> Entry
+
+    if (this.storageDir) {
+      this._loadFromDisk();
+    }
   }
 
   /**
@@ -39,10 +49,66 @@ export class MemoryStore {
       /ghp_[a-zA-Z0-9]{20,}/,                  // GitHub personal token
       /sk-[a-zA-Z0-9]{20,}/,                   // OpenAI / Stripe key
       /AIza[0-9A-Za-z-_]{30,}/,                // Google API key
+      /AKIA[0-9A-Z]{16}/,                      // AWS Access Key ID
       /-----BEGIN[ A-Z_-]+KEY-----/,          // Private keys
-      /bearer\s+[a-zA-Z0-9_\-\.]{15,}/i        // Auth bearer token
+      /bearer\s+[a-zA-Z0-9_\-\.]{15,}/i,       // Auth bearer token
+      /password\s*[:=]\s*["'][^"']{6,}["']/i   // Hardcoded password assignments
     ];
     return secretPatterns.some(pat => pat.test(value));
+  }
+
+  /**
+   * Internal path resolver for disk storage.
+   */
+  _getStorageFilePath() {
+    if (!this.storageDir) return null;
+    return path.join(this.storageDir, `${this.projectId}.memory.json`);
+  }
+
+  /**
+   * Load existing persisted state from disk.
+   */
+  _loadFromDisk() {
+    const filePath = this._getStorageFilePath();
+    if (!filePath) return;
+
+    try {
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, 'utf8');
+        const data = JSON.parse(raw);
+        if (Array.isArray(data)) {
+          for (const item of data) {
+            if (item && item.key && item.scope) {
+              const storageKey = `${item.scope}:${item.key}`;
+              this.entries.set(storageKey, item);
+            }
+          }
+        }
+      }
+    } catch {
+      // Degrade gracefully on corrupt file without crashing constructor
+    }
+  }
+
+  /**
+   * Atomic sync to disk.
+   */
+  _syncToDisk() {
+    const filePath = this._getStorageFilePath();
+    if (!filePath) return;
+
+    try {
+      fs.mkdirSync(this.storageDir, { recursive: true });
+      const tmpPath = `${filePath}.tmp.${Date.now()}`;
+      const payload = JSON.stringify(Array.from(this.entries.values()), null, 2);
+      fs.writeFileSync(tmpPath, payload, 'utf8');
+      fs.renameSync(tmpPath, filePath);
+    } catch (err) {
+      throw new XyeenaError(
+        ERROR_CODES.INTERNAL_ERROR,
+        `Failed to persist memory state to disk at ${filePath}: ${err.message}`
+      );
+    }
   }
 
   /**
@@ -84,6 +150,7 @@ export class MemoryStore {
     };
 
     this.entries.set(storageKey, entry);
+    this._syncToDisk();
     return entry;
   }
 
@@ -94,7 +161,31 @@ export class MemoryStore {
 
   delete(key, scope = this.defaultScope) {
     const storageKey = `${scope}:${key}`;
-    return this.entries.delete(storageKey);
+    const deleted = this.entries.delete(storageKey);
+    if (deleted) {
+      this._syncToDisk();
+    }
+    return deleted;
+  }
+
+  /**
+   * Invalidate outdated or conflicting entries based on a predicate.
+   * @param {(entry: object) => boolean} predicate
+   * @returns {number} Count of invalidated entries
+   */
+  invalidateStale(predicate) {
+    if (typeof predicate !== 'function') return 0;
+    let count = 0;
+    for (const [sKey, entry] of this.entries) {
+      if (predicate(entry)) {
+        this.entries.delete(sKey);
+        count++;
+      }
+    }
+    if (count > 0) {
+      this._syncToDisk();
+    }
+    return count;
   }
 
   /**
