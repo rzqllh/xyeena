@@ -8,7 +8,7 @@ This page separates the published baseline, newer source features, and recorded 
 | --- | --- |
 | GitHub release | [v0.4.1](https://github.com/rzqllh/xyeena/releases/tag/v0.4.1) |
 | npm baseline recorded by the repository | `xyeena-agent@0.4.1`; recheck the registry before publishing a new version |
-| Source candidate version | `0.5.0` in this draft branch's `package.json` (unpublished); additional source features remain gated |
+| Source candidate version | `0.5.0` in this draft branch's `package.json` (unreleased, unpublished); additional source features remain gated |
 | Planned 0.5.0 | Candidate metadata aligned on draft branch; no merge/tag/npm publication authorized |
 | Final publication | Requires owner approval, exact candidate checks, and publishing configuration |
 
