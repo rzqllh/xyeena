@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0 source candidate (unpublished; no release authorization)
+
+- Reconcile the source candidate version metadata with the cleaned main documentation. This is a draft-only candidate, not a GitHub Release, npm publication, or native-host acceptance.
+
 - Clarify Hermes one-shot overage failures with sanitized numeric `Hermes-reported tokens` and the configured post-run acceptance limit. Explicitly identify settlement as *after* provider execution, not spend prevention. Contract + real dummy subprocess CLI tests assert no provider output or private session identifiers are disclosed; no additional native cancellation acceptance.
 
 - Tighten provider result settlement: require explicit successful Claude Code JSON terminal envelope without permission denial, require nonempty Hermes/Gemini/Claude reports, and reject invalid/negative/overflowed Gemini/Claude token accounting rather than treating it as valid usage. CI fixture only; host compatibility requires native tests.
