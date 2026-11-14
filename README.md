@@ -4,7 +4,7 @@ Xyeena Rig menyediakan 19 skill untuk membantu agent melakukan riset, perencanaa
 
 Host yang memiliki integrasi instalasi: Antigravity, Codex, Claude Code, Gemini CLI, dan Hermes. Dukungan instalasi berbeda dari kemampuan host untuk menegakkan izin. Periksa [status dukungan](docs/STATUS.md) sebelum mengandalkannya untuk tindakan berisiko.
 
-Baseline rilis yang dicatat repository adalah `xyeena-agent@0.4.1`. Source terbaru memiliki fitur **unreleased** yang belum otomatis tersedia dalam paket tersebut. Live host acceptance masih terbatas.
+Baseline npm yang sudah didokumentasikan tetap `xyeena-agent@0.4.1`. **Branch kandidat source `xyeena-agent@0.5.0` belum dipublikasikan** dan tidak boleh dipakai sebagai perintah instalasi sampai rilis resmi diverifikasi. Live host acceptance masih terbatas.
 
 ## Instalasi
 

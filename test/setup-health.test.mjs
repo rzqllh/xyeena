@@ -6,6 +6,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { applySetup } from '../src/setup.mjs';
+import { VERSION } from '../src/paths.mjs';
 import { setupHealthCheck, inspectSetupHosts } from '../src/setup-health.mjs';
 
 const bin=fileURLToPath(new URL('../bin/xyeena.mjs',import.meta.url));
@@ -45,7 +46,7 @@ test('setup check validates actual installed skill state but does not claim nati
   const cwd=fixture(t);
   applySetup({cwd,runtime:'antigravity',preset:'essential',yes:true});
   const report=setupHealthCheck({cwd,runtime:'antigravity',includeGlobal:false});
-  assert.equal(report.filesystem.manifestVersion,'0.4.1');
+  assert.equal(report.filesystem.manifestVersion,VERSION);
   assert.equal(report.filesystem.orchestratorFound,true);
   assert.equal(report.filesystem.orchestratorEligibility,'detected');
   assert.equal(report.hostActivationVerified,false);

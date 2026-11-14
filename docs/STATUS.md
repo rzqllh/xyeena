@@ -8,8 +8,8 @@ This page separates the published baseline, newer source features, and recorded 
 | --- | --- |
 | GitHub release | [v0.4.1](https://github.com/rzqllh/xyeena/releases/tag/v0.4.1) |
 | npm baseline recorded by the repository | `xyeena-agent@0.4.1`; recheck the registry before publishing a new version |
-| Source version | `0.4.1` in `package.json`, with additional unreleased changes |
-| Planned 0.5.0 | Limited-public release preparation; no new publication is performed by this documentation change |
+| Source candidate version | `0.5.0` in this draft branch's `package.json` (unreleased, unpublished); additional source features remain gated |
+| Planned 0.5.0 | Candidate metadata aligned on draft branch; no merge/tag/npm publication authorized |
 | Final publication | Requires owner approval, exact candidate checks, and publishing configuration |
 
 Run source-only examples with `node bin/xyeena.mjs` from the intended checkout. Do not assume commands added after the 0.4.1 release exist in its npm package. Node.js 22.14+ is required.
