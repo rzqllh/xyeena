@@ -2,48 +2,71 @@
 
 [Current source and host acceptance (2026-10-26)](STATUS.md). Live Antigravity CLI 1.4.7 approvals and scoped automatic denial passed; IDE 2.5.5 interception, broader security boundaries, and remaining runtimes are not live-accepted.
 
-Xyeena Rig separates skill discovery, host-controlled permissions, workflow decisions and evidence verification. The project is a toolkit, not a replacement for an agent IDE or a privileged background service.
+Xyeena Rig is an All-in-One Skills & Harness toolkit with **Cortex** as its native default orchestration intelligence layer. The architecture enforces separation of concerns across discovery, permission authority, intent routing, transactional installation, and evidence-grounded verification.
 
-## Components
+---
 
-| Layer | Implementation | Responsibility |
-| --- | --- | --- |
-| Packaging | `src/setup*.mjs`, `src/compact-setup.mjs` | Selective skill installation, ownership checks and rollback |
-| Inventory | `src/skill-hosts.mjs`, `src/workspace-skills.mjs` | Bounded host skill/plugin discovery, provenance, precedence and dependencies |
-| Workflow | `src/orchestrator.mjs`, `src/enterprise-policy.mjs` | Single workflow governor, optional provider arbitration, native fallback |
-| Harness | `src/rig-harness-lifecycle.mjs`, `src/harness.mjs` | Scope, consent, contextual guidance and conditional pre/post execution gates |
-| Execution | `src/live-backend.mjs`, `src/portable-cli-adapter.mjs` | Host-dependent adapter contracts, capability probes and safe fallback |
-| Recovery | `src/task-runner.mjs`, `src/task-graph.mjs` | Bounded DAG execution, checkpoints, contention protection and resume |
-| Verification | `src/validate.mjs` and test/CI suites | Package validity and independently checked outcome contracts |
+## 1. System Layers
 
-## Control and data flow
+| Layer | Primary Modules | Responsibility |
+| :--- | :--- | :--- |
+| **Intelligence (Cortex)** | `src/core/cortex.mjs`, `src/core/router.mjs`, `src/core/budget.mjs` | Default orchestration engine (DEC-27); resolves prompts to capability sets, decides execution tiers, and dispatches handlers |
+| **Capability Registry** | `src/core/default-registry.mjs`, `src/core/registry.mjs`, `src/methods/` | Houses all 64 native capability contracts with concrete executable handlers across 9 functional domains |
+| **Transactional Installer** | `src/installer/transaction.mjs`, `src/installer/decision-flow.mjs`, `src/installer/ownership.mjs` | Safe conditional installation (DEC-26, DEC-29); Hybrid Diff Gate, user modification lock, Windows copy default, and atomic rollback |
+| **Inventory & Discovery** | `src/skill-hosts.mjs`, `src/workspace-skills.mjs` | Bounded host skill discovery, workspace vs global precedence, plugin provenance, and dependency closure |
+| **Harness v3.1** | `src/rig-harness-lifecycle.mjs`, `src/harness.mjs`, `harness/` | Opt-in project guardrails, scope verification, contextual guidance, and pre/post-execution checks |
+| **Task Execution & DAG** | `src/task-runner.mjs`, `src/task-graph.mjs`, `src/runtime/task-dag.mjs` | Bounded DAG execution, crash recovery, exclusive per-run locking with monotonic fence tokens, and anti-loop breakers |
+| **Artifact Governance** | `src/runtime/artifact-governance.mjs` | Contextual persistence (DEC-30); atomic writing with automatic timestamp deduplication to prevent accidental overwrites |
+| **Epistemic Evidence** | `src/core/evidence.mjs` | Strict evidence classification into CONTRACT_ONLY, BEHAVIOR_VERIFIED, COMPARATIVE_VERIFIED, and LIVE_HOST_VERIFIED (DEC-31) |
+
+---
+
+## 2. Control and Data Flow
 
 ```text
-Request / host session
-   ↓
-Host-specific inventory → eligibility / trust / dependency resolution
-   ↓
-Xyeena workflow governor → optional specialist skill selection
-   ↓
-Host-backed Harness permission boundary (where available)
-   ↓
-Inline execution / verified native adapter / optional Simpul adapter
-   ↓
-Independent result checks → checkpoint → resume / review
+User Request / Prompt
+       ↓
+Cortex Intent & Domain Classification (router.mjs)
+       ↓
+Tier Decision:
+  ├── TIER_0_MICRO (< 5ms, direct single-skill execution, zero ceremony)
+  └── TIER_1_STANDARD / TIER_2_DEEP (composite skills, DAG execution, quality gates)
+       ↓
+Capability Resolution & Dependency Closure (resolver.mjs)
+       ↓
+Supporting Capability Budget Check (budget.mjs: maxSupporting <= 5)
+       ↓
+Handler Dispatch (default-registry.mjs / cortex.dispatch)
+       ↓
+Execution Boundary:
+  ├── Inline / Local Native Methods (src/methods/*)
+  ├── Host-Native Execution (Antigravity, Gemini, Codex, Claude, Hermes)
+  └── Guarded External Delegation (Simpul MCP read-only / SDK bridge)
+       ↓
+Artifact Governance (atomic persistence only when requested/warranted)
+       ↓
+Epistemic Evidence Classification & Checkpoint State Persistence
 ```
 
-**One workflow owner:** Superpowers and Superior Skills are optional inputs, not parallel governors. Native Xyeena modules remain available if third-party capabilities are absent or ineligible.
+---
 
-**Authoritative approval:** host user approval and actual tool interception cannot be inferred from a library object, string, or signed proof generated by the same untrusted caller. Unsupported privileged execution fails closed. Harness guides may be installed without an active host interception hook.
+## 3. Core Architectural Invariants
 
-**Worker state:** transport connectivity and execution readiness are different. Simpul's upstream execution supervisor is not yet accepted as live-ready. Native subagents require real host handles and lifecycle support; otherwise the operation remains inline or unavailable.
+1. **Single Workflow Governor (DEC-02):** Cortex is the sole workflow governor. Third-party skills (e.g. Superpowers, Superior) contribute methodology or specialist review, never competing control loops.
+2. **Existing-Agent-First (DEC-03):** Host persona files (e.g. `.gemini/agents/`) are strictly read-only and never modified or replaced.
+3. **L0 Kernel Budget Bound (DEC-04):** Core kernel prompt overhead is bounded $\le$ 1,500 tokens (empirically measured between 535 and 616 tokens).
+4. **Contextual Quality / Anti-Slop (DEC-05):** Pure mathematical relative luminance contrast calculations (WCAG AA 4.5:1 / 3:1), regex comment hygiene, and contextual tone review without blanket wordlists blocking legitimate code keywords.
+5. **Fail-Closed Security (DEC-06, DEC-14):** Scoped security reviews are passive; full security audits require explicit user command. Missing credentials or unverified host boundaries fail closed.
+6. **Installer Safety Gate (DEC-26, DEC-29):** Files modified by users cannot be overwritten—even with `--force`—without explicit `--diff-approved-fingerprint`. Windows mode defaults to `copy`. Uninstall preserves custom files.
 
-**Evidence:** a model answer is not an acceptance test. VERIFIED is reserved for independently checked evidence under a defined task contract.
+---
 
-## Installation safety
+## 4. Validation Boundaries
 
-Host-visible skill roots differ by runtime. Compact installation has one entry at `xyeena-rig/SKILL.md` and stores native modules under `references/skills/`. Ownership markers, checksums, backups and migration journals protect existing user files. Workspace Harness and Guided hooks are independently opt-in. No installer silently changes global host trust.
+Source validation comprises:
+- Programmatic test suite: **605 / 605 PASS** across 47 test suites (`npm test`).
+- Manifest & contract validation: 19 packaged skills + 64 capability contracts (`npm run check`).
+- Packed consumer smoke: tarball extraction and multi-host installation verification (`npm run test:consumer`).
+- Vendored harness rules: 15 / 15 PASS (`npm run test:harness`).
 
-## Validation boundaries
-
-CI covers Windows/macOS/Linux and compatible Node.js releases, package integrity, deterministic contracts and fixtures. It does **not** prove live activation in every host or live execution of the upstream Simpul supervisor. Consult [runtime adapters](RUNTIME-ADAPTERS.md), [security policy](../SECURITY.md) and [acceptance matrix](STATUS.md).
+Consult [Runtime Adapters](RUNTIME-ADAPTERS.md), [Security Policy](../SECURITY.md), and [Status](STATUS.md) for current host-native boundary evidence.

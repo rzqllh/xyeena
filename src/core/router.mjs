@@ -68,6 +68,9 @@ export class IntentRouter {
     if (
       lower.includes('diagnose') ||
       lower.includes('debug') ||
+      lower.includes('crash') ||
+      lower.includes('investigate') ||
+      lower.includes('investigasi') ||
       lower.includes('kenapa error') ||
       lower.includes('test gagal') ||
       lower.includes('investigate failure')
@@ -94,7 +97,10 @@ export class IntentRouter {
     // Domain keywords that elevate a task beyond TIER_0_MICRO
     const domainIndicators = [
       'test', 'tdd', 'komponen', 'component', 'modal', 'css', 'layout', 'ui',
-      'database', 'api', 'auth', 'security', 'bug', 'error', 'fix', 'implement', 'buat'
+      'database', 'api', 'auth', 'security', 'bug', 'error', 'fix', 'implement', 'buat',
+      'crash', 'diagnose', 'investigate', 'investigasi', 'failure', 'perf', 'performance',
+      'slow', 'review', 'diff', 'refactor', 'migration', 'audit', 'jwt', 'token',
+      'authorization', 'otorisasi', 'vulnerability', 'sanitize', 'endpoint', 'validasi', 'register'
     ];
     const hasDomainIndicator = domainIndicators.some(k => lower.includes(k));
 

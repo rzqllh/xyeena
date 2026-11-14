@@ -1,13 +1,15 @@
 /**
- * Xyeena / Axioven Installer - Decision Flow Engine (P08)
+ * Xyeena Installer - Decision Flow Engine (P10 / DEC-26 / DEC-28)
  * Detects host, scope, version, ownership, and installation state
  * to decide whether to fresh install, replace legacy, update, no-op, or repair.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { VERSION } from '../paths.mjs';
+import os from 'node:os';
+import { VERSION, SKILLS_DIR } from '../paths.mjs';
 import { RUNTIMES } from '../runtime.mjs';
+import { getOfficialSkillNames } from './ownership.mjs';
 
 export const INSTALL_STATES = Object.freeze({
   NOT_INSTALLED: 'NOT_INSTALLED',
@@ -16,6 +18,7 @@ export const INSTALL_STATES = Object.freeze({
   SAME_VERSION_VALID: 'SAME_VERSION_VALID',
   SAME_VERSION_BROKEN: 'SAME_VERSION_BROKEN',
   NEWER_VERSION: 'NEWER_VERSION',
+  USER_MODIFICATIONS_DETECTED: 'USER_MODIFICATIONS_DETECTED',
   FOREIGN_OR_UNOWNED_FILES: 'FOREIGN_OR_UNOWNED_FILES',
   UNKNOWN_INSTALLATION: 'UNKNOWN_INSTALLATION',
   PARTIAL_INSTALL: 'PARTIAL_INSTALL'
@@ -46,6 +49,48 @@ export function compareSemver(a, b) {
 }
 
 /**
+ * Resolve portable user home directory on Windows, macOS, and Linux.
+ * @param {string} [overrideHome]
+ * @returns {string}
+ */
+export function resolvePortableHome(overrideHome) {
+  if (overrideHome) return path.resolve(overrideHome);
+  const fromEnv = process.env.USERPROFILE || process.env.HOME;
+  if (fromEnv) return path.resolve(fromEnv);
+  return path.resolve(os.homedir());
+}
+
+/**
+ * Resolve state directory, manifest path, lock path, and backup directory for a given scope.
+ * Guarantees zero cross-project collision for global scope (DEC-28).
+ * @param {object} params
+ * @param {string} params.cwd - Workspace project directory
+ * @param {string} [params.runtime='antigravity']
+ * @param {'workspace'|'global'} [params.scope='workspace']
+ * @param {string} [params.home]
+ * @returns {{ stateDir: string, manifestPath: string, lockPath: string, backupDir: string }}
+ */
+export function resolveStateDir({ cwd, runtime = 'antigravity', scope = 'workspace', home } = {}) {
+  const homeDir = resolvePortableHome(home);
+  if (scope === 'global') {
+    const stateDir = path.join(homeDir, '.xyeena', 'installations', runtime);
+    return {
+      stateDir,
+      manifestPath: path.join(stateDir, 'install.json'),
+      lockPath: path.join(stateDir, 'installer.lock'),
+      backupDir: path.join(homeDir, '.xyeena', 'backups', runtime)
+    };
+  }
+  const stateDir = path.join(cwd, '.xyeena');
+  return {
+    stateDir,
+    manifestPath: path.join(stateDir, 'install.json'),
+    lockPath: path.join(stateDir, 'installer.lock'),
+    backupDir: path.join(stateDir, 'backups')
+  };
+}
+
+/**
  * Detect the target skills directory for a given host and scope.
  * @param {string} cwd - Project workspace directory
  * @param {string} runtime - Host runtime ('antigravity', 'claude', 'codex', 'gemini', 'hermes')
@@ -53,13 +98,13 @@ export function compareSemver(a, b) {
  * @param {string} [home] - User home directory (for global scope)
  * @returns {string} Target skills directory path
  */
-export function resolveTargetDir(cwd, runtime, scope = 'workspace', home = process.env.HOME || process.env.USERPROFILE) {
+export function resolveTargetDir(cwd, runtime, scope = 'workspace', home) {
   const descriptor = RUNTIMES[runtime] || RUNTIMES.antigravity;
   if (scope === 'workspace') {
     return path.join(cwd, descriptor.skillDir);
   }
   // Global scope destinations
-  const homeDir = home || cwd;
+  const homeDir = resolvePortableHome(home);
   if (runtime === 'claude') return path.join(homeDir, '.claude', 'skills');
   if (runtime === 'hermes') return path.join(homeDir, '.hermes', 'skills');
   if (runtime === 'gemini') return path.join(homeDir, '.gemini', 'skills');
@@ -68,12 +113,21 @@ export function resolveTargetDir(cwd, runtime, scope = 'workspace', home = proce
 }
 
 /**
- * Read the installation manifest from project root if present.
- * @param {string} cwd
+ * Read the installation manifest from project root or global state directory.
+ * @param {string|object} optionsOrCwd - Either cwd string or full state options object
  * @returns {object|null} Manifest data or null
  */
-export function readInstallManifest(cwd) {
-  const manifestPath = path.join(cwd, '.xyeena', 'install.json');
+export function readInstallManifest(optionsOrCwd) {
+  let manifestPath;
+  if (typeof optionsOrCwd === 'string') {
+    manifestPath = path.join(optionsOrCwd, '.xyeena', 'install.json');
+  } else if (optionsOrCwd && typeof optionsOrCwd === 'object') {
+    const state = resolveStateDir(optionsOrCwd);
+    manifestPath = state.manifestPath;
+  } else {
+    return null;
+  }
+
   try {
     if (fs.existsSync(manifestPath)) {
       return JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
@@ -96,14 +150,15 @@ export function readInstallManifest(cwd) {
  */
 export function detectInstallationState({
   cwd,
-  runtime,
+  runtime = 'antigravity',
   scope = 'workspace',
   targetVersion = VERSION,
   home
 }) {
   const targetDir = resolveTargetDir(cwd, runtime, scope, home);
-  const manifest = readInstallManifest(cwd);
-  const lockFile = path.join(cwd, '.xyeena', 'installer.lock');
+  const stateLocations = resolveStateDir({ cwd, runtime, scope, home });
+  const manifest = readInstallManifest(stateLocations.manifestPath ? { cwd, runtime, scope, home } : cwd);
+  const lockFile = stateLocations.lockPath;
 
   // Check for interrupted/partial install lock
   if (fs.existsSync(lockFile)) {
@@ -145,9 +200,10 @@ export function detectInstallationState({
     .filter(e => e.isDirectory() || e.isSymbolicLink())
     .map(e => e.name);
 
-  // Check for Xyeena / Axioven skills
-  const xyeenaSkills = skillEntries.filter(name => name.startsWith('xyeena-') || name.startsWith('axioven-'));
-  const foreignSkills = skillEntries.filter(name => !name.startsWith('xyeena-') && !name.startsWith('axioven-'));
+  // Check for Xyeena skills using official catalog
+  const officialSkills = getOfficialSkillNames();
+  const xyeenaSkills = skillEntries.filter(name => officialSkills.includes(name));
+  const foreignSkills = skillEntries.filter(name => !officialSkills.includes(name));
 
   // 1. If NO Xyeena skills exist in target dir
   if (xyeenaSkills.length === 0) {
@@ -156,7 +212,7 @@ export function detectInstallationState({
         state: INSTALL_STATES.FOREIGN_OR_UNOWNED_FILES,
         manifest: null,
         targetDir,
-        details: { foreignSkills, reason: 'Target directory contains third-party skills but no Xyeena files' }
+        details: { foreignSkills, reason: 'Target directory contains third-party skills but no official Xyeena files' }
       };
     }
     return {
@@ -176,7 +232,7 @@ export function detectInstallationState({
       details: {
         xyeenaSkills,
         foreignSkills,
-        reason: 'Legacy Xyeena installation detected without unified .xyeena/install.json manifest'
+        reason: 'Legacy Xyeena installation detected without unified install.json manifest'
       }
     };
   }
@@ -186,7 +242,6 @@ export function detectInstallationState({
   const vDiff = compareSemver(installedVersion, targetVersion);
 
   if (vDiff < 0) {
-    // Installed is older than target package
     return {
       state: INSTALL_STATES.OLDER_VERSION,
       manifest,
@@ -196,7 +251,6 @@ export function detectInstallationState({
   }
 
   if (vDiff > 0) {
-    // Installed is newer than target package (downgrade protection)
     return {
       state: INSTALL_STATES.NEWER_VERSION,
       manifest,
@@ -205,14 +259,23 @@ export function detectInstallationState({
     };
   }
 
-  // 4. Same version: check if broken or valid
-  // Core skills must be present and contain valid SKILL.md
+  // 4. Same version: check comprehensive integrity (SKILL.md + capability.json)
   let broken = false;
+  let brokenReason = '';
   for (const sk of xyeenaSkills) {
     const skillMd = path.join(targetDir, sk, 'SKILL.md');
+    const capJson = path.join(targetDir, sk, 'capability.json');
     if (!fs.existsSync(skillMd) || fs.statSync(skillMd).size === 0) {
       broken = true;
+      brokenReason = `${sk}/SKILL.md is missing or empty`;
       break;
+    }
+    if (fs.existsSync(path.join(SKILLS_DIR, sk, 'capability.json'))) {
+      if (!fs.existsSync(capJson) || fs.statSync(capJson).size === 0) {
+        broken = true;
+        brokenReason = `${sk}/capability.json is missing or empty`;
+        break;
+      }
     }
   }
 
@@ -221,7 +284,7 @@ export function detectInstallationState({
       state: INSTALL_STATES.SAME_VERSION_BROKEN,
       manifest,
       targetDir,
-      details: { installedVersion, reason: 'One or more installed skills are missing SKILL.md or corrupted' }
+      details: { installedVersion, reason: brokenReason }
     };
   }
 

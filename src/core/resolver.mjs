@@ -4,17 +4,18 @@
  * Enforces strict negative triggers and word-boundary domain matching.
  */
 
-import { TASK_TIERS } from './router.mjs';
+import { TASK_TIERS, IntentRouter } from './router.mjs';
 import { CAPABILITY_LAYERS } from './registry.mjs';
+import { createDefaultRegistry } from './default-registry.mjs';
 
 export class CapabilityResolver {
   /**
-   * @param {CapabilityRegistry} registry
-   * @param {IntentRouter} router
+   * @param {CapabilityRegistry} [registry]
+   * @param {IntentRouter} [router]
    */
   constructor(registry, router) {
-    this.registry = registry;
-    this.router = router;
+    this.registry = registry || createDefaultRegistry();
+    this.router = router || new IntentRouter();
   }
 
   /**

@@ -168,4 +168,17 @@ export class EffortBudgetGovernor {
     this.retryCount = 0;
     this.tripped = false;
   }
+
+  /**
+   * Get recommended budget ceiling for a complexity tier.
+   * @param {string} tier
+   * @returns {number}
+   */
+  getCeiling(tier) {
+    if (tier === 'TIER_0_MICRO') return BUDGET_LIMITS.MICRO_TASK_MAX_TOKENS;
+    if (tier === 'TIER_1_STANDARD') return BUDGET_LIMITS.STANDARD_TASK_MAX_TOKENS;
+    if (tier === 'TIER_2_COMPLEX') return BUDGET_LIMITS.COMPLEX_TASK_MAX_TOKENS;
+    if (tier === 'TIER_3_ARCHITECTURAL') return BUDGET_LIMITS.COMPLEX_TASK_MAX_TOKENS * 2;
+    return this.maxTokens;
+  }
 }

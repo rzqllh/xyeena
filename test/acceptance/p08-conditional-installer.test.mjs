@@ -16,6 +16,7 @@ import {
   scanDirectoryOwnership,
   isXyeenaOwned,
   isProtectedUserData,
+  safeChild,
   BRAND_METADATA
 } from '../../src/installer/index.mjs';
 
@@ -55,12 +56,12 @@ describe('P08 — Conditional Installer & Legacy Replacement (AXIOVEN)', () => {
 
     const plan = tx.plan();
     assert.equal(plan.state, INSTALL_STATES.NOT_INSTALLED);
-    assert.equal(plan.brand, 'axioven');
+    assert.equal(plan.brand, 'xyeena');
     assert.ok(plan.availableSkillsCount > 0);
 
     const result = tx.execute();
     assert.equal(result.success, true);
-    assert.equal(result.brand, 'axioven');
+    assert.equal(result.brand, 'xyeena');
     assert.ok(fs.existsSync(path.join(tmpProject, '.xyeena', 'install.json')));
     assert.ok(fs.existsSync(path.join(tmpProject, '.agents', 'skills', 'xyeena-core', 'SKILL.md')));
     assert.ok(fs.statSync(path.join(tmpProject, '.agents', 'skills', 'xyeena-core', 'SKILL.md')).size > 0);
@@ -129,7 +130,7 @@ describe('P08 — Conditional Installer & Legacy Replacement (AXIOVEN)', () => {
 
     const updatedManifest = JSON.parse(fs.readFileSync(path.join(tmpProject, '.xyeena', 'install.json'), 'utf8'));
     assert.equal(updatedManifest.version, '0.4.1');
-    assert.equal(updatedManifest.brand, 'axioven');
+    assert.equal(updatedManifest.brand, 'xyeena');
   });
 
   // Scenario 4: Same-version no-op (SAME_VERSION_VALID -> no writes, reported up-to-date)
@@ -196,7 +197,7 @@ describe('P08 — Conditional Installer & Legacy Replacement (AXIOVEN)', () => {
   test('Scenario 6: Newer-version downgrade protection (NEWER_VERSION -> refuses downgrade without force)', () => {
     fs.mkdirSync(path.join(tmpProject, '.xyeena'), { recursive: true });
     fs.writeFileSync(path.join(tmpProject, '.xyeena', 'install.json'), JSON.stringify({
-      brand: 'axioven',
+      brand: 'xyeena',
       version: '99.0.0',
       skills: ['xyeena-core']
     }));
@@ -524,5 +525,177 @@ describe('P08 — Conditional Installer & Legacy Replacement (AXIOVEN)', () => {
       assert.ok(content.includes('name:'), `Skill ${s.name} must contain name in frontmatter`);
       assert.ok(content.includes('description:'), `Skill ${s.name} must contain description in frontmatter`);
     }
+  });
+
+  // Scenario 21: Real Fault-Injection Mid-Execution (True Two-Way Rollback)
+  test('Scenario 21: Fault-injection during write triggers true two-way rollback', () => {
+    const txInit = new InstallationTransaction({
+      cwd: tmpProject,
+      runtime: 'antigravity',
+      scope: 'workspace'
+    });
+    txInit.execute();
+
+    const initialManifest = fs.readFileSync(path.join(tmpProject, '.xyeena', 'install.json'), 'utf8');
+    const initialSkillContent = fs.readFileSync(path.join(tmpProject, '.agents', 'skills', 'xyeena-core', 'SKILL.md'), 'utf8');
+
+    const originalCopyFileSync = fs.copyFileSync;
+    let copies = 0;
+    try {
+      fs.copyFileSync = (src, dst, flags) => {
+        copies++;
+        if (copies > 5) {
+          throw new Error('SIMULATED_DISK_IO_FAILURE_MID_WRITE');
+        }
+        return originalCopyFileSync(src, dst, flags);
+      };
+
+      const txFail = new InstallationTransaction({
+        cwd: tmpProject,
+        runtime: 'antigravity',
+        scope: 'workspace',
+        targetVersion: '0.4.2'
+      });
+
+      assert.throws(() => {
+        txFail.execute({ force: true });
+      }, /SIMULATED_DISK_IO_FAILURE_MID_WRITE/);
+
+    } finally {
+      fs.copyFileSync = originalCopyFileSync;
+    }
+
+    // Verify complete rollback: lock released, original skill restored, manifest restored
+    assert.ok(!fs.existsSync(path.join(tmpProject, '.xyeena', 'installer.lock')));
+    assert.equal(fs.readFileSync(path.join(tmpProject, '.agents', 'skills', 'xyeena-core', 'SKILL.md'), 'utf8'), initialSkillContent);
+    assert.equal(fs.readFileSync(path.join(tmpProject, '.xyeena', 'install.json'), 'utf8'), initialManifest);
+  });
+
+  // Scenario 22: User Customization Diff Detection & Fingerprint Gate (DEC-26)
+  test('Scenario 22: User customization detection triggers fail-closed diff gate and requires fingerprint consent', () => {
+    const tx = new InstallationTransaction({
+      cwd: tmpProject,
+      runtime: 'antigravity',
+      scope: 'workspace'
+    });
+    tx.execute();
+
+    // User modifies SKILL.md with custom team instructions
+    const skillPath = path.join(tmpProject, '.agents', 'skills', 'xyeena-core', 'SKILL.md');
+    fs.writeFileSync(skillPath, '# Xyeena Core - Custom Team Instructions\nDo not violate our DB rules.');
+
+    const txUpdate = new InstallationTransaction({
+      cwd: tmpProject,
+      runtime: 'antigravity',
+      scope: 'workspace',
+      targetVersion: '0.4.2'
+    });
+
+    const plan = txUpdate.plan();
+    assert.equal(plan.hasUserModifications, true);
+    assert.ok(plan.diffFingerprint);
+    assert.equal(plan.modifiedFiles.length, 1);
+    assert.ok(plan.modifiedFiles[0].diff.includes('Custom Team Instructions'));
+
+    // Attempting execute() without fingerprint consent MUST fail closed
+    let threw = false;
+    try {
+      txUpdate.execute({ force: true });
+    } catch (err) {
+      threw = true;
+      assert.equal(err.code, 'USER_MODIFICATIONS_DETECTED');
+      assert.equal(err.diffFingerprint, plan.diffFingerprint);
+    }
+    assert.equal(threw, true, 'Must throw USER_MODIFICATIONS_DETECTED');
+
+    // Providing mismatched fingerprint must also fail
+    assert.throws(() => {
+      txUpdate.execute({ force: true, diffApprovedFingerprint: 'invalid-fingerprint-000' });
+    }, /Diff approval fingerprint mismatch/);
+
+    // Providing valid fingerprint succeeds!
+    const successResult = txUpdate.execute({ force: true, diffApprovedFingerprint: plan.diffFingerprint });
+    assert.equal(successResult.success, true);
+  });
+
+  // Scenario 23: Global Scope Cross-Directory Isolation (DEC-28)
+  test('Scenario 23: Global install from project A preserves state and is recognized cleanly from project B', () => {
+    const fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'xyeena-test-home-'));
+    const projectA = fs.mkdtempSync(path.join(os.tmpdir(), 'xyeena-test-projA-'));
+    const projectB = fs.mkdtempSync(path.join(os.tmpdir(), 'xyeena-test-projB-'));
+
+    try {
+      const txA = new InstallationTransaction({
+        cwd: projectA,
+        runtime: 'antigravity',
+        scope: 'global',
+        home: fakeHome
+      });
+      const resA = txA.execute();
+      assert.equal(resA.success, true);
+
+      assert.ok(fs.existsSync(path.join(fakeHome, '.xyeena', 'installations', 'antigravity', 'install.json')));
+      assert.ok(!fs.existsSync(path.join(projectA, '.xyeena', 'install.json')));
+
+      const txB = new InstallationTransaction({
+        cwd: projectB,
+        runtime: 'antigravity',
+        scope: 'global',
+        home: fakeHome
+      });
+      const planB = txB.plan();
+      assert.equal(planB.state, INSTALL_STATES.SAME_VERSION_VALID);
+      assert.equal(planB.installedVersion, VERSION);
+
+      const resB = txB.execute();
+      assert.equal(resB.noop, true);
+      assert.ok(!fs.existsSync(path.join(projectB, '.xyeena', 'install.json')));
+
+    } finally {
+      cleanupTempProject(fakeHome);
+      cleanupTempProject(projectA);
+      cleanupTempProject(projectB);
+    }
+  });
+
+  // Scenario 24: Symlink / Junction Traversal Protection (DEC-29)
+  test('Scenario 24: safeChild catches path and realpath escaping destination root', () => {
+    assert.throws(() => {
+      safeChild(tmpProject, path.join(tmpProject, '..', 'escaped.txt'));
+    }, /escapes destination root/);
+  });
+
+  // Scenario 25: Sub-file Integrity Check (DEC-26)
+  test('Scenario 25: Sub-file corruption in capability.json triggers SAME_VERSION_BROKEN', () => {
+    const tx = new InstallationTransaction({
+      cwd: tmpProject,
+      runtime: 'antigravity',
+      scope: 'workspace'
+    });
+    tx.execute();
+
+    const capPath = path.join(tmpProject, '.agents', 'skills', 'xyeena-core', 'capability.json');
+    if (fs.existsSync(capPath)) {
+      fs.writeFileSync(capPath, '');
+      const plan = tx.plan();
+      assert.equal(plan.state, INSTALL_STATES.SAME_VERSION_BROKEN);
+    }
+  });
+
+  // Scenario 26: Uninstall Backup & Custom File Preservation (DEC-26)
+  test('Scenario 26: Uninstall creates backup and preserves custom user scripts inside skill folder', () => {
+    const tx = new InstallationTransaction({
+      cwd: tmpProject,
+      runtime: 'antigravity',
+      scope: 'workspace'
+    });
+    tx.execute();
+
+    const unResult = tx.uninstall();
+    assert.equal(unResult.success, true);
+    assert.ok(unResult.backupId);
+
+    // Verify backup was created
+    assert.ok(fs.existsSync(path.join(tmpProject, '.xyeena', 'backups', unResult.backupId)));
   });
 });

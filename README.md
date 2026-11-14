@@ -1,22 +1,38 @@
 # Xyeena Rig
 
-Xyeena Rig menyediakan 19 skill untuk membantu agent melakukan riset, perencanaan, coding, pengujian, dan review. Kamu memilih skill serta host yang digunakan. Harness opsional menambahkan panduan dan pemeriksaan pada proyek.
+**Xyeena Rig** adalah toolkit All-in-One Agent Skills dan project Harness yang ditenagai oleh **Cortex** — native orchestration intelligence engine. Proyek ini menyediakan 19 packaged skills dan 64 native capability contracts untuk membantu AI agent melakukan riset, perencanaan, desain, coding, pengujian, dan review secara disiplin dan berbasis bukti.
 
-Host yang memiliki integrasi instalasi: Antigravity, Codex, Claude Code, Gemini CLI, dan Hermes. Dukungan instalasi berbeda dari kemampuan host untuk menegakkan izin. Periksa [status dukungan](docs/STATUS.md) sebelum mengandalkannya untuk tindakan berisiko.
+Kamu memegang kendali penuh atas skill, preset, dan host runtime yang digunakan. Harness opsional menambahkan panduan dan pemeriksaan pada proyek.
 
-Baseline rilis yang dicatat repository adalah `xyeena-agent@0.4.1`. Source terbaru memiliki fitur **unreleased** yang belum otomatis tersedia dalam paket tersebut. Live host acceptance masih terbatas.
+Host yang memiliki integrasi instalasi: **Antigravity**, **Gemini CLI**, **OpenAI Codex**, **Claude Code**, dan **Hermes Agent**. Perlu dicatat: dukungan instalasi berbeda dari kemampuan host untuk menegakkan izin. Periksa [status dukungan](docs/STATUS.md) sebelum mengandalkannya untuk tindakan berisiko.
 
-## Instalasi
+Baseline rilis yang dicatat repository npm adalah `xyeena-agent@0.4.1`. Source rebuild terbaru pada branch pengembangan memiliki fitur **unreleased** (64 capability contracts, Cortex engine, dan transactional conditional installer) yang belum dipublikasikan ke npm.
 
-Siapkan Node.js 22.14 atau lebih baru dan host agent yang ingin kamu gunakan.
+---
+
+## Fitur Utama
+
+- **Cortex Native Engine (DEC-27):** Intelligence layer default yang aktif secara native. Tugas berbiaya rendah (mikro) diselesaikan langsung tanpa overhead (< 5ms); tugas kompleks dieksekusi melalui composite skills, DAG planning, dan quality gates.
+- **19 Packaged Skills & 64 Capability Contracts (DEC-31):** 19 folder skill standar Agent Skills (`skills/`) ditambah 64 capability contracts executable terbagi dalam 9 namespace (`thinking`, `design`, `engineering`, `quality`, `security`, `coordination`, `delivery`, `knowledge`, `extensibility`).
+- **Transactional Conditional Installer (DEC-26, DEC-29):** Installer aman dengan Hybrid Diff Gate. Mendeteksi file yang telah dimodifikasi pengguna, mewajibkan konfirmasi fingerprint diff untuk modifikasi, default mode `copy` pada Windows (symlink/junction hanya atas permintaan eksplisit), mempertahankan custom file pengguna saat uninstall, dan mendukung rollback otomatis.
+- **Adaptive Artifact Governance (DEC-30):** Menghasilkan deliverable persisten (plan, audit, ADR) secara kontekstual sesuai kebutuhan dan permintaan eksplisit pengguna, tanpa membanjiri workspace dengan artefak sementara.
+- **Epistemic Evidence Standards (DEC-07):** Memisahkan status kontrak, verifikasi perilaku empiris, paritas komparatif, dan aktivasi host aktual secara jujur.
+
+---
+
+## Instalasi Cepat
+
+Siapkan **Node.js 22.14** atau lebih baru dan host agent yang ingin kamu gunakan.
+
+### Menggunakan Paket npm Publik (v0.4.1)
 
 ```sh
 npx --yes xyeena-agent@0.4.1 setup
 ```
 
-Pilih scope, host, dan preset skill. Periksa tujuan file sebelum menyetujui perubahan. Setelah selesai, muat ulang host dan periksa daftar skill-nya. Installer tidak memasukkan akun AI atau mengaktifkan izin host untukmu.
+Pilih scope (`global` atau `workspace`), host, dan preset skill (`essential`, `balanced`, atau `complete`). Periksa tujuan file sebelum menyetujui perubahan. Installer tidak memasukkan akun AI atau mengaktifkan izin host untukmu.
 
-Untuk melihat rencana tanpa menulis file:
+Untuk melihat pratinjau tanpa menulis file (dry-run):
 
 ```sh
 npx --yes xyeena-agent@0.4.1 setup --scope workspace --runtime codex --preset balanced --dry-run
@@ -24,54 +40,62 @@ npx --yes xyeena-agent@0.4.1 setup --scope workspace --runtime codex --preset ba
 
 Ikuti [panduan mulai](docs/GETTING-STARTED.md) atau [instalasi Windows](docs/INSTALL-WINDOWS-PEMULA.md) untuk langkah lengkap.
 
-## Pilih yang diperlukan
+---
+
+## Menjalankan dari Source Rebuild Terbaru
+
+Untuk menggunakan fitur rebuild terbaru (Cortex, 64 capability contracts, installer transaksional):
+
+```sh
+# Periksa status Cortex default intelligence layer
+node bin/xyeena.mjs cortex status
+
+# Inspeksi routing dan tier tugas dari prompt
+node bin/xyeena.mjs cortex inspect --prompt "Review a failing authentication test"
+
+# Instalasi transaksional aman (default copy di Windows)
+node bin/xyeena.mjs install --runtime antigravity --scope workspace --dry-run
+node bin/xyeena.mjs install --runtime antigravity --scope workspace --yes
+
+# Validasi seluruh skill dan 64 capability contracts
+node bin/xyeena.mjs check --source .
+```
+
+---
+
+## Komponen Xyeena Rig
 
 | Komponen | Kegunaan |
-| --- | --- |
-| Skill | Panduan kerja agent untuk tugas tertentu |
-| Discovery | Menemukan skill terpasang dan memeriksa dependensinya |
-| Orchestration | Menentukan alur tugas dan bukti hasil yang diperlukan |
-| Harness | Panduan serta pemeriksaan proyek yang dipasang secara opt-in |
-| Adapter host | Menghubungkan fitur source tertentu dengan host yang tersedia |
+| :--- | :--- |
+| **Cortex** | Native orchestration engine yang merutekan dan mengeksekusi capability secara cerdas |
+| **Skills (19)** | Panduan kerja agent berstandar Agent Skills (`skills/`) |
+| **Capabilities (64)** | Kontrak kemampuan fungsional native executable (`src/core/default-registry.mjs`) |
+| **Harness v3.1** | Aturan dan guardrail verifikasi proyek yang dipasang secara opt-in |
+| **Transactional Installer** | Pemasangan aman dengan Hybrid Diff Gate, backup, dan proteksi modifikasi pengguna |
+| **Host Adapters** | Menghubungkan kemampuan Xyeena dengan runtime Antigravity, Gemini, Codex, Claude, Hermes |
 
 Simpul merupakan integrasi worker opsional dan proyek terpisah. Memasang Xyeena tidak memerlukan Simpul atau produk Xyeena Notch.
 
-## Penggunaan sehari-hari
+---
 
-```sh
-npx --yes xyeena-agent@0.4.1 list
-npx --yes xyeena-agent@0.4.1 setup check --runtime codex
-npx --yes xyeena-agent@0.4.1 audit
-```
+## Keamanan dan Batasan
 
-`setup check` menemukan petunjuk instalasi; hasilnya tidak membuktikan host sedang menjalankan skill. Perintah `verify` menjalankan pemeriksaan yang dikonfigurasi proyek, jadi baca perintah tersebut sebelum mengeksekusinya.
+Host runtime tetap mengendalikan izin dan eksekusi:
+- **Antigravity CLI 1.4.7** pernah menunjukkan prompt izin dan penolakan terbatas pada Windows; **Antigravity IDE 2.5.5** tidak menegakkan hook pada pengamatan yang dicatat.
+- Memasang skill di filesystem tidak otomatis berarti host mengaktifkan perlindungan atau mengeksekusi hook di sesi live.
+- Penerbitan versi paket npm baru (`0.5.0`+) memerlukan persetujuan pemilik, pemeriksaan paket, dan verifikasi CI.
 
-## Fitur pada source terbaru
+Lihat [Kebijakan Keamanan](SECURITY.md) dan [Status Rilis](docs/STATUS.md) untuk detail batas keamanan.
 
-Compact setup, preflight, dan adapter yang lebih baru harus dijalankan dari checkout source yang sesuai. Contoh pratinjau:
+---
 
-```sh
-node bin/xyeena.mjs setup compact --runtime codex --preset balanced --dry-run
-node bin/xyeena.mjs orchestrate preview --runtime codex --goal "Review a failing test"
-node bin/xyeena.mjs ops preflight --dir .
-```
+## Dokumentasi Lengkap
 
-Periksa [referensi CLI](docs/CLI-REFERENCE.md) untuk efek setiap perintah. Operasi yang menjalankan model memerlukan izin tersendiri dan dapat menggunakan kuota provider. Pemeriksaan token setelah eksekusi bukan batas tagihan provider.
+| Kategori | Dokumen |
+| :--- | :--- |
+| **Mulai & Panduan** | [Getting Started](docs/GETTING-STARTED.md) • [Windows Pemula](docs/INSTALL-WINDOWS-PEMULA.md) • [Global Install](docs/GLOBAL-INSTALL.md) • [CLI Reference](docs/CLI-REFERENCE.md) |
+| **Arsitektur & Kontrak** | [Master Architecture](master-plan-141026.md) • [Arsitektur Sistem](docs/ARCHITECTURE.md) • [Capability Contracts](docs/CAPABILITY-CONTRACT.md) • [Intelligent Routing](docs/INTELLIGENT-ROUTING.md) • [Orchestration](docs/ORCHESTRATION.md) |
+| **Operasional & Keamanan** | [Support Status](docs/STATUS.md) • [Runtime Adapters](docs/RUNTIME-ADAPTERS.md) • [Security Policy](SECURITY.md) • [Runbook](docs/xyeena-rig/RUNBOOK.md) • [Branding](docs/BRANDING.md) |
+| **Future & Refinement** | [Future Roadmap](docs/future/XYEENA_UPSTREAM_INTEGRATION_2026-11-14.md) • [Provenance Template](docs/future/UPSTREAM_PROVENANCE_TEMPLATE.md) • [Bugs & Refinement Register](docs/bugs&refinement/README.md) |
 
-## Keamanan dan rilis
-
-Host tetap mengendalikan izin. Antigravity CLI 1.4.7 pernah menunjukkan prompt izin dan penolakan terbatas pada Windows; IDE 2.5.5 tidak menegakkan hook pada pengamatan yang dicatat. Jangan menganggap pemasangan berhasil berarti perlindungan aktif di semua host.
-
-Source belum menjadi publikasi 0.5.0. Penerbitan membutuhkan pemeriksaan paket, bukti untuk scope host yang didukung, konfigurasi publishing, dan persetujuan pemilik. [Status rilis](docs/STATUS.md) mencatat dukungan serta batas yang belum selesai.
-
-## Dokumentasi dan kontribusi
-
-| Tujuan | Bacaan |
-| --- | --- |
-| Memasang atau menghapus instalasi | [Panduan mulai](docs/GETTING-STARTED.md), [scope global](docs/GLOBAL-INSTALL.md), [operasional](docs/xyeena-rig/RUNBOOK.md) |
-| Memahami perintah dan host | [CLI](docs/CLI-REFERENCE.md) dan [adapter](docs/RUNTIME-ADAPTERS.md) |
-| Mengembangkan integrasi | [Arsitektur](docs/ARCHITECTURE.md) dan [orchestration](docs/ORCHESTRATION.md) |
-| Memeriksa batas keamanan | [Security](SECURITY.md) dan [status dukungan](docs/STATUS.md) |
-| Berkontribusi | [Contributing](CONTRIBUTING.md) |
-
-Lihat [indeks dokumentasi](docs/README.md) untuk seluruh panduan. Kode menggunakan [MIT](LICENSE); pertahankan [NOTICE.md](NOTICE.md) dan lisensi upstream saat redistribusi.
+Lihat [Indeks Dokumentasi](docs/README.md) untuk seluruh panduan. Kode menggunakan lisensi [MIT](LICENSE); pertahankan [NOTICE.md](NOTICE.md) saat redistribusi.

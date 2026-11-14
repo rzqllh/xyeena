@@ -134,3 +134,10 @@ export class EvidenceLedger {
     };
   }
 }
+
+export class EpistemicEvidenceClassifier {
+  static classify(claim, provenance = '', status = VERDICT_STATUS.NOT_RUN, metadata = {}) {
+    const tier = provenance ? EVIDENCE_TIERS.OBSERVED : EVIDENCE_TIERS.INFERRED;
+    return new EvidenceRecord({ claim, tier, provenance, status, metadata });
+  }
+}

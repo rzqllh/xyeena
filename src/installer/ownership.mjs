@@ -1,29 +1,48 @@
 /**
- * Xyeena / Axioven Installer - Ownership & Asset Classification (P08)
- * Distinguishes Xyeena/Axioven-owned artifacts from third-party skills,
- * user personas, memory files, and arbitrary project assets.
+ * Xyeena Installer - Ownership & Asset Classification (P10 / DEC-26)
+ * Distinguishes Xyeena-owned artifacts from third-party skills,
+ * user personas, memory files, custom user skills, and arbitrary project assets.
  * Guarantees zero unintentional modification or deletion of unowned files.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { SKILLS_DIR } from '../paths.mjs';
 
 export const BRAND_METADATA = Object.freeze({
-  brand: 'axioven',
-  product: 'Axioven Rig (formerly Xyeena Rig)',
+  brand: 'xyeena',
+  product: 'Xyeena Rig',
+  engine: 'Cortex',
   tagline: 'Intelligence, with discipline.',
-  cliCompat: ['xyeena', 'axioven', 'xyeena-agent'],
+  cliCompat: ['xyeena', 'xyeena-agent'],
   legacyBrand: 'xyeena'
 });
 
 /**
- * Known owned prefixes and naming patterns for Xyeena / Axioven.
+ * Standard known official skill names packaged in Xyeena Rig.
  */
-const OWNED_PREFIXES = ['xyeena-', 'axioven-'];
-const OWNED_DIRS = ['.xyeena', '.axioven'];
+export function getOfficialSkillNames() {
+  if (fs.existsSync(SKILLS_DIR)) {
+    return fs.readdirSync(SKILLS_DIR, { withFileTypes: true })
+      .filter(e => e.isDirectory() && fs.existsSync(path.join(SKILLS_DIR, e.name, 'SKILL.md')))
+      .map(e => e.name);
+  }
+  return [
+    'xyeena-architecture', 'xyeena-context', 'xyeena-core', 'xyeena-debug',
+    'xyeena-execute', 'xyeena-grill', 'xyeena-handoff', 'xyeena-interface',
+    'xyeena-orchestrate', 'xyeena-plan', 'xyeena-prototype', 'xyeena-release',
+    'xyeena-research', 'xyeena-review', 'xyeena-security', 'xyeena-skillcraft',
+    'xyeena-test', 'xyeena-verify', 'xyeena-writing'
+  ];
+}
+
+const OWNED_PREFIXES = ['xyeena-'];
+const OWNED_DIRS = ['.xyeena'];
 
 /**
- * Checks whether a given path or relative entry name is owned by Xyeena / Axioven.
+ * Checks whether a given path or relative entry name is owned by Xyeena.
+ * Requires verification against explicit manifest or official skill catalog.
+ * Arbitrary folders starting with "xyeena-" are NOT owned if unlisted.
  * @param {string} relPath - Relative path or entry name (e.g. 'xyeena-core', '.xyeena/install.json')
  * @param {object|null} [manifest] - Optional manifest containing explicit owned file list
  * @returns {boolean}
@@ -42,17 +61,26 @@ export function isXyeenaOwned(relPath, manifest = null) {
     if (manifest.skills.includes(baseSeg) || manifest.skills.includes(skillSeg)) return true;
   }
 
-  // 2. Check internal managed directories
+  // 2. Check internal managed directories (.xyeena)
   for (const dir of OWNED_DIRS) {
     if (normalized === dir || normalized.startsWith(dir + '/')) return true;
   }
 
-  // 3. Check known prefixes on the base name or skill folder name
-  const segments = normalized.split('/');
-  for (const seg of segments) {
-    for (const prefix of OWNED_PREFIXES) {
-      if (seg.startsWith(prefix)) return true;
-    }
+  // 3. If manifest is present, anything not listed above is NOT owned
+  if (manifest) {
+    return false;
+  }
+
+  // 4. If legacy (no manifest): strictly check against known official packaged skills
+  const officialSkills = getOfficialSkillNames();
+  const baseSeg = normalized.split('/')[0];
+  if (officialSkills.includes(baseSeg)) {
+    return true;
+  }
+
+  // Antigravity rules file
+  if (normalized === '.agents/rules/xyeena-core.md' || normalized === 'rules/xyeena-core.md') {
+    return true;
   }
 
   return false;

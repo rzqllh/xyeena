@@ -51,7 +51,8 @@ export class CapabilityRegistry {
       evidence_requirements: contract.evidence_requirements || '',
       acceptance_tests: Array.isArray(contract.acceptance_tests) ? [...contract.acceptance_tests] : [],
       deferred_source_research: contract.deferred_source_research || '',
-      contract_status: contract.contract_status || 'CONTRACT FROZEN — APPROVED FOR IMPLEMENTATION'
+      contract_status: contract.contract_status || 'CONTRACT FROZEN — APPROVED FOR IMPLEMENTATION',
+      handler: typeof contract.handler === 'function' ? contract.handler : null
     };
 
     this.capabilities.set(normalized.id, normalized);

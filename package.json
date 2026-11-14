@@ -26,6 +26,7 @@
     ".agents/plugins/",
     "rules/",
     "docs/",
+    "!docs/audits/**",
     "!docs/xyeena_rebuild_workspace_*",
     "!docs/*.zip",
     "README.md",

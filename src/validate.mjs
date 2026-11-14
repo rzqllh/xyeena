@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadRegistry } from './registry.mjs';
+import { createDefaultRegistry } from './core/default-registry.mjs';
 
 function frontmatter(text) {
   const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/);
@@ -40,5 +41,24 @@ export function validateSource(root) {
     try { JSON.parse(fs.readFileSync(path.join(root, p), 'utf8')); }
     catch (e) { errors.push(`${p}: invalid JSON (${e.message})`); }
   }
-  return { ok: errors.length === 0, errors, capabilities: registry.map((c) => c.metadata.name) };
+
+  // Validate native 64 capability contracts (P10 / DEC-27)
+  let nativeContractsCount = 0;
+  try {
+    const nativeRegistry = createDefaultRegistry();
+    nativeRegistry.validate();
+    nativeContractsCount = nativeRegistry.size();
+    if (nativeContractsCount !== 64) {
+      errors.push(`Native capability registry expected 64 contracts, found ${nativeContractsCount}`);
+    }
+  } catch (e) {
+    errors.push(`Native capability validation failure: ${e.message}`);
+  }
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    capabilities: registry.map((c) => c.metadata.name),
+    nativeContractsCount
+  };
 }

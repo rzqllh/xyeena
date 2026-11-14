@@ -1,5 +1,6 @@
 # Exclude internal rebuild workspace and temporary archives
 docs/xyeena_rebuild_workspace_*
+docs/audits/
 *.zip
 scratch_*
 .agents/

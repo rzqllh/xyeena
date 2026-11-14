@@ -1,11 +1,36 @@
 /**
- * Xyeena / Axioven Conditional Installer (P08)
+ * Xyeena Conditional Installer (P10 / DEC-26 / DEC-28 / DEC-29)
  * Unified exports for state detection, asset ownership, and transactional installation.
  */
 
-export { INSTALL_STATES, compareSemver, resolveTargetDir, detectInstallationState, readInstallManifest } from './decision-flow.mjs';
-export { BRAND_METADATA, isXyeenaOwned, isProtectedUserData, scanDirectoryOwnership, listFilesRecursive } from './ownership.mjs';
-export { InstallationTransaction } from './transaction.mjs';
+export {
+  INSTALL_STATES,
+  compareSemver,
+  resolveTargetDir,
+  resolveStateDir,
+  resolvePortableHome,
+  detectInstallationState,
+  readInstallManifest
+} from './decision-flow.mjs';
+
+export {
+  BRAND_METADATA,
+  isXyeenaOwned,
+  isProtectedUserData,
+  scanDirectoryOwnership,
+  getOfficialSkillNames,
+  listFilesRecursive
+} from './ownership.mjs';
+
+export {
+  computePackageBaseline,
+  generateUnifiedDiff,
+  computeDiffFingerprint,
+  hashBuffer,
+  hashString
+} from './baseline-hashes.mjs';
+
+export { InstallationTransaction, safeChild } from './transaction.mjs';
 
 import { InstallationTransaction } from './transaction.mjs';
 
@@ -20,7 +45,11 @@ export function runConditionalInstall(options = {}) {
   if (options.dryRun) {
     return tx.plan();
   }
-  return tx.execute({ force: options.force });
+  return tx.execute({
+    force: options.force,
+    diffApprovedFingerprint: options.diffApprovedFingerprint,
+    interactiveSelections: options.interactiveSelections
+  });
 }
 
 export function runConditionalUninstall(options = {}) {

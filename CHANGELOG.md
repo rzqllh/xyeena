@@ -1,6 +1,15 @@
 # Changelog
 
-- Clarify Hermes one-shot overage failures with sanitized numeric `Hermes-reported tokens` and the configured post-run acceptance limit. Explicitly identify settlement as *after* provider execution, not spend prevention. Contract + real dummy subprocess CLI tests assert no provider output or private session identifiers are disclosed; no additional native cancellation acceptance.
+## Unreleased — P00-P10.2 Rebuild Foundation (2026-11-14)
+
+- **Cortex Native Orchestration Intelligence (DEC-27):** Established Cortex as the native default intelligence layer across all host integrations. Bounded micro tasks (< 5ms) bypass heavy ceremony; complex tasks leverage composite skills, DAG planning, and quality gates.
+- **Full 64 Native Capability Contract Parity (DEC-31):** Registered 64 capability contracts with bound executable handlers across 9 domains (`thinking`, `design`, `engineering`, `quality`, `security`, `coordination`, `delivery`, `knowledge`, `extensibility`). Verified with 605/605 automated tests.
+- **Transactional Conditional Installer (DEC-26, DEC-29):** Implemented safe transactional replacement of legacy installations. Added Hybrid Diff Gate requiring `--diff-approved-fingerprint` to replace user-modified files (blocking `--force` bypass), default `copy` mode on Windows, safe uninstall preserving custom files, and verified two-way rollback.
+- **Adaptive Artifact Governance (DEC-30):** Built contextual artifact persistence preventing workspace clutter. Persistent plans and audits are generated only when requested or structurally warranted, using atomic writes and collision deduplication.
+- **Epistemic Evidence Classification (DEC-07, DEC-31):** Categorized verification claims into CONTRACT_ONLY (0), BEHAVIOR_VERIFIED (64/64), COMPARATIVE_VERIFIED (7 Golden Scenarios), and LIVE_HOST_VERIFIED. Recorded honest status `HOST CONFIGURED / LIVE ACTIVATION UNVERIFIED` for host daemon hooks.
+- **Full Repository Reconciliation (P11):** Reconciled local rebuild branch with `origin/main` planning documents and locked all 31 owner decisions (DEC-01 to DEC-31).
+
+ with sanitized numeric `Hermes-reported tokens` and the configured post-run acceptance limit. Explicitly identify settlement as *after* provider execution, not spend prevention. Contract + real dummy subprocess CLI tests assert no provider output or private session identifiers are disclosed; no additional native cancellation acceptance.
 
 - Tighten provider result settlement: require explicit successful Claude Code JSON terminal envelope without permission denial, require nonempty Hermes/Gemini/Claude reports, and reject invalid/negative/overflowed Gemini/Claude token accounting rather than treating it as valid usage. CI fixture only; host compatibility requires native tests.
 
