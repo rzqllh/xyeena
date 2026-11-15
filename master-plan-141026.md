@@ -1,9 +1,9 @@
 # XYEENA — Master Plan 14/10/2026: Reconciled Master Architecture & Strategic Roadmap
 
-> **Status: RECONCILED / P10.2 VERIFIED / P11.1 AUDITED**
-> Baseline Rebuild: `feat/rebuild-foundation-p00` at commit `0810c2c33381e4ec897878b61645c0aa5790c686` + P10/P10.2 local verification (605/605 tests PASS).
-> Remote Authority: `origin/main` at commit `55effeac22b5fe8146ecf092b352d5bbb639b535`.
-> Reconciled on 2026-11-14. This document unifies the remote reconciliation seed with the verified desktop rebuild foundation.
+> **Status: RECONCILED / P17 LOCAL PASS (687/687 tests PASS across 74 suites)**
+> Baseline Rebuild: `feat/rebuild-foundation-p00` published on remote at commit `bbd71abfc5045cda3c39ea7655f0a8519d88f275` (609/609 tests PASS).
+> Remote Authority: `origin/main` at commit `55effeac22b5fe8146ecf092b352d5bbb639b535` (reconciliation integration pending).
+> Reconciled on 2026-11-15. This document unifies the remote reconciliation seed with the verified desktop rebuild foundation and locked owner decisions DEC-01 to DEC-32.
 
 **Repository:** https://github.com/rzqllh/xyeena
 **Product:** Xyeena Rig (All-in-One Skills & Harness)
@@ -18,18 +18,19 @@
 
 Xyeena Rig provides 19 packaged Agent Skills, 64 native capability contracts, and an opt-in project Harness.
 The local desktop rebuild foundation on branch `feat/rebuild-foundation-p00` is fully reconciled with `origin/main`:
-- **605 / 605 tests pass** across 47 test suites.
+- **687 / 687 tests pass** across 74 test suites (including 17 comprehensive P17 specialized platform, security, retrieval & motion tests, 21 P16 engineering intelligence & design closure tests, 12 P15 design intelligence tests, 12 P14 comparative baseline tests, and 16 P13 cross-domain composite tests).
 - All 64 capability contracts are bound to concrete executable handlers in `src/core/default-registry.mjs`.
 - **Cortex** is established as the default intelligence layer (DEC-27), providing lightweight routing (< 5ms) for micro tasks and composite DAG execution for complex goals.
 - **Transactional Conditional Installer** (DEC-26, DEC-29) enforces strict fail-closed protection for user-modified files via the Hybrid Diff Gate, defaults to `copy` on Windows, safely preserves custom user files on uninstall, and verifies rollback.
 - **Artifact Governance & Adaptive Persistence** (DEC-28, DEC-30) prevents clutter by managing runtime state under `.xyeena/`, isolating disposable artifacts, and persisting plans and audits only when requested or structurally warranted.
 - **Delegated Engineering Authority** (DEC-31) establishes that routine engineering, refactoring, and test fixes proceed autonomously under locked scope, while high-impact destructive operations and releases remain owner-gated.
+- **Cross-Domain Methodology (DEC-32)** establishes Superpowers and Anti-Slop as universal workflows and quality filters across all 9 Cortex domains.
 
 ---
 
-## 2. Locked Owner Decision Register (DEC-01 to DEC-31)
+## 2. Locked Owner Decision Register (DEC-01 to DEC-32)
 
-All 31 owner decisions are locked, authoritative, and reconciled across local and remote sources:
+All 32 owner decisions are locked, authoritative, and reconciled across local and remote sources:
 
 | ID | Title & Summary | Actual Status |
 | :--- | :--- | :--- |
@@ -64,6 +65,29 @@ All 31 owner decisions are locked, authoritative, and reconciled across local an
 | **DEC-29** | **Windows Installer Mode:** Default mode is `copy`; symlink/junction explicit-only; no silent fallback; strict lstat/realpath validation; path traversal protection; fail-closed. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
 | **DEC-30** | **Adaptive Artifact Persistence:** Cortex decides artifact persistence contextually; deliverables generated on explicit request or complex tasks; atomic collision deduplication. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
 | **DEC-31** | **Delegated Engineering Authority:** Owner delegates routine engineering, refactoring, test fixes, and docs updates within locked scope; escalations reserved for destructive git actions, releases, and fundamental licensing. | `DECIDED` |
+| **DEC-32** | **Cross-Domain Methodology Lock:** Superpowers (Universal Workflow Methodology) and Anti-Slop (Universal Contextual Quality Methodology) apply adaptively across all 9 Cortex domains; universal applicability, selective execution; Cortex remains sole governor. | `DECIDED` / `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+
+### 2.1 Cross-Domain Methodology Specification (DEC-32)
+
+1. **Superpowers — Universal Workflow Methodology:**
+   - Applied adaptively across: Research/investigation, Product discovery/brainstorming, Architecture/technical planning, Design/prototyping, Coding/testing/debugging, Security/compliance/review, Writing/documentation, Project coordination/delegation/handoff, and Release preparation/verification.
+   - Contextual selection: verification-before-completion applies cross-domain; TDD is not forced onto copywriting or non-code tasks without tests.
+2. **Anti-Slop — Universal Contextual Quality Methodology:**
+   - Applied adaptively across: Code quality (comment hygiene), UI/UX and visual design, Mobile layouts, Copywriting and human writing, Research and reasoning quality, Specifications/plans/ADR, Testing and test evidence, Security reports, Documentation, and Release communication.
+   - Evaluates context-relevant quality; never blindly strips words or patterns.
+3. **Responsibility Boundaries:**
+   - **Cortex:** Sole orchestration governor, task intent classification, effort/budget ceiling enforcement, state checkpointing, TaskGraph DAG management, host negotiation, and Rule 4 Execution Gate enforcement.
+   - **Superpowers:** Contributes disciplined workflow patterns (pre-implementation problem sizing, phased execution with rollback paths, falsifiable hypothesis tracking, red-green verification, and dual-axis review). Never acts as an independent control loop or background daemon.
+   - **Anti-Slop:** Contributes evaluative quality filters (comment sanitation preserving rationale, buzzword elimination, WCAG 2.2 touch target sizing 24px AA / 44px AAA, focus indicators, fluid mobile boundaries, and lean diff audits). Never acts as an unprompted blocking generator.
+4. **Trigger & Budget Contracts:**
+   - **Positive Triggers:** Explicit user slash commands (`/xyeena-design`, `/xyeena-plan`, `/xyeena-execute`, `/antislop`, `/tdd`, etc.), multi-module architectural tasks (Tier 2/3), design token updates, copy authoring, and security audits.
+   - **Negative Triggers:** Tier-0 micro tasks (strictly exempt from planning, subagent dispatch, and ceremony), greetings, and read-only queries.
+   - **Budget Contract:** L0 Kernel $\le$ 1,500 tokens (actual 535–616); Tier-0 micro tasks strictly $< 500$ tokens with zero trait/domain overhead; L1/L2 capability contracts and Behavioral Trait Overlays lazy-loaded on demand (~50–120 tokens).
+5. **Precedence, Fallback & Evidence:**
+   - **Precedence:** Explicit user skill selection > Workspace rules > Existing repository architecture & design system > Global defaults.
+   - **Fallback Behavior:** All 11 composite skills degrade gracefully to internal inline execution when host-native subagents or external tools are unavailable.
+   - **Evidence Requirements:** Fresh execution evidence (terminal logs, test outputs) required before any completion claim (DEC-31/32). Self-certified text claims are rejected.
+   - **Known Unverified Behavior:** Live host hook interception on Antigravity IDE 2.5.5 remains reported as `LIVE_BLOCKED`; provider spend caps remain unverified.
 
 ---
 
@@ -71,9 +95,10 @@ All 31 owner decisions are locked, authoritative, and reconciled across local an
 
 The following foundational strategic decisions were established during Grill Rounds 1–5:
 
-1. **Selective Upstream Reuse (Grill Round 1–2):** Prefer licensed upstream reuse/composition where permitted with full provenance ledger, rather than shallow handcrafted mimicry. (Status: `DECIDED` / `PLANNED`; provenance ledger template prepared, but actual upstream code is NOT yet vendored into the base package).
-2. **XYN Personality Synthesis (Grill Round 3):** Synthesize behavioral traits and domain voice of XYN personas into an architectural guidance overlay without importing character personas or modifying host agent identities. (Status: `DECIDED` / `PLANNED`; not yet implemented as an active runtime trait engine).
+1. **Selective Upstream Reuse (Grill Round 1–2):** Prefer licensed upstream reuse/composition where permitted with full provenance ledger, rather than shallow handcrafted mimicry. (Status: `ADAPTED_VERIFIED (P14–P17 & Final Closure)`; Superpowers RE-01, Superior RE-02, Anti-Slop RE-03, Ponytail RE-04, Caveman RE-05, Cloudflare RE-06, Impeccable RE-07, Matt Pocock RE-08, Hallmark RE-09, Taste RE-10, UI UX Pro Max RE-11, GSAP RE-14, Trail of Bits RE-15 [clean-room], Supabase RE-16, Konoha RE-31 [bounded retrieval & MCP parity], and Huashu Design RE-32 integrated via source-backed adaptation into native methods with full provenance ledgers and tests. Remaining upstreams RE-12, RE-13, RE-17, RE-18, RE-19, and RE-21..30 definitively classified as `REFERENCE_ONLY` / standards with zero unvetted runtime dependencies).
+2. **XYN Personality Synthesis (Grill Round 3):** Synthesize behavioral traits and domain voice of XYN personas into an architectural guidance overlay without importing character personas or modifying host agent identities. (Status: `XYN_ARCHITECTURAL_PRINCIPLES_SOURCE_INSPECTED_LOCAL` / `VERIFIED_LOCAL`; active runtime trait engine in `src/core/personality.mjs` incorporating Maker-Checker separation, empirical claim boundaries, adversarial testing, and single governor invariant without fictional character identities).
 3. **Modified Legacy Installation Protection (Grill Round 5):** Modified legacy installations strictly require user review of diff before replacement (formalized into DEC-26). (Status: `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL`).
+4. **Final End-to-End Acceptance (Campaign Closure):** 18 comprehensive end-to-end acceptance scenarios verified in `test/e2e-acceptance-campaign.test.mjs`, establishing end-to-end proof from natural language routing through execution, security, database safety, bounded retrieval, DAG execution, installer safety, and artifact governance. (Status: `706 / 706 tests PASS` across 75 test suites).
 
 ---
 

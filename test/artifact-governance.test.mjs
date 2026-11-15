@@ -28,6 +28,20 @@ test('Artifact Governance: negative rules prevent persistent artifacts for trivi
   assert.equal(minorCheck.shouldPersist, false);
 });
 
+test('Artifact Governance: explicit user request takes precedence over negative typo heuristic (P13 Hardening)', () => {
+  const explicitTypoPlan = shouldPersistArtifact({
+    prompt: 'buat plan untuk fix typo di seluruh dokumentasi public'
+  });
+  assert.equal(explicitTypoPlan.shouldPersist, true);
+  assert.equal(explicitTypoPlan.artifactType, ARTIFACT_TYPES.PLAN);
+
+  const flagExplicit = shouldPersistArtifact({
+    explicitRequest: true,
+    prompt: 'typo fix'
+  });
+  assert.equal(flagExplicit.shouldPersist, true);
+});
+
 test('Artifact Governance: positive rules trigger adaptive persistence (DEC-30)', () => {
   // Explicit request
   const explicitPlan = shouldPersistArtifact({ prompt: 'tolong buat plan untuk migrasi database' });

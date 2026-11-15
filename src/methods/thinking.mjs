@@ -41,8 +41,74 @@ export class ThinkingMethods {
   }
 
   /**
-   * Enforce 4-phase systematic debugging discipline:
-   * REPRODUCE -> ISOLATE -> PROPOSE_FIX -> VERIFY_FIX
+   * Structure problem brainstorming before entering planning (Superpowers RE-01).
+   * Analyzes context, sizes the work, and outlines distinct approaches with tradeoffs.
+   * @param {object} params
+   * @param {string} params.goal - High-level objective
+   * @param {string} [params.context=''] - Available context or spec
+   * @param {string[]} [params.existingFiles=[]] - Files identified in context
+   * @param {object} [params.options={}]
+   * @returns {object} Structured brainstorming deliverable
+   */
+  static brainstormTask({ goal, context = '', existingFiles = [], options = {} }) {
+    if (!goal || typeof goal !== 'string') {
+      throw new XyeenaError(ERROR_CODES.INVALID_CONTRACT, 'Brainstorming requires a goal statement.');
+    }
+
+    const isComplex = goal.length > 80 || existingFiles.length > 3 || context.length > 500;
+    const workSize = isComplex ? 'FULL_DESIGN_DOC' : 'SHORT_SPEC';
+
+    const approaches = [
+      {
+        id: 'approach-a',
+        name: 'Direct Refinement (Smallest Scope)',
+        tradeoff: 'Fastest turnaround and minimal blast radius, but preserves existing structural bounds.'
+      },
+      {
+        id: 'approach-b',
+        name: 'Modular Extraction (Clean Seams)',
+        tradeoff: 'Higher testability and isolation, but introduces a new module seam to maintain.'
+      }
+    ];
+
+    return {
+      goal: goal.trim(),
+      workSize,
+      contextFilesExamined: existingFiles.length,
+      approaches,
+      nextStep: 'Select an approach, approve design doc, then invoke writing-plans.',
+      status: 'BRAINSTORM_COMPLETE'
+    };
+  }
+
+  /**
+   * Record an inline execution ruling in the ledger (Superpowers executing-plans RE-01).
+   * Ensures deviations, ambiguities, or plan defects are explicitly recorded and traceable.
+   * @param {object} params
+   * @param {string} params.ruling - What was decided
+   * @param {string} params.rationale - Why it was decided
+   * @param {string} params.costIfWrong - What it costs if the decision is incorrect
+   * @returns {object} Formatted ruling entry
+   */
+  static recordInlineRuling({ ruling, rationale, costIfWrong }) {
+    if (!ruling || !rationale || !costIfWrong) {
+      throw new XyeenaError(ERROR_CODES.INVALID_CONTRACT, 'Inline ruling requires ruling, rationale, and costIfWrong.');
+    }
+
+    const formatted = `Ruling: ${ruling.trim()} — ${rationale.trim()} — ${costIfWrong.trim()}`;
+    return {
+      entry: formatted,
+      ruling: ruling.trim(),
+      rationale: rationale.trim(),
+      costIfWrong: costIfWrong.trim(),
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Enforce 4-phase systematic debugging discipline (Superpowers systematic-debugging RE-01):
+   * Iron Law: NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST.
+   * Phase 1 (REPRODUCE) -> Phase 2 (ISOLATE / Pattern Analysis) -> Phase 3 (PROPOSE_FIX / Hypothesis) -> Phase 4 (VERIFY_FIX)
    * @param {object} params
    * @param {'REPRODUCE'|'ISOLATE'|'PROPOSE_FIX'|'VERIFY_FIX'} params.stage
    * @param {object} params.evidence
@@ -56,22 +122,35 @@ export class ThinkingMethods {
       return {
         compliant: false,
         stage,
+        ironLaw: 'NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST',
         reason: 'Debugging discipline violation: Cannot isolate root cause without first having a reliable reproduction command.'
       };
     }
 
-    if (stage === 'PROPOSE_FIX' && (!evidence.reproduceCommand || !evidence.rootCauseLocation)) {
-      return {
-        compliant: false,
-        stage,
-        reason: 'Debugging discipline violation: Cannot propose a fix before isolating root cause location.'
-      };
+    if (stage === 'PROPOSE_FIX') {
+      if (!evidence.reproduceCommand) {
+        return {
+          compliant: false,
+          stage,
+          ironLaw: 'NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST',
+          reason: 'Debugging discipline violation: Cannot propose a fix without first having a reliable reproduction command.'
+        };
+      }
+      if (!evidence.rootCauseLocation) {
+        return {
+          compliant: false,
+          stage,
+          ironLaw: 'NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST',
+          reason: 'Debugging discipline violation: Cannot propose a fix before isolating root cause location.'
+        };
+      }
     }
 
     if (stage === 'VERIFY_FIX' && (!evidence.reproduceCommand || !evidence.rootCauseLocation || !evidence.regressionPassed)) {
       return {
         compliant: false,
         stage,
+        ironLaw: 'NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST',
         reason: 'Debugging discipline violation: Cannot declare fix verified without executable regression test pass.'
       };
     }
@@ -79,6 +158,7 @@ export class ThinkingMethods {
     return {
       compliant: true,
       stage,
+      ironLawSatisfied: true,
       status: 'DISCIPLINE_SATISFIED'
     };
   }

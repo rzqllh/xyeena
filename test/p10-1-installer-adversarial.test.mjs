@@ -268,3 +268,127 @@ test('P10.1 Installer Adversarial: Path traversal in destination root triggers s
     cleanupDisposableWorkspace(root);
   }
 });
+
+test('P13 Hardening Adversarial: Symlink mode with force cannot destroy custom user files (DEC-26)', () => {
+  const { root, home } = createDisposableWorkspace();
+
+  try {
+    const tx = new InstallationTransaction({
+      cwd: root,
+      runtime: 'antigravity',
+      scope: 'workspace',
+      mode: 'copy',
+      home
+    });
+    tx.execute();
+
+    // User adds custom script inside official xyeena-core folder
+    const skillDir = path.join(root, '.agents', 'skills', 'xyeena-core');
+    const customFilePath = path.join(skillDir, 'my-user-script.py');
+    fs.writeFileSync(customFilePath, '# User custom code', 'utf8');
+
+    // Attempt to switch to symlink mode with force: true
+    const txSymlink = new InstallationTransaction({
+      cwd: root,
+      runtime: 'antigravity',
+      scope: 'workspace',
+      mode: 'symlink',
+      home
+    });
+
+    assert.throws(() => {
+      txSymlink.execute({ force: true });
+    }, /Cannot replace directory .* containing .* custom user file.*with symlink/i);
+
+    // Custom user file MUST still be preserved!
+    assert.ok(fs.existsSync(customFilePath), 'Custom user file must not be destroyed even with --force');
+    assert.equal(fs.readFileSync(customFilePath, 'utf8'), '# User custom code');
+  } finally {
+    cleanupDisposableWorkspace(root);
+  }
+});
+
+test('P13 Hardening Adversarial: Uninstall with force preserves user-modified official files without explicit consent contract', () => {
+  const { root, home } = createDisposableWorkspace();
+
+  try {
+    const tx = new InstallationTransaction({
+      cwd: root,
+      runtime: 'antigravity',
+      scope: 'workspace',
+      mode: 'copy',
+      home
+    });
+    tx.execute();
+
+    // User modifies an official skill file
+    const skillMdPath = path.join(root, '.agents', 'skills', 'xyeena-core', 'SKILL.md');
+    fs.writeFileSync(skillMdPath, '# Modified Core Skill by User', 'utf8');
+
+    // User modifies official rule
+    const rulePath = path.join(root, '.agents', 'rules', 'xyeena-core.md');
+    fs.writeFileSync(rulePath, '# Modified User Rule', 'utf8');
+
+    // Run uninstall with force: true (without allowModifiedRemoval consent)
+    const uninstallRes = tx.uninstall({ force: true });
+    assert.equal(uninstallRes.success, true);
+
+    // Modified official skill file MUST be preserved!
+    assert.ok(fs.existsSync(skillMdPath), 'Modified official file must be preserved on uninstall even with --force');
+    assert.equal(fs.readFileSync(skillMdPath, 'utf8'), '# Modified Core Skill by User');
+
+    // Modified rule MUST be preserved!
+    assert.ok(fs.existsSync(rulePath), 'Modified official rule must be preserved on uninstall even with --force');
+    assert.equal(fs.readFileSync(rulePath, 'utf8'), '# Modified User Rule');
+
+    // Both files must be listed in preserved array
+    assert.ok(uninstallRes.preserved.some(p => p.includes('SKILL.md')), 'Preserved array must list modified SKILL.md');
+    assert.ok(uninstallRes.preserved.some(p => p.includes('xyeena-core.md')), 'Preserved array must list modified rule');
+  } finally {
+    cleanupDisposableWorkspace(root);
+  }
+});
+
+test('P13 Hardening Adversarial: Malformed manifest and consent mismatch fail-closed safely', () => {
+  const { root, home } = createDisposableWorkspace();
+
+  try {
+    const tx = new InstallationTransaction({
+      cwd: root,
+      runtime: 'antigravity',
+      scope: 'workspace',
+      mode: 'copy',
+      home
+    });
+    tx.execute();
+
+    // Corrupt install.json
+    const manifestPath = path.join(root, '.xyeena', 'install.json');
+    fs.writeFileSync(manifestPath, '{ corrupted json: true, ', 'utf8');
+
+    // Plan check must fail-closed or report broken state safely
+    const tx2 = new InstallationTransaction({
+      cwd: root,
+      runtime: 'antigravity',
+      scope: 'workspace',
+      mode: 'copy',
+      home
+    });
+
+    const plan = tx2.plan();
+    assert.equal(plan.state, 'SAME_VERSION_BROKEN', 'Corrupted manifest must be detected as SAME_VERSION_BROKEN');
+
+    // Test fingerprint consent mismatch
+    const skillMdPath = path.join(root, '.agents', 'skills', 'xyeena-core', 'SKILL.md');
+    fs.writeFileSync(skillMdPath, '# User Modified Content', 'utf8');
+
+    const planModified = tx2.plan();
+    assert.equal(planModified.hasUserModifications, true);
+
+    assert.throws(() => {
+      tx2.execute({ diffApprovedFingerprint: 'invalid_hash_12345' });
+    }, /Diff approval fingerprint mismatch/i);
+  } finally {
+    cleanupDisposableWorkspace(root);
+  }
+});

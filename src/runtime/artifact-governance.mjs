@@ -47,19 +47,7 @@ export const ARTIFACT_DIRECTORIES = Object.freeze({
 export function shouldPersistArtifact(context = {}) {
   const prompt = (context.prompt || '').toLowerCase();
 
-  // Negative rules (DEC-30): NEVER persist for typos, trivial Q&A, short queries
-  if (
-    /\b(typo|fix typo|spelling|rename var|one line|quick question|hitung|calculate)\b/i.test(prompt) ||
-    context.isTypoOrMinor === true
-  ) {
-    return {
-      shouldPersist: false,
-      reason: 'Negative rule: trivial typo, calculation, or minor fix does not warrant persistent artifact.',
-      artifactType: null
-    };
-  }
-
-  // Positive Rule 1: Explicit user request
+  // Positive Rule 1: Explicit user request ALWAYS takes precedence (DEC-30)
   if (
     context.explicitRequest ||
     /\b(buat plan|buat rencana|create plan|tulis plan|buat adr|catat adr|buat audit|simpan laporan|export report)\b/i.test(prompt)
@@ -73,6 +61,18 @@ export function shouldPersistArtifact(context = {}) {
       shouldPersist: true,
       reason: 'Explicit user request for document persistence.',
       artifactType: type
+    };
+  }
+
+  // Negative rules (DEC-30): NEVER persist for typos, trivial Q&A, short queries when not explicitly requested
+  if (
+    /\b(typo|fix typo|spelling|rename var|one line|quick question|hitung|calculate)\b/i.test(prompt) ||
+    context.isTypoOrMinor === true
+  ) {
+    return {
+      shouldPersist: false,
+      reason: 'Negative rule: trivial typo, calculation, or minor fix does not warrant persistent artifact.',
+      artifactType: null
     };
   }
 

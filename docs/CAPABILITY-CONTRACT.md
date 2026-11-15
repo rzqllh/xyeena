@@ -129,3 +129,35 @@ To prevent overclaiming, Xyeena Rig enforces four strict evidence tiers:
 2. **`BEHAVIOR_VERIFIED` (64 / 64 in Rebuild):** The capability handler is bound, executable, and verified by automated unit and integration tests.
 3. **`COMPARATIVE_VERIFIED` (7 Golden Scenarios):** Behavior verified to match or exceed golden reference implementations from upstream ecosystems (Superpowers, Superior, Anti-Slop, Ponytail, Caveman, Cloudflare, Xyeena Baseline).
 4. **`LIVE_HOST_VERIFIED` (Host-dependent):** Verified in an actual live host session with empirical observation of host permission prompts, tool interception, or execution traces.
+
+---
+
+## 5. Cross-Domain Methodology Contracts (DEC-32)
+
+Per DEC-32, **Superpowers** and **Anti-Slop** are cross-domain methodologies that provide execution discipline and quality standards across all 9 capability domains:
+
+- **Universal Workflow Methodology (Superpowers):**
+  - Adapts structured methods (problem-sizing, assumption-testing, phased execution, red-green verification, and completion proof) across research, design, engineering, writing, security, and release.
+  - Contextual gating: TDD is strictly bound to code/test tasks; verification-before-completion is universal.
+- **Universal Contextual Quality (Anti-Slop):**
+  - Adapts quality gates (comment hygiene, copywriting clarity, WCAG math, touch target bounds, mobile layout overflow, and research fluff prevention) across all output artifacts.
+  - Contextual evaluation: checks domain-relevant failure modes rather than blanket keyword blocking.
+- **Orchestration Rule:** Cortex remains the single governor; cross-domain methods provide reusable steps without competing control loops or mandatory external daemons.
+
+### 5.1 Authoritative L2 Composite Skills (DEC-32)
+
+Composite skills compose multiple L1/L2 capability contracts into unified user-facing workflows:
+
+| Composite Skill | Primary Slash Command | Upstream Sources | Core Capabilities Bound | Trigger Contract |
+| :--- | :--- | :--- | :--- | :--- |
+| **`xyeena-design`** | `/xyeena-design` | Hallmark, Impeccable, Taste, UI UX Pro Max, Anti-Slop, Huashu | `design.accessibility`, `design.system`, `design.color-theory`, `quality.anti-slop` | **Positive:** UI styling, tokens, mobile layouts. **Negative:** Pure backend/CLI queries. |
+| **`xyeena-plan`** | `/xyeena-plan` | Superpowers, Superior, Ponytail | `thinking.plan`, `thinking.discovery`, `engineering.architecture`, `quality.lean` | **Positive:** Complex multi-step tasks (Tier 2/3). **Negative:** Tier-0 micro tasks. |
+| **`xyeena-execute`** | `/xyeena-execute` | Superpowers, Superior | `engineering.tdd`, `quality.lean`, `quality.evidence-gate` | **Positive:** Explicit implementation commands under Rule 4. **Negative:** Discussion mode. |
+| **`xyeena-debug`** | `/xyeena-debug` | Superpowers, Superior, Xyeena | `thinking.hypothesis`, `engineering.debug-discipline`, `quality.evidence-gate` | **Positive:** Bug reports, crash traces, regressions. **Negative:** Unreproducible speculative edits. |
+| **`xyeena-review`** | `/xyeena-review` | Superpowers, Superior, Ponytail, Anti-Slop | `engineering.dual-axis-review`, `quality.anti-slop`, `quality.lean` | **Positive:** Diff review, PR auditing. **Negative:** Write actions (read-only first). |
+| **`xyeena-test`** | `/xyeena-test` | Superpowers, Xyeena | `engineering.tdd`, `quality.evidence-gate` | **Positive:** Automated test suite runs, fixture validation. **Negative:** Tasks without executable surfaces. |
+| **`xyeena-verify`** | `/xyeena-verify` | Superpowers, Xyeena (DEC-31/32) | `core.evidence`, `quality.evidence-gate` | **Positive:** Phase completion claims, handoffs. **Negative:** Self-certified claims without output. |
+| **`xyeena-security`** | `/xyeena-security` | Cloudflare, Trail of Bits, Xyeena | `security.scoped-review`, `security.findings-validation`, `security.threat-model` | **Positive:** Auth/secret diffs, explicit full audits. **Negative:** Passive queries triggering full audits. |
+| **`xyeena-research`** | `/xyeena-research` | Caveman, Xyeena | `thinking.research`, `knowledge.research-quality` | **Positive:** Primary-source exploration with file:line citations. **Negative:** Hallucinated circular references. |
+| **`xyeena-writing`** | `/xyeena-writing` | Anti-Slop, Caveman, Xyeena | `delivery.documentation`, `delivery.product-copy`, `quality.anti-slop` | **Positive:** README, UX copy, microcopy authoring. **Negative:** Robotic AI filler ("delve", "tapestry"). |
+| **`xyeena-orchestrate`** | `/xyeena-orchestrate` | Superpowers, Konoha (ref), Cortex | `coordination.dag-runner`, `coordination.subagent-runner` | **Positive:** TaskGraph DAG execution, checkpoints, delegation. **Negative:** Competing external control loops. |

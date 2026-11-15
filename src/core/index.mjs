@@ -15,4 +15,6 @@ export { FallbackHandler } from './fallback.mjs';
 export { L0_INVARIANTS, BehavioralKernel } from './kernel.mjs';
 export { WorkflowComposer } from './composer.mjs';
 export { DEFAULT_CAPABILITIES, createDefaultRegistry, CAPABILITY_HANDLERS } from './default-registry.mjs';
+export { COMPOSITE_DEFINITIONS, CompositeRegistry } from './composites.mjs';
+export { BEHAVIORAL_TRAITS, BehavioralTraitOverlay } from './personality.mjs';
 export { CortexOrchestrator, createDefaultCortex } from './cortex.mjs';

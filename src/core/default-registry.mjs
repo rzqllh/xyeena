@@ -568,68 +568,88 @@ export const DEFAULT_CAPABILITIES = Object.freeze([
 export const CAPABILITY_HANDLERS = Object.freeze({
   'core.intent': (args) => new BehavioralKernel().formatKernelPrompt(),
   'core.authority': (args) => new BehavioralKernel().formatKernelPrompt(),
-  'core.evidence': (args) => EpistemicEvidenceClassifier.classify(args?.claim || 'claim', args?.provenance || ''),
-  'core.capability-routing': (args) => new CapabilityResolver().resolve(args?.prompt || '', args?.mode || 'DISCUSSION', args?.tier || 'TIER_0_MICRO'),
-  'quality.anti-slop': (args) => QualityMethods.sanitizeCodeComments(args?.code || '// test\nconst x = 1;'),
-  'quality.lean': (args) => QualityMethods.auditLeanDiff(args?.diff || 'diff --git a/a b/b\n+const x = 1;'),
-  'quality.context-economy': (args) => ContextCompactor.compactState(args?.records || [{ key: 'k', value: 'v' }], args?.budget || 1000),
+  'core.evidence': (args) => {
+    const claim = typeof args === 'string' ? args : (args?.claim ?? 'claim');
+    const prov = typeof args === 'object' ? (args?.provenance ?? '') : '';
+    return EpistemicEvidenceClassifier.classify(claim, prov);
+  },
+  'core.capability-routing': (args) => {
+    const prompt = typeof args === 'string' ? args : (args?.prompt ?? '');
+    const mode = args?.mode ?? 'DISCUSSION';
+    const tier = args?.tier ?? 'TIER_0_MICRO';
+    return new CapabilityResolver().resolve(prompt, mode, tier);
+  },
+  'quality.anti-slop': (args) => QualityMethods.auditUniversalAntiSlop(args),
+  'quality.lean': (args) => {
+    const diff = typeof args === 'string' ? args : (args?.diff ?? 'diff --git a/a b/b\n+const x = 1;');
+    return QualityMethods.auditLeanDiff(diff);
+  },
+  'quality.context-economy': (args) => ContextCompactor.compactState(Array.isArray(args) ? args : (args?.records || [{ key: 'k', value: 'v' }]), args?.budget || 1000),
   'core.requirement-drift': (args) => ThinkingMethods.detectRequirementDrift({ agreedScope: args?.agreedScope || ['scope'], actualChanges: args?.actualChanges || ['scope'] }),
-  'core.decision-framing': (args) => DeliveryMethods.composeAdr({ id: args?.id || 'ADR-001', title: args?.title || 'Title', status: args?.status || 'PROPOSED', context: args?.context || 'Context', decision: args?.decision || 'Decision', consequences: args?.consequences || 'Consequences' }),
-  'thinking.discovery': (args) => ThinkingMethods.sizeProblem(args?.problem || 'prob', args?.constraints || []),
-  'thinking.research': (args) => ThinkingMethods.conductResearchEvaluation({ topic: args?.topic || 'topic', primarySources: args?.primarySources || [], secondarySources: args?.secondarySources || [] }),
-  'thinking.plan': (args) => ThinkingMethods.composePhasedPlan({ goal: args?.goal || 'goal', phases: args?.phases || [{ name: 'Phase 1', tasks: [] }] }),
-  'thinking.hypothesis': (args) => ThinkingMethods.rankHypotheses(args?.symptom || 'symptom', args?.candidates || [{ name: 'h1', mechanism: 'm', testCommand: 'cmd' }]),
-  'thinking.domain-model': (args) => ThinkingMethods.defineDomainModel({ domainName: args?.domainName || 'domain', entities: args?.entities || ['Entity'] }),
-  'thinking.counterexample': (args) => ThinkingMethods.evaluateCounterexamples({ claim: args?.claim || 'claim', counterexamples: args?.counterexamples || ['counter'] }),
-  'engineering.architecture': (args) => EngineeringMethods.evaluateModuleSeam({ moduleName: args?.moduleName || 'mod', interfaceSurface: args?.interfaceSurface || ['fn()'] }),
-  'engineering.application-logic': (args) => EngineeringMethods.evaluateApplicationLogic({ entrypoint: args?.entrypoint || 'app.js', dependencies: args?.dependencies || [] }),
-  'engineering.root-cause': (args) => EngineeringMethods.traceRootCause5Whys({ symptom: args?.symptom || 'failure', whyChain: args?.whyChain || ['step 1'] }),
-  'engineering.tdd': (args) => EngineeringMethods.verifyTddCycle(args?.stage || 'GREEN', { testFailedInitially: args?.testFailedInitially ?? true, testPassedAfterCode: args?.testPassedAfterCode ?? true }),
-  'engineering.test-strategy': (args) => EngineeringMethods.formulateTestStrategy({ component: args?.component || 'comp', riskLevel: args?.riskLevel || 'LOW' }),
-  'engineering.code-review': (args) => EngineeringMethods.dualAxisReview(args?.diff || 'diff', args?.rubric || {}),
+  'core.decision-framing': (args) => DeliveryMethods.composeAdr(typeof args === 'object' && args !== null ? { id: args.id || 'ADR-001', title: args.title || 'Title', status: args.status || 'PROPOSED', context: args.context || 'Context', decision: args.decision || 'Decision', consequences: args.consequences || 'Consequences' } : { id: 'ADR-001', title: 'Title', status: 'PROPOSED', context: 'Context', decision: 'Decision', consequences: 'Consequences' }),
+  'thinking.discovery': (args) => {
+    const problem = typeof args === 'string' ? args : (args?.problem ?? 'prob');
+    const constraints = Array.isArray(args?.constraints) ? args.constraints : [];
+    return ThinkingMethods.sizeProblem(problem, constraints);
+  },
+  'thinking.research': (args) => ThinkingMethods.conductResearchEvaluation({ topic: typeof args === 'string' ? args : (args?.topic || 'topic'), primarySources: args?.primarySources || [], secondarySources: args?.secondarySources || [] }),
+  'thinking.plan': (args) => ThinkingMethods.composePhasedPlan({ goal: typeof args === 'string' ? args : (args?.goal || 'goal'), phases: args?.phases || [{ name: 'Phase 1', tasks: [] }] }),
+  'thinking.hypothesis': (args) => ThinkingMethods.rankHypotheses(typeof args === 'string' ? args : (args?.symptom || 'symptom'), args?.candidates || [{ name: 'h1', mechanism: 'm', testCommand: 'cmd' }]),
+  'thinking.domain-model': (args) => ThinkingMethods.defineDomainModel({ domainName: typeof args === 'string' ? args : (args?.domainName || 'domain'), entities: args?.entities || ['Entity'] }),
+  'thinking.counterexample': (args) => ThinkingMethods.evaluateCounterexamples({ claim: typeof args === 'string' ? args : (args?.claim || 'claim'), counterexamples: args?.counterexamples || ['counter'] }),
+  'engineering.architecture': (args) => EngineeringMethods.evaluateModuleSeam({ moduleName: typeof args === 'string' ? args : (args?.moduleName || 'mod'), interfaceSurface: args?.interfaceSurface || ['fn()'] }),
+  'engineering.application-logic': (args) => EngineeringMethods.evaluateApplicationLogic({ entrypoint: typeof args === 'string' ? args : (args?.entrypoint || 'app.js'), dependencies: args?.dependencies || [] }),
+  'engineering.root-cause': (args) => EngineeringMethods.traceRootCause5Whys({ symptom: typeof args === 'string' ? args : (args?.symptom || 'failure'), whyChain: args?.whyChain || ['step 1'] }),
+  'engineering.tdd': (args) => EngineeringMethods.verifyTddCycle(typeof args === 'string' ? args : (args?.stage || 'GREEN'), { testFailedInitially: args?.testFailedInitially ?? true, testPassedAfterCode: args?.testPassedAfterCode ?? true }),
+  'engineering.test-strategy': (args) => EngineeringMethods.formulateTestStrategy({ component: typeof args === 'string' ? args : (args?.component || 'comp'), riskLevel: args?.riskLevel || 'LOW' }),
+  'engineering.code-review': (args) => EngineeringMethods.dualAxisReview(typeof args === 'string' ? args : (args?.diff || 'diff'), args?.rubric || {}),
   'engineering.performance': (args) => EngineeringMethods.auditPerformanceBudget({ budgetMs: args?.budgetMs || 100, actualMs: args?.actualMs || 50 }),
-  'engineering.reliability': (args) => EngineeringMethods.evaluateReliabilityStrategy({ service: args?.service || 'svc', failureModes: args?.failureModes || ['timeout'] }),
-  'engineering.data': (args) => EngineeringMethods.planTwoPhaseMigration({ migrationName: args?.migrationName || 'mig', steps: args?.steps || [] }),
-  'design.experience': (args) => DesignMethods.evaluateUserExperienceFlow({ userGoal: args?.userGoal || 'checkout', steps: args?.steps || ['cart'] }),
+  'engineering.reliability': (args) => EngineeringMethods.evaluateReliabilityStrategy({ service: typeof args === 'string' ? args : (args?.service || 'svc'), failureModes: args?.failureModes || ['timeout'] }),
+  'engineering.data': (args) => EngineeringMethods.planTwoPhaseMigration({ migrationName: typeof args === 'string' ? args : (args?.migrationName || 'mig'), steps: args?.steps || [] }),
+  'design.experience': (args) => DesignMethods.evaluateUserExperienceFlow({ userGoal: typeof args === 'string' ? args : (args?.userGoal || 'checkout'), steps: args?.steps || ['cart'] }),
   'design.interface': (args) => DesignMethods.validateTokenArchitecture(Array.isArray(args) ? args : (args?.tokens || [{ name: 'color.primary', value: '#000', layer: 'semantic' }])),
-  'design.direction': (args) => DesignMethods.formulateDesignDirection({ projectType: args?.projectType || 'web', targetAudience: args?.targetAudience || 'users' }),
-  'design.visual-critique': (args) => DesignMethods.critiqueVisualHierarchy({ layoutTree: args?.layoutTree || {} }),
-  'design.accessibility': (args) => DesignMethods.calculateWcagContrast(args?.foreground || '#000000', args?.background || '#ffffff'),
-  'design.responsive': (args) => DesignMethods.verifyReducedMotionSupport(args?.cssText || '@media (prefers-reduced-motion) { * {} }'),
+  'design.direction': (args) => DesignMethods.formulateDesignDirection({ projectType: typeof args === 'string' ? args : (args?.projectType || 'web'), targetAudience: args?.targetAudience || 'users' }),
+  'design.visual-critique': (args) => DesignMethods.critiqueVisualHierarchy({ layoutTree: typeof args === 'object' && args !== null ? (args.layoutTree || args) : {} }),
+  'design.accessibility': (args) => {
+    const fg = args?.foreground || (typeof args === 'string' ? args : '#000000');
+    const bg = args?.background || '#ffffff';
+    return DesignMethods.calculateWcagContrast(fg, bg);
+  },
+  'design.responsive': (args) => DesignMethods.verifyReducedMotionSupport(typeof args === 'string' ? args : (args?.cssText || '@media (prefers-reduced-motion) { * {} }')),
   'design.color-theory': (args) => DesignMethods.evaluate603010Heuristic({ dominant: args?.dominant || '#ffffff', secondary: args?.secondary || '#000000', accent: args?.accent || '#ff0000' }),
-  'design.platform-guidelines': (args) => DesignMethods.auditPlatformGuidelines({ platform: args?.platform || 'web', components: args?.components || ['button'] }),
+  'design.platform-guidelines': (args) => DesignMethods.auditPlatformGuidelines({ platform: typeof args === 'string' ? args : (args?.platform || 'web'), components: args?.components || ['button'] }),
   'design.system': (args) => DesignMethods.validateTokenArchitecture(Array.isArray(args) ? args : (args?.tokens || [{ name: 'color.primary', value: '#000', layer: 'semantic' }])),
   'design.motion': (args) => DesignMethods.designMotionCurve(args?.durationMs || 300, args?.easing || 'ease-in-out'),
-  'security.guidance': (args) => SecurityMethods.getDefensiveGuidance(args?.vulnerabilityClass || 'injection'),
-  'security.threat-model': (args) => SecurityMethods.composeStrideThreatModel(args?.systemName || 'sys', args?.assets || ['db']),
-  'security.scoped-review': (args) => SecurityMethods.auditScopedDiffSecurity(args?.diff || 'diff', args?.scope || {}),
-  'coordination.local-skill-discovery': (args) => CoordinationMethods.auditLocalSkillDiscovery(args?.workspaceDir || process.cwd()),
-  'coordination.agent-discovery': (args) => CoordinationMethods.auditAgentDiscovery(args?.agentsDir || process.cwd()),
+  'security.guidance': (args) => SecurityMethods.getDefensiveGuidance(typeof args === 'string' ? args : (args?.vulnerabilityClass || 'injection')),
+  'security.threat-model': (args) => SecurityMethods.composeStrideThreatModel(typeof args === 'string' ? args : (args?.systemName || 'sys'), args?.assets || ['db']),
+  'security.scoped-review': (args) => SecurityMethods.auditScopedDiffSecurity(typeof args === 'string' ? args : (args?.diff || 'diff'), args?.scope || {}),
+  'coordination.local-skill-discovery': (args) => CoordinationMethods.auditLocalSkillDiscovery(typeof args === 'string' ? args : (args?.workspaceDir || process.cwd())),
+  'coordination.agent-discovery': (args) => CoordinationMethods.auditAgentDiscovery(typeof args === 'string' ? args : (args?.agentsDir || process.cwd())),
   'coordination.graph': (args) => new TaskGraph(),
   'coordination.explainability': (args) => CoordinationMethods.generateExecutionExplanation(args?.task || { id: 't1' }, args?.evidence || []),
   'knowledge.memory': (args) => new MemoryStore(),
-  'knowledge.compaction': (args) => ContextCompactor.compactState(args?.records || [{ key: 'k', value: 'v' }], args?.budget || 1000),
-  'knowledge.research-quality': (args) => KnowledgeMethods.evaluateResearchQuality(args?.citation || { source: 'docs', primary: true }),
-  'knowledge.reasoning-discipline': (args) => KnowledgeMethods.classifyReasoningDiscipline(args?.reasoningTrace || 'First principles analysis'),
-  'extensibility.skill-authoring': (args) => ExtensibilityMethods.validateSkillManifest(args?.markdownContent || '---\nname: skill\ndescription: desc\n---\n# Body'),
-  'extensibility.skill-evaluation': (args) => ExtensibilityMethods.evaluateSkillQuality(args?.skillPath || process.cwd()),
+  'knowledge.compaction': (args) => ContextCompactor.compactState(Array.isArray(args) ? args : (args?.records || [{ key: 'k', value: 'v' }]), args?.budget || 1000),
+  'knowledge.research-quality': (args) => KnowledgeMethods.evaluateResearchQuality(args?.citation || (typeof args === 'string' ? { source: args, primary: true } : { source: 'docs', primary: true })),
+  'knowledge.reasoning-discipline': (args) => KnowledgeMethods.classifyReasoningDiscipline(typeof args === 'string' ? args : (args?.reasoningTrace || 'First principles analysis')),
+  'extensibility.skill-authoring': (args) => ExtensibilityMethods.validateSkillManifest(typeof args === 'string' ? args : (args?.markdownContent || '---\nname: skill\ndescription: desc\n---\n# Body')),
+  'extensibility.skill-evaluation': (args) => ExtensibilityMethods.evaluateSkillQuality(typeof args === 'string' ? args : (args?.skillPath || process.cwd())),
   'extensibility.mcp-design': (args) => ExtensibilityMethods.validateMcpToolSchema(args?.schema || { name: 'tool', parameters: {} }),
-  'delivery.documentation': (args) => DeliveryMethods.auditDocumentationRubric(args?.markdown || '# Readme\n\n```bash\nnpm test\n```'),
-  'delivery.product-copy': (args) => DeliveryMethods.composeHumanUxCopy({ stateType: args?.stateType || 'EMPTY', headline: args?.headline || 'No items', body: args?.body || 'Add an item to get started', actionLabel: args?.actionLabel || 'Create Item' }),
-  'delivery.artifacts': (args) => DeliveryMethods.composeStructuredArtifact({ title: args?.title || 'Report', summary: args?.summary || 'Summary', sections: args?.sections || [{ label: 'Details', content: 'Content' }] }),
-  'thinking.grill': (args) => ThinkingMethods.grillPlanOrDecision(args?.topic || 'plan', args?.assumptions || ['assump']),
+  'delivery.documentation': (args) => DeliveryMethods.auditDocumentationRubric(typeof args === 'string' ? args : (args?.markdown || '# Readme\n\n```bash\nnpm test\n```')),
+  'delivery.product-copy': (args) => DeliveryMethods.composeHumanUxCopy(typeof args === 'object' && args !== null ? { stateType: args.stateType || 'EMPTY', headline: args.headline || 'No items', body: args.body || 'Add an item to get started', actionLabel: args.actionLabel || 'Create Item' } : { stateType: 'EMPTY', headline: 'No items', body: 'Add an item to get started', actionLabel: 'Create Item' }),
+  'delivery.artifacts': (args) => DeliveryMethods.composeStructuredArtifact(typeof args === 'object' && args !== null ? { title: args.title || 'Report', summary: args.summary || 'Summary', sections: args.sections || [{ label: 'Details', content: 'Content' }] } : { title: 'Report', summary: 'Summary', sections: [{ label: 'Details', content: 'Content' }] }),
+  'thinking.grill': (args) => ThinkingMethods.grillPlanOrDecision(typeof args === 'string' ? args : (args?.topic || 'plan'), args?.assumptions || ['assump']),
   'engineering.release': (args) => EngineeringMethods.evaluateReleaseReadiness({ checks: args?.checks || [{ name: 'lint', passed: true }] }),
-  'security.full-audit': (args) => SecurityMethods.assertAuditActivationAllowed(args?.prompt || 'full security audit', args?.mode || 'EXPLICIT_RISK_GATE'),
-  'security.findings-validation': (args) => SecurityMethods.validateFinding({ findingId: args?.findingId || 'SEC-1', severity: args?.severity || 'HIGH' }),
-  'security.hardening': (args) => SecurityMethods.formulateHardeningSpec({ component: args?.component || 'auth', policies: args?.policies || ['tls'] }),
-  'security.retest': (args) => SecurityMethods.verifyRetestRemediation({ findingId: args?.findingId || 'SEC-1', retestCommand: args?.retestCommand || 'npm test', pass: args?.pass ?? true }),
+  'security.full-audit': (args) => SecurityMethods.assertAuditActivationAllowed(typeof args === 'string' ? args : (args?.prompt || 'full security audit'), args?.mode || 'EXPLICIT_RISK_GATE'),
+  'security.findings-validation': (args) => SecurityMethods.validateFinding(typeof args === 'object' && args !== null ? { findingId: args.findingId || 'SEC-1', severity: args.severity || 'HIGH' } : { findingId: 'SEC-1', severity: 'HIGH' }),
+  'security.hardening': (args) => SecurityMethods.formulateHardeningSpec(typeof args === 'object' && args !== null ? { component: args.component || 'auth', policies: args.policies || ['tls'] } : { component: 'auth', policies: ['tls'] }),
+  'security.retest': (args) => SecurityMethods.verifyRetestRemediation(typeof args === 'object' && args !== null ? { findingId: args.findingId || 'SEC-1', retestCommand: args.retestCommand || 'npm test', pass: args.pass ?? true } : { findingId: 'SEC-1', retestCommand: 'npm test', pass: true }),
   'security.skill-supply-chain': (args) => SecurityMethods.auditSkillSupplyChain(args?.packageJson || { dependencies: {} }),
-  'security.runtime-isolation': (args) => SecurityMethods.verifyRuntimeIsolation({ runtime: args?.runtime || 'antigravity', mode: args?.mode || 'copy' }),
+  'security.runtime-isolation': (args) => SecurityMethods.verifyRuntimeIsolation(typeof args === 'object' && args !== null ? { runtime: args.runtime || 'antigravity', mode: args.mode || 'copy' } : { runtime: 'antigravity', mode: 'copy' }),
   'coordination.dispatch': (args) => CoordinationMethods.assertTaskDispatchConsent(args?.task || { id: 't1' }, args?.consentGiven ?? true),
   'coordination.recovery': (args) => new CheckpointManager(),
-  'coordination.isolation': (args) => CoordinationMethods.verifyIsolationBoundary(args?.path || process.cwd()),
-  'delivery.release-check': (args) => DeliveryMethods.formatArtifactMetadata({ summary: args?.summary || 'Doc summary', userFacing: args?.userFacing ?? true }),
-  'coordination.external-discovery': (args) => CoordinationMethods.assertExternalDiscoveryGate(args?.prompt || 'search external registry')
+  'coordination.isolation': (args) => CoordinationMethods.verifyIsolationBoundary(typeof args === 'string' ? args : (args?.path || process.cwd())),
+  'delivery.release-check': (args) => DeliveryMethods.formatArtifactMetadata(typeof args === 'object' && args !== null ? { summary: args.summary || 'Doc summary', userFacing: args.userFacing ?? true } : { summary: 'Doc summary', userFacing: true }),
+  'coordination.external-discovery': (args) => CoordinationMethods.assertExternalDiscoveryGate(typeof args === 'string' ? args : (args?.prompt || 'search external registry'))
 });
 
 /**

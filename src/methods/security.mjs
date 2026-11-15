@@ -93,6 +93,13 @@ export class SecurityMethods {
    */
   static validateFinding(finding = {}) {
     const errors = [];
+    if (!finding.file && Array.isArray(finding.trace) && finding.trace.length > 0) {
+      finding.file = finding.trace.find(t => t.kind === 'sink')?.file || finding.trace[0]?.file;
+    }
+    if (finding.line === undefined && Array.isArray(finding.trace) && finding.trace.length > 0) {
+      finding.line = finding.trace.find(t => t.kind === 'sink')?.line || finding.trace[0]?.line;
+    }
+
     if (!finding.file || typeof finding.file !== 'string') {
       errors.push('Missing or invalid "file" path');
     } else if (finding.file.includes('..') || pathIsSuspicious(finding.file)) {
@@ -307,6 +314,363 @@ export class SecurityMethods {
       processKillTreeSupported,
       isolated,
       verdict: isolated ? 'RUNTIME_STRICTLY_ISOLATED' : 'ISOLATION_BOUNDARY_BREACHED'
+    };
+  }
+
+  /**
+   * Create a structured, machine-readable security finding (Cloudflare RE-06 schema).
+   * Generates a stable fingerprint and duplicateHash for tracking and suppression.
+   */
+  static createStructuredFinding({
+    id,
+    fingerprint,
+    title = '',
+    description = '',
+    rootCause = '',
+    intendedBehavior = '',
+    attackClass = 'BROKEN_ACCESS_CONTROL',
+    severity = 'HIGH',
+    threatBoundary = 'UNTRUSTED_CLIENT_TO_SERVER',
+    principal = 'anonymous_user',
+    resource = 'api_endpoint',
+    trace = [],
+    evidence = '',
+    remediation = '',
+    conditions = []
+  } = {}) {
+    const primaryTrace = trace.find(t => t.kind === 'sink') || trace[0] || {};
+    const file = primaryTrace.file || 'unknown';
+    const line = primaryTrace.line || 1;
+
+    const stableFingerprint = fingerprint ||
+      `xy-sec-${Buffer.from(`${file}:${line}:${attackClass}:${title}`).toString('base64url').slice(0, 16)}`;
+    const duplicateHash = stableFingerprint;
+
+    const evidenceText = typeof evidence === 'string' && evidence.trim().length >= 3
+      ? evidence
+      : (trace.length > 0 ? `Source-to-sink trace at ${file}:${line}` : 'Observed vulnerability during scoped review');
+
+    return {
+      id: id || stableFingerprint,
+      fingerprint: stableFingerprint,
+      duplicateHash,
+      title,
+      description,
+      rootCause,
+      intendedBehavior,
+      attackClass,
+      severity,
+      threatBoundary,
+      principal,
+      resource,
+      file,
+      line,
+      trace,
+      evidence: evidenceText,
+      remediation,
+      conditions,
+      verdict: 'CONFIRMED_VULNERABILITY'
+    };
+  }
+
+  /**
+   * Suppress duplicate security findings based on stable fingerprint or duplicateHash (Cloudflare RE-06).
+   */
+  static deduplicateFindings(findings = []) {
+    const seen = new Set();
+    const unique = [];
+    const duplicates = [];
+
+    for (const f of findings) {
+      const key = f.fingerprint || f.duplicateHash || `${f.file}:${f.line}:${f.attackClass}`;
+      if (seen.has(key)) {
+        duplicates.push(f);
+      } else {
+        seen.add(key);
+        unique.push(f);
+      }
+    }
+
+    return {
+      totalInput: findings.length,
+      uniqueCount: unique.length,
+      duplicateCount: duplicates.length,
+      uniqueFindings: unique,
+      duplicates
+    };
+  }
+
+  /**
+   * Validate a security invariant and reject pattern-match-only false positives (Trail of Bits RE-15).
+   * If a reported vulnerability is only a syntactic pattern match without exploitability,
+   * trust-boundary crossing, or reachable sink, it must be rejected as false-positive.
+   */
+  static validateSecurityInvariant({
+    invariantName = 'Security Invariant',
+    condition = true,
+    isPatternMatchOnly = false,
+    reachableSink = true,
+    exploitabilityEvidence = null,
+    trustBoundaryCrossed = true,
+    evidence = {}
+  } = {}) {
+    if (isPatternMatchOnly && (!reachableSink || !trustBoundaryCrossed || !exploitabilityEvidence)) {
+      return {
+        invariantName,
+        holds: true,
+        validVulnerability: false,
+        verdict: 'REJECTED_FALSE_POSITIVE',
+        reason: 'Finding rejected: pattern match without exploitability, reachable sink, or trust-boundary crossing is unproven.'
+      };
+    }
+
+    const holds = condition === true && (!isPatternMatchOnly || reachableSink);
+    return {
+      invariantName,
+      holds,
+      validVulnerability: !holds,
+      verdict: holds ? 'SECURITY_INVARIANT_HELD' : 'INVARIANT_VIOLATION_CONFIRMED',
+      evidence
+    };
+  }
+
+  /**
+   * Audit GitHub Actions workflow for security vulnerabilities (Trail of Bits RE-15 / agentic-actions-auditor).
+   * Detects:
+   * 1. pull_request_target with checkout of PR head (untrusted code execution with write token)
+   * 2. Script injection via unescaped context expressions in run: blocks (${{ github.event.* }})
+   * 3. Unpinned third-party actions (using mutable @main, @master, @v1 tags instead of commit SHAs)
+   */
+  static auditWorkflowSecurity({ workflowYaml = '', workflowPath = '.github/workflows/ci.yml' } = {}) {
+    const findings = [];
+
+    // 1. pull_request_target with head checkout
+    if (workflowYaml.includes('pull_request_target') &&
+        (workflowYaml.includes('github.event.pull_request.head.sha') || workflowYaml.includes('ref: ${{ github.event.pull_request.head.ref }}'))) {
+      findings.push({
+        id: 'SEC-GHA-001',
+        severity: 'CRITICAL',
+        issue: 'Dangerous pull_request_target trigger checks out untrusted PR head code with repository write/secret permissions.',
+        file: workflowPath,
+        remediation: 'Use "pull_request" trigger for untrusted code, or do not check out PR head in "pull_request_target".'
+      });
+    }
+
+    // 2. Direct expression injection in run scripts
+    const runLines = workflowYaml.split('\n');
+    let insideRun = false;
+    for (let i = 0; i < runLines.length; i++) {
+      const line = runLines[i];
+      if (/^\s*run:\s*(?:\||>|-)?/.test(line)) {
+        insideRun = true;
+      } else if (insideRun && /^\s*[a-zA-Z0-9_-]+:/.test(line)) {
+        insideRun = false;
+      }
+
+      if (insideRun && /\$\{\{\s*github\.event\.(?:issue|comment|pull_request\.title|pull_request\.body|head_commit\.message)/i.test(line)) {
+        findings.push({
+          id: 'SEC-GHA-002',
+          severity: 'HIGH',
+          issue: `Direct context expression injection in run script: ${line.trim()}`,
+          file: workflowPath,
+          line: i + 1,
+          remediation: 'Pass untrusted context values through environment variables ("env:"), never interpolate directly in inline scripts.'
+        });
+      }
+    }
+
+    // 3. Unpinned third-party action tags
+    const actionUses = workflowYaml.match(/uses:\s*([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+@[^\s\n]+)/g) || [];
+    for (const match of actionUses) {
+      const actionRef = match.replace(/uses:\s*/, '').trim();
+      const [actionName, tag] = actionRef.split('@');
+      if (tag && !/^[0-9a-f]{40}$/i.test(tag) && !actionName.startsWith('actions/')) {
+        findings.push({
+          id: 'SEC-GHA-003',
+          severity: 'MEDIUM',
+          issue: `Action "${actionName}" uses mutable tag "@${tag}" instead of immutable full commit SHA.`,
+          file: workflowPath,
+          remediation: `Pin "${actionName}" to an exact 40-character commit SHA to prevent supply-chain tampering.`
+        });
+      }
+    }
+
+    const secure = findings.length === 0;
+    return {
+      workflowPath,
+      findingsCount: findings.length,
+      secure,
+      findings,
+      verdict: secure ? 'WORKFLOW_SECURITY_VERIFIED' : 'WORKFLOW_VULNERABILITIES_DETECTED'
+    };
+  }
+
+  /**
+   * Evaluate Supabase / PostgreSQL Row Level Security (RLS) policies (Supabase RE-16).
+   * Validates positive tenant access and negative cross-tenant boundary isolation.
+   *
+   * DEC-31 Epistemic Truthfulness:
+   * Static string matching of "auth.uid() = user_id" confirms syntax and policy definition,
+   * but does NOT claim RLS_LIVE_ISOLATION_VERIFIED unless backed by executable live query receipts.
+   */
+  static evaluateRlsPolicy({
+    tableName = '',
+    rlsEnabled = true,
+    policies = [],
+    testPrincipals = [],
+    liveExecutionVerified = false,
+    liveQueryReceipts = null
+  } = {}) {
+    const issues = [];
+
+    if (!rlsEnabled) {
+      issues.push({
+        severity: 'CRITICAL',
+        issue: `Table "${tableName}" does not have Row Level Security (RLS) enabled. Public tables are accessible to anon/authenticated roles without restrictions.`,
+        remediation: `Execute: ALTER TABLE "${tableName}" ENABLE ROW LEVEL SECURITY;`
+      });
+    }
+
+    let hasTenantFilter = false;
+    for (const pol of policies) {
+      const definition = pol.definition || pol.using || '';
+      if (/\b(?:auth\.uid\(\)\s*=\s*[a-zA-Z0-9_]+|tenant_id\s*=\s*|user_id\s*=\s*auth\.uid\(\))\b/i.test(definition)) {
+        hasTenantFilter = true;
+      }
+    }
+
+    if (rlsEnabled && policies.length === 0) {
+      issues.push({
+        severity: 'HIGH',
+        issue: `Table "${tableName}" has RLS enabled but defines zero policies. All access will be rejected unless service role bypasses.`,
+        remediation: 'Define explicit SELECT/INSERT/UPDATE/DELETE policies for intended roles.'
+      });
+    } else if (rlsEnabled && !hasTenantFilter) {
+      issues.push({
+        severity: 'HIGH',
+        issue: `Table "${tableName}" policies lack tenant/user ownership clauses ("auth.uid() = user_id").`,
+        remediation: 'Ensure USING expression checks tenant/user identity with auth.uid().'
+      });
+    }
+
+    let crossTenantLeak = false;
+    if (testPrincipals.length >= 2) {
+      const [principalA, principalB] = testPrincipals;
+      if (!hasTenantFilter || policies.some(p => (p.definition || '').toLowerCase().includes('true'))) {
+        crossTenantLeak = true;
+        issues.push({
+          severity: 'CRITICAL',
+          issue: `Cross-tenant data leak: Principal "${principalA.id}" (tenant "${principalA.tenantId}") can query data belonging to Principal "${principalB.id}" (tenant "${principalB.tenantId}").`,
+          remediation: 'Add strict tenant isolation predicate: "USING (tenant_id = (SELECT tenant_id FROM profiles WHERE id = auth.uid()))".'
+        });
+      }
+    }
+
+    const secure = issues.length === 0;
+
+    let verdict = 'RLS_MISCONFIGURATION_DETECTED';
+    let requiresLiveValidation = true;
+
+    if (crossTenantLeak) {
+      verdict = 'RLS_CROSS_TENANT_LEAK_DETECTED';
+      requiresLiveValidation = false;
+    } else if (secure) {
+      if (liveExecutionVerified || (liveQueryReceipts && liveQueryReceipts.tenantIsolationProven)) {
+        verdict = 'RLS_LIVE_ISOLATION_VERIFIED';
+        requiresLiveValidation = false;
+      } else {
+        // DEC-31: Static check pass only; live execution is required for runtime proof
+        verdict = 'STATIC_CHECK_PASS';
+        requiresLiveValidation = true;
+      }
+    }
+
+    return {
+      tableName,
+      rlsEnabled,
+      policyCount: policies.length,
+      hasTenantFilter,
+      crossTenantLeak,
+      secure,
+      requiresLiveValidation,
+      issues,
+      verdict,
+      epistemicStatus: secure ? (requiresLiveValidation ? 'STATIC_ANALYSIS_ONLY' : 'LIVE_EXECUTION_PROVEN') : 'CONFIG_DEFECT_DETECTED'
+    };
+  }
+
+  /**
+   * Detect exposed Supabase service-role keys in client-facing code (Supabase RE-16).
+   */
+  static detectServiceRoleKeyExposure({ content = '', filePath = '' } = {}) {
+    const isClientFacing = /^(?:src\/)?(?:app|pages|components|public|client|views)\b/i.test(filePath) ||
+      /\.(?:tsx|jsx|html|svelte|vue)$/i.test(filePath);
+
+    const hasServiceRoleKey = /\b(?:SUPABASE_SERVICE_ROLE_KEY|service_role)\b/i.test(content) &&
+      /(?:eyJ[a-zA-Z0-9-_]{20,}|key\s*:\s*['"][a-zA-Z0-9-_]{20,}['"]|process\.env\.SUPABASE_SERVICE_ROLE_KEY)/i.test(content);
+
+    if (hasServiceRoleKey && isClientFacing) {
+      return {
+        exposed: true,
+        filePath,
+        severity: 'CRITICAL',
+        verdict: 'SERVICE_ROLE_KEY_EXPOSED',
+        reason: 'Supabase service_role key detected in client-facing frontend bundle. Service-role bypasses all RLS policies.',
+        remediation: 'Remove service_role key from client-side code immediately. Use ANON key on client and restrict service-role to server-only routes.'
+      };
+    }
+
+    return {
+      exposed: false,
+      filePath,
+      verdict: 'NO_CLIENT_SERVICE_ROLE_EXPOSURE',
+      reason: 'No exposed service-role credentials found in client surface.'
+    };
+  }
+
+  /**
+   * Audit PostgreSQL migration safety and DDL lock hazards (Supabase RE-16).
+   */
+  static auditPostgresMigrationSafety({ ddl = '', currentTableRows = 0 } = {}) {
+    const hazards = [];
+
+    // 1. CREATE INDEX without CONCURRENTLY
+    if (/CREATE\s+(?:UNIQUE\s+)?INDEX\s+(?!CONCURRENTLY\b)/i.test(ddl)) {
+      hazards.push({
+        type: 'LOCK_HEAVY_INDEXING',
+        severity: currentTableRows > 1000 ? 'HIGH' : 'MEDIUM',
+        issue: 'CREATE INDEX without CONCURRENTLY acquires an exclusive SHARE lock on the table, blocking writes.',
+        remediation: 'Use "CREATE INDEX CONCURRENTLY" to build indexes without table-exclusive write locks.'
+      });
+    }
+
+    // 2. ADD COLUMN ... NOT NULL without DEFAULT on populated table
+    if (/ALTER\s+TABLE\s+[^\n]+ADD\s+COLUMN\s+[^\n]+NOT\s+NULL(?!\s+DEFAULT\b)/i.test(ddl)) {
+      hazards.push({
+        type: 'TABLE_REWRITE_LOCK',
+        severity: 'HIGH',
+        issue: 'Adding a NOT NULL column without a DEFAULT requires rewriting the entire table under ACCESS EXCLUSIVE lock.',
+        remediation: 'Use Expand-Migrate-Contract: 1) ADD COLUMN nullable, 2) backfill, 3) ALTER COLUMN SET NOT NULL.'
+      });
+    }
+
+    // 3. SECURITY DEFINER views/functions without search_path
+    if (/SECURITY\s+DEFINER/i.test(ddl) && !/SET\s+search_path\s*=/i.test(ddl)) {
+      hazards.push({
+        type: 'SECURITY_DEFINER_PRIVILEGE_ESCALATION',
+        severity: 'HIGH',
+        issue: 'SECURITY DEFINER function/view defined without fixed "SET search_path = \'\'" allows search_path hijack.',
+        remediation: 'Add "SET search_path = \'\'" or prefer "SECURITY INVOKER" for standard views.'
+      });
+    }
+
+    const safe = hazards.length === 0;
+    return {
+      safe,
+      hazardsCount: hazards.length,
+      hazards,
+      expandMigrateContractCompliant: safe,
+      verdict: safe ? 'POSTGRES_MIGRATION_SAFE' : 'MIGRATION_LOCK_HAZARDS_DETECTED'
     };
   }
 

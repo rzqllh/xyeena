@@ -223,6 +223,19 @@ export function detectInstallationState({
     };
   }
 
+  // 1.5. If manifest file exists on disk but is corrupted -> SAME_VERSION_BROKEN
+  if (fs.existsSync(stateLocations.manifestPath) && !manifest) {
+    return {
+      state: INSTALL_STATES.SAME_VERSION_BROKEN,
+      manifest: null,
+      targetDir,
+      details: {
+        reason: 'Corrupted install.json manifest detected (syntax or read error)',
+        corruptedManifest: true
+      }
+    };
+  }
+
   // 2. If Xyeena skills exist, but no manifest exists -> LEGACY_XYEENA
   if (!manifest) {
     return {

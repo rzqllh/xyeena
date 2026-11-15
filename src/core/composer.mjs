@@ -5,6 +5,7 @@
 
 import { BehavioralKernel } from './kernel.mjs';
 import { estimateTokens } from './budget.mjs';
+import { BehavioralTraitOverlay } from './personality.mjs';
 
 export class WorkflowComposer {
   /**
@@ -46,6 +47,16 @@ export class WorkflowComposer {
       }
     }
 
+    // 4. Behavioral Trait Guidance Overlay (DEC-32 / XYN Methodological Synthesis)
+    // TIER_0_MICRO retains zero domain/trait overhead to stay strictly within micro budget (< 500 tokens).
+    let traitOverlay = { overlayText: '', tokenEstimate: 0, traitCount: 0 };
+    if (tier !== 'TIER_0_MICRO') {
+      traitOverlay = BehavioralTraitOverlay.formatOverlay(prompt);
+      if (traitOverlay.overlayText) {
+        sections.push('\n' + traitOverlay.overlayText);
+      }
+    }
+
     const payloadText = sections.join('\n');
     const estimatedTokens = estimateTokens(payloadText);
 
@@ -58,6 +69,7 @@ export class WorkflowComposer {
         characters: payloadText.length,
         estimatedTokens,
         l0TokenShare: this.kernel.getTokenCount(),
+        traitTokenShare: traitOverlay.tokenEstimate,
         domainCapabilityCount: nonL0Caps.length
       }
     };

@@ -303,6 +303,7 @@ export class InstallationTransaction {
    */
   execute(options = {}) {
     const plan = this.plan();
+    const baseline = computePackageBaseline(SKILLS_DIR);
 
     // 1. Check no-op
     if (plan.state === INSTALL_STATES.SAME_VERSION_VALID && !options.force && !plan.hasUserModifications) {
@@ -440,11 +441,29 @@ export class InstallationTransaction {
           if (fs.existsSync(skillDst)) {
             const isSym = fs.lstatSync(skillDst).isSymbolicLink();
             if (!isSym && fs.statSync(skillDst).isDirectory()) {
-              // Check if directory contains custom user files or modifications
+              // DEC-26: Check if directory contains custom user files or user modifications
               const existingSkillFiles = listFilesRecursive(skillDst);
-              const hasCustom = existingSkillFiles.some(f => !baseline.has(`${skillName}/${f}`));
-              if (hasCustom && !options.force) {
-                throw new Error(`Cannot replace directory "${skillName}" containing custom user files with symlink without force`);
+              const customFiles = existingSkillFiles.filter(f => !baseline.has(`${skillName}/${f}`));
+              if (customFiles.length > 0) {
+                // DEC-26: Unowned/custom files must NEVER be destroyed by symlink replacement, even with --force
+                throw new Error(
+                  `Cannot replace directory "${skillName}" containing ${customFiles.length} custom user file(s) with symlink (unowned user data cannot be destroyed even with --force). Custom files: ${customFiles.slice(0, 3).join(', ')}${customFiles.length > 3 ? '...' : ''}. Relocate custom files before switching to symlink mode.`
+                );
+              }
+              const modifiedFiles = existingSkillFiles.filter(f => {
+                const pKey = `${skillName}/${f}`;
+                if (!baseline.has(pKey)) return false;
+                const curBuf = fs.readFileSync(path.join(skillDst, f));
+                return !isKnownOfficialBaseline(pKey, curBuf, baseline);
+              });
+              if (modifiedFiles.length > 0) {
+                // DEC-26 & P14: Modified official files cannot be destroyed during copy-to-symlink conversion
+                // without an exact, verified diff approval fingerprint, even with --force.
+                if (!options.diffApprovedFingerprint || options.diffApprovedFingerprint !== plan.diffFingerprint) {
+                  throw new Error(
+                    `Cannot replace directory "${skillName}" containing ${modifiedFiles.length} modified official file(s) with symlink (modified user files cannot be destroyed without matching --diff-approved-fingerprint, even with --force). Expected fingerprint: ${plan.diffFingerprint}, received: ${options.diffApprovedFingerprint || 'none'}.`
+                  );
+                }
               }
             }
             fs.rmSync(skillDst, { recursive: true, force: true });
@@ -670,10 +689,15 @@ export class InstallationTransaction {
 
           const curBuf = fs.readFileSync(absFilePath);
           const isOfficial = isKnownOfficialBaseline(packageKey, curBuf, baseline);
-          if (!isOfficial && options.force !== true) {
-            // User modified this official file! PRESERVE IT unless forced!
-            preserved.push(targetRel);
-            continue;
+          if (!isOfficial) {
+            // DEC-26: User modified this official file!
+            // --force is NOT a consent contract! Modified files must be preserved unless explicit
+            // consent contract (allowModifiedRemoval + diffApprovedFingerprint) is provided.
+            const hasExplicitConsent = options.allowModifiedRemoval === true && Boolean(options.diffApprovedFingerprint);
+            if (!hasExplicitConsent) {
+              preserved.push(targetRel);
+              continue;
+            }
           }
 
           fs.unlinkSync(absFilePath);
@@ -697,8 +721,14 @@ export class InstallationTransaction {
         const ruleBuf = fs.readFileSync(rulePath);
         const baselineRule = baseline.get('.rules/xyeena-core.md');
         const isOfficialRule = baselineRule && baselineRule.sha256 === hashBuffer(ruleBuf);
-        if (!isOfficialRule && options.force !== true) {
-          preserved.push(slash(path.relative(this.cwd, rulePath)));
+        if (!isOfficialRule) {
+          const hasExplicitConsent = options.allowModifiedRemoval === true && Boolean(options.diffApprovedFingerprint);
+          if (!hasExplicitConsent) {
+            preserved.push(slash(path.relative(this.cwd, rulePath)));
+          } else {
+            fs.rmSync(rulePath, { force: true });
+            removed.push(slash(path.relative(this.cwd, rulePath)));
+          }
         } else {
           fs.rmSync(rulePath, { force: true });
           removed.push(slash(path.relative(this.cwd, rulePath)));

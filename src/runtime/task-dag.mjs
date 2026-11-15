@@ -114,6 +114,37 @@ export class TaskGraph {
     return true;
   }
 
+  size() {
+    return this.nodes.size;
+  }
+
+  /**
+   * Return linear execution order satisfying all dependencies via topological sort.
+   * @returns {string[]} Ordered task IDs
+   */
+  getExecutionOrder() {
+    this.validate();
+    const visited = new Set();
+    const order = [];
+
+    const visit = (id) => {
+      if (visited.has(id)) return;
+      const node = this.nodes.get(id);
+      if (!node) return;
+      for (const dep of node.dependencies) {
+        visit(dep);
+      }
+      visited.add(id);
+      order.push(id);
+    };
+
+    for (const id of this.nodes.keys()) {
+      visit(id);
+    }
+
+    return order;
+  }
+
   /**
    * Return tasks currently ready for execution.
    * A task is ready if its status is READY and all dependencies are COMPLETED.

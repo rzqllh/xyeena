@@ -27,6 +27,7 @@ import { HostNegotiator, HOST_NAMES, SUPPORT_LEVELS } from './negotiator.mjs';
 import { WorkflowComposer } from './composer.mjs';
 import { TaskGraph, TaskNode, TASK_STATUS } from '../runtime/task-dag.mjs';
 import { CheckpointManager } from '../runtime/checkpoint.mjs';
+import { CompositeRegistry } from './composites.mjs';
 
 export class CortexOrchestrator {
   /**
@@ -50,6 +51,7 @@ export class CortexOrchestrator {
     this.negotiator = options.negotiator || new HostNegotiator();
     this.checkpointManager = options.checkpointManager || new CheckpointManager();
     this.composer = new WorkflowComposer();
+    this.compositeRegistry = options.compositeRegistry || new CompositeRegistry();
   }
 
   /**
@@ -71,12 +73,16 @@ export class CortexOrchestrator {
       }
     }
 
-    // Explicit skill names
+    // Explicit skill names & composites
     const knownSkills = [
-      'xyeena-orchestrate', 'xyeena-debug', 'xyeena-core', 'xyeena-execute',
-      'xyeena-review', 'xyeena-test', 'xyeena-security', 'xyeena-interface',
-      'xyeena-architecture', 'xyeena-research', 'xyeena-verify', 'xyeena-release',
-      'antislop', 'brainstorming', 'tdd', 'ponytail', 'caveman', 'hallmark'
+      'xyeena-design', 'xyeena-plan', 'xyeena-execute', 'xyeena-debug',
+      'xyeena-review', 'xyeena-test', 'xyeena-verify', 'xyeena-security',
+      'xyeena-research', 'xyeena-writing', 'xyeena-orchestrate',
+      'xyeena-core', 'xyeena-interface', 'xyeena-architecture', 'xyeena-release',
+      'antislop', 'brainstorming', 'tdd', 'ponytail', 'caveman', 'hallmark',
+      'impeccable', 'huashu-design', 'ui-ux-pro-max', 'design-taste-frontend',
+      'verification-before-completion', 'dispatching-parallel-agents',
+      'subagent-driven-development', 'writing-plans'
     ];
 
     for (const skill of knownSkills) {
@@ -85,6 +91,10 @@ export class CortexOrchestrator {
         explicit.push(skill);
       }
     }
+
+    explicit.hasExplicit = explicit.length > 0;
+    explicit.primarySkill = explicit[0] || null;
+    explicit.explicitSkills = [...explicit];
 
     return explicit;
   }
@@ -289,6 +299,17 @@ export class CortexOrchestrator {
   }
 
   /**
+   * Dispatch an authoritative composite skill workflow.
+   * @param {string} compositeId
+   * @param {Record<string, unknown>} [input={}]
+   * @param {Record<string, unknown>} [context={}]
+   * @returns {any} Result of composite workflow execution
+   */
+  dispatchComposite(compositeId, input = {}, context = {}) {
+    return this.compositeRegistry.execute(compositeId, input, context);
+  }
+
+  /**
    * Execute task through Cortex orchestration.
    * If in Discussion Mode and execution is not authorized, fails closed gracefully
    * and returns the discussion advice without mutating project files.
@@ -312,6 +333,18 @@ export class CortexOrchestrator {
       };
     }
 
+    // Execute composite workflow if explicitly triggered
+    let compositeResult = null;
+    if (plan.explicitSkills.length > 0) {
+      for (const sk of plan.explicitSkills) {
+        const comp = this.compositeRegistry.get(sk);
+        if (comp) {
+          compositeResult = comp.execute(options.input || { prompt }, options.context || {});
+          break;
+        }
+      }
+    }
+
     // TIER_0_MICRO: Crisp direct execution, 0 DAG, 0 subagents, 0 extra files
     if (plan.tier === TASK_TIERS.TIER_0_MICRO) {
       return {
@@ -321,6 +354,7 @@ export class CortexOrchestrator {
         tier: plan.tier,
         message: 'Micro task executed directly with zero DAG and zero file overhead.',
         executedSteps: plan.workflow.steps.map(s => s.id),
+        compositeResult,
         plan
       };
     }
@@ -334,6 +368,7 @@ export class CortexOrchestrator {
         tier: plan.tier,
         message: 'Standard scoped task executed successfully.',
         executedSteps: plan.workflow.steps.map(s => s.id),
+        compositeResult,
         plan
       };
     }
@@ -365,6 +400,7 @@ export class CortexOrchestrator {
       message: 'Complex task graph executed with recovery checkpointing.',
       checkpointId: checkpoint.checkpointId,
       taskCount: taskGraph.size(),
+      compositeResult,
       plan
     };
   }
