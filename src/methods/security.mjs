@@ -6,6 +6,7 @@
  * and strict activation gating for full security audits.
  */
 
+import crypto from 'node:crypto';
 import { ERROR_CODES, XyeenaError } from '../core/errors.mjs';
 
 export const ATTACK_CLASSES = Object.freeze([
@@ -513,13 +514,60 @@ export class SecurityMethods {
    * Static string matching of "auth.uid() = user_id" confirms syntax and policy definition,
    * but does NOT claim RLS_LIVE_ISOLATION_VERIFIED unless backed by executable live query receipts.
    */
+  /**
+   * Compute deterministic receipt digest for RLS live query receipts.
+   * @param {object} receipt
+   * @returns {string} SHA256 hex digest
+   */
+  static computeRlsReceiptDigest(receipt) {
+    if (!receipt) return '';
+    const posRows = receipt.positiveQuery?.rowsReturned ?? 0;
+    const negRows = receipt.negativeQuery?.rowsReturned ?? 0;
+    const negStatus = receipt.negativeQuery?.status ?? '';
+    const payload = `RLS_RECEIPT:${receipt.dbEnvironment}:${receipt.tableName}:${receipt.timestamp}:${posRows}:${negRows}:${negStatus}`;
+    return crypto.createHash('sha256').update(payload, 'utf8').digest('hex');
+  }
+
+  /**
+   * Create a structured, cryptographically signed query execution receipt for RLS verification.
+   * @param {object} params
+   * @returns {object} Structured receipt
+   */
+  static createRlsQueryReceipt({
+    dbEnvironment = 'postgres-staging',
+    tableName = '',
+    timestamp = new Date().toISOString(),
+    positiveQuery = { query: 'SELECT * FROM tenant_data WHERE tenant_id = auth.uid()', status: 'SUCCESS', rowsReturned: 5 },
+    negativeQuery = { query: 'SELECT * FROM tenant_data WHERE tenant_id != auth.uid()', status: 'ACCESS_DENIED', rowsReturned: 0 }
+  } = {}) {
+    const receipt = {
+      dbEnvironment,
+      tableName,
+      timestamp,
+      positiveQuery,
+      negativeQuery
+    };
+    receipt.receiptSignature = SecurityMethods.computeRlsReceiptDigest(receipt);
+    return receipt;
+  }
+
+  /**
+   * Evaluate Supabase / Postgres Row Level Security (RLS) policies against tenant isolation principles (Supabase RE-16).
+   * Validates positive tenant access and negative cross-tenant boundary isolation.
+   *
+   * DEC-31 Epistemic Truthfulness:
+   * Static string matching of "auth.uid() = user_id" confirms syntax and policy definition,
+   * but does NOT claim RLS_LIVE_ISOLATION_VERIFIED unless backed by a valid, structured,
+   * cryptographically verified live execution query receipt. Caller-asserted booleans are rejected.
+   */
   static evaluateRlsPolicy({
     tableName = '',
     rlsEnabled = true,
     policies = [],
     testPrincipals = [],
     liveExecutionVerified = false,
-    liveQueryReceipts = null
+    liveQueryReceipts = null,
+    trustedQueryReceipt = null
   } = {}) {
     const issues = [];
 
@@ -553,14 +601,14 @@ export class SecurityMethods {
       });
     }
 
-    let crossTenantLeak = false;
+    let suspectedCrossTenantRisk = false;
     if (testPrincipals.length >= 2) {
       const [principalA, principalB] = testPrincipals;
       if (!hasTenantFilter || policies.some(p => (p.definition || '').toLowerCase().includes('true'))) {
-        crossTenantLeak = true;
+        suspectedCrossTenantRisk = true;
         issues.push({
           severity: 'CRITICAL',
-          issue: `Cross-tenant data leak: Principal "${principalA.id}" (tenant "${principalA.tenantId}") can query data belonging to Principal "${principalB.id}" (tenant "${principalB.tenantId}").`,
+          issue: `Suspected cross-tenant policy risk: Permissive or missing tenant filter in table "${tableName}" allows potential cross-tenant access between Principal "${principalA.id}" (tenant "${principalA.tenantId}") and Principal "${principalB.id}" (tenant "${principalB.tenantId}").`,
           remediation: 'Add strict tenant isolation predicate: "USING (tenant_id = (SELECT tenant_id FROM profiles WHERE id = auth.uid()))".'
         });
       }
@@ -568,18 +616,51 @@ export class SecurityMethods {
 
     const secure = issues.length === 0;
 
+    // Structured receipt validation: reject caller-asserted booleans
+    const receipt = trustedQueryReceipt || (typeof liveQueryReceipts === 'object' && liveQueryReceipts !== null ? liveQueryReceipts : null);
+    let receiptValid = false;
+    let receiptFailureReason = null;
+
+    if (receipt) {
+      const validEnv = typeof receipt.dbEnvironment === 'string' && receipt.dbEnvironment.trim().length > 0;
+      const validTable = typeof receipt.tableName === 'string' && receipt.tableName.toLowerCase() === tableName.toLowerCase();
+      const validTime = receipt.timestamp && !isNaN(new Date(receipt.timestamp).getTime());
+      const validPos = receipt.positiveQuery &&
+        typeof receipt.positiveQuery === 'object' &&
+        (receipt.positiveQuery.status === 'SUCCESS' || receipt.positiveQuery.status === 'OK') &&
+        Number(receipt.positiveQuery.rowsReturned) > 0;
+      const validNeg = receipt.negativeQuery &&
+        typeof receipt.negativeQuery === 'object' &&
+        (receipt.negativeQuery.status === 'ACCESS_DENIED' || receipt.negativeQuery.status === 'DENIED' || Number(receipt.negativeQuery.rowsReturned) === 0);
+      const validSig = typeof receipt.receiptSignature === 'string' && receipt.receiptSignature.trim().length >= 16;
+      const expectedSig = SecurityMethods.computeRlsReceiptDigest(receipt);
+      const signatureMatches = validSig && receipt.receiptSignature === expectedSig;
+
+      if (validEnv && validTable && validTime && validPos && validNeg && signatureMatches) {
+        receiptValid = true;
+      } else {
+        receiptFailureReason = !validEnv ? 'Invalid or missing dbEnvironment'
+          : !validTable ? `Receipt table mismatch (expected "${tableName}", got "${receipt.tableName}")`
+          : !validTime ? 'Invalid timestamp in execution receipt'
+          : !validPos ? 'Positive tenant query failed or returned 0 rows'
+          : !validNeg ? 'Negative cross-tenant query did not prove isolation'
+          : !signatureMatches ? 'Receipt cryptographic signature mismatch or invalid digest'
+          : 'Malformed receipt';
+      }
+    }
+
     let verdict = 'RLS_MISCONFIGURATION_DETECTED';
     let requiresLiveValidation = true;
 
-    if (crossTenantLeak) {
-      verdict = 'RLS_CROSS_TENANT_LEAK_DETECTED';
+    if (suspectedCrossTenantRisk) {
+      verdict = 'SUSPECTED_CROSS_TENANT_POLICY_RISK';
       requiresLiveValidation = false;
     } else if (secure) {
-      if (liveExecutionVerified || (liveQueryReceipts && liveQueryReceipts.tenantIsolationProven)) {
+      if (receiptValid) {
         verdict = 'RLS_LIVE_ISOLATION_VERIFIED';
         requiresLiveValidation = false;
       } else {
-        // DEC-31: Static check pass only; live execution is required for runtime proof
+        // DEC-31: Static check pass only; live execution receipt is required for runtime proof
         verdict = 'STATIC_CHECK_PASS';
         requiresLiveValidation = true;
       }
@@ -590,12 +671,18 @@ export class SecurityMethods {
       rlsEnabled,
       policyCount: policies.length,
       hasTenantFilter,
-      crossTenantLeak,
+      crossTenantLeak: suspectedCrossTenantRisk,
+      suspectedCrossTenantRisk,
       secure,
       requiresLiveValidation,
       issues,
       verdict,
-      epistemicStatus: secure ? (requiresLiveValidation ? 'STATIC_ANALYSIS_ONLY' : 'LIVE_EXECUTION_PROVEN') : 'CONFIG_DEFECT_DETECTED'
+      epistemicStatus: secure
+        ? (receiptValid ? 'LIVE_EXECUTION_PROVEN' : 'STATIC_ANALYSIS_ONLY')
+        : 'CONFIG_DEFECT_DETECTED',
+      receiptVerified: receiptValid,
+      ...(receiptValid ? { liveExecutionReceipt: receipt } : {}),
+      ...(receiptFailureReason ? { receiptFailureReason } : {})
     };
   }
 

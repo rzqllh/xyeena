@@ -305,7 +305,7 @@ jobs:
       assert.strictEqual(unmanagedTable.secure, false);
       assert.ok(unmanagedTable.issues.some(i => i.severity === 'CRITICAL'));
 
-      // 2. Table with RLS but permissive policy that leaks across tenants
+      // 2. Table with RLS but permissive policy that creates suspected cross-tenant risk
       const leakingTable = SecurityMethods.evaluateRlsPolicy({
         tableName: 'tenant_invoices',
         rlsEnabled: true,
@@ -315,7 +315,8 @@ jobs:
         testPrincipals
       });
       assert.strictEqual(leakingTable.crossTenantLeak, true);
-      assert.strictEqual(leakingTable.verdict, 'RLS_CROSS_TENANT_LEAK_DETECTED');
+      assert.strictEqual(leakingTable.suspectedCrossTenantRisk, true);
+      assert.strictEqual(leakingTable.verdict, 'SUSPECTED_CROSS_TENANT_POLICY_RISK');
 
       // 3. Table with strict tenant isolation (static check only)
       const secureTable = SecurityMethods.evaluateRlsPolicy({
@@ -333,8 +334,8 @@ jobs:
       assert.strictEqual(secureTable.verdict, 'STATIC_CHECK_PASS');
       assert.strictEqual(secureTable.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
 
-      // 4. Live execution verified receipt
-      const liveVerifiedTable = SecurityMethods.evaluateRlsPolicy({
+      // 4. Caller-asserted boolean alone is rejected under DEC-31
+      const selfAssertedTable = SecurityMethods.evaluateRlsPolicy({
         tableName: 'tenant_invoices',
         rlsEnabled: true,
         policies: [
@@ -342,9 +343,29 @@ jobs:
         ],
         liveExecutionVerified: true
       });
+      assert.strictEqual(selfAssertedTable.verdict, 'STATIC_CHECK_PASS');
+      assert.strictEqual(selfAssertedTable.requiresLiveValidation, true);
+      assert.strictEqual(selfAssertedTable.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
+
+      // 5. Live execution verified with structured query receipt
+      const validReceipt = SecurityMethods.createRlsQueryReceipt({
+        tableName: 'tenant_invoices',
+        dbEnvironment: 'postgres-ci',
+        positiveQuery: { query: 'SELECT * FROM tenant_invoices WHERE user_id = auth.uid()', status: 'SUCCESS', rowsReturned: 2 },
+        negativeQuery: { query: 'SELECT * FROM tenant_invoices WHERE user_id != auth.uid()', status: 'ACCESS_DENIED', rowsReturned: 0 }
+      });
+      const liveVerifiedTable = SecurityMethods.evaluateRlsPolicy({
+        tableName: 'tenant_invoices',
+        rlsEnabled: true,
+        policies: [
+          { name: 'isolated_tenant_select', definition: 'auth.uid() = user_id' }
+        ],
+        trustedQueryReceipt: validReceipt
+      });
       assert.strictEqual(liveVerifiedTable.verdict, 'RLS_LIVE_ISOLATION_VERIFIED');
       assert.strictEqual(liveVerifiedTable.requiresLiveValidation, false);
       assert.strictEqual(liveVerifiedTable.epistemicStatus, 'LIVE_EXECUTION_PROVEN');
+      assert.strictEqual(liveVerifiedTable.receiptVerified, true);
     });
 
     it('Scenario 8: detects exposed Supabase service-role keys in client-facing frontend bundles', () => {

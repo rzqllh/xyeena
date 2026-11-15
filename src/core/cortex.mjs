@@ -29,6 +29,17 @@ import { TaskGraph, TaskNode, TASK_STATUS } from '../runtime/task-dag.mjs';
 import { CheckpointManager } from '../runtime/checkpoint.mjs';
 import { CompositeRegistry } from './composites.mjs';
 
+export const CORTEX_EXECUTION_STATUS = Object.freeze({
+  PLANNED: 'PLANNED',
+  READY_FOR_EXECUTION: 'READY_FOR_EXECUTION',
+  RUNNING: 'RUNNING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+  BLOCKED: 'BLOCKED',
+  UNSUPPORTED: 'UNSUPPORTED',
+  DISCUSSION_MODE: 'DISCUSSION_MODE'
+});
+
 export class CortexOrchestrator {
   /**
    * @param {object} [options={}]
@@ -325,10 +336,22 @@ export class CortexOrchestrator {
     if (!plan.isExecutionAuthorized) {
       return {
         engine: 'Cortex',
-        status: 'DISCUSSION_MODE',
+        status: CORTEX_EXECUTION_STATUS.DISCUSSION_MODE,
         mode: plan.mode,
         tier: plan.tier,
         message: 'Discussion Mode active. Under Rule 4, no files have been created or modified. Use explicit command to execute (e.g. "implement", "eksekusi", "fix sekarang").',
+        plan
+      };
+    }
+
+    // Dry-run mode: plans the execution truthfully without running tasks
+    if (options.dryRun === true) {
+      return {
+        engine: 'Cortex',
+        status: CORTEX_EXECUTION_STATUS.PLANNED,
+        mode: plan.mode,
+        tier: plan.tier,
+        message: 'Workflow planned in dry-run mode. Ready for execution.',
         plan
       };
     }
@@ -343,50 +366,164 @@ export class CortexOrchestrator {
           break;
         }
       }
+      if (compositeResult) {
+        return {
+          engine: 'Cortex',
+          status: CORTEX_EXECUTION_STATUS.COMPLETED,
+          mode: plan.mode,
+          tier: plan.tier,
+          message: 'Explicit composite workflow executed successfully.',
+          compositeResult,
+          plan
+        };
+      }
     }
 
     // TIER_0_MICRO: Crisp direct execution, 0 DAG, 0 subagents, 0 extra files
     if (plan.tier === TASK_TIERS.TIER_0_MICRO) {
       return {
         engine: 'Cortex',
-        status: 'COMPLETED',
+        status: CORTEX_EXECUTION_STATUS.COMPLETED,
         mode: plan.mode,
         tier: plan.tier,
         message: 'Micro task executed directly with zero DAG and zero file overhead.',
         executedSteps: plan.workflow.steps.map(s => s.id),
-        compositeResult,
+        compositeResult: null,
         plan
       };
     }
 
-    // TIER_1_STANDARD: Scoped execution
-    if (plan.tier === TASK_TIERS.TIER_1_STANDARD) {
-      return {
-        engine: 'Cortex',
-        status: 'COMPLETED',
-        mode: plan.mode,
-        tier: plan.tier,
-        message: 'Standard scoped task executed successfully.',
-        executedSteps: plan.workflow.steps.map(s => s.id),
-        compositeResult,
-        plan
-      };
-    }
-
-    // TIER_2_COMPLEX: Multi-file DAG workflow with checkpointing
+    // TIER_1_STANDARD & TIER_2_COMPLEX: Construct TaskGraph
     const taskGraph = new TaskGraph();
     plan.workflow.steps.forEach((step, idx) => {
       taskGraph.addTask(new TaskNode({
         id: step.id,
         title: step.name,
         dependencies: idx > 0 ? [plan.workflow.steps[idx - 1].id] : [],
-        isReadOnly: step.id.includes('verify') || step.id.includes('scoping')
+        isReadOnly: step.id.includes('verify') || step.id.includes('scoping'),
+        metadata: { ...step }
       }));
     });
 
+    const executorFn = typeof options.executor === 'function'
+      ? options.executor
+      : (options.executor?.runTask ? options.executor.runTask.bind(options.executor) : null);
+
+    // If an executor is provided, execute tasks through TaskGraph state machine
+    if (executorFn) {
+      let executionFailed = false;
+      let failureError = null;
+      const executedTaskIds = [];
+
+      const order = taskGraph.getExecutionOrder();
+      for (const taskId of order) {
+        const node = taskGraph.get(taskId);
+        if (!node) continue;
+
+        const depFailed = node.dependencies.some(depId => {
+          const dep = taskGraph.get(depId);
+          return dep && (dep.status === TASK_STATUS.FAILED || dep.status === TASK_STATUS.BLOCKED);
+        });
+
+        if (depFailed) {
+          taskGraph.transition(taskId, TASK_STATUS.BLOCKED, { reason: 'Upstream dependency failed or was blocked' });
+          continue;
+        }
+
+        try {
+          taskGraph.transition(taskId, TASK_STATUS.RUNNING);
+          const res = await executorFn(node, {
+            prompt,
+            plan,
+            tier: plan.tier,
+            context: options.context || {}
+          });
+          taskGraph.transition(taskId, TASK_STATUS.COMPLETED, res || { completed: true });
+          executedTaskIds.push(taskId);
+
+          this.evidenceLedger.add(new EvidenceRecord({
+            claim: `Task "${taskId}" executed successfully`,
+            tier: EVIDENCE_TIERS.OBSERVED,
+            provenance: 'cortex.executor',
+            status: VERDICT_STATUS.VERIFIED,
+            metadata: { taskId, result: res || { completed: true } }
+          }));
+        } catch (err) {
+          executionFailed = true;
+          failureError = err;
+          if (node.status === TASK_STATUS.RUNNING) {
+            taskGraph.transition(taskId, TASK_STATUS.FAILED, {
+              message: err.message,
+              stack: err.stack
+            });
+          }
+          this.evidenceLedger.add(new EvidenceRecord({
+            claim: `Task "${taskId}" execution failed: ${err.message}`,
+            tier: EVIDENCE_TIERS.OBSERVED,
+            provenance: 'cortex.executor',
+            status: VERDICT_STATUS.FAILED,
+            metadata: { taskId, error: err.message }
+          }));
+
+          // Mark remaining unexecuted tasks as BLOCKED due to upstream failure
+          const remainingIndex = order.indexOf(taskId);
+          for (let i = remainingIndex + 1; i < order.length; i++) {
+            const nextId = order[i];
+            const nextNode = taskGraph.get(nextId);
+            if (nextNode && nextNode.status === TASK_STATUS.READY) {
+              taskGraph.transition(nextId, TASK_STATUS.BLOCKED, {
+                reason: `Execution aborted due to failure of upstream task "${taskId}"`
+              });
+            }
+          }
+          break;
+        }
+      }
+
+      const checkpoint = this.checkpointManager.createSnapshot({
+        checkpointId: `cortex-${Date.now()}`,
+        phase: 'EXECUTION',
+        tasks: taskGraph.getAll(),
+        evidence: this.evidenceLedger.records,
+        modifiedFiles: []
+      });
+
+      if (executionFailed) {
+        return {
+          engine: 'Cortex',
+          status: CORTEX_EXECUTION_STATUS.FAILED,
+          mode: plan.mode,
+          tier: plan.tier,
+          message: `Workflow execution failed at task: ${failureError?.message || 'unknown error'}`,
+          checkpointId: checkpoint.checkpointId,
+          taskCount: taskGraph.size(),
+          executedSteps: executedTaskIds,
+          taskGraph,
+          plan
+        };
+      }
+
+      return {
+        engine: 'Cortex',
+        status: CORTEX_EXECUTION_STATUS.COMPLETED,
+        mode: plan.mode,
+        tier: plan.tier,
+        message: plan.tier === TASK_TIERS.TIER_1_STANDARD
+          ? 'Standard scoped task executed successfully via provided executor.'
+          : 'Complex task graph executed with recovery checkpointing.',
+        checkpointId: checkpoint.checkpointId,
+        taskCount: taskGraph.size(),
+        executedSteps: executedTaskIds,
+        taskGraph,
+        plan
+      };
+    }
+
+    // Honest status under DEC-31 & Rule 2:
+    // Workflow is planned and ready for execution, but no host executor was provided.
     const checkpoint = this.checkpointManager.createSnapshot({
       checkpointId: `cortex-${Date.now()}`,
-      phase: 'EXECUTION',
+      phase: 'PLANNING',
       tasks: taskGraph.getAll(),
       evidence: this.evidenceLedger.records,
       modifiedFiles: []
@@ -394,13 +531,14 @@ export class CortexOrchestrator {
 
     return {
       engine: 'Cortex',
-      status: 'COMPLETED',
+      status: CORTEX_EXECUTION_STATUS.READY_FOR_EXECUTION,
       mode: plan.mode,
       tier: plan.tier,
-      message: 'Complex task graph executed with recovery checkpointing.',
+      message: 'Task workflow planned and ready for host execution. Provide an executor to run tasks.',
       checkpointId: checkpoint.checkpointId,
       taskCount: taskGraph.size(),
-      compositeResult,
+      plannedSteps: taskGraph.getAll().map(t => ({ id: t.id, title: t.title, status: t.status })),
+      taskGraph,
       plan
     };
   }

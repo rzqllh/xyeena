@@ -175,3 +175,37 @@ export function computeDiffFingerprint(diffItems = []) {
   const payload = sorted.map(d => `${d.path}::${d.diff.trim()}`).join('\n---\n');
   return hashString(payload);
 }
+
+/**
+ * Compute a cryptographically binding consent fingerprint for uninstalling user-modified files.
+ * Binds operation type, runtime, scope, target files, current sha256, baseline sha256, diff, and action.
+ * @param {object} params
+ * @param {string} [params.operation='UNINSTALL_MODIFIED_REMOVAL']
+ * @param {string} [params.runtime='antigravity']
+ * @param {string} [params.scope='workspace']
+ * @param {Array<{ path: string, currentSha256: string, baselineSha256?: string, diff?: string, action?: string }>} [params.files=[]]
+ * @returns {string} SHA256 hex digest
+ */
+export function computeUninstallConsentFingerprint({
+  operation = 'UNINSTALL_MODIFIED_REMOVAL',
+  runtime = 'antigravity',
+  scope = 'workspace',
+  files = []
+} = {}) {
+  const sorted = [...files].sort((a, b) => a.path.localeCompare(b.path));
+  const lines = [
+    `OP:${operation}`,
+    `RUNTIME:${runtime}`,
+    `SCOPE:${scope}`,
+    `FILE_COUNT:${sorted.length}`,
+    'FILES:',
+    ...sorted.map(f => [
+      `PATH:${slash(f.path)}`,
+      `CURRENT_SHA256:${f.currentSha256}`,
+      `BASELINE_SHA256:${f.baselineSha256 || 'unknown'}`,
+      `ACTION:${f.action || 'REMOVE'}`,
+      `DIFF:${(f.diff || '').trim()}`
+    ].join('\n'))
+  ];
+  return hashString(lines.join('\n---\n'));
+}

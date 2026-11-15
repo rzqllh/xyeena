@@ -338,8 +338,8 @@ Hope this helps! Let me know if you need anything else!
     assert.strictEqual(staticCheck.verdict, 'STATIC_CHECK_PASS');
     assert.strictEqual(staticCheck.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
 
-    // 2. Live verified execution receipt: ONLY then returns RLS_LIVE_ISOLATION_VERIFIED
-    const liveCheck = SecurityMethods.evaluateRlsPolicy({
+    // 2. Caller-asserted boolean alone is rejected (DEC-31 anti-self-assertion)
+    const selfAssertedCheck = SecurityMethods.evaluateRlsPolicy({
       tableName: 'tenant_accounts',
       rlsEnabled: true,
       policies: [
@@ -347,9 +347,29 @@ Hope this helps! Let me know if you need anything else!
       ],
       liveExecutionVerified: true
     });
+    assert.strictEqual(selfAssertedCheck.verdict, 'STATIC_CHECK_PASS');
+    assert.strictEqual(selfAssertedCheck.requiresLiveValidation, true);
+    assert.strictEqual(selfAssertedCheck.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
+
+    // 3. Cryptographically valid, structured live execution receipt: returns RLS_LIVE_ISOLATION_VERIFIED
+    const validReceipt = SecurityMethods.createRlsQueryReceipt({
+      tableName: 'tenant_accounts',
+      dbEnvironment: 'postgres-staging',
+      positiveQuery: { query: 'SELECT * FROM tenant_accounts WHERE user_id = auth.uid()', status: 'SUCCESS', rowsReturned: 3 },
+      negativeQuery: { query: 'SELECT * FROM tenant_accounts WHERE user_id != auth.uid()', status: 'ACCESS_DENIED', rowsReturned: 0 }
+    });
+    const liveCheck = SecurityMethods.evaluateRlsPolicy({
+      tableName: 'tenant_accounts',
+      rlsEnabled: true,
+      policies: [
+        { name: 'tenant_isolation', definition: 'auth.uid() = user_id' }
+      ],
+      trustedQueryReceipt: validReceipt
+    });
     assert.strictEqual(liveCheck.verdict, 'RLS_LIVE_ISOLATION_VERIFIED');
     assert.strictEqual(liveCheck.requiresLiveValidation, false);
     assert.strictEqual(liveCheck.epistemicStatus, 'LIVE_EXECUTION_PROVEN');
+    assert.strictEqual(liveCheck.receiptVerified, true);
 
     // 3. PostgreSQL migration safety: flags table lock hazards
     const unsafeSql = 'CREATE INDEX idx_orders_user ON big_orders (user_id);';

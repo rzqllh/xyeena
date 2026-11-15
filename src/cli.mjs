@@ -103,12 +103,19 @@ export async function main(args){
       cwd,runtime:f.runtime||'antigravity',scope:f.scope||'workspace',home:f.home
     });
     if(f.dryRun){
-      const p=tx.plan();
-      console.log(JSON.stringify({brand:BRAND_METADATA.brand,dryRun:true,willRemove:p.willReplace,willPreserve:p.willPreserve},null,2));
+      const p=tx.planUninstall();
+      console.log(JSON.stringify({brand:BRAND_METADATA.brand,dryRun:true,...p},null,2));
       return;
     }
     if(!f.yes)throw new Error('Pass --dry-run to preview or --yes to execute uninstall; no files changed');
-    console.log(JSON.stringify(tx.uninstall({force:f.force===true}),null,2));return;
+    const fingerprint = f['diff-approved-fingerprint'] || f.diffApprovedFingerprint;
+    const allowModifiedRemoval = f['allow-modified-removal'] === true || f.allowModifiedRemoval === true;
+    console.log(JSON.stringify(tx.uninstall({
+      force: f.force === true,
+      allowModifiedRemoval,
+      ...(fingerprint ? { diffApprovedFingerprint: fingerprint } : {})
+    }), null, 2));
+    return;
  }
  if(cmd==='setup'){
     const sub=f._[0];

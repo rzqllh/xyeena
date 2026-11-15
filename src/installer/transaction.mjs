@@ -30,6 +30,7 @@ import {
   isKnownOfficialBaseline,
   generateUnifiedDiff,
   computeDiffFingerprint,
+  computeUninstallConsentFingerprint,
   hashBuffer,
   slash,
   listFilesRecursive
@@ -49,17 +50,65 @@ export function safeChild(root, targetPath) {
     throw new Error(`Security error: path escapes destination root: ${targetPath}`);
   }
 
-  // If path or any ancestor exists as symlink/junction, verify realpath does not escape root
-  if (fs.existsSync(resolvedTarget)) {
+  // Canonicalize root realpath
+  let realRoot = resolvedRoot;
+  if (fs.existsSync(resolvedRoot)) {
     try {
-      const realTarget = fs.realpathSync(resolvedTarget);
-      const realRoot = fs.existsSync(resolvedRoot) ? fs.realpathSync(resolvedRoot) : resolvedRoot;
-      const realRel = path.relative(realRoot, realTarget);
-      if (realRel.startsWith('..') || path.isAbsolute(realRel)) {
-        throw new Error(`Security error: symlink/junction realpath escapes destination root: ${targetPath}`);
-      }
+      realRoot = fs.realpathSync(resolvedRoot);
+    } catch {
+      realRoot = resolvedRoot;
+    }
+  }
+  const normRealRoot = process.platform === 'win32'
+    ? path.normalize(realRoot).toLowerCase()
+    : path.normalize(realRoot);
+
+  // Traverse all path segments from root down to target to detect symlinks/junctions escaping root
+  const segments = rel.split(/[\\/]/).filter(Boolean);
+  let current = resolvedRoot;
+
+  for (const segment of segments) {
+    current = path.join(current, segment);
+    let lstat = null;
+    try {
+      lstat = fs.lstatSync(current);
     } catch (e) {
-      if (e.message.includes('escapes destination root')) throw e;
+      if (e.code === 'ENOENT') {
+        // Path does not exist further down; cannot escape root via non-existent nodes
+        break;
+      }
+      throw e;
+    }
+
+    if (lstat) {
+      if (lstat.isSymbolicLink()) {
+        let realCurrent;
+        try {
+          realCurrent = fs.realpathSync(current);
+        } catch (e) {
+          throw new Error(`Security error: dangling symlink detected along path: ${targetPath} at ${current}`);
+        }
+        const normRealCurrent = process.platform === 'win32'
+          ? path.normalize(realCurrent).toLowerCase()
+          : path.normalize(realCurrent);
+        const realRel = path.relative(normRealRoot, normRealCurrent);
+        if (realRel.startsWith('..') || path.isAbsolute(realRel)) {
+          throw new Error(`Security error: symlink/junction realpath escapes destination root: ${targetPath}`);
+        }
+      } else {
+        try {
+          const realCurrent = fs.realpathSync(current);
+          const normRealCurrent = process.platform === 'win32'
+            ? path.normalize(realCurrent).toLowerCase()
+            : path.normalize(realCurrent);
+          const realRel = path.relative(normRealRoot, normRealCurrent);
+          if (realRel.startsWith('..') || path.isAbsolute(realRel)) {
+            throw new Error(`Security error: symlink/junction realpath escapes destination root: ${targetPath}`);
+          }
+        } catch (e) {
+          if (e.message.includes('escapes destination root')) throw e;
+        }
+      }
     }
   }
 
@@ -631,10 +680,190 @@ export class InstallationTransaction {
   }
 
   /**
+   * Plan uninstallation: inspects directory ownership, baseline, and user modifications,
+   * returning lists of files that will be removed or preserved, and the exact consent fingerprint.
+   * @returns {{ runtime: string, scope: string, targetDir: string, hasUserModifications: boolean, modifiedFiles: object[], uninstallConsentFingerprint: string|null, willRemove: string[], willPreserve: string[] }}
+   */
+  planUninstall() {
+    const detection = detectInstallationState({
+      cwd: this.cwd,
+      runtime: this.runtime,
+      scope: this.scope,
+      home: this.home
+    });
+
+    const ownership = scanDirectoryOwnership({
+      targetDir: this.targetDir,
+      manifest: detection.manifest
+    });
+
+    const baseline = computePackageBaseline(SKILLS_DIR);
+    const willRemove = [];
+    const willPreserve = ownership.unowned.slice();
+    const modifiedFiles = [];
+
+    for (const skillName of ownership.owned) {
+      const skillPath = path.join(this.targetDir, skillName);
+      if (fs.existsSync(skillPath)) {
+        const isSymlink = fs.lstatSync(skillPath).isSymbolicLink();
+        if (isSymlink) {
+          willRemove.push(slash(path.relative(this.cwd, skillPath)));
+          continue;
+        }
+
+        const skillFiles = listFilesRecursive(skillPath);
+        for (const rel of skillFiles) {
+          const absFilePath = path.join(skillPath, rel);
+          const packageKey = `${skillName}/${rel}`;
+          const targetRel = slash(path.relative(this.cwd, absFilePath));
+
+          const inBaseline = baseline.has(packageKey);
+          const inManifest = detection.manifest && Array.isArray(detection.manifest.files) && detection.manifest.files.includes(targetRel);
+
+          if (!inBaseline && !inManifest) {
+            willPreserve.push(targetRel);
+            continue;
+          }
+
+          const curBuf = fs.readFileSync(absFilePath);
+          const isOfficial = isKnownOfficialBaseline(packageKey, curBuf, baseline);
+          if (!isOfficial) {
+            const baselineItem = baseline.get(packageKey);
+            const baselineText = baselineItem && fs.existsSync(baselineItem.absPath)
+              ? fs.readFileSync(baselineItem.absPath, 'utf8')
+              : '';
+            const diff = generateUnifiedDiff(baselineText, curBuf.toString('utf8'), targetRel);
+            modifiedFiles.push({
+              path: targetRel,
+              skillName,
+              absPath: absFilePath,
+              beforeSha256: baselineItem ? baselineItem.sha256 : 'legacy',
+              currentSha256: hashBuffer(curBuf),
+              diff,
+              action: 'REMOVE'
+            });
+          } else {
+            willRemove.push(targetRel);
+          }
+        }
+      }
+    }
+
+    if (this.runtime === 'antigravity' && this.scope === 'workspace') {
+      const rulePath = path.join(this.cwd, '.agents', 'rules', 'xyeena-core.md');
+      if (fs.existsSync(rulePath)) {
+        const ruleBuf = fs.readFileSync(rulePath);
+        const baselineRule = baseline.get('.rules/xyeena-core.md');
+        const isOfficialRule = baselineRule && baselineRule.sha256 === hashBuffer(ruleBuf);
+        const ruleRel = slash(path.relative(this.cwd, rulePath));
+        if (!isOfficialRule) {
+          const baselineText = baselineRule && fs.existsSync(baselineRule.absPath)
+            ? fs.readFileSync(baselineRule.absPath, 'utf8')
+            : '';
+          const diff = generateUnifiedDiff(baselineText, ruleBuf.toString('utf8'), ruleRel);
+          modifiedFiles.push({
+            path: ruleRel,
+            skillName: 'rule',
+            absPath: rulePath,
+            beforeSha256: baselineRule ? baselineRule.sha256 : 'legacy',
+            currentSha256: hashBuffer(ruleBuf),
+            diff,
+            action: 'REMOVE'
+          });
+        } else {
+          willRemove.push(ruleRel);
+        }
+      }
+    }
+
+    const consentFingerprint = modifiedFiles.length > 0
+      ? computeUninstallConsentFingerprint({
+          operation: 'UNINSTALL_MODIFIED_REMOVAL',
+          runtime: this.runtime,
+          scope: this.scope,
+          files: modifiedFiles
+        })
+      : null;
+
+    return {
+      runtime: this.runtime,
+      scope: this.scope,
+      targetDir: this.targetDir,
+      hasUserModifications: modifiedFiles.length > 0,
+      modifiedFiles,
+      uninstallConsentFingerprint: consentFingerprint,
+      willRemove: [...new Set(willRemove)].sort(),
+      willPreserve: [...new Set(willPreserve)].sort()
+    };
+  }
+
+  /**
    * Safe uninstall: backs up first, and only removes verified owned files (DEC-26).
+   * User-modified files are strictly preserved unless explicit, cryptographically binding
+   * consent (allowModifiedRemoval=true + matching diffApprovedFingerprint) is provided.
+   * @param {object} [options={}]
+   * @param {boolean} [options.allowModifiedRemoval=false]
+   * @param {string} [options.diffApprovedFingerprint]
+   * @param {boolean} [options.force=false]
    * @returns {{ success: boolean, removed: string[], preserved: string[], backupId: string }}
    */
   uninstall(options = {}) {
+    const plan = this.planUninstall();
+
+    // FAIL CLOSED HYBRID DIFF GATE FOR UNINSTALL (DEC-26)
+    // If user modifications exist and caller explicitly asks to remove them (allowModifiedRemoval === true),
+    // they MUST provide the exact matching cryptographic consent fingerprint.
+    // --force is NOT consent: passing force: true cannot bypass this contract.
+    let consentValid = false;
+    if (plan.hasUserModifications) {
+      if (options.allowModifiedRemoval === true) {
+        if (!options.diffApprovedFingerprint || typeof options.diffApprovedFingerprint !== 'string' || options.diffApprovedFingerprint.trim() === '') {
+          const err = new Error(
+            `Uninstall halted: ${plan.modifiedFiles.length} user-modified file(s) detected and allowModifiedRemoval was requested, but --diff-approved-fingerprint is missing.\n` +
+            `Exact binding consent contract fingerprint required: ${plan.uninstallConsentFingerprint}\n` +
+            `Fail-closed: user-modified files have not been touched.`
+          );
+          err.code = 'UNINSTALL_CONSENT_REQUIRED';
+          err.diffFingerprint = plan.uninstallConsentFingerprint;
+          err.modifiedFiles = plan.modifiedFiles;
+          throw err;
+        }
+
+        if (options.diffApprovedFingerprint !== plan.uninstallConsentFingerprint) {
+          const err = new Error(
+            `Uninstall consent fingerprint mismatch. Expected ${plan.uninstallConsentFingerprint}, received ${options.diffApprovedFingerprint}.\n` +
+            `Fail-closed: user-modified files will not be touched.`
+          );
+          err.code = 'UNINSTALL_CONSENT_MISMATCH';
+          err.expectedFingerprint = plan.uninstallConsentFingerprint;
+          err.receivedFingerprint = options.diffApprovedFingerprint;
+          throw err;
+        }
+
+        // Pre-mutation revalidation from disk (TOCTOU prevention)
+        for (const item of plan.modifiedFiles) {
+          if (!fs.existsSync(item.absPath)) {
+            throw new Error(`TOCTOU security violation: file disappeared before removal: ${item.path}`);
+          }
+          const freshBuf = fs.readFileSync(item.absPath);
+          const freshHash = hashBuffer(freshBuf);
+          if (freshHash !== item.currentSha256) {
+            throw new Error(`TOCTOU security violation: file was modified on disk after consent fingerprint was generated: ${item.path}`);
+          }
+        }
+
+        consentValid = true;
+      }
+    }
+
+    // Create backup before uninstall
+    const backupId = `${new Date().toISOString().replace(/[:.]/g, '-')}-uninstall-${crypto.randomBytes(4).toString('hex')}`;
+    const backupDir = path.join(this.backupDirBase, backupId);
+    fs.mkdirSync(backupDir, { recursive: true });
+
+    const removed = [];
+    const preserved = plan.willPreserve.slice();
+
     const detection = detectInstallationState({
       cwd: this.cwd,
       runtime: this.runtime,
@@ -649,15 +878,7 @@ export class InstallationTransaction {
 
     const baseline = computePackageBaseline(SKILLS_DIR);
 
-    // Create backup before uninstall
-    const backupId = `${new Date().toISOString().replace(/[:.]/g, '-')}-uninstall-${crypto.randomBytes(4).toString('hex')}`;
-    const backupDir = path.join(this.backupDirBase, backupId);
-    fs.mkdirSync(backupDir, { recursive: true });
-
-    const removed = [];
-    const preserved = ownership.unowned.slice();
-
-    // Remove only verified owned, unmodified skill files
+    // Remove only verified owned, unmodified skill files (or consented modified files)
     for (const skillName of ownership.owned) {
       const skillPath = path.join(this.targetDir, skillName);
       if (fs.existsSync(skillPath)) {
@@ -690,11 +911,8 @@ export class InstallationTransaction {
           const curBuf = fs.readFileSync(absFilePath);
           const isOfficial = isKnownOfficialBaseline(packageKey, curBuf, baseline);
           if (!isOfficial) {
-            // DEC-26: User modified this official file!
-            // --force is NOT a consent contract! Modified files must be preserved unless explicit
-            // consent contract (allowModifiedRemoval + diffApprovedFingerprint) is provided.
-            const hasExplicitConsent = options.allowModifiedRemoval === true && Boolean(options.diffApprovedFingerprint);
-            if (!hasExplicitConsent) {
+            if (!consentValid) {
+              // DEC-26: Preserved without valid consent contract
               preserved.push(targetRel);
               continue;
             }
@@ -721,17 +939,17 @@ export class InstallationTransaction {
         const ruleBuf = fs.readFileSync(rulePath);
         const baselineRule = baseline.get('.rules/xyeena-core.md');
         const isOfficialRule = baselineRule && baselineRule.sha256 === hashBuffer(ruleBuf);
+        const ruleRel = slash(path.relative(this.cwd, rulePath));
         if (!isOfficialRule) {
-          const hasExplicitConsent = options.allowModifiedRemoval === true && Boolean(options.diffApprovedFingerprint);
-          if (!hasExplicitConsent) {
-            preserved.push(slash(path.relative(this.cwd, rulePath)));
+          if (!consentValid) {
+            preserved.push(ruleRel);
           } else {
             fs.rmSync(rulePath, { force: true });
-            removed.push(slash(path.relative(this.cwd, rulePath)));
+            removed.push(ruleRel);
           }
         } else {
           fs.rmSync(rulePath, { force: true });
-          removed.push(slash(path.relative(this.cwd, rulePath)));
+          removed.push(ruleRel);
         }
       }
     }
