@@ -378,7 +378,7 @@ export class CortexOrchestrator {
           : CORTEX_EXECUTION_STATUS.METHOD_EVALUATED;
         const message = blocked
           ? 'Composite methodology blocked by its permission or prerequisite gate.'
-          : 'Composite methodology evaluated; no host task execution was claimed.';
+          : 'Composite methodology evaluated successfully; no host task execution was claimed.';
 
         return {
           engine: 'Cortex',

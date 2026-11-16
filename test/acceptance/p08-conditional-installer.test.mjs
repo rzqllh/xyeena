@@ -344,14 +344,15 @@ describe('P08 — Conditional Installer & Legacy Replacement (AXIOVEN)', () => {
     assert.equal(fs.readFileSync(path.join(coreSkill, 'SKILL.md'), 'utf8'), '# Original Unbroken Content');
   });
 
-  // Scenario 12: Interrupted installation recovery (stale lock auto-cleared)
-  test('Scenario 12: Interrupted installation recovery (stale lock > 5m broken automatically)', () => {
+  // Scenario 12: Interrupted installation recovery must not steal locks by age alone.
+  test('Scenario 12: Stale installer lock requires manual recovery and stays intact', () => {
     fs.mkdirSync(path.join(tmpProject, '.xyeena'), { recursive: true });
     const staleLock = {
       pid: 999999,
-      timestamp: Date.now() - (10 * 60 * 1000) // 10 minutes old
+      timestamp: Date.now() - (10 * 60 * 1000) // Deliberately old lock
     };
-    fs.writeFileSync(path.join(tmpProject, '.xyeena', 'installer.lock'), JSON.stringify(staleLock));
+    const lockPath = path.join(tmpProject, '.xyeena', 'installer.lock');
+    fs.writeFileSync(lockPath, JSON.stringify(staleLock));
 
     const tx = new InstallationTransaction({
       cwd: tmpProject,
@@ -359,10 +360,9 @@ describe('P08 — Conditional Installer & Legacy Replacement (AXIOVEN)', () => {
       scope: 'workspace'
     });
 
-    // Should succeed because stale lock is broken automatically
-    const result = tx.execute();
-    assert.equal(result.success, true);
-    assert.ok(!fs.existsSync(path.join(tmpProject, '.xyeena', 'installer.lock')));
+    // Age cannot prove the owner has terminated; never clear a lock automatically.
+    assert.throws(() => tx.execute(), /Installer lock is actively held or requires manual recovery/);
+    assert.deepEqual(JSON.parse(fs.readFileSync(lockPath, 'utf8')), staleLock);
   });
 
   // Scenario 13: Repeated installation idempotency
