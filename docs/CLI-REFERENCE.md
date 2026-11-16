@@ -1,8 +1,8 @@
 # CLI Reference
 
-See [current source/host status](STATUS.md) (2026-10-26). CLI 1.4.7 `force_ask`/user-cancel and a narrowly scoped auto-`deny` passed native Windows acceptance; IDE 2.5.5 interception remains blocked. Commands implemented after npm 0.4.1 are source-only.
+See [current source/host status](STATUS.md) for dated host evidence and limitations. The `0.5.0` commands below are available from the release-candidate source; the last recorded public npm baseline remains `0.4.1` until publication is independently verified. Antigravity IDE native hook enforcement remains blocked.
 
-Commands can be invoked with `npx --yes xyeena-agent@0.4.1` for the published package or `node bin/xyeena.mjs` from a source checkout. Features introduced in the P00–P10 rebuild are marked **source rebuild**.
+Use `npx --yes xyeena-agent@0.4.1` only for commands actually supported by that published baseline. Run `node bin/xyeena.mjs` in the `0.5.0` release-candidate checkout for new Cortex and transactional installer commands. Do not run `npx xyeena-agent@0.5.0` before npm publication succeeds.
 
 ---
 
