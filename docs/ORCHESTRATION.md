@@ -14,6 +14,13 @@ Tasks have bounded scope, explicit dependencies, execution eligibility and accep
 
 Large results should be stored as artifacts referenced by identifier, not duplicated across all workers.
 
+## Cross-domain methodology routing (DEC-32)
+
+Under DEC-32, the Cortex orchestrator enforces Superpowers and Anti-Slop as universal cross-domain methodologies across all assigned tasks:
+- **Universal Superpowers Discipline:** Every task (regardless of domain: code, UI, copywriting, research, security, documentation) enforces bounded pre-planning, phased execution with rollback paths, and fresh evidence before completion.
+- **Universal Anti-Slop Filtering:** Every task output is evaluated against anti-slop criteria: eliminating AI boilerplate/clichés in copy, enforcing touch targets and hierarchy in design, removing trivial explanatory comments in code, and preventing circular citations in research.
+- **Single Governor Invariant:** Cortex remains the sole controller; upstream frameworks provide methodology contracts and evaluation heuristics, never autonomous background daemons.
+
 ## Execution selection
 
 The governor may select an eligible inline executor, a native host worker or an optional Simpul backend. Selecting a backend requires more than transport connectivity: actual execution readiness, host permission authority, cancellation capability and available budgets must be verified. If unavailable, delegate safely elsewhere or return BLOCKED.

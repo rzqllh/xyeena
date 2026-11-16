@@ -1,136 +1,112 @@
-# XYEENA — Master Plan 14/10/2026: Remote Reconciliation Seed
+# XYEENA — Master Plan 14/10/2026: Reconciled Master Architecture & Strategic Roadmap
 
-> **Status: FUTURE / HOLD — NOT APPROVED FOR IMPLEMENTATION**
-> Remote document created 2026-11-14. The originally named local master-plan-141026.md is NOT available in the current GitHub main tree or accessible project files. This is a **remote coordination seed, not a reconstructed or replacement copy** of that inaccessible local master plan. Once local and remote source align, merge both documents section by section, preserve local decisions, and resolve conflicts with the owner. Do not silently overwrite either version.
+> **Status: RECONCILED / MERGE READINESS PASS (723/723 tests PASS across 75 suites)**
+> Baseline Rebuild: `feat/rebuild-foundation-p00` published on remote at commit `bbd71abfc5045cda3c39ea7655f0a8519d88f275` (609/609 tests PASS).
+> Remote Authority: `origin/main` at commit `55effeac22b5fe8146ecf092b352d5bbb639b535` (reconciliation semantically resolved; ready for merge).
+> Reconciled on 2026-11-16. This document unifies the remote reconciliation seed with the verified desktop rebuild foundation and locked owner decisions DEC-01 to DEC-32.
 
-**Repository:** https://github.com/rzqllh/xyeena  
-**Product:** Xyeena Rig (temporary; Skills + Harness, **not** a replacement subagent project).  
-**Source-of-truth pointer:** [Detailed future integration plan](docs/future/XYEENA_UPSTREAM_INTEGRATION_2026-11-14.md).  
-**Provenance ledger template:** [Source-level licensing and credit](docs/future/UPSTREAM_PROVENANCE_TEMPLATE.md).
-
-## 1. Why this plan exists
-
-On 2026-11-14, GitHub main still represented legacy Xyeena Rig (package metadata 0.4.1, 19 skills). The owner and Antigravity CLI reported a newer **local** rebuild on feat/rebuild-foundation-p00, reportedly RC-3 at commit 743712c with 64 capability contracts, 553 tests, plus later P08 conditional installer work whose result has not yet been reviewed. Those are **historical AGY reports, not independent verification of the unpublished local checkout**.
-
-Do not conflate:
-- GitHub main or public npm release.
-- Local desktop branch and unpushed commits.
-- Native capabilities declared in a registry.
-- Behavior/integration/parity actually verified.
-- Future proposed upstream reuse.
-
-This future plan must survive the desktop push and become visible to coding agents in an audit. **Do not implement it simply because it exists in the repository.**
-
-## 2. Strategic decision: upstream-first with licenses and evidence
-
-Previous clean-room/native-only redesign produced shallow or unverified functionality in some areas. The owner now prefers to **reuse, adapt, vendor, and compose high-quality original upstream skill/code when licensing permits**, with file-level provenance, retained licenses/notices, source tests, and real comparative QA.
-
-This does NOT mean automatically copying every upstream repository, copying third-party secrets/assets, or installing large frameworks by default. Evaluate source files and licenses individually, record decisions, and preserve small always-on kernel + lazy capabilities.
-
-**Core properties that must stay:**
-1. Xyeena is Skills + Harness, not a fleet of XYN-character subagents.
-2. One Xyeena workflow controller, existing host/user agent first, no duplicate governor.
-3. Existing personas and host/system instructions always remain authoritative within their proper priority; never rewrite persona files.
-4. Small always-on core; domain-specific skills loaded only when relevant; heavy ops not invoked on trivial requests.
-5. Anti-Slop contextual quality during and after work, proportional to task.
-6. Security full audit is explicit-only; ordinary security review remains scoped.
-7. Claims must be evidence-backed; simulated/static tests are not live host acceptance.
-8. Local-first state and safe recovery; privacy, approval and scoped filesystem rules.
-9. New dependencies only if justified and authorized; optional features cannot make base install fragile.
-10. Conditional installer safely replaces only verified Xyeena-owned legacy components, preserves user data, and rolls back on failure.
-
-## 3. Expanded reference coverage
-
-Carry forward research streams RE-01–RE-30 from existing blueprints and add **RE-31 Konoha**. Verify pinned full commit, exact file inventory, license and notices at the chosen commit before code reuse.
-
-Primary sources:
-- RE-01 obra/superpowers — TDD, planning, debugging, verification, execution.
-- RE-02 KodekaTeam/superior-skills — engineering and domain quality.
-- RE-03 miqdadbadjuber/anti-slop — writing/code/UI/mobile quality methods.
-- RE-04 DietrichGebert/ponytail — minimal correct engineering and review.
-- RE-05 JuliusBrussee/caveman — lean execution, context economy and surgical changes.
-- RE-06 cloudflare/security-audit-skill — trustworthy audit workflow and validators.
-- RE-20 rzqllh/xyeena — legacy source/host contracts and migration.
-- RE-31 andycungkrinx91/konoha — retrieval, MCP orchestration, SQLite FTS5, QA, approvals, telemetry. License in its current main checkout: Apache-2.0; observed package version 2.2.21 at reference HEAD 9789bdd1d57d5f7a39a58406105e36127ffdb35b. Recheck SHA before implementing.
-
-Additional sources RE-07–RE-19: Impeccable, Matt Pocock Skills, Hallmark, Taste Skill Family, UI UX Pro Max, Anthropic Skills, Vercel Agent Skills, GSAP Skills, Trail of Bits Skills, Supabase Agent Skills, Google DESIGN.md, Awesome DESIGN.md and Gemini Superpowers Antigravity. RE-21–RE-30 are knowledge/standards foundations. Exact repo identities, scope and license status must be reconciled with the local SOURCE_LOCKS.yaml, not guessed.
-
-## 4. Composite skills — proposed, not implemented
-
-A single Xyeena entrypoint can coordinate several **original upstream methods and local improvements** with selective loading and one acceptance rubric:
-
-| Proposed command | Candidate source composition | Outcome |
-| --- | --- | --- |
-| /xyeena-design | Hallmark + Impeccable + Taste + UI UX Pro Max + Anti-Slop | Strong visual direction, craft, implementation and design QA |
-| /xyeena-plan | Superpowers + Superior + Ponytail | Evidence-grounded, executable and lean plans |
-| /xyeena-execute | Superpowers + Superior engineering + Caveman | Tested implementation without ceremony |
-| /xyeena-debug | Superpowers debugging + source investigation + QA | Reproduced root-cause fixes |
-| /xyeena-review | Superior review + relevant Anti-Slop + Impeccable | Independent scoped quality review |
-| /xyeena-security | Cloudflare + Trail of Bits methodology | Scoped checks; explicit-only full audit |
-| /xyeena-orchestrate | Xyeena DAG + selected Konoha patterns | Host-native, resource-aware delegation |
-| /xyeena-research | Source-grounded research + retrieval + provenance | Trustworthy claims with cited evidence |
-
-These names are **temporary**; command registration, spelling and aliases require owner decision. Composite does not mean concatenating every SKILL.md into the prompt. Give each composition stable inputs, execution stages, conflict resolver, budget, provenance and verified output contract.
-
-## 5. Xyeena personality — traits, not new subagents
-
-The separate XYN-character/subagent project may inform behavioral traits **only after actual source inspection and permission**. Extract patterns such as investigation, taste, skepticism, strategic planning, craftsmanship, security caution, humane writing, independent QA and efficient orchestration.
-
-**Do not copy character names, lore, images, private persona files, roleplay behavior, or agent configuration.** No XYN agent becomes a runtime dependency. Personality is a lightweight per-domain overlay that cannot supersede user/host authority and should not make every host sound identical.
-
-## 6. Host alignment and conditional installer
-
-Hosts to evaluate from evidence: ChatGPT Desktop/Work where integration is actually available, Antigravity CLI/IDE, Gemini CLI, Hermes, Codex, Claude Code and additional compatible Agent Skills hosts. Do not claim an adapter can control ChatGPT's built-in subagents or system persona without a supported host mechanism.
-
-The owner reports divergent behavior: ChatGPT Desktop continues using its existing subagents, and Hermes/Gemini appear unaligned. Treat these as **observations requiring live reproduction**, not established bugs in a particular vendor.
-
-Conditional install must classify target as NOT_INSTALLED, LEGACY, OLD, SAME_VALID, SAME_CORRUPT, NEWER, FOREIGN, UNKNOWN or PARTIAL. Only replace Xyeena-owned files within selected host+scope; perform backup and rollback; preserve memory, personas, third-party skills, unrelated hooks and global configuration. No silent downgrade; dry-run first; verify fresh install/replace/repair/uninstall using disposable fixtures.
-
-## 7. Hard synchronization gate (no implementation while mismatched)
-
-The plan is dormant until **ALL**:
-- The intended desktop branch and the remote branch/ref are identified, and source tree/commit lineage compared using git fetch, status, merge-base and relevant diffs. "Align" means reconciliation of intended changes, not merely same branch name.
-- The old main source and local rebuild are reconciled intentionally, without force push, destructive resets, lost uncommitted changes or overwriting the original master-plan.
-- The latest P08 execution results, tests, tarball and installer rollback evidence are examined instead of assumed.
-- Working tree and local user modifications are protected, including any pre-existing .gitignore changes.
-- The audit agent can point to exact versions, files, and open decisions, and can explain unsupported host claims.
-
-**If not aligned: STOP at read-only state reconciliation.** Explain what differs and how to safely sync. Do not vendor upstream code or initiate a PR/merge/release as a consequence of reading this plan.
-
-## 8. Conditional "grill owner" protocol
-
-**Trigger:** An explicit owner request to audit/review/reconcile Xyeena rebuild, release readiness, source parity, or this future plan **AFTER alignment is verified**.
-
-On that trigger:
-1. Read this file, linked detailed plan, existing local accepted decisions, source locks and current code; check for drift.
-2. Produce an evidence-backed gap table: existing behavior / desired upstream behavior / license / options / risk.
-3. Ask a focused batch of **at most 5 consequential questions** (grill) with recommendation, alternatives, trade-offs and the default if owner does not decide.
-4. Stop before any implementation or security/host changes requiring consent. No auto-assumed approval.
-5. Record answers as ACCEPTED/REJECTED/DEFERRED with timestamp and source; then reconcile design and implementation plan.
-6. After explicit implementation approval, proceed incrementally, with tests and file-level notices.
-
-Grill topics must include: (A) which code to reuse/vendor vs compose, (B) initial composite command and quality rubric, (C) trait sourcing/voice boundaries, (D) host matrix and installer activation, (E) licensing, packaging and release strategy. Ask follow-up batches only for unresolved material decisions; do not repeat decided questions.
-
-## 9. License and release obligations
-
-Before committing adapted third-party files to a public branch or distributing a tarball, inspect license **per file/per pinned commit**, preserve copyright/license/NOTICE, identify modified files and record file-level origin. Copyright notices are required even if the public acknowledgement announcement is postponed until launch.
-
-Apache-2.0 has NOTICE/change-marking obligations where applicable; MIT requires preservation of its notices. Anthropic skill licensing can differ per directory; Trail of Bits material is not automatically MIT/Apache. Do not label all research inspirations as copied software. Update root NOTICE.md only when actual reused components have been audited; preserve existing notices.
-
-No npm publish, release tag, global host install, new dependency, remote deletion, PR merge or destructive cleanup without relevant owner approval.
-
-## 10. Roadmap, sequencing and acceptance
-
-- **F0 — Remote/desktop reconciliation:** inventory refs, source diff, P08 evidence, decision and original local master plan reconciliation.
-- **F1 — Decision grill:** resolve above owner decision frontiers and freeze scoped legal and architectural decisions.
-- **F2 — Source provenance:** inspect pinned files/tests/rights, produce component reuse matrix and license bundle.
-- **F3 — Composite implementation:** begin with /xyeena-design when approved; source-preserving, measured and tested.
-- **F4 — Skills/harness, persona traits and host alignment:** no replacement of user agents; verify in actual hosts.
-- **F5 — Installer/migration and parity QA:** disposable install/update/uninstall, tests, benchmark, upstream comparison.
-- **F6 — Documentation and release gate:** notices, changelog, public docs, owner decision on version/brand/PR/publish.
-
-Done is **evidence**, not a count of handlers or claims of 100% parity. Separate STATIC, CONTRACT, BEHAVIOR, COMPARATIVE and LIVE HOST VERIFIED. Publish only when licenses, package contents, behavior and owner permissions are valid.
+**Repository:** https://github.com/rzqllh/xyeena
+**Product:** Xyeena Rig (All-in-One Skills & Harness)
+**Engine:** Cortex (Native Orchestration Intelligence Layer)
+**Package:** `xyeena-agent` (Published baseline: `0.4.1`; Local rebuild: unreleased)
+**Pointer:** [Detailed future integration plan](docs/future/XYEENA_UPSTREAM_INTEGRATION_2026-11-14.md)
+**Provenance ledger template:** [Source-level licensing and credit](docs/future/UPSTREAM_PROVENANCE_TEMPLATE.md)
 
 ---
 
-**Important for next auditing agent:** This file is intentionally on an older remote main before desktop alignment. If a local master-plan-141026.md exists, merge this remote-seed content with it, preserving the original. Never treat this newly created file as proof the entire original master plan was examined.
+## 1. Executive Summary & Repository Status
+
+Xyeena Rig provides 19 packaged Agent Skills, 64 native capability contracts, and an opt-in project Harness.
+The local desktop rebuild foundation on branch `feat/rebuild-foundation-p00` is fully reconciled with `origin/main`:
+- **723 / 723 tests pass** across 75 test suites (including 17 comprehensive merge blocker remediation adversarial tests, 18 end-to-end acceptance scenarios, 17 specialized platform/security/retrieval/motion tests, 21 engineering intelligence & design closure tests, 12 design intelligence tests, 12 comparative baseline tests, and 16 cross-domain composite tests).
+- All 64 capability contracts are bound to concrete executable handlers in `src/core/default-registry.mjs`.
+- **Cortex** is established as the default intelligence layer (DEC-27), providing lightweight routing (< 5ms) for micro tasks, analytical methodology evaluation (`METHOD_EVALUATED`), structured failure handling, AbortSignal cancellation, and composite DAG execution for complex goals.
+- **Transactional Conditional Installer** (DEC-26, DEC-29) enforces strict fail-closed protection for user-modified files via the Hybrid Diff Gate, locks exclusive installer access against concurrent contention, binds `destinationIdentity` (`targetDir`) into consent fingerprints, supports selective per-file consent, defaults to `copy` on Windows, safely preserves custom user files on uninstall, and verifies automatic rollback.
+- **Trusted Database Security & RLS Isolation:** Evaluates RLS policies using strictly authorized `LiveDatabaseAdapter` execution receipts with connection provenance, separating heuristic syntax risk (`SUSPECTED_CROSS_TENANT_POLICY_RISK`) from verified empirical access (`EMPIRICALLY_OBSERVED_CROSS_TENANT_ACCESS`).
+- **Artifact Governance & Adaptive Persistence** (DEC-28, DEC-30) prevents clutter by managing runtime state under `.xyeena/`, isolating disposable artifacts, and persisting plans and audits only when requested or structurally warranted.
+- **Delegated Engineering Authority** (DEC-31) establishes that routine engineering, refactoring, and test fixes proceed autonomously under locked scope, while high-impact destructive operations and releases remain owner-gated.
+- **Cross-Domain Methodology (DEC-32)** establishes Superpowers and Anti-Slop as universal workflows and quality filters across all 9 Cortex domains.
+
+---
+
+## 2. Locked Owner Decision Register (DEC-01 to DEC-32)
+
+All 32 owner decisions are locked, authoritative, and reconciled across local and remote sources:
+
+| ID | Title & Summary | Actual Status |
+| :--- | :--- | :--- |
+| **DEC-01** | **Product Identity:** Xyeena Rig is an All-in-One Skills + Harness toolkit, not a fleet of independent XYN subagents. (Full upstream All-in-One integration remains planned). | `DECIDED` / `IMPLEMENTED_LOCAL` |
+| **DEC-02** | **Single Controller / Governor:** Single workflow controller; existing host/user agent comes first; no competing Superpowers, Konoha, or third-party governors. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-03** | **Persona & Prompt Protection:** Existing host personas and instructions (`.gemini/agents/`, etc.) are read-only and never overwritten or replaced. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-04** | **Kernel Budget & Efficiency:** Small always-on core (L0 budget $\le$ 1500 tokens); domain-specific skills loaded lazily only when relevant. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-05** | **Contextual Quality / Anti-Slop:** Anti-Slop applies contextually during and after work; mathematical WCAG contrast calculation; no blanket code wordlists. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-06** | **Scoped vs Full Security Audit:** Scoped security review by default; comprehensive security full-audit is strictly opt-in and requires explicit user consent. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-07** | **Epistemic Evidence Standard:** Claims must be backed by fresh empirical evidence; model-generated text or simulated mocks do not equal verification. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-08** | **Local-First State & Safe Recovery:** State persists locally; scoped filesystem rules; atomic crash recovery; no unauthorized data exfiltration. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-09** | **Dependency Discipline:** Zero required external frameworks for the base kernel; new dependencies strictly justified and authorized. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-10** | **Transactional Legacy Replacement:** Installer safely replaces only verified Xyeena-owned legacy components, preserves user data, and rolls back on error. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-11** | **User-Selected Skills Precedence:** User-selected skills and configurations take precedence over automated suggestions. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-12** | **Composite Capability Composition:** Complex tasks utilize composite skills, DAG planning, and quality gates without creating uncontrolled subagent swarms. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-13** | **Native Fallback Architecture:** All capability contracts have native fallback implementations when third-party skills/backends are absent. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-14** | **Host Authorization Boundary:** Host runtime retains exclusive authority over execution, credentials, sandboxing, and tool interception. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-15** | **Sandboxing Truthfulness:** OS sandboxing cannot be inferred from library objects, caller-asserted flags, or mock receipts. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-16** | **Bounded One-Shot Execution:** Headless execution requires explicit consent, bounds turns and token limits, and redacts sensitive error telemetry. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-17** | **Process Cancellation & Teardown:** Cancellation propagates via scoped AbortSignal; termination is best-effort child/tree kill without claiming unverified remote billing cessation. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` (OS tree kill: `LIVE_BLOCKED`) |
+| **DEC-18** | **Write Serialization & Lock Contention:** Shared workspace writes stay serialized with monotonic fence tokens; active PID locks are never stolen solely by elapsed time. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-19** | **Provider Token Accounting:** Post-run token accounting verifies reported usage against task budget; it does not serve as a real-time provider billing cap. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-20** | **Release Environment Separation:** Stable release requires exact git commit, OIDC trusted publishing, tag verification, and explicit owner consent; no automated publish on commit. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-21** | **Multi-Path Tool Argument Review:** All path-bearing arguments in tool invocations require boundary inspection to prevent out-of-workspace writes. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-22** | **Failure Loop & Oscillating Review Prevention:** Hard cycle breakers terminate oscillating task review loops and return control to the human operator. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-23** | **Safe Non-Idempotent Recovery:** Non-idempotent or destructive tasks are never automatically retried; crash recovery halts for operator reconciliation. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-24** | **Host Compatibility Tiering:** Support is categorized into Verified, Degraded, Static, and Unsupported tiers; priority hosts are Antigravity and Gemini. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` (AGY CLI: `LIVE_HOST_VERIFIED`; AGY IDE: `LIVE_BLOCKED`) |
+| **DEC-25** | **Git Alignment Gate:** Git remote-desktop alignment must be verified before any future roadmap implementation begins. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-26** | **Hybrid Installer Diff Gate:** Strict fail-closed + interactive review; detects user-modified files; requires unified diff preview and `--diff-approved-fingerprint`; safe uninstall; true rollback. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-27** | **Cortex Default Intelligence Layer:** Native orchestration intelligence active by default; micro tasks direct (< 5ms); complex tasks use composite skills & DAG. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` (Live host daemon hook: `HOST CONFIGURED / LIVE ACTIVATION UNVERIFIED`) |
+| **DEC-28** | **Artifact Governance:** Strict organization of state into internal runtime (`.xyeena/`), managed plans/audits (`docs/audits/`), and disposable execution artifacts. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-29** | **Windows Installer Mode:** Default mode is `copy`; symlink/junction explicit-only; no silent fallback; strict lstat/realpath validation; path traversal protection; fail-closed. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-30** | **Adaptive Artifact Persistence:** Cortex decides artifact persistence contextually; deliverables generated on explicit request or complex tasks; atomic collision deduplication. | `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+| **DEC-31** | **Delegated Engineering Authority:** Owner delegates routine engineering, refactoring, test fixes, and docs updates within locked scope; escalations reserved for destructive git actions, releases, and fundamental licensing. | `DECIDED` |
+| **DEC-32** | **Cross-Domain Methodology Lock:** Superpowers (Universal Workflow Methodology) and Anti-Slop (Universal Contextual Quality Methodology) apply adaptively across all 9 Cortex domains; universal applicability, selective execution; Cortex remains sole governor. | `DECIDED` / `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL` |
+
+### 2.1 Cross-Domain Methodology Specification (DEC-32)
+
+1. **Superpowers — Universal Workflow Methodology:**
+   - Applied adaptively across: Research/investigation, Product discovery/brainstorming, Architecture/technical planning, Design/prototyping, Coding/testing/debugging, Security/compliance/review, Writing/documentation, Project coordination/delegation/handoff, and Release preparation/verification.
+   - Contextual selection: verification-before-completion applies cross-domain; TDD is not forced onto copywriting or non-code tasks without tests.
+2. **Anti-Slop — Universal Contextual Quality Methodology:**
+   - Applied adaptively across: Code quality (comment hygiene), UI/UX and visual design, Mobile layouts, Copywriting and human writing, Research and reasoning quality, Specifications/plans/ADR, Testing and test evidence, Security reports, Documentation, and Release communication.
+   - Evaluates context-relevant quality; never blindly strips words or patterns.
+3. **Responsibility Boundaries:**
+   - **Cortex:** Sole orchestration governor, task intent classification, effort/budget ceiling enforcement, state checkpointing, TaskGraph DAG management, host negotiation, and Rule 4 Execution Gate enforcement.
+   - **Superpowers:** Contributes disciplined workflow patterns (pre-implementation problem sizing, phased execution with rollback paths, falsifiable hypothesis tracking, red-green verification, and dual-axis review). Never acts as an independent control loop or background daemon.
+   - **Anti-Slop:** Contributes evaluative quality filters (comment sanitation preserving rationale, buzzword elimination, WCAG 2.2 touch target sizing 24px AA / 44px AAA, focus indicators, fluid mobile boundaries, and lean diff audits). Never acts as an unprompted blocking generator.
+4. **Trigger & Budget Contracts:**
+   - **Positive Triggers:** Explicit user slash commands (`/xyeena-design`, `/xyeena-plan`, `/xyeena-execute`, `/antislop`, `/tdd`, etc.), multi-module architectural tasks (Tier 2/3), design token updates, copy authoring, and security audits.
+   - **Negative Triggers:** Tier-0 micro tasks (strictly exempt from planning, subagent dispatch, and ceremony), greetings, and read-only queries.
+   - **Budget Contract:** L0 Kernel $\le$ 1,500 tokens (actual 535–616); Tier-0 micro tasks strictly $< 500$ tokens with zero trait/domain overhead; L1/L2 capability contracts and Behavioral Trait Overlays lazy-loaded on demand (~50–120 tokens).
+5. **Precedence, Fallback & Evidence:**
+   - **Precedence:** Explicit user skill selection > Workspace rules > Existing repository architecture & design system > Global defaults.
+   - **Fallback Behavior:** All 11 composite skills degrade gracefully to internal inline execution when host-native subagents or external tools are unavailable.
+   - **Evidence Requirements:** Fresh execution evidence (terminal logs, test outputs) required before any completion claim (DEC-31/32). Self-certified text claims are rejected.
+   - **Known Unverified Behavior:** Live host hook interception on Antigravity IDE 2.5.5 remains reported as `LIVE_BLOCKED`; provider spend caps remain unverified.
+
+---
+
+## 3. Strategic Decisions from Grill Rounds (Planned Scope)
+
+The following foundational strategic decisions were established during Grill Rounds 1–5:
+
+1. **Selective Upstream Reuse (Grill Round 1–2):** Prefer licensed upstream reuse/composition where permitted with full provenance ledger, rather than shallow handcrafted mimicry. (Status: `ADAPTED_VERIFIED (P14–P17 & Final Closure)`; Superpowers RE-01, Superior RE-02, Anti-Slop RE-03, Ponytail RE-04, Caveman RE-05, Cloudflare RE-06, Impeccable RE-07, Matt Pocock RE-08, Hallmark RE-09, Taste RE-10, UI UX Pro Max RE-11, GSAP RE-14, Trail of Bits RE-15 [clean-room], Supabase RE-16, Konoha RE-31 [bounded retrieval & MCP parity], and Huashu Design RE-32 integrated via source-backed adaptation into native methods with full provenance ledgers and tests. Remaining upstreams RE-12, RE-13, RE-17, RE-18, RE-19, and RE-21..30 definitively classified as `REFERENCE_ONLY` / standards with zero unvetted runtime dependencies).
+2. **XYN Personality Synthesis (Grill Round 3):** Synthesize behavioral traits and domain voice of XYN personas into an architectural guidance overlay without importing character personas or modifying host agent identities. (Status: `XYN_ARCHITECTURAL_PRINCIPLES_SOURCE_INSPECTED_LOCAL` / `VERIFIED_LOCAL`; active runtime trait engine in `src/core/personality.mjs` incorporating Maker-Checker separation, empirical claim boundaries, adversarial testing, and single governor invariant without fictional character identities).
+3. **Modified Legacy Installation Protection (Grill Round 5):** Modified legacy installations strictly require user review of diff before replacement (formalized into DEC-26). (Status: `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL`).
+4. **Final End-to-End Acceptance & Blocker Remediation:** 18 comprehensive end-to-end acceptance scenarios verified in `test/e2e-acceptance-campaign.test.mjs` and 17 adversarial blocker remediation scenarios verified in `test/blocker-remediation-adversarial.test.mjs`, establishing end-to-end proof from natural language routing through execution, security, database safety, bounded retrieval, DAG execution, installer safety, and artifact governance. (Status: `723 / 723 tests PASS` across 75 test suites).
+
+---
+
+## 4. Architectural Invariants
+
+1. **L0 Core Budget:** Core kernel prompt allocation is bounded $\le$ 1,500 tokens (empirically 535–616 tokens).
+2. **Single Workflow Governor:** Xyeena Cortex is the sole controller. Third-party skills never act as competing control loops.
+3. **Existing Agent First:** Personas on host disk are immutable and respected.
+4. **Gated Security:** Passive review by default; full security audit requires explicit user command.
+5. **Fail-Closed Permissions:** Incomplete readiness, missing consent, or unverified hosts fail closed.

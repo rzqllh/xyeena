@@ -1,17 +1,38 @@
-# Xyeena product names
+# Xyeena Product Branding & Identity
 
 [Current source and host acceptance (2026-10-26)](STATUS.md). Live Antigravity CLI 1.4.7 approvals and scoped automatic denial passed; IDE 2.5.5 interception, broader security boundaries, and remaining runtimes are not live-accepted.
 
-**Xyeena** is the parent brand. **Xyeena Rig** is the developer-tooling package in this repository, distributed through npm as `xyeena-agent`. **Xyeena Notch** and mascot components are separate projects and are not bundled in Rig.
+---
 
-## Stable identifiers
+## 1. Brand Hierarchy
 
-- npm name: `xyeena-agent`
-- CLI aliases: `xyeena`, `xyeena-agent`
-- Existing skill identifiers: `xyeena-*`
-- Plugin identifier: `xyeena`
-- Project state: `.xyeena/` and host-specific skill roots
+| Layer | Name | Description |
+| :--- | :--- | :--- |
+| **Parent Brand** | **Xyeena** | The overarching umbrella brand for all related developer intelligence tooling |
+| **Product** | **Xyeena Rig** | The All-in-One Skills & Harness toolkit in this repository |
+| **Engine** | **Cortex** | The native default orchestration intelligence layer (DEC-27) powering intent routing, capability execution, and adaptive governance |
+| **Distribution Package** | `xyeena-agent` | Published on npm registry as `xyeena-agent` |
+| **Internal Codename** | Axioven | Historical/internal reference used during the P00–P08 rebuild; **not** the active product identity |
 
-Brand descriptions must not imply that current repository source is available in the published package. The latest published baseline is `0.4.1`; later source changes are awaiting a separate release. Historical npm releases and Git tags are immutable.
+Xyeena Notch and mascot components are separate independent projects and are not bundled in Xyeena Rig.
 
-For product scope, see the [README](../README.md). For distribution policy, see [the release record](STATUS.md).
+---
+
+## 2. Stable Identifiers
+
+- **npm package name:** `xyeena-agent`
+- **CLI binary aliases:** `xyeena`, `xyeena-agent`
+- **Skill namespaces:** `xyeena-*` (19 packaged Agent Skills)
+- **Host plugin identifier:** `xyeena`
+- **Project state paths:** `.xyeena/` (runtime locks, backups, configs) and host-specific skill roots (`.gemini/`, `.agents/`, `.claude/`, `.hermes/`)
+
+---
+
+## 3. Version Truth & Distribution Policy
+
+Brand descriptions must strictly distinguish between the published npm package baseline and unreleased local source:
+- Published npm baseline: `0.4.1`
+- Current local rebuild source: `0.4.1` (with unreleased P00–P10.2 rebuild additions, frozen on feature branch)
+- Planned future release: `0.5.0` (pending owner approval, exact checks, and release tag)
+
+Historical npm releases and Git tags are immutable. For product scope, see the [README](../README.md). For operational release policies, see [STATUS.md](STATUS.md).

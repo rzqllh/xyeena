@@ -1,14 +1,19 @@
-# Xyeena Repository Agent Instructions — Future-Plan Discovery
+# Xyeena Repository Agent Instructions — Reconciled Guidelines
 
-These are repository-local guidance instructions. They **do not** authorize changes, override higher-priority host instructions, change existing agents/personas or activate any third-party tools.
+These instructions guide AI agents working in the `rzqllh/xyeena` repository. They do not authorize destructive operations, overwrite host personas, or bypass explicit user consent boundaries. Files on GitHub cannot guarantee automatic reading by every AI platform: explicitly inspect repository source files when audit or execution is requested.
 
-## On owner-initiated Xyeena audit / source-alignment / release-readiness review
+## Repository State & Architecture Authority
 
-1. Read [master-plan-141026.md](master-plan-141026.md) and [future roadmap](docs/future/XYEENA_UPSTREAM_INTEGRATION_2026-11-14.md), as well as current code and existing accepted decisions. The master-plan file is a **remote reconciliation seed** until an original desktop copy is inspected and merged.
-2. First verify desktop-local vs remote git branch/HEAD, ancestry, diffs, working tree, blueprint and P08 results. **Remote/local alignment is a prerequisite for activating the future plan.** A matching branch name alone is not evidence.
-3. If NOT aligned: report the exact mismatch and safe fetch/merge/reconcile steps; DO NOT execute future-plan implementation, copy upstream code, open PR, rewrite local master plan, force-push or alter installed host agents.
-4. If aligned: compare actual source to plan, give a succinct evidence-based gap assessment, then **GRILL THE OWNER** with up to **5 prioritized material decisions** per round. Include options, recommendation, trade-offs, and explicit consent boundary. Record APPROVED/REJECTED/DEFERRED decisions. Do not assume unanswered choices are approvals.
-5. Only after explicit owner approval for the relevant work may implementation proceed; preserve license/NOTICE and source-level provenance of reused files. No automated npm publish, deployment, global host changes or third-party installer.
-6. If the task is unrelated to this future-plan audit, do **not** interrogate the user about the roadmap or load large reference dossiers unnecessarily.
-
-The owner wants Xyeena as **Skills + Harness**, not named XYN subagents. Support existing-agent-first, selective skill loading, evidence-based verification, and full security audit explicit-only. The future roadmap includes /xyeena-design source composition, Konoha RE-31 and behavioral personality traits without character names. Files on GitHub cannot guarantee automatic reading by every AI platform: explicitly inspect them when repository audit is requested.
+1. **Reconciled Master Plan:** Read [master-plan-141026.md](master-plan-141026.md) and [future roadmap](docs/future/XYEENA_UPSTREAM_INTEGRATION_2026-11-14.md). All 32 owner decisions (DEC-01 to DEC-32) are locked and authoritative. The remote reconciliation seed and grill rounds have been completed, covered by the latest release-candidate PR CI (Ubuntu Node 24: 726 tests, 723 pass, 3 skip, 0 fail, 75 suites).
+2. **Product Identity:** Xyeena Rig is an **All-in-One Skills + Harness** toolkit. It is **not** a fleet of independent XYN subagents.
+3. **Engine:** **Cortex** is the native default intelligence layer (DEC-27). It executes lightweight tasks directly (< 5ms) and routes complex tasks through composite skills, DAG planning, and quality gates.
+4. **Settled Decisions:** Technical decisions DEC-01 through DEC-32 have already been decided and implemented/verified. **Do not repeat grill or interrogation loops** for settled architecture and engineering routines.
+5. **Existing Agent First & Persona Protection:** Existing host personas and instructions (`.gemini/agents/`, `.agents/personas/`, etc.) are read-only and immutable (DEC-03). Third-party and host tools are respected. Never overwrite or reconfigure user agent personas.
+6. **Scope Discipline & Selective Loading:** Small always-on core (L0 budget $\le$ 1,500 tokens). Domain-specific capabilities are lazy-loaded on demand (DEC-04). Trivial micro tasks are strictly exempt from planning ceremony.
+7. **Delegated Authority & Human Boundaries:** Execute routine engineering, bug fixes, refactoring, and documentation updates autonomously within approved scope (DEC-31). Escalate only for:
+   - High-impact destructive operations (e.g. Git history rewriting, force-pushing, branch deletion).
+   - npm package publication or release tagging.
+   - Material changes to legal licensing or third-party provenance.
+   - Modification of global host configurations outside workspace boundaries.
+8. **Installer Safety:** The installer enforces the Hybrid Diff Gate (DEC-26) with baseline ownership checks, requires `--diff-approved-fingerprint` to modify user files, defaults to `copy` on Windows (DEC-29), preserves custom files on uninstall, and verifies automatic rollback.
+9. **Evidence First & Security Gate:** Maintain strict epistemic evidence standards (DEC-07, DEC-31, DEC-32). Distinguish between `CONTRACT_ONLY`, `BEHAVIOR_VERIFIED`, `COMPARATIVE_VERIFIED`, and `LIVE_HOST_VERIFIED`. Full security audit is strictly explicit-only; ordinary reviews remain scoped. Label host runtime hooks truthfully (`HOST CONFIGURED / LIVE ACTIVATION UNVERIFIED`).

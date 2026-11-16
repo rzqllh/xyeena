@@ -1,24 +1,48 @@
-# Dependencies / build
+# Dependencies and build outputs
 node_modules/
 coverage/
 .tmp/
 *.tgz
+package-*.tgz
 
-# Xyeena runtime state
+# Xyeena local runtime state, locks, backups, and caches
 .xyeena/runs/
 .xyeena/backups/
 .xyeena/skill-store/
+.xyeena/guided/
+.xyeena/hooks/
+.xyeena/*.lock
+.xyeena/rollback.json
+.xyeena/antigravity-guided.json
+.xyeena/install.json
+.xyeena/profile.md
+.xyeena/config.json
+.xyeena/
 
-# Local/internal development material
+# Agent host local installation state (preserves plugin manifests and user custom skills)
+.agents/skills/xyeena-*/
+.agents/backups/
+.agents/*.lock
+.agents/*.tmp
+
+# Subagent bridge and local databases
+.subagentbridge/
+
+# AI session transcripts, tool traces, and local scratch
+*.transcript.jsonl
+*.trace.json
+transcript*.jsonl
+scratch/
+artifacts/
+
+# Local/internal development materials
 .internal/
 .dev/
 notes/
 research/
-scratch/
 private-evals/
-artifacts/
 
-# Environment / secrets
+# Environment and secrets
 .env
 .env.*
 !.env.example
@@ -31,20 +55,19 @@ npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 
-# OS / editor
+# OS and editor files
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
 
-# Xyeena harness local verification evidence
+# Harness verification local evidence
 .harness/evidence/
 
 # Deployment artifacts
 site/.vercel/
 
-# Runtime locks, caches, and backups
-.xyeena/backups/
-.xyeena/*.lock
-.xyeena/rollback.json
-.subagentbridge/
+# Historical blueprint archives and unpacked workspaces
+docs/xyeena_rebuild_workspace_*.zip
+docs/xyeena_rebuild_workspace_*/
+xyeena_rebuild_workspace_*.zip

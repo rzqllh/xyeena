@@ -1,25 +1,46 @@
-# Documentation
+# Dokumentasi Xyeena Rig
 
-Start with [Getting started](GETTING-STARTED.md) to install Xyeena. Read [support and release status](STATUS.md) before enabling host execution or choosing unreleased source features.
+Selamat datang di pusat dokumentasi resmi **Xyeena Rig** — All-in-One Agent Skills & Harness toolkit yang ditenagai oleh **Cortex** native intelligence engine.
 
-## Installation and use
+Mulailah dengan [Panduan Memulai](GETTING-STARTED.md) untuk memasang skill. Periksa [Status Dukungan & Rilis](STATUS.md) sebelum mengaktifkan eksekusi host atau memilih fitur source yang belum dirilis.
 
-- [Getting started](GETTING-STARTED.md)
-- [Windows installation](INSTALL-WINDOWS-PEMULA.md)
-- [Global installation and host paths](GLOBAL-INSTALL.md)
-- [CLI reference and command effects](CLI-REFERENCE.md)
-- [Host compatibility](RUNTIME-ADAPTERS.md)
+---
 
-## Development and operations
+## 1. Pemasangan dan Panduan Pengguna
 
-- [Architecture](ARCHITECTURE.md) and [Rig system design](xyeena-rig/ARCHITECTURE.md)
-- [Orchestration](ORCHESTRATION.md) and [routing](INTELLIGENT-ROUTING.md)
-- [Capability contract](CAPABILITY-CONTRACT.md)
-- [Antigravity hooks](ANTIGRAVITY-GUIDED.md)
-- [Operations, migration, and recovery](xyeena-rig/RUNBOOK.md)
-- [Evaluation procedures](EVALS.md)
-- [Branding](BRANDING.md)
-- [Security policy](../SECURITY.md)
-- [Contributing](../CONTRIBUTING.md)
+- [Panduan Memulai (Getting Started)](GETTING-STARTED.md) — Panduan instalasi cepat lintas platform.
+- [Panduan Instalasi Windows Pemula](INSTALL-WINDOWS-PEMULA.md) — Langkah demi langkah instalasi di Windows dari nol.
+- [Panduan Instalasi Global & Mode Symlink](GLOBAL-INSTALL.md) — Manajemen instalasi multi-project di direktori user.
+- [Referensi CLI Lengkap](CLI-REFERENCE.md) — Panduan seluruh subperintah dan opsi CLI Xyeena.
+- [Adapter Runtime Host](RUNTIME-ADAPTERS.md) — Detail integrasi dengan Antigravity, Gemini, Codex, Claude, dan Hermes.
 
-Release checks and open host limitations are maintained in [STATUS.md](STATUS.md). Historical internal handoffs are not installation or release instructions.
+---
+
+## 2. Arsitektur, Kontrak, dan Kecerdasan
+
+- [Arsitektur Sistem Rebuild](ARCHITECTURE.md) — Desain lapisan sistem, kernel budget L0, dan alur kontrol Cortex.
+- [Master Plan & Locked Decisions](../master-plan-141026.md) — Rekonsiliasi master plan dan 31 keputusan pemilik (DEC-01 s.d. DEC-31).
+- [Kontrak Kapabilitas Native (64 Contracts)](CAPABILITY-CONTRACT.md) — Spesifikasi lengkap 64 capability contracts di 9 namespace.
+- [Perutean Cerdas (Intelligent Routing)](INTELLIGENT-ROUTING.md) — Evaluasi intent, budget supporting skills, dan penentuan tier.
+- [Protokol Orchestration](ORCHESTRATION.md) — State machine, single governor, dependency DAG, dan task ledger.
+- [Desain Sistem Rig (Deep-Dive)](xyeena-rig/ARCHITECTURE.md) — Invarian keamanan, serialisasi penulisan, dan isolasi worktree.
+
+---
+
+## 3. Operasional, Pengujian, dan Keamanan
+
+- [Runbook Operasional](xyeena-rig/RUNBOOK.md) — Prosedur validasi source, preflight, migrasi, dan pemulihan checkpoint.
+- [Status Dukungan dan Rilis](STATUS.md) — Bukti verifikasi lokal vs batasan host aktual.
+- [Antigravity Guided Hooks](ANTIGRAVITY-GUIDED.md) — Panduan instalasi dan diagnostik probe lifecycle hooks.
+- [Prosedur Evaluasi & Validasi](EVALS.md) — Pengujian deterministik, smoke test, dan paritas perilaku.
+- [Panduan Identitas Brand](BRANDING.md) — Pedoman penamaan Xyeena Rig, Cortex, dan package npm.
+- [Kebijakan Keamanan](../SECURITY.md) — Model kepercayaan, batasan sandboxing, dan pelaporan kerentanan.
+- [Panduan Kontribusi](../CONTRIBUTING.md) — Aturan pengembangan dan standar kualitas kode.
+
+---
+
+## 4. Rencana Upstream dan Register Temuan
+
+- [Future Upstream Integration Roadmap](future/XYEENA_UPSTREAM_INTEGRATION_2026-11-14.md) — Rencana integrasi komponen upstream berlisensi (DEC-28).
+- [Third-Party Provenance Template](future/UPSTREAM_PROVENANCE_TEMPLATE.md) — Ledger pencatatan lisensi, hak cipta, dan atribusi per-file.
+- [Bugs & Refinement Register](bugs&refinement/README.md) — Daftar inventaris temuan P0–P3 dan boundary pengujian host.

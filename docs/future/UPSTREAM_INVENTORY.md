@@ -1,0 +1,96 @@
+# Upstream Source Inventory & Slash-Command Mapping — Xyeena
+
+**Status:** RE-01–RE-32 dispositions recorded; source references without immutable SHAs remain provenance-pending (not direct-reuse verification).
+**Parent:** [Future Upstream Integration Roadmap](XYEENA_UPSTREAM_INTEGRATION_2026-11-14.md)
+**Governance:** DEC-01 through DEC-32 (DEC-32: Cross-Domain Superpowers & Anti-Slop Methodologies)
+**Base Commit Baseline:** `bbd71abfc5045cda3c39ea7655f0a8519d88f275`
+
+---
+
+## 1. Upstream Source Inventory (RE-01 through RE-32)
+
+| RE ID | Canonical Source | Pinned Ref / SHA | License | Dependencies | Core Behavior & Workflow | Existing Xyeena Equivalent | Decision | Acceptance & Testing Criteria |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **RE-01** | `obra/superpowers` (`https://github.com/obra/superpowers.git`) | `2ce8aa15d05bd57213e6f746f953aafb7ded7a8b` (v7.0.1) | MIT (c) 2025 Jesse Vincent | Node/Shell | Phased planning, TDD, systematic debugging, subagent coordination, verification-before-completion | `src/methods/thinking.mjs`, `src/methods/engineering.mjs`, `src/core/composites.mjs` | **ADAPTED_VERIFIED (P14)** | Golden Scenario A & P14 Comparative Suite; zero foreign daemons; Cortex single governor. |
+| **RE-02** | `KodekaTeam/superior-skills` (`https://github.com/KodekaTeam/superior-skills.git`) | `3735e084d4ab310605bd945b53c674c87d2d7dbf` | MIT (c) 2026 KodekaTeam | None | Deep module seams, Clean Architecture boundaries, safe refactor, code-as-documentation, dual-axis review | `src/methods/engineering.mjs`, `src/core/composites.mjs` | **ADAPTED_VERIFIED (P16)** | Golden Scenario B & P16 Engineering Intelligence suite (deep module depth ratio, Clean Architecture boundaries, code-as-documentation). |
+| **RE-03** | `miqdadbadjuber/anti-slop` (`https://github.com/miqdadbadjuber/anti-slop.git`) | `b1cdf87d49b1653293d58424516fd80394008345` | MIT (c) 2026 Miqdad Badjuber | None | Code comment hygiene, copywriting clichés, touch targets (24px/44px), mobile overflow, color contrast, visual slop | `src/methods/quality.mjs` (`auditUniversalAntiSlop`, `auditVisualAntiSlop`), `src/core/composites.mjs` | **ADAPTED_VERIFIED (P14)** | Golden Scenario C & P14 Comparative Suite (comment hygiene, cliché detection with quote exemptions, visual slop, WCAG AA/AAA targets). |
+| **RE-04** | `DietrichGebert/ponytail` (`https://github.com/DietrichGebert/ponytail.git`) | `96608e078b2d5ea607c5c3b8b5a54d1c1fba6846` | MIT (c) 2026 DietrichGebert | None | Smallest-correct-change heuristic, lean diffs, anti-overengineering debt ledger, adaptive effort (lite/full/ultra) | `src/methods/engineering.mjs` (`auditPonytailLeanDiff`), `src/core/composites.mjs` | **ADAPTED_VERIFIED (P16)** | Golden Scenario D & P16 Engineering Intelligence suite (smallest-correct-change heuristic, anti-overengineering detection, debt ledger). |
+| **RE-05** | `JuliusBrussee/caveman` (`https://github.com/JuliusBrussee/caveman.git`) | `b4ee71d557d96e3cbc14f88fa6e953a1362865f5` | Apache-2.0 / MIT (c) 2026 Julius Brussee | Optional CLI | Context economy, verbatim payload preservation, verify-and-stop discipline, safe refactor boundaries | `src/methods/engineering.mjs` (`compressTechnicalOutput`, `verifyAndStop`, `auditSafeRefactor`), `src/core/composites.mjs` | **ADAPTED_VERIFIED (P16)** | Golden Scenario E & P16 Engineering Intelligence suite (context economy, verbatim technical payload, verify-and-stop discipline). |
+| **RE-06** | `cloudflare/security-audit-skill` (`https://github.com/cloudflare/security-audit-skill.git`) | `c1c8a8c1471069fb0e188eeaff69b8e8db6564a8` | MIT (c) 2025-2026 Cloudflare, Inc. | None | Security finding schema validation, source-to-sink trace, duplicate suppression, scoped diff review default | `src/methods/security.mjs`, `src/core/composites.mjs` (`/xyeena-security`) | **ADAPTED_VERIFIED (P17)** | P17 Suite Scenario 4, 6 (schema validation, source-to-sink trace, duplicate suppression, scoped-review default). |
+| **RE-07** | `pbakaus/impeccable` (`https://github.com/pbakaus/impeccable`) | Host-local reference; immutable commit SHA not recorded | Apache-2.0 | None | 4 surface modes (Persuade, Operate, Read, Experience), brief primacy, craft critique | `src/methods/design.mjs` (`resolveSurfaceMode`, `critiqueCraft`), `src/core/composites.mjs` | **ADAPTED_VERIFIED (P15)** | P15 Design Intelligence suite; surface mode resolution + "The brief wins" craft critique. |
+| **RE-08** | Matt Pocock Skills (`https://github.com/mattpocock/skills.git`) | `5863806dd4e15c63174bee4e7515a4256792ecfa` | MIT (c) 2026 Matt Pocock | Node | Question-frontier grilling, to-spec technical specification synthesis, to-tickets tracer bullets with expand-contract | `src/methods/engineering.mjs` (`grillFrontier`, `synthesizeTechnicalSpec`, `breakdownTracerBulletTickets`), `src/core/composites.mjs` | **ADAPTED_VERIFIED (P16)** | P16 Engineering Intelligence suite (question-frontier grilling, to-spec synthesis, to-tickets vertical slices with expand-contract). |
+| **RE-09** | Hallmark (`https://github.com/togethercomputer/hallmark`) | Host-local reference; immutable commit SHA not recorded | MIT (c) 2026 Hallmark contributors | None | The Floor (transitions, animation layout thrashing, focus-visible, reduced motion, overflow-x: clip), waivers | `src/methods/design.mjs` (`auditHallmarkFloor`), `src/core/composites.mjs` | **ADAPTED_VERIFIED (P15)** | P15 Design Intelligence suite; The Floor enforcement with explicit waivers on record. |
+| **RE-10** | Taste Skill Family (`https://github.com/Leonxlnx/taste-skill`) | Host-local reference; immutable commit SHA not recorded | MIT (c) 2026 Leonxlnx | None | Page vs App Screen separation, quiet operational borders, substance over thin restraint | `src/methods/design.mjs` (`auditAppScreenCraft`), `src/core/composites.mjs` | **ADAPTED_VERIFIED (P15)** | P15 Design Intelligence suite; App Screen operational craft validation. |
+| **RE-11** | UI UX Pro Max (`https://github.com/nextlevelbuilder/ui-ux-pro-max`) | Host-local reference; immutable commit SHA not recorded | MIT (c) 2024 Next Level Builder | None | 3-tier token architecture, WCAG AA/AAA targets (4.5:1 / 24px vs 7:1 / 44px), mobile layout bounds | `src/methods/design.mjs` (`validateTokenArchitecture`, `calculateWcagContrast`), `src/core/composites.mjs` | **ADAPTED_VERIFIED (P15)** | P15 Design Intelligence suite; 3-tier token validation + WCAG contrast math. |
+| **RE-12** | `anthropics/skills` | Tagged releases | Mixed (MIT / Source-Available) | None | Standard Agent Skills formatting and directory conventions | Native `skills/` discovery and validation conventions | **REFERENCE_ONLY** | Validates against native Agent Skills directory structure without proprietary runtime. |
+| **RE-13** | Vercel Agent Skills | Canonical main | MIT | Node | Frontend & Next.js conventions and routing best practices | No dedicated frontend methods module; framework guidance is REFERENCE_ONLY | **REFERENCE_ONLY** | Framework-specific best practices reference; zero mandatory build couplings. |
+| **RE-14** | GSAP Skills (`https://github.com/greensock/gsap-skills.git`) | `aed9cfd3277740755f6bfc1155c7aa645403b760` | MIT (skills documentation) / Web License (GSAP) | GSAP lib (optional) | Motion performance (compositor transforms vs layout thrashing), React lifecycle cleanup (`useGSAP`/`ctx.revert`), SSR safety, prefers-reduced-motion | `src/methods/design.mjs` (`auditMotionPerformance`, `verifyMotionLifecycleCleanup`, `evaluateAnimationStack`), `src/core/composites.mjs` | **ADAPTED_VERIFIED (P17, Optional Motion)** | P17 Suite Scenario 10, 11, 12 (React lifecycle cleanup, layout-thrashing detection, existing stack respect). |
+| **RE-15** | Trail of Bits Skills (`https://github.com/trailofbits/skills.git`) | `149d7b21f4067765b82e67029730b42d228ef4b4` | CC BY-SA 4.0 (clean-room adaptation, zero text copy) | Python/C++ | Threat modeling, security invariant validation, GitHub Actions workflow security, pattern-match false positive rejection | `src/methods/security.mjs` (`validateSecurityInvariant`, `auditWorkflowSecurity`), `src/core/composites.mjs` | **CLEAN_ROOM_ADAPTED_VERIFIED (P17, Reference-Only)** | P17 Suite Scenario 5, GHA workflow audit; clean-room implementation without copying protected text. |
+| **RE-16** | Supabase Agent Skills (`https://github.com/supabase/agent-skills.git`) | `c9be0e931b7930f7d02126d04774d904c381e7d7` | MIT (c) 2026 Supabase | Supabase CLI (optional) | Row Level Security (RLS) tenant isolation evaluation, service-role key exposure detection, safe PostgreSQL transactional migrations (Expand-Migrate-Contract) | `src/methods/security.mjs` (`evaluateRlsPolicy`, `detectServiceRoleKeyExposure`, `auditPostgresMigrationSafety`), `src/core/composites.mjs` | **ADAPTED_VERIFIED (P17)** | P17 Suite Scenario 7, 8, 9 (RLS tenant leak check, service-role key leak detection, migration lock hazard checks). |
+| **RE-17** | Google DESIGN.md | Canonical | Apache-2.0 | None | Systematic design specs, design token hierarchies | Design system references in `docs/` | **REFERENCE_ONLY** | 3-layer token architecture (primitive → semantic → component). |
+| **RE-18** | Awesome DESIGN.md | Curated list | CC0 / MIT | None | Curated real-world design specifications and case studies | Reference documentation | **REFERENCE_ONLY** | Editorial reference benchmarks for UI craft evaluation. |
+| **RE-19** | Gemini Superpowers Antigravity | Internal host configs | Proprietary / Mixed | Antigravity host | Native host hook configurations and discovery paths | `src/adapters/antigravity.mjs` | **REFERENCE_ONLY** | Evaluates native host entrypoints without hijacking host persona or configuration. |
+| **RE-20** | `rzqllh/xyeena` | `feat/rebuild-foundation-p00` | MIT | Zero external base dependencies | Rig kernel, capability registry, multi-host adapters, safe installer | Native codebase | **REUSE** | 723/723 test suite pass; hybrid diff gate; DEC-01 through DEC-32. |
+| **RE-21..30**| Normative Foundations | W3C / Apple / Google / ISO | Standards / Public | None | WCAG 2.2, Apple HIG, Material Design 3, color math, memory isolation, software testing | Embedded heuristics in `src/methods/` | **REFERENCE_ONLY** | 100% compliant contrast math (relative luminance), WCAG AA (24px) / AAA (44px) target sizes. |
+| **RE-31** | `andycungkrinx91/konoha` (`https://github.com/andycungkrinx91/konoha.git`) | `9789bdd1d57d5f7a39a58406105e36127ffdb35b` | Apache-2.0 (c) 2026 Andy Setiyawan | LangGraph, SQLite, Node >=24 (optional) | Bounded retrieval (max results, byte budget, path boundary), index corruption recovery, MCP tool manifest vs dispatcher parity, task-scoped memory isolation | `src/methods/knowledge.mjs` (`boundedRetrieve`, `auditMcpToolParity`, `verifyTaskMemoryIsolation`), `src/core/composites.mjs` | **ADAPTED_BOUNDED_RETRIEVAL_VERIFIED (P17)** | P17 Suite Scenario 1, 2, 3; LangGraph and foreign daemons rejected; Cortex remains single governor. |
+| **RE-32** | `alchaincyf/huashu-design` (`https://github.com/alchaincyf/huashu-design.git`) | `e8d1148a80d5a281d4247cffe320add3df017928` (v3.3.0) | MIT (c) 2026 alchaincyf (花叔 · 花生) | Node (playwright, pptxgenjs, pdf-lib optional) | 3 visual directions exploration, standalone interactive HTML prototype specifications, truthful capability reporting | `src/methods/design.mjs` (`exploreVisualDirections`, `generateInteractivePrototype`, `checkExportCapabilities`) | **ADAPTED_VERIFIED (P16, Optional Capability)** | P16 suite (3 visual directions exploration, interactive prototype spec with quarantine, truthful export capability reporting). |
+
+---
+
+### 1.1 Epistemic Evidence Taxonomy (P14/P15 Protocol)
+
+To enforce strict epistemic honesty (DEC-31), all capability claims and test suites adhere to unambiguous classification tiers:
+- **`SOURCE_INSPECTED`**: Original upstream source code, documentation, and licensing have been directly examined on disk or canonical Git.
+- **`SOURCE_BACKED_ADAPTATION`**: Methods and heuristics are natively implemented in Xyeena based on verified upstream architecture patterns.
+- **`DIRECT_REUSE`**: Verbatim original source or text allowed by license is bundled directly without modification.
+- **`BEHAVIOR_VERIFIED`**: Adapted components execute and satisfy automated test assertions on the local harness.
+- **`COMPARATIVE_BASELINE_VERIFIED`**: Adapted components are benchmarked against naive or unadapted baselines to verify operational superiority. *(P14/P15 comparative scenarios use naive baselines; they are NOT claimed as live external upstream execution).*
+- **`COMPARATIVE_VERIFIED`**: Direct comparison against original upstream execution under identical inputs and criteria.
+- **`LIVE_HOST_VERIFIED`**: Component behavior is verified on live AI host environments with observable receipts.
+
+---
+
+## 2. Slash-Command Mapping to Upstream Sources & Xyeena Capabilities
+
+| Owner Slash Command | Primary Upstream Source | Secondary Upstream Source | Xyeena Capability Binding | Execution Mode | Architectural Decision |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `/grill-me` | RE-08 (Matt Pocock) | RE-01 (Superpowers) | `interview.grill`, `planning.stress-test` | Discussion Mode | **ADAPT:** Question-frontier interview stress-testing design decisions without modifying code. |
+| `/antislop` | RE-03 (Anti-Slop) | RE-04 (Ponytail) | `quality.anti-slop` | Universal Evaluator | **ADAPT:** Cross-domain quality filter (code comment hygiene, copy clichés, mobile overflow, WCAG targets). |
+| `/antislop-code` | RE-03 (Anti-Slop) | RE-02 (Superior) | `quality.anti-slop.code` | Universal Evaluator | **ADAPT:** Strips trivial AI-generated comments while preserving non-obvious rationale and safety invariants. |
+| `/antislop-copywriting`| RE-03 (Anti-Slop) | RE-05 (Caveman) | `quality.anti-slop.copy` | Universal Evaluator | **ADAPT:** Eliminates AI buzzwords ("delve", "testament", "tapestry", "seamless") and corporate fluff. |
+| `/antislop-human` | RE-03 (Anti-Slop) | RE-21 (WCAG 2.2) | `quality.anti-slop.human` | Universal Evaluator | **ADAPT:** Enforces WCAG 2.2 contrast ratios, focus rings, keyboard navigability, tap targets. |
+| `/antislop-layoutmobile`| RE-03 (Anti-Slop) | RE-22 (Apple HIG) | `quality.anti-slop.layout` | Universal Evaluator | **ADAPT:** Flags horizontal viewport overflow, touch target spacing, unresponsive multi-column layouts. |
+| `/antislop-ui` | RE-03 (Anti-Slop) | RE-07 (Impeccable) | `quality.anti-slop.ui` | Universal Evaluator | **ADAPT:** Enforces intentional visual hierarchy, avoids gratuitous gradient borders and unstyled cards. |
+| `/brainstorming` | RE-01 (Superpowers) | RE-08 (Matt Pocock) | `planning.brainstorm`, `orchestration.plan` | Discussion Mode | **ADAPT:** Structured divergence, trade-off evaluation, user problem framing before writing code. |
+| `/caveman-commit` | RE-05 (Caveman) | RE-20 (Xyeena) | `git.commit-message` | Execution (on approval) | **ADAPT:** Compressed Conventional Commits focused purely on intent and changed invariants. |
+| `/code-reviewer` | RE-01 (Superpowers) | RE-02 (Superior) / RE-04 | `review.dual-axis`, `review.diff` | Review Mode | **ADAPT:** Dual-axis architectural depth + surgical safety review; read-only first. |
+| `/design-taste-frontend`| RE-10 (Taste) | RE-09 (Hallmark) | `ui.visual-direction`, `/xyeena-design` | Execution (on approval) | **ADAPT:** Taste-driven visual direction avoiding generic Bootstrap/Tailwind template patterns. |
+| `/dispatching-parallel-agents`| RE-01 (Superpowers) | RE-20 (Xyeena) | `orchestration.dag`, `orchestration.parallel` | Orchestration | **ADAPT:** Cortex DAG task dispatcher across independent subtasks with strict write serialization. |
+| `/huashu-design` | RE-32 (Huashu Design)| RE-07 (Impeccable) | `ui.editorial-layout`, `/xyeena-design` | Execution (on approval) | **ADAPT:** High-craft editorial framing, typography hierarchy, visual rhythm for presentations and UI. |
+| `/impeccable` | RE-07 (Impeccable) | RE-03 (Anti-Slop) | `ui.craft-critique`, `/xyeena-design` | Review / Execution | **ADAPT:** Iterative design critique, micro-interaction polish, alignment and spacing verification. |
+| `/ponytail` | RE-04 (Ponytail) | RE-02 (Superior) | `quality.lean-diff`, `architecture.smallest-change` | Implementation / Review | **ADAPT:** Smallest correct change discipline; flags premature abstraction and unnecessary wrappers. |
+| `/receiving-code-review`| RE-01 (Superpowers)| RE-20 (Xyeena) | `review.receive-feedback` | Discussion / Execution | **ADAPT:** Rigorous verification of review comments before implementation; rejects performative agreement. |
+| `/sub-agents` | RE-01 (Superpowers) | RE-20 (Xyeena) | `orchestration.subagent-runner` | Orchestration | **ADAPT:** Invokes host-native subagents under strict parent budget, memory isolation, and consent gates. |
+| `/subagent-driven-development`| RE-01 (Superpowers)| RE-20 (Xyeena) | `orchestration.dag-subagent` | Orchestration | **ADAPT:** Coordinates independent parallel implementation slices using isolated workspaces and verification gates. |
+| `/ui-ux-pro-max` | RE-11 (UI UX Pro Max)| RE-17 (Google Design)| `ui.systematic-specs`, `/xyeena-design` | Execution (on approval) | **ADAPT:** Derives 3-layer design tokens, responsive layout states, and accessible color scales. |
+| `/using-superpowers` | RE-01 (Superpowers) | RE-20 (Xyeena) | `orchestration.workflow-discipline` | Universal Protocol | **ADAPT:** Enforces pre-implementation investigation, phased execution plans, and proof before claims (DEC-32). |
+| `/verification-before-completion`| RE-01 (Superpowers)| RE-20 (Xyeena) | `quality.evidence-gate`, `xyeena-verify` | Phase Boundary Gate | **ADAPT:** Mandatory fresh execution evidence before any task completion or PR readiness claim (DEC-31/32). |
+| `/writing-plans` | RE-01 (Superpowers) | RE-02 (Superior) | `planning.phased-plan`, `xyeena-plan` | Discussion Mode | **ADAPT:** Generates reviewable, dependency-ordered implementation phases with explicit verification commands. |
+
+---
+
+## 3. Upstream Licensing & Provenance Summary
+
+1. **Permissive MIT Licenses (RE-01, 02, 03, 04, 05, 08, 09, 10, 11, 13, 20, 32):**
+   - Retain original copyright notices and permission notices in `NOTICE.md` upon any source redistribution.
+   - Adaptation into native Xyeena capability contracts preserves behavioral semantics without dependency bloat.
+2. **Apache-2.0 Licenses (RE-06, 07, 16, 17, 31):**
+   - Prominently state changes made to adapted algorithms.
+   - Retain copyright, patent, and trademark notices.
+   - Distinct from MIT; ensure Apache-2.0 terms are honored for derived components.
+3. **Standards & Normative References (RE-21..30):**
+   - Cited as authoritative behavioral standards (e.g. W3C WCAG 2.2 relative luminance formula: $L = 0.2126R + 0.7152G + 0.0722B$).
+   - Implementations are native pure-mathematical utilities in `src/methods/quality.mjs`.
+4. **Third-Party Control Loop Isolation:**
+   - No external framework (Konoha, Superpowers, LangGraph) is permitted to run as an independent background daemon or supersede Cortex.
+   - All capabilities execute as synchronous or asynchronous functional handlers within the unified Xyeena Cortex registry.

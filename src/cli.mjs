@@ -14,9 +14,16 @@ import { interactiveSetup, previewSetup, applySetup, previewSetupDiff } from './
 import { listSetupBackups, previewSetupRollback, runSetupRollback } from './setup-rollback.mjs';
 import { setupHealthCheck } from './setup-health.mjs';
 import { previewCompactSetup, applyCompactSetup } from './compact-setup.mjs';
-const help=`Xyeena Rig ${VERSION}
+import { InstallationTransaction, BRAND_METADATA } from './installer/index.mjs';
+const help=`Xyeena Rig ${VERSION} (${BRAND_METADATA.suite} - Engine: ${BRAND_METADATA.engine})
+${BRAND_METADATA.tagline}
 
 Usage:
+  xyeena install [--runtime HOST] [--scope workspace|global] [--mode copy|symlink] [--dry-run|--yes] [--force]
+  xyeena uninstall [--runtime HOST] [--scope workspace|global] [--dry-run|--yes]
+  xyeena repair [--runtime HOST] [--scope workspace|global] [--dry-run|--yes]
+  xyeena cortex status                          # inspect Cortex default engine health & invariants
+  xyeena cortex inspect --prompt TEXT           # trace Cortex intent, tier, skills, & delegation
   xyeena setup                                  # guided: global/workspace, copy/symlink, AI runtimes
   xyeena setup --scope global --mode copy --runtime antigravity --preset complete --dry-run
   xyeena setup --scope global --mode symlink --runtime "gemini,hermes" --preset balanced --yes
@@ -68,6 +75,48 @@ export async function main(args){
  const cmd=args[0]||'help', f=parseFlags(args.slice(1));
  if(['help','--help','-h'].includes(cmd) || f.help || f._.includes('-h') || f._.includes('help')){console.log(help);return}
  if(['version','--version','-v'].includes(cmd)){console.log(VERSION);return}
+ if(cmd==='install'||cmd==='installer'){
+    const cwd=path.resolve(f.dir||process.cwd());
+    const tx=new InstallationTransaction({
+      cwd,runtime:f.runtime||'antigravity',scope:f.scope||'workspace',
+      mode:f.mode||'copy',home:f.home
+    });
+    if(f.dryRun){console.log(JSON.stringify(tx.plan(),null,2));return}
+    if(!f.yes)throw new Error('Pass --dry-run to preview or --yes to execute installation; no files written');
+    const fingerprint = f['diff-approved-fingerprint'] || f.diffApprovedFingerprint;
+    console.log(JSON.stringify(tx.execute({force:f.force===true, ...(fingerprint ? {diffApprovedFingerprint: fingerprint} : {})}),null,2));return;
+ }
+ if(cmd==='repair'){
+    const cwd=path.resolve(f.dir||process.cwd());
+    const tx=new InstallationTransaction({
+      cwd,runtime:f.runtime||'antigravity',scope:f.scope||'workspace',
+      mode:f.mode||'copy',home:f.home
+    });
+    if(f.dryRun){console.log(JSON.stringify(tx.plan(),null,2));return}
+    if(!f.yes)throw new Error('Pass --dry-run to preview or --yes to execute repair; no files written');
+    const fingerprint = f['diff-approved-fingerprint'] || f.diffApprovedFingerprint;
+    console.log(JSON.stringify(tx.execute({force:true, ...(fingerprint ? {diffApprovedFingerprint: fingerprint} : {})}),null,2));return;
+ }
+ if(cmd==='uninstall'){
+    const cwd=path.resolve(f.dir||process.cwd());
+    const tx=new InstallationTransaction({
+      cwd,runtime:f.runtime||'antigravity',scope:f.scope||'workspace',home:f.home
+    });
+    if(f.dryRun){
+      const p=tx.planUninstall();
+      console.log(JSON.stringify({brand:BRAND_METADATA.brand,dryRun:true,...p},null,2));
+      return;
+    }
+    if(!f.yes)throw new Error('Pass --dry-run to preview or --yes to execute uninstall; no files changed');
+    const fingerprint = f['diff-approved-fingerprint'] || f.diffApprovedFingerprint;
+    const allowModifiedRemoval = f['allow-modified-removal'] === true || f.allowModifiedRemoval === true;
+    console.log(JSON.stringify(tx.uninstall({
+      force: f.force === true,
+      allowModifiedRemoval,
+      ...(fingerprint ? { diffApprovedFingerprint: fingerprint } : {})
+    }), null, 2));
+    return;
+ }
  if(cmd==='setup'){
     const sub=f._[0];
     if(sub==='compact'){
@@ -156,9 +205,42 @@ export async function main(args){
     return;
   }
  if(cmd==='doctor'){console.log(JSON.stringify(doctor(path.resolve(f.dir||process.cwd())),null,2));return}
- if(cmd==='check'){const r=validateSource(path.resolve(f.source||PACKAGE_ROOT)); if(!r.ok){for(const e of r.errors)console.error(`[FAIL] ${e}`);process.exitCode=1}else console.log(`[PASS] ${r.capabilities.length} capabilities + runtime manifests`);return}
+ if(cmd==='check'){const r=validateSource(path.resolve(f.source||PACKAGE_ROOT)); if(!r.ok){for(const e of r.errors)console.error(`[FAIL] ${e}`);process.exitCode=1}else console.log(`[PASS] ${r.capabilities.length} agent skills + ${r.nativeContractsCount || 64} native capability contracts + runtime manifests validated`);return}
  if(cmd==='list'){for(const c of loadRegistry())console.log(`${c.metadata.name}\t${c.activation.class}\t${c.metadata.category}`);return}
- if(cmd==='resolve'){if(!f.prompt)throw new Error('--prompt is required'); const r=resolveCapabilities(loadRegistry(),{prompt:f.prompt,state:f.state||'TRIAGE',paths:f.path?[f.path]:[]}); console.log(JSON.stringify(r,null,2));return}
+ if(cmd==='cortex'){
+    const sub=f._[0]||'status';
+    const { createDefaultCortex } = await import('./core/index.mjs');
+    const cortex = createDefaultCortex();
+    if(sub==='status'){
+      console.log(JSON.stringify(cortex.getStatus(), null, 2));
+      return;
+    }
+    if(sub==='inspect'){
+      if(!f.prompt) throw new Error('--prompt is required for cortex inspect');
+      console.log(JSON.stringify(cortex.inspect(f.prompt), null, 2));
+      return;
+    }
+    throw new Error('Usage: xyeena cortex status|inspect [--prompt TEXT]');
+ }
+ if(cmd==='resolve'){
+    if(!f.prompt)throw new Error('--prompt is required');
+    const { createDefaultCortex } = await import('./core/index.mjs');
+    const cortex = createDefaultCortex();
+    const cortexPlan = cortex.resolve(f.prompt);
+    const legacyRes = resolveCapabilities(loadRegistry(),{prompt:f.prompt,state:f.state||'TRIAGE',paths:f.path?[f.path]:[]});
+    console.log(JSON.stringify({
+      ...legacyRes,
+      cortex: {
+        engine: cortexPlan.engine,
+        mode: cortexPlan.mode,
+        tier: cortexPlan.tier,
+        workflow: cortexPlan.workflow,
+        activeCapabilities: cortexPlan.activeCapabilities,
+        explicitSkills: cortexPlan.explicitSkills
+      }
+    },null,2));
+    return;
+ }
  if(cmd==='skills'){
     const directory=path.resolve(f.dir||process.cwd());
     if(f._[0]==='matrix'){

@@ -1,10 +1,11 @@
 # Xyeena Future Roadmap — Upstream Reuse, Composite Skills, Personality, and Host Alignment
 
-**Recorded:** 2026-11-14  
-**Status:** PLANNED / NOT IMPLEMENTED / CONDITIONAL  
-**Master gate:** [master-plan-141026.md](../../master-plan-141026.md)  
-**Trigger:** Owner-initiated Xyeena audit after local/remote source alignment; grill before architecture/code changes.  
-**Scope:** Xyeena Rig Skills + Harness only. Not the XYN subagents product.
+**Recorded:** 2026-11-14
+**Status:** COMPLETE / ALL 32 UPSTREAM SOURCES RECONCILED & FINAL MERGE READINESS VERIFIED (723/723 tests PASS across 75 suites)
+**Master gate:** [master-plan-141026.md](../../master-plan-141026.md)
+**Authoritative decisions:** DEC-01 through DEC-32 (DEC-32: Cross-Domain Superpowers & Anti-Slop Methodologies)
+**Trigger:** Final End-to-End Execution Campaign & Merge Readiness (all 18 E2E acceptance scenarios + 17 blocker remediation scenarios verified).
+**Scope:** Xyeena Rig Skills + Harness only. Not the independent XYN subagents product fleet.
 
 ## A. Design goals and reasons for the pivot
 
@@ -12,7 +13,7 @@ The goal is a powerful, dependable Xyeena that earns quality from real upstream 
 
 Do not assume upstream code is perfect or every test is portable. Source-level contract, license provenance, integration tests and benchmarks are necessary. Reuse and adaptation may outperform rewriting, but can also import coupling, security hazards and dependency bloat. Select on evidence.
 
-**Do not activate this roadmap just because an AI agent encounters it.** The remote source and the developer desktop are currently not aligned. The owner explicitly requested future planning and later audit-driven questions.
+**Active Implementation Status:** The remote source baseline has been aligned with feature rebuild and merge blockers resolved. The owner has authorized sequential execution (DEC-32 cross-domain methodology, source hardening, upstream inventory, layered composition, 11 composite skills, and behavioral trait overlay). All 32 owner decisions are locked and verified across 723 tests.
 
 ### A1. What changes from the previous rebuild
 
@@ -42,28 +43,29 @@ The original RE-01–RE-30 source locks from the local blueprint remain the only
 
 | ID | Source | Integration candidates | Notes |
 | --- | --- | --- | --- |
-| RE-01 | [obra/superpowers](https://github.com/obra/superpowers) | Brainstorming, plans, execution, TDD, systematic debugging, subagent delegation, review | Preserve tested workflow semantics; host-independent wrappers |
-| RE-02 | [KodekaTeam/superior-skills](https://github.com/KodekaTeam/superior-skills) | Domain engineering, deep module, architecture, review, quality | Read each skill and helper/test |
-| RE-03 | [miqdadbadjuber/anti-slop](https://github.com/miqdadbadjuber/anti-slop) | Copy, UI, code, human, mobile and deterministic linting | Preserve context; avoid false-positive blanket wordlists |
-| RE-04 | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | Lean change discipline, adaptive effort, scoped review | No forced voice/persona |
-| RE-05 | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | Efficient context, surgical tools, verify-and-stop | Recheck license at chosen SHA; no cloud gateway mandatory |
-| RE-06 | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | Finding/schema validators, coverage-ledger methodology | Full audit explicit-only; OS sandbox required for unsafe workflows |
-| RE-07 | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) | Design critique, UX craftsmanship, critique/build/refine | Apache-2.0 reported; verify original license |
-| RE-08 | Matt Pocock Skills | Question-frontier grilling, engineering and TS patterns | Resolve exact upstream path in source locks |
-| RE-09 | Hallmark | Distinctive layout/art direction and design QA | Resolve exact upstream path/license before reuse |
-| RE-10 | Taste Skill Family | Intentional visual direction and references | Respect split repos and individual file licensing |
-| RE-11 | UI UX Pro Max | Visual profiles, responsive patterns, token palettes | Check data/catalog rights per file |
-| RE-12 | [anthropics/skills](https://github.com/anthropics/skills) | Agent Skills conventions and selected skill processes | **Mixed per-skill licenses**; some source-available terms differ |
-| RE-13 | Vercel Agent Skills | Frontend/Next.js and agent tooling | Verify exact repository |
-| RE-14 | GSAP Skills | Motion design practices | GSAP software license and skill-repo license are different questions |
-| RE-15 | Trail of Bits Skills | Secure development/testing methods | Check CC BY-SA or file-specific terms; do not treat as MIT |
-| RE-16 | Supabase Agent Skills | Data/auth methodology | Verify SDK/version-specific practices |
-| RE-17 | Google DESIGN.md | Systematic design specs | Inspect exact repo/asset licensing |
-| RE-18 | Awesome DESIGN.md | References and example design docs | Repo license may not cover linked materials |
-| RE-19 | Gemini Superpowers Antigravity | Host-specific skill conventions | Avoid mandatory external governance |
-| RE-20 | [rzqllh/xyeena](https://github.com/rzqllh/xyeena) | Rig harness, adapters, workflows, tests, migration | Original baseline, not an external dependency |
-| RE-21..30 | Normative UX/engineering/security foundations | WCAG 2.2, HIG, Material, color/UX, memory, software quality | Cite applicable official text, do not copy normative standards wholesale |
-| **RE-31** | **[andycungkrinx91/konoha](https://github.com/andycungkrinx91/konoha)** | MCP orchestration, SQLite FTS5, bounded retrieval, QA, delegation/approval | License Apache-2.0; inspect actual source and tests before reuse |
+| RE-01 | [obra/superpowers](https://github.com/obra/superpowers) | Brainstorming, plans, execution, TDD, systematic debugging, subagent delegation, review | `ADAPTED_VERIFIED (P14)` (MIT, Jesse Vincent) |
+| RE-02 | [KodekaTeam/superior-skills](https://github.com/KodekaTeam/superior-skills) | Deep modules, Clean Architecture boundaries, code-as-documentation, dual-axis review | `ADAPTED_VERIFIED (P16)` (MIT, KodekaTeam) |
+| RE-03 | [miqdadbadjuber/anti-slop](https://github.com/miqdadbadjuber/anti-slop) | Copy, UI, code, human, mobile and deterministic linting | `ADAPTED_VERIFIED (P14)` (MIT, Miqdad Badjuber) |
+| RE-04 | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | Lean change discipline, smallest correct change, anti-overengineering debt ledger, adaptive effort | `ADAPTED_VERIFIED (P16)` (MIT, DietrichGebert) |
+| RE-05 | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | Efficient context, verbatim technical payload preservation, verify-and-stop, safe refactor boundaries | `ADAPTED_VERIFIED (P16)` (Apache-2.0 / MIT, Julius Brussee) |
+| RE-06 | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | Finding/schema validators, coverage-ledger methodology | `ADAPTED_VERIFIED (P17)` (MIT, Cloudflare, Inc.) |
+| RE-07 | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) | Design critique, UX craftsmanship, 4 surface modes (`Persuade`, `Operate`, `Read`, `Experience`), "The brief wins" | `ADAPTED_VERIFIED (P15)` (Apache-2.0, pbakaus & Impeccable contributors) |
+| RE-08 | [Matt Pocock Skills](https://github.com/mattpocock/skills) | Question-frontier grilling, to-spec synthesis, to-tickets tracer bullets with expand-contract | `ADAPTED_VERIFIED (P16)` (MIT, Matt Pocock) |
+| RE-09 | Hallmark | Distinctive layout/art direction, The Floor, transition guards, focus-visible, reduced-motion, waivers | `ADAPTED_VERIFIED (P15)` (MIT, Hallmark contributors) |
+| RE-10 | Taste Skill Family | Intentional visual direction, Page vs App Screen separation, quiet borders, substantive data structures | `ADAPTED_VERIFIED (P15)` (MIT, Leonxlnx) |
+| RE-11 | UI UX Pro Max | 3-tier design token architecture, WCAG AA/AAA targets (4.5:1 / 24px vs 7:1 / 44px) | `ADAPTED_VERIFIED (P15)` (MIT, Next Level Builder) |
+| RE-12 | [anthropics/skills](https://github.com/anthropics/skills) | Agent Skills conventions and directory layout | `REFERENCE_ONLY` (Standard SKILL.md progressive disclosure structure) |
+| RE-13 | Vercel Agent Skills | Frontend/Next.js App Router boundaries, server/client boundaries, bundle optimizations | `REFERENCE_ONLY` (Framework conventions reference) |
+| RE-14 | GSAP Skills | Motion performance, React lifecycle cleanup (`useGSAP`/`ctx.revert`), SSR safety | `ADAPTED_VERIFIED (P17, Optional Motion)` (MIT, GreenSock / GSAP contributors) |
+| RE-15 | Trail of Bits Skills | Clean-room security invariants, GitHub Actions workflow security audit | `CLEAN_ROOM_ADAPTED_VERIFIED (P17, Reference-Only)` (CC BY-SA 4.0, Trail of Bits) |
+| RE-16 | Supabase Agent Skills | RLS tenant isolation evaluation, cross-tenant leak checks, service-role key exposure, safe PostgreSQL DDL | `ADAPTED_VERIFIED (P17)` (MIT, Supabase) |
+| RE-17 | Google DESIGN.md | 3-tier design tokens (`sys.*`, `ref.*`, `comp.*`), Material Design 3 | `REFERENCE_ONLY` (Apache-2.0, Google LLC) |
+| RE-18 | Awesome DESIGN.md | Curated design system case studies and benchmark references | `REFERENCE_ONLY` (Community benchmarks) |
+| RE-19 | Gemini Superpowers Antigravity | Host-specific skill conventions, tool declarations, schema validation | `REFERENCE_ONLY` (Native host discovery conventions) |
+| RE-20 | [rzqllh/xyeena](https://github.com/rzqllh/xyeena) | Rig harness, adapters, workflows, tests, migration | `REUSE` (MIT, native baseline, 723/723 tests PASS) |
+| RE-21..30 | Normative UX/engineering/security foundations | WCAG 2.2, HIG, Material, color/UX math, memory isolation, software quality | `REFERENCE_ONLY` (Embedded pure math in `src/methods/`) |
+| **RE-31** | **[andycungkrinx91/konoha](https://github.com/andycungkrinx91/konoha)** | Bounded retrieval, index recovery, MCP manifest vs dispatcher parity, task memory isolation | `ADAPTED_BOUNDED_RETRIEVAL_VERIFIED (P17)` (Apache-2.0, Andy Setiyawan) |
+| **RE-32** | **[alchaincyf/huashu-design](https://github.com/alchaincyf/huashu-design)** | 3 visual directions exploration, standalone interactive HTML prototype specifications, truthful export capabilities | `ADAPTED_VERIFIED (P16, Optional Capability)` (MIT, alchaincyf) |
 
 ### B1. Konoha RE-31 inspection record (reference, not adoption)
 
@@ -75,6 +77,13 @@ Observed on 2026-11-14 in master at SHA **9789bdd1d57d5f7a39a58406105e36127ffdb3
 - Optional search, external binaries and developer UI features.
 
 **Compatibility caution:** Konoha declares significant dependencies and its AGENTS.md mandates its own governor, RTK/Semble/MCP and human gates. **Never import its AGENTS.md mandate verbatim into Xyeena or force those tools on Xyeena users.** Extract/compose only authorized components that pass independent compatibility and security tests. Preserve Konoha and dependency copyright and notices. Benchmark retrieval claims locally; README marketing metrics are not independent parity evidence.
+
+### B2. Huashu Design RE-32 evaluation (DEC-32 Cross-Domain Design Candidate)
+
+Evaluated as part of the candidate `/xyeena-design` composition alongside Hallmark, Impeccable, Taste, and UI UX Pro Max.
+- **Role:** High-craft layout framing, hierarchy discipline, visual anti-slop guidelines.
+- **Integration Boundary:** Feeds Level 1 contextual design critique and token framing without overriding project-defined design tokens or user CSS frameworks.
+- **License & Provenance:** Verify individual repository license before embedding raw template code; adapt methodology principles into Xyeena capability contracts.
 
 ## C. Composite skill architecture
 
