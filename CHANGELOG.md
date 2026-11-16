@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.1] - 2026-11-16
+
+### Fixed
+- **Manifest Schema v2 Detection in Health Check:** Resolved `hostListedInManifest: false` regression in `xyeena setup check` / `setupHealthCheck` when inspecting workspaces installed via the v0.5.0 transactional installer. The health check reader is now polymorphic: it correctly validates Schema v2 manifests storing `"runtime": "<host>"` as a singular string while preserving full backward-compatibility for Schema v1 legacy `"runtimes": [...]` arrays.
+- **Canonical Schema Writer Isolation:** Retained Schema v2 canonical structure on the installer write path without introducing duplicate array fields into managed `install.json` files.
+
+### Added
+- **Automated Schema Regression Tests:** Added unit tests in `test/setup-health.test.mjs` verifying positive and negative host detection across both Schema v1 (`runtimes` array) and Schema v2 (`runtime` string) configurations, as well as safe fallback handling for missing or malformed manifests.
+
+### Clarifications
+- This patch addresses manifest metadata parsing in health check diagnostic tooling. It does not alter live host runtime hook enforcement boundaries, which remain truthfully classified under epistemic standards as `HOST CONFIGURED / LIVE ACTIVATION UNVERIFIED`.
+
 ## [0.5.0] - 2026-11-16
 
 ### Implemented

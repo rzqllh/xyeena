@@ -1,8 +1,8 @@
 # CLI Reference
 
-See [current source/host status](STATUS.md) for dated host evidence and limitations. The `0.5.0` commands below are available from the release-candidate source; the last recorded public npm baseline remains `0.4.1` until publication is independently verified. Antigravity IDE native hook enforcement remains blocked.
+See [current source/host status](STATUS.md) for dated host evidence and limitations. The commands below reflect the `0.5.1` patch release; the baseline public npm package is `xyeena-agent@0.5.0`. Antigravity IDE native hook enforcement remains blocked.
 
-Use `npx --yes xyeena-agent@0.4.1` only for commands actually supported by that published baseline. Run `node bin/xyeena.mjs` in the `0.5.0` release-candidate checkout for new Cortex and transactional installer commands. Do not run `npx xyeena-agent@0.5.0` before npm publication succeeds.
+Run commands with `node bin/xyeena.mjs` in the `0.5.1` checkout or `npx --yes xyeena-agent` once published. Antigravity IDE hook enforcement remains unverified in live IDE sessions.
 
 ---
 
