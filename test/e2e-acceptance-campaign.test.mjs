@@ -31,6 +31,7 @@ import os from 'node:os';
 import {
   KnowledgeMethods,
   SecurityMethods,
+  LiveDatabaseAdapter,
   DesignMethods,
   EngineeringMethods,
   QualityMethods,
@@ -323,7 +324,7 @@ Hope this helps! Let me know if you need anything else!
   });
 
   // Scenario 11: Supabase/Postgres safety analysis (with truthful static check pass)
-  it('Scenario 11: Supabase/Postgres safety analysis enforces epistemic truthfulness: static check passes without claiming live verification', () => {
+  it('Scenario 11: Supabase/Postgres safety analysis enforces epistemic truthfulness: static check passes without claiming live verification', async () => {
     // 1. Static policy check ONLY: must return STATIC_CHECK_PASS and requiresLiveValidation: true
     const staticCheck = SecurityMethods.evaluateRlsPolicy({
       tableName: 'tenant_accounts',
@@ -350,13 +351,44 @@ Hope this helps! Let me know if you need anything else!
     assert.strictEqual(selfAssertedCheck.verdict, 'STATIC_CHECK_PASS');
     assert.strictEqual(selfAssertedCheck.requiresLiveValidation, true);
     assert.strictEqual(selfAssertedCheck.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
+    assert.strictEqual(selfAssertedCheck.receiptRejected, true);
 
-    // 3. Cryptographically valid, structured live execution receipt: returns RLS_LIVE_ISOLATION_VERIFIED
-    const validReceipt = SecurityMethods.createRlsQueryReceipt({
+    // 3. Fake / manufactured receipt without authorized LiveDatabaseAdapter is rejected
+    const fakeReceipt = SecurityMethods.createRlsQueryReceipt({
       tableName: 'tenant_accounts',
-      dbEnvironment: 'postgres-staging',
-      positiveQuery: { query: 'SELECT * FROM tenant_accounts WHERE user_id = auth.uid()', status: 'SUCCESS', rowsReturned: 3 },
-      negativeQuery: { query: 'SELECT * FROM tenant_accounts WHERE user_id != auth.uid()', status: 'ACCESS_DENIED', rowsReturned: 0 }
+      dbEnvironment: 'postgres-staging'
+    });
+    const fakeReceiptCheck = SecurityMethods.evaluateRlsPolicy({
+      tableName: 'tenant_accounts',
+      rlsEnabled: true,
+      policies: [
+        { name: 'tenant_isolation', definition: 'auth.uid() = user_id' }
+      ],
+      trustedQueryReceipt: fakeReceipt
+    });
+    assert.strictEqual(fakeReceiptCheck.verdict, 'STATIC_CHECK_PASS');
+    assert.strictEqual(fakeReceiptCheck.requiresLiveValidation, true);
+    assert.strictEqual(fakeReceiptCheck.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
+    assert.strictEqual(fakeReceiptCheck.receiptRejected, true);
+
+    // 4. Authorized LiveDatabaseAdapter with active client: returns RLS_LIVE_ISOLATION_VERIFIED
+    const liveAdapter = new LiveDatabaseAdapter({
+      environment: 'postgres-staging',
+      client: {
+        query: async ({ query, principal }) => {
+          if (query.includes('WHERE tenant_id = $1')) {
+            return { rows: [], rowCount: 0, error: 'ACCESS_DENIED' };
+          }
+          return { rows: [{ id: '1', user_id: principal.id }], rowCount: 1 };
+        }
+      }
+    });
+    const probe = await liveAdapter.executeIsolationProbe({
+      tableName: 'tenant_accounts',
+      testPrincipals: [
+        { id: 'usr-1', tenantId: 'tenant-a' },
+        { id: 'usr-2', tenantId: 'tenant-b' }
+      ]
     });
     const liveCheck = SecurityMethods.evaluateRlsPolicy({
       tableName: 'tenant_accounts',
@@ -364,7 +396,8 @@ Hope this helps! Let me know if you need anything else!
       policies: [
         { name: 'tenant_isolation', definition: 'auth.uid() = user_id' }
       ],
-      trustedQueryReceipt: validReceipt
+      liveDatabaseAdapter: liveAdapter,
+      liveProbeResult: probe
     });
     assert.strictEqual(liveCheck.verdict, 'RLS_LIVE_ISOLATION_VERIFIED');
     assert.strictEqual(liveCheck.requiresLiveValidation, false);

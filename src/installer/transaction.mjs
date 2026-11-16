@@ -645,16 +645,15 @@ export class InstallationTransaction {
       }
     }
 
-    // 2. Restore all replaced files from backup
-    if (Array.isArray(journal.replacedFiles)) {
-      for (const item of journal.replacedFiles) {
-        const backupSource = path.join(backupDir, ...item.path.split('/'));
-        const targetDest = path.join(this.cwd, ...item.path.split('/'));
-        if (fs.existsSync(backupSource)) {
-          fs.mkdirSync(path.dirname(targetDest), { recursive: true });
-          fs.copyFileSync(backupSource, targetDest);
-          restored.push(item.path);
-        }
+    // 2. Restore all replaced or removed files from backup
+    const filesToRestore = (journal.replacedFiles || []).concat(journal.removedFiles || []);
+    for (const item of filesToRestore) {
+      const backupSource = path.join(backupDir, ...item.path.split('/'));
+      const targetDest = path.join(this.cwd, ...item.path.split('/'));
+      if (fs.existsSync(backupSource)) {
+        fs.mkdirSync(path.dirname(targetDest), { recursive: true });
+        fs.copyFileSync(backupSource, targetDest);
+        restored.push(item.path);
       }
     }
 
@@ -781,6 +780,7 @@ export class InstallationTransaction {
           operation: 'UNINSTALL_MODIFIED_REMOVAL',
           runtime: this.runtime,
           scope: this.scope,
+          destinationIdentity: this.targetDir,
           files: modifiedFiles
         })
       : null;
@@ -815,6 +815,8 @@ export class InstallationTransaction {
     // they MUST provide the exact matching cryptographic consent fingerprint.
     // --force is NOT consent: passing force: true cannot bypass this contract.
     let consentValid = false;
+    const consentedPathSet = new Set();
+
     if (plan.hasUserModifications) {
       if (options.allowModifiedRemoval === true) {
         if (!options.diffApprovedFingerprint || typeof options.diffApprovedFingerprint !== 'string' || options.diffApprovedFingerprint.trim() === '') {
@@ -829,144 +831,248 @@ export class InstallationTransaction {
           throw err;
         }
 
-        if (options.diffApprovedFingerprint !== plan.uninstallConsentFingerprint) {
-          const err = new Error(
-            `Uninstall consent fingerprint mismatch. Expected ${plan.uninstallConsentFingerprint}, received ${options.diffApprovedFingerprint}.\n` +
-            `Fail-closed: user-modified files will not be touched.`
-          );
-          err.code = 'UNINSTALL_CONSENT_MISMATCH';
-          err.expectedFingerprint = plan.uninstallConsentFingerprint;
-          err.receivedFingerprint = options.diffApprovedFingerprint;
-          throw err;
-        }
-
-        // Pre-mutation revalidation from disk (TOCTOU prevention)
-        for (const item of plan.modifiedFiles) {
-          if (!fs.existsSync(item.absPath)) {
-            throw new Error(`TOCTOU security violation: file disappeared before removal: ${item.path}`);
+        // 1. Check if matching full consent fingerprint (all modified files)
+        if (options.diffApprovedFingerprint === plan.uninstallConsentFingerprint) {
+          for (const f of plan.modifiedFiles) {
+            consentedPathSet.add(slash(f.path));
           }
-          const freshBuf = fs.readFileSync(item.absPath);
-          const freshHash = hashBuffer(freshBuf);
-          if (freshHash !== item.currentSha256) {
-            throw new Error(`TOCTOU security violation: file was modified on disk after consent fingerprint was generated: ${item.path}`);
-          }
-        }
-
-        consentValid = true;
-      }
-    }
-
-    // Create backup before uninstall
-    const backupId = `${new Date().toISOString().replace(/[:.]/g, '-')}-uninstall-${crypto.randomBytes(4).toString('hex')}`;
-    const backupDir = path.join(this.backupDirBase, backupId);
-    fs.mkdirSync(backupDir, { recursive: true });
-
-    const removed = [];
-    const preserved = plan.willPreserve.slice();
-
-    const detection = detectInstallationState({
-      cwd: this.cwd,
-      runtime: this.runtime,
-      scope: this.scope,
-      home: this.home
-    });
-
-    const ownership = scanDirectoryOwnership({
-      targetDir: this.targetDir,
-      manifest: detection.manifest
-    });
-
-    const baseline = computePackageBaseline(SKILLS_DIR);
-
-    // Remove only verified owned, unmodified skill files (or consented modified files)
-    for (const skillName of ownership.owned) {
-      const skillPath = path.join(this.targetDir, skillName);
-      if (fs.existsSync(skillPath)) {
-        // Backup skill files first
-        const absDst = path.join(backupDir, skillName);
-        fs.cpSync(skillPath, absDst, { recursive: true });
-
-        const isSymlink = fs.lstatSync(skillPath).isSymbolicLink();
-        if (isSymlink) {
-          fs.unlinkSync(skillPath);
-          removed.push(slash(path.relative(this.cwd, skillPath)));
-          continue;
-        }
-
-        const skillFiles = listFilesRecursive(skillPath);
-        for (const rel of skillFiles) {
-          const absFilePath = path.join(skillPath, rel);
-          const packageKey = `${skillName}/${rel}`;
-          const targetRel = slash(path.relative(this.cwd, absFilePath));
-
-          const inBaseline = baseline.has(packageKey);
-          const inManifest = detection.manifest && Array.isArray(detection.manifest.files) && detection.manifest.files.includes(targetRel);
-
-          if (!inBaseline && !inManifest) {
-            // Unowned custom file inside official skill directory! PRESERVE IT!
-            preserved.push(targetRel);
-            continue;
-          }
-
-          const curBuf = fs.readFileSync(absFilePath);
-          const isOfficial = isKnownOfficialBaseline(packageKey, curBuf, baseline);
-          if (!isOfficial) {
-            if (!consentValid) {
-              // DEC-26: Preserved without valid consent contract
-              preserved.push(targetRel);
-              continue;
+          consentValid = true;
+        } else {
+          // 2. Check selective per-file consent
+          let matchedSelective = false;
+          if (Array.isArray(options.approvedFiles) && options.approvedFiles.length > 0) {
+            const subsetFiles = plan.modifiedFiles.filter(f =>
+              options.approvedFiles.includes(f.path) || options.approvedFiles.includes(slash(f.path))
+            );
+            if (subsetFiles.length > 0) {
+              const subsetFp = computeUninstallConsentFingerprint({
+                operation: 'UNINSTALL_MODIFIED_REMOVAL',
+                runtime: this.runtime,
+                scope: this.scope,
+                destinationIdentity: this.targetDir,
+                files: subsetFiles
+              });
+              if (options.diffApprovedFingerprint === subsetFp) {
+                for (const f of subsetFiles) {
+                  consentedPathSet.add(slash(f.path));
+                }
+                consentValid = true;
+                matchedSelective = true;
+              }
             }
           }
 
-          fs.unlinkSync(absFilePath);
-          removed.push(targetRel);
+          if (!matchedSelective) {
+            // Check each individual modified file for single-file consent match
+            for (const f of plan.modifiedFiles) {
+              const singleFp = computeUninstallConsentFingerprint({
+                operation: 'UNINSTALL_MODIFIED_REMOVAL',
+                runtime: this.runtime,
+                scope: this.scope,
+                destinationIdentity: this.targetDir,
+                files: [f]
+              });
+              if (options.diffApprovedFingerprint === singleFp) {
+                consentedPathSet.add(slash(f.path));
+                consentValid = true;
+                matchedSelective = true;
+                break;
+              }
+            }
+          }
+
+          if (!consentValid) {
+            const err = new Error(
+              `Uninstall consent fingerprint mismatch. Expected ${plan.uninstallConsentFingerprint}, received ${options.diffApprovedFingerprint}.\n` +
+              `Fail-closed: user-modified files will not be touched.`
+            );
+            err.code = 'UNINSTALL_CONSENT_MISMATCH';
+            err.expectedFingerprint = plan.uninstallConsentFingerprint;
+            err.receivedFingerprint = options.diffApprovedFingerprint;
+            throw err;
+          }
         }
 
-        // Clean directory only if completely empty
-        try {
-          fs.rmdirSync(skillPath);
-        } catch {
-          // Directory not empty because user custom/modified files are preserved
+        // Pre-mutation revalidation from disk (TOCTOU prevention) for consented files
+        for (const item of plan.modifiedFiles) {
+          if (consentedPathSet.has(slash(item.path))) {
+            if (!fs.existsSync(item.absPath)) {
+              throw new Error(`TOCTOU security violation: file disappeared before removal: ${item.path}`);
+            }
+            const freshBuf = fs.readFileSync(item.absPath);
+            const freshHash = hashBuffer(freshBuf);
+            if (freshHash !== item.currentSha256) {
+              throw new Error(`TOCTOU security violation: file was modified on disk after consent fingerprint was generated: ${item.path}`);
+            }
+          }
         }
       }
     }
 
-    // Remove rules if owned
-    if (this.runtime === 'antigravity' && this.scope === 'workspace') {
-      const rulePath = path.join(this.cwd, '.agents', 'rules', 'xyeena-core.md');
-      if (fs.existsSync(rulePath)) {
-        fs.copyFileSync(rulePath, path.join(backupDir, 'xyeena-core.md'));
-        const ruleBuf = fs.readFileSync(rulePath);
-        const baselineRule = baseline.get('.rules/xyeena-core.md');
-        const isOfficialRule = baselineRule && baselineRule.sha256 === hashBuffer(ruleBuf);
-        const ruleRel = slash(path.relative(this.cwd, rulePath));
-        if (!isOfficialRule) {
-          if (!consentValid) {
-            preserved.push(ruleRel);
+    // Acquire exclusive installer lock before performing any file mutations
+    this.acquireLock();
+
+    let backupId = null;
+    let backupDir = null;
+
+    try {
+      // Create backup before uninstall
+      backupId = `${new Date().toISOString().replace(/[:.]/g, '-')}-uninstall-${crypto.randomBytes(4).toString('hex')}`;
+      backupDir = path.join(this.backupDirBase, backupId);
+      fs.mkdirSync(backupDir, { recursive: true });
+
+      const rollbackJournal = {
+        schema: 2,
+        type: 'UNINSTALL',
+        cwd: this.cwd,
+        targetDir: this.targetDir,
+        backupId,
+        hadManifest: fs.existsSync(this.manifestPath),
+        removedFiles: []
+      };
+
+      const journalPath = path.join(backupDir, 'rollback.json');
+      fs.writeFileSync(journalPath, JSON.stringify(rollbackJournal, null, 2) + '\n');
+
+      if (fs.existsSync(this.manifestPath)) {
+        fs.copyFileSync(this.manifestPath, path.join(backupDir, 'previous-manifest.json'));
+      }
+
+      const removed = [];
+      const preserved = plan.willPreserve.slice();
+
+      const detection = detectInstallationState({
+        cwd: this.cwd,
+        runtime: this.runtime,
+        scope: this.scope,
+        home: this.home
+      });
+
+      const ownership = scanDirectoryOwnership({
+        targetDir: this.targetDir,
+        manifest: detection.manifest
+      });
+
+      const baseline = computePackageBaseline(SKILLS_DIR);
+
+      // Remove only verified owned, unmodified skill files (or consented modified files)
+      for (const skillName of ownership.owned) {
+        const skillPath = path.join(this.targetDir, skillName);
+        if (fs.existsSync(skillPath)) {
+          const isSymlink = fs.lstatSync(skillPath).isSymbolicLink();
+          if (isSymlink) {
+            fs.unlinkSync(skillPath);
+            removed.push(slash(path.relative(this.cwd, skillPath)));
+            continue;
+          }
+
+          const skillFiles = listFilesRecursive(skillPath);
+          for (const rel of skillFiles) {
+            const absFilePath = path.join(skillPath, rel);
+            const packageKey = `${skillName}/${rel}`;
+            const targetRel = slash(path.relative(this.cwd, absFilePath));
+
+            const inBaseline = baseline.has(packageKey);
+            const inManifest = detection.manifest && Array.isArray(detection.manifest.files) && detection.manifest.files.includes(targetRel);
+
+            if (!inBaseline && !inManifest) {
+              // Unowned custom file inside official skill directory! PRESERVE IT!
+              preserved.push(targetRel);
+              continue;
+            }
+
+            const curBuf = fs.readFileSync(absFilePath);
+            const isOfficial = isKnownOfficialBaseline(packageKey, curBuf, baseline);
+            if (!isOfficial) {
+              if (!consentedPathSet.has(targetRel)) {
+                // DEC-26: Preserved without valid consent contract
+                preserved.push(targetRel);
+                continue;
+              }
+            }
+
+            // Backup file before removal
+            const absBackup = path.join(backupDir, ...targetRel.split('/'));
+            fs.mkdirSync(path.dirname(absBackup), { recursive: true });
+            fs.copyFileSync(absFilePath, absBackup);
+            rollbackJournal.removedFiles.push({ path: targetRel });
+            fs.writeFileSync(journalPath, JSON.stringify(rollbackJournal, null, 2) + '\n');
+
+            fs.unlinkSync(absFilePath);
+            removed.push(targetRel);
+          }
+
+          // Clean directory only if completely empty
+          try {
+            fs.rmdirSync(skillPath);
+          } catch {
+            // Directory not empty because user custom/modified files are preserved
+          }
+        }
+      }
+
+      // Remove rules if owned
+      if (this.runtime === 'antigravity' && this.scope === 'workspace') {
+        const rulePath = path.join(this.cwd, '.agents', 'rules', 'xyeena-core.md');
+        if (fs.existsSync(rulePath)) {
+          const ruleBuf = fs.readFileSync(rulePath);
+          const baselineRule = baseline.get('.rules/xyeena-core.md');
+          const isOfficialRule = baselineRule && baselineRule.sha256 === hashBuffer(ruleBuf);
+          const ruleRel = slash(path.relative(this.cwd, rulePath));
+
+          let shouldRemoveRule = false;
+          if (!isOfficialRule) {
+            if (!consentedPathSet.has(ruleRel)) {
+              preserved.push(ruleRel);
+            } else {
+              shouldRemoveRule = true;
+            }
           } else {
+            shouldRemoveRule = true;
+          }
+
+          if (shouldRemoveRule) {
+            const absBackupRule = path.join(backupDir, ...ruleRel.split('/'));
+            fs.mkdirSync(path.dirname(absBackupRule), { recursive: true });
+            fs.copyFileSync(rulePath, absBackupRule);
+            rollbackJournal.removedFiles.push({ path: ruleRel });
+            fs.writeFileSync(journalPath, JSON.stringify(rollbackJournal, null, 2) + '\n');
+
             fs.rmSync(rulePath, { force: true });
             removed.push(ruleRel);
           }
-        } else {
-          fs.rmSync(rulePath, { force: true });
-          removed.push(ruleRel);
         }
       }
-    }
 
-    // Remove manifest
-    if (fs.existsSync(this.manifestPath)) {
-      fs.copyFileSync(this.manifestPath, path.join(backupDir, 'install.json'));
-      fs.rmSync(this.manifestPath, { force: true });
-    }
+      // Remove manifest (already backed up in backupDir)
+      if (fs.existsSync(this.manifestPath)) {
+        fs.rmSync(this.manifestPath, { force: true });
+      }
 
-    return {
-      success: true,
-      brand: BRAND_METADATA.brand,
-      engine: BRAND_METADATA.engine,
-      backupId,
-      removed: [...new Set(removed)].sort(),
-      preserved: [...new Set(preserved)].sort()
-    };
+      // Finalize rollback journal
+      fs.writeFileSync(journalPath, JSON.stringify(rollbackJournal, null, 2) + '\n');
+
+      return {
+        success: true,
+        brand: BRAND_METADATA.brand,
+        engine: BRAND_METADATA.engine,
+        backupId,
+        removed: [...new Set(removed)].sort(),
+        preserved: [...new Set(preserved)].sort()
+      };
+    } catch (txErr) {
+      // Automatic rollback on uninstall failure: restore all unlinked files from backupDir
+      if (backupId) {
+        try {
+          this.rollback(backupId);
+          txErr.rolledBack = true;
+        } catch (rbErr) {
+          txErr.message += ` (Rollback partially failed: ${rbErr.message})`;
+        }
+      }
+      throw txErr;
+    } finally {
+      this.releaseLock();
+    }
   }
 }

@@ -19,7 +19,7 @@ import { computeUninstallConsentFingerprint, hashBuffer } from '../src/installer
 import { CortexOrchestrator, createDefaultCortex, CORTEX_EXECUTION_STATUS } from '../src/core/cortex.mjs';
 import { TASK_TIERS } from '../src/core/router.mjs';
 import { TASK_STATUS } from '../src/runtime/task-dag.mjs';
-import { SecurityMethods } from '../src/methods/security.mjs';
+import { SecurityMethods, LiveDatabaseAdapter } from '../src/methods/security.mjs';
 
 function createDisposableWorkspace() {
   const root = path.join(os.tmpdir(), `xyeena-blocker-test-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`);
@@ -181,6 +181,193 @@ test('Blocker 1 (P0): TOCTOU pre-mutation revalidation aborts if file changes af
   }
 });
 
+test('Blocker 1 (P0): Destination identity prevents cross-workspace consent reuse', () => {
+  const ws1 = createDisposableWorkspace();
+  const ws2 = createDisposableWorkspace();
+
+  try {
+    const tx1 = new InstallationTransaction({
+      cwd: ws1.root,
+      runtime: 'antigravity',
+      scope: 'workspace',
+      mode: 'copy',
+      home: ws1.home
+    });
+    tx1.execute();
+
+    const tx2 = new InstallationTransaction({
+      cwd: ws2.root,
+      runtime: 'antigravity',
+      scope: 'workspace',
+      mode: 'copy',
+      home: ws2.home
+    });
+    tx2.execute();
+
+    const file1 = path.join(ws1.root, '.agents', 'skills', 'xyeena-core', 'SKILL.md');
+    fs.writeFileSync(file1, '# Same User Edit Content', 'utf8');
+
+    const file2 = path.join(ws2.root, '.agents', 'skills', 'xyeena-core', 'SKILL.md');
+    fs.writeFileSync(file2, '# Same User Edit Content', 'utf8');
+
+    const plan1 = tx1.planUninstall();
+    const fp1 = plan1.uninstallConsentFingerprint;
+
+    // Trying to use workspace 1's fingerprint on workspace 2 MUST fail closed
+    assert.throws(() => {
+      tx2.uninstall({
+        allowModifiedRemoval: true,
+        diffApprovedFingerprint: fp1
+      });
+    }, (err) => {
+      assert.strictEqual(err.code, 'UNINSTALL_CONSENT_MISMATCH');
+      return true;
+    });
+
+    // File in workspace 2 must remain completely intact
+    assert.strictEqual(fs.existsSync(file2), true);
+  } finally {
+    cleanupDisposableWorkspace(ws1.root, ws1.home);
+    cleanupDisposableWorkspace(ws2.root, ws2.home);
+  }
+});
+
+test('Blocker 1 (P0): Installer lock prevents concurrent uninstall operations', () => {
+  const { root, home } = createDisposableWorkspace();
+
+  try {
+    const tx1 = new InstallationTransaction({
+      cwd: root,
+      runtime: 'antigravity',
+      scope: 'workspace',
+      mode: 'copy',
+      home
+    });
+    tx1.execute();
+
+    const tx2 = new InstallationTransaction({
+      cwd: root,
+      runtime: 'antigravity',
+      scope: 'workspace',
+      mode: 'copy',
+      home
+    });
+
+    // Manually hold lock on tx1
+    tx1.acquireLock();
+
+    // tx2.uninstall must be blocked by active lock
+    assert.throws(() => {
+      tx2.uninstall();
+    }, /Installer lock is actively held/i);
+
+    // Release lock
+    tx1.releaseLock();
+
+    // After release, tx2.uninstall succeeds
+    const result = tx2.uninstall();
+    assert.strictEqual(result.success, true);
+  } finally {
+    cleanupDisposableWorkspace(root, home);
+  }
+});
+
+test('Blocker 1 (P0): Selective per-file consent removes consented file and preserves unconsented file', () => {
+  const { root, home } = createDisposableWorkspace();
+
+  try {
+    const tx = new InstallationTransaction({
+      cwd: root,
+      runtime: 'antigravity',
+      scope: 'workspace',
+      mode: 'copy',
+      home
+    });
+    tx.execute();
+
+    const coreMd = path.join(root, '.agents', 'skills', 'xyeena-core', 'SKILL.md');
+    const debugMd = path.join(root, '.agents', 'skills', 'xyeena-debug', 'SKILL.md');
+
+    fs.writeFileSync(coreMd, '# Customized Core', 'utf8');
+    fs.writeFileSync(debugMd, '# Customized Debug', 'utf8');
+
+    const plan = tx.planUninstall();
+    assert.strictEqual(plan.modifiedFiles.length, 2);
+
+    const coreMod = plan.modifiedFiles.find(f => f.path.includes('xyeena-core'));
+    assert.ok(coreMod);
+
+    // Compute single-file selective consent fingerprint for coreMd ONLY
+    const selectiveFp = computeUninstallConsentFingerprint({
+      operation: 'UNINSTALL_MODIFIED_REMOVAL',
+      runtime: tx.runtime,
+      scope: tx.scope,
+      destinationIdentity: tx.targetDir,
+      files: [coreMod]
+    });
+
+    const result = tx.uninstall({
+      allowModifiedRemoval: true,
+      diffApprovedFingerprint: selectiveFp
+    });
+
+    assert.strictEqual(result.success, true);
+    // coreMd consented -> REMOVED
+    assert.strictEqual(fs.existsSync(coreMd), false, 'Consented file must be removed');
+    // debugMd unconsented -> PRESERVED
+    assert.strictEqual(fs.existsSync(debugMd), true, 'Unconsented modified file must be preserved');
+    assert.ok(result.preserved.some(p => p.includes('xyeena-debug')));
+  } finally {
+    cleanupDisposableWorkspace(root, home);
+  }
+});
+
+test('Blocker 1 (P0): Automatic rollback on mid-uninstall failure restores unlinked files', () => {
+  const { root, home } = createDisposableWorkspace();
+
+  try {
+    const tx = new InstallationTransaction({
+      cwd: root,
+      runtime: 'antigravity',
+      scope: 'workspace',
+      mode: 'copy',
+      home
+    });
+    tx.execute();
+
+    const coreMd = path.join(root, '.agents', 'skills', 'xyeena-core', 'SKILL.md');
+    assert.strictEqual(fs.existsSync(coreMd), true);
+
+    // Simulate an unexpected failure midway by making manifest removal fail or throwing inside
+    const originalRmSync = fs.rmSync;
+    let callCount = 0;
+    fs.rmSync = function (p, opts) {
+      callCount++;
+      if (typeof p === 'string' && p.includes('install.json')) {
+        throw new Error('Simulated disk failure during manifest cleanup');
+      }
+      return originalRmSync.apply(this, arguments);
+    };
+
+    try {
+      assert.throws(() => {
+        tx.uninstall();
+      }, (err) => {
+        assert.match(err.message, /Simulated disk failure during manifest cleanup/i);
+        assert.strictEqual(err.rolledBack, true, 'Error must indicate rollback succeeded');
+        return true;
+      });
+    } finally {
+      fs.rmSync = originalRmSync;
+    }
+
+    // After automatic rollback, coreMd must be restored on disk!
+    assert.strictEqual(fs.existsSync(coreMd), true, 'Skill file must be restored after automatic rollback');
+  } finally {
+    cleanupDisposableWorkspace(root, home);
+  }
+});
+
 // =========================================================================
 // BLOCKER 2: Symlink Ancestor Boundary & safeChild
 // =========================================================================
@@ -325,11 +512,106 @@ test('Blocker 3 (P1): Cortex handles executor failures gracefully, marking remai
   }
 });
 
+test('Blocker 3 (P1): Cortex executes analytical composites with METHOD_EVALUATED status', async () => {
+  const cortex = createDefaultCortex();
+  const result = await cortex.execute('/xyeena-design Create clean mobile navbar', {
+    execute: true,
+    input: {
+      prompt: 'Create clean mobile navbar',
+      colors: { fg: [20, 20, 20], bg: [250, 250, 250] },
+      tokens: [
+        { name: 'primitive.color.gray', tier: 'primitive', references: null },
+        { name: 'semantic.color.bg', tier: 'semantic', references: 'primitive.color.gray' }
+      ]
+    }
+  });
+
+  assert.strictEqual(result.engine, 'Cortex');
+  assert.strictEqual(result.status, CORTEX_EXECUTION_STATUS.METHOD_EVALUATED);
+  assert.ok(result.compositeResult);
+  assert.strictEqual(result.compositeResult.compositeId, 'xyeena-design');
+  assert.match(result.message, /evaluated successfully/i);
+});
+
+test('Blocker 3 (P1): Cortex handles micro tasks with arithmetic computation and requireResponseProvider gate', async () => {
+  const cortex = createDefaultCortex();
+
+  // 1. Arithmetic evaluation
+  const calcResult = await cortex.execute('hitung 25 * 4', { execute: true });
+  assert.strictEqual(calcResult.status, CORTEX_EXECUTION_STATUS.COMPLETED);
+  assert.strictEqual(calcResult.tier, TASK_TIERS.TIER_0_MICRO);
+  assert.strictEqual(calcResult.output, 100);
+
+  // 2. Micro task with requireResponseProvider returns READY_FOR_EXECUTION when unprovided
+  const gateResult = await cortex.execute('hitung 10 + 20', {
+    execute: true,
+    requireResponseProvider: true
+  });
+  assert.strictEqual(gateResult.status, CORTEX_EXECUTION_STATUS.READY_FOR_EXECUTION);
+  assert.match(gateResult.message, /ready for execution with response provider/i);
+
+  // 3. Micro task with responseProvider executes COMPLETED
+  const providedResult = await cortex.execute('hitung 10 + 20', {
+    execute: true,
+    requireResponseProvider: true,
+    responseProvider: () => 30
+  });
+  assert.strictEqual(providedResult.status, CORTEX_EXECUTION_STATUS.COMPLETED);
+  assert.strictEqual(providedResult.output, 30);
+});
+
+test('Blocker 3 (P1): Cortex handles structured executor failure signals ({ success: false })', async () => {
+  const cortex = createDefaultCortex();
+  const prompt = 'buatkan refactoring service auth';
+
+  let count = 0;
+  const failingSignalExecutor = async (taskNode) => {
+    count++;
+    if (count === 1) {
+      return { success: false, reason: 'Typecheck failed on step 1' };
+    }
+    return { success: true };
+  };
+
+  const result = await cortex.execute(prompt, {
+    execute: true,
+    executor: failingSignalExecutor
+  });
+
+  assert.strictEqual(result.status, CORTEX_EXECUTION_STATUS.FAILED);
+  assert.match(result.message, /Typecheck failed on step 1/i);
+
+  const nodes = result.taskGraph.getAll();
+  assert.strictEqual(nodes[0].status, TASK_STATUS.FAILED);
+  for (let i = 1; i < nodes.length; i++) {
+    assert.strictEqual(nodes[i].status, TASK_STATUS.BLOCKED);
+  }
+});
+
+test('Blocker 3 (P1): Cortex handles cancellation AbortSignal transitioning to BLOCKED', async () => {
+  const cortex = createDefaultCortex();
+  const prompt = 'buatkan migrasi database besar';
+
+  const controller = new AbortController();
+  controller.abort();
+
+  const result = await cortex.execute(prompt, {
+    execute: true,
+    signal: controller.signal,
+    executor: async () => ({ success: true })
+  });
+
+  assert.strictEqual(result.status, CORTEX_EXECUTION_STATUS.BLOCKED);
+  assert.match(result.message, /cancelled by signal|aborted by cancellation signal/i);
+  const nodes = result.taskGraph.getAll();
+  assert.ok(nodes.every(n => n.status === TASK_STATUS.BLOCKED));
+});
+
 // =========================================================================
 // BLOCKER 4: Trusted RLS Execution Receipts
 // =========================================================================
 
-test('Blocker 4 (P1): RLS evaluation rejects caller-asserted booleans and requires structured receipt', () => {
+test('Blocker 4 (P1): RLS evaluation rejects caller-asserted booleans and requires structured receipt', async () => {
   const testPrincipals = [
     { id: 'usr-1', tenantId: 'tenant-a' },
     { id: 'usr-2', tenantId: 'tenant-b' }
@@ -358,52 +640,69 @@ test('Blocker 4 (P1): RLS evaluation rejects caller-asserted booleans and requir
   assert.strictEqual(selfAsserted.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
   assert.strictEqual(selfAsserted.receiptVerified, false);
 
-  // 3. Receipt with wrong table name -> rejected
-  const mismatchedReceipt = SecurityMethods.createRlsQueryReceipt({
-    tableName: 'other_table',
-    dbEnvironment: 'postgres-prod'
-  });
-  const rejectedMatch = SecurityMethods.evaluateRlsPolicy({
-    tableName: 'organizations',
-    rlsEnabled: true,
-    policies: [{ name: 'tenant_strict', definition: 'auth.uid() = user_id' }],
-    trustedQueryReceipt: mismatchedReceipt
-  });
-  assert.strictEqual(rejectedMatch.verdict, 'STATIC_CHECK_PASS');
-  assert.strictEqual(rejectedMatch.receiptVerified, false);
-  assert.match(rejectedMatch.receiptFailureReason, /table mismatch/i);
-
-  // 4. Receipt with tampered signature -> rejected
-  const tamperedReceipt = SecurityMethods.createRlsQueryReceipt({
+  // 3. Forged / manufactured receipt using public helper createRlsQueryReceipt is rejected
+  const fakeReceipt = SecurityMethods.createRlsQueryReceipt({
     tableName: 'organizations',
     dbEnvironment: 'postgres-prod'
   });
-  tamperedReceipt.receiptSignature = 'tampered_bad_signature_1234567890';
-  const rejectedTampered = SecurityMethods.evaluateRlsPolicy({
+  const rejectedFake = SecurityMethods.evaluateRlsPolicy({
     tableName: 'organizations',
     rlsEnabled: true,
     policies: [{ name: 'tenant_strict', definition: 'auth.uid() = user_id' }],
-    trustedQueryReceipt: tamperedReceipt
+    trustedQueryReceipt: fakeReceipt
   });
-  assert.strictEqual(rejectedTampered.verdict, 'STATIC_CHECK_PASS');
-  assert.strictEqual(rejectedTampered.receiptVerified, false);
-  assert.match(rejectedTampered.receiptFailureReason, /signature mismatch/i);
+  assert.strictEqual(rejectedFake.verdict, 'STATIC_CHECK_PASS');
+  assert.strictEqual(rejectedFake.receiptRejected, true);
+  assert.strictEqual(rejectedFake.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
+  assert.notStrictEqual(rejectedFake.epistemicStatus, 'LIVE_EXECUTION_PROVEN');
 
-  // 5. Valid structured receipt -> RLS_LIVE_ISOLATION_VERIFIED
-  const validReceipt = SecurityMethods.createRlsQueryReceipt({
+  // 4. Authorized LiveDatabaseAdapter with active connection -> RLS_LIVE_ISOLATION_VERIFIED
+  const liveAdapter = new LiveDatabaseAdapter({
+    environment: 'postgres-staging',
+    client: {
+      query: async ({ query, principal }) => {
+        if (query.includes('WHERE tenant_id = $1')) {
+          return { rows: [], rowCount: 0, error: 'ACCESS_DENIED' };
+        }
+        return { rows: [{ id: 'org-1', user_id: principal.id }], rowCount: 1 };
+      }
+    }
+  });
+  const probe = await liveAdapter.executeIsolationProbe({
     tableName: 'organizations',
-    dbEnvironment: 'postgres-staging',
-    positiveQuery: { query: 'SELECT * FROM organizations WHERE user_id = auth.uid()', status: 'SUCCESS', rowsReturned: 4 },
-    negativeQuery: { query: 'SELECT * FROM organizations WHERE user_id != auth.uid()', status: 'ACCESS_DENIED', rowsReturned: 0 }
+    testPrincipals
   });
   const verified = SecurityMethods.evaluateRlsPolicy({
     tableName: 'organizations',
     rlsEnabled: true,
     policies: [{ name: 'tenant_strict', definition: 'auth.uid() = user_id' }],
-    trustedQueryReceipt: validReceipt
+    liveDatabaseAdapter: liveAdapter,
+    liveProbeResult: probe
   });
   assert.strictEqual(verified.verdict, 'RLS_LIVE_ISOLATION_VERIFIED');
   assert.strictEqual(verified.requiresLiveValidation, false);
   assert.strictEqual(verified.epistemicStatus, 'LIVE_EXECUTION_PROVEN');
   assert.strictEqual(verified.receiptVerified, true);
+
+  // 5. LiveDatabaseAdapter observing cross-tenant access -> EMPIRICALLY_OBSERVED_CROSS_TENANT_ACCESS
+  const leakingAdapter = new LiveDatabaseAdapter({
+    environment: 'postgres-staging',
+    client: {
+      query: async () => ({ rows: [{ id: 'org-other' }], rowCount: 1 })
+    }
+  });
+  const leakProbe = await leakingAdapter.executeIsolationProbe({
+    tableName: 'organizations',
+    testPrincipals
+  });
+  const leakResult = SecurityMethods.evaluateRlsPolicy({
+    tableName: 'organizations',
+    rlsEnabled: true,
+    policies: [{ name: 'tenant_strict', definition: 'auth.uid() = user_id' }],
+    liveDatabaseAdapter: leakingAdapter,
+    liveProbeResult: leakProbe
+  });
+  assert.strictEqual(leakResult.verdict, 'EMPIRICALLY_OBSERVED_CROSS_TENANT_ACCESS');
+  assert.strictEqual(leakResult.empiricallyObservedLeak, true);
+  assert.strictEqual(leakResult.epistemicStatus, 'LIVE_EXECUTION_PROVEN');
 });

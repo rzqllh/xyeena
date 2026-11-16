@@ -1,9 +1,9 @@
 # XYEENA — Master Plan 14/10/2026: Reconciled Master Architecture & Strategic Roadmap
 
-> **Status: RECONCILED / P17 LOCAL PASS (687/687 tests PASS across 74 suites)**
+> **Status: RECONCILED / MERGE READINESS PASS (723/723 tests PASS across 75 suites)**
 > Baseline Rebuild: `feat/rebuild-foundation-p00` published on remote at commit `bbd71abfc5045cda3c39ea7655f0a8519d88f275` (609/609 tests PASS).
-> Remote Authority: `origin/main` at commit `55effeac22b5fe8146ecf092b352d5bbb639b535` (reconciliation integration pending).
-> Reconciled on 2026-11-15. This document unifies the remote reconciliation seed with the verified desktop rebuild foundation and locked owner decisions DEC-01 to DEC-32.
+> Remote Authority: `origin/main` at commit `55effeac22b5fe8146ecf092b352d5bbb639b535` (reconciliation semantically resolved; ready for merge).
+> Reconciled on 2026-11-16. This document unifies the remote reconciliation seed with the verified desktop rebuild foundation and locked owner decisions DEC-01 to DEC-32.
 
 **Repository:** https://github.com/rzqllh/xyeena
 **Product:** Xyeena Rig (All-in-One Skills & Harness)
@@ -18,10 +18,11 @@
 
 Xyeena Rig provides 19 packaged Agent Skills, 64 native capability contracts, and an opt-in project Harness.
 The local desktop rebuild foundation on branch `feat/rebuild-foundation-p00` is fully reconciled with `origin/main`:
-- **687 / 687 tests pass** across 74 test suites (including 17 comprehensive P17 specialized platform, security, retrieval & motion tests, 21 P16 engineering intelligence & design closure tests, 12 P15 design intelligence tests, 12 P14 comparative baseline tests, and 16 P13 cross-domain composite tests).
+- **723 / 723 tests pass** across 75 test suites (including 17 comprehensive merge blocker remediation adversarial tests, 18 end-to-end acceptance scenarios, 17 specialized platform/security/retrieval/motion tests, 21 engineering intelligence & design closure tests, 12 design intelligence tests, 12 comparative baseline tests, and 16 cross-domain composite tests).
 - All 64 capability contracts are bound to concrete executable handlers in `src/core/default-registry.mjs`.
-- **Cortex** is established as the default intelligence layer (DEC-27), providing lightweight routing (< 5ms) for micro tasks and composite DAG execution for complex goals.
-- **Transactional Conditional Installer** (DEC-26, DEC-29) enforces strict fail-closed protection for user-modified files via the Hybrid Diff Gate, defaults to `copy` on Windows, safely preserves custom user files on uninstall, and verifies rollback.
+- **Cortex** is established as the default intelligence layer (DEC-27), providing lightweight routing (< 5ms) for micro tasks, analytical methodology evaluation (`METHOD_EVALUATED`), structured failure handling, AbortSignal cancellation, and composite DAG execution for complex goals.
+- **Transactional Conditional Installer** (DEC-26, DEC-29) enforces strict fail-closed protection for user-modified files via the Hybrid Diff Gate, locks exclusive installer access against concurrent contention, binds `destinationIdentity` (`targetDir`) into consent fingerprints, supports selective per-file consent, defaults to `copy` on Windows, safely preserves custom user files on uninstall, and verifies automatic rollback.
+- **Trusted Database Security & RLS Isolation:** Evaluates RLS policies using strictly authorized `LiveDatabaseAdapter` execution receipts with connection provenance, separating heuristic syntax risk (`SUSPECTED_CROSS_TENANT_POLICY_RISK`) from verified empirical access (`EMPIRICALLY_OBSERVED_CROSS_TENANT_ACCESS`).
 - **Artifact Governance & Adaptive Persistence** (DEC-28, DEC-30) prevents clutter by managing runtime state under `.xyeena/`, isolating disposable artifacts, and persisting plans and audits only when requested or structurally warranted.
 - **Delegated Engineering Authority** (DEC-31) establishes that routine engineering, refactoring, and test fixes proceed autonomously under locked scope, while high-impact destructive operations and releases remain owner-gated.
 - **Cross-Domain Methodology (DEC-32)** establishes Superpowers and Anti-Slop as universal workflows and quality filters across all 9 Cortex domains.
@@ -98,7 +99,7 @@ The following foundational strategic decisions were established during Grill Rou
 1. **Selective Upstream Reuse (Grill Round 1–2):** Prefer licensed upstream reuse/composition where permitted with full provenance ledger, rather than shallow handcrafted mimicry. (Status: `ADAPTED_VERIFIED (P14–P17 & Final Closure)`; Superpowers RE-01, Superior RE-02, Anti-Slop RE-03, Ponytail RE-04, Caveman RE-05, Cloudflare RE-06, Impeccable RE-07, Matt Pocock RE-08, Hallmark RE-09, Taste RE-10, UI UX Pro Max RE-11, GSAP RE-14, Trail of Bits RE-15 [clean-room], Supabase RE-16, Konoha RE-31 [bounded retrieval & MCP parity], and Huashu Design RE-32 integrated via source-backed adaptation into native methods with full provenance ledgers and tests. Remaining upstreams RE-12, RE-13, RE-17, RE-18, RE-19, and RE-21..30 definitively classified as `REFERENCE_ONLY` / standards with zero unvetted runtime dependencies).
 2. **XYN Personality Synthesis (Grill Round 3):** Synthesize behavioral traits and domain voice of XYN personas into an architectural guidance overlay without importing character personas or modifying host agent identities. (Status: `XYN_ARCHITECTURAL_PRINCIPLES_SOURCE_INSPECTED_LOCAL` / `VERIFIED_LOCAL`; active runtime trait engine in `src/core/personality.mjs` incorporating Maker-Checker separation, empirical claim boundaries, adversarial testing, and single governor invariant without fictional character identities).
 3. **Modified Legacy Installation Protection (Grill Round 5):** Modified legacy installations strictly require user review of diff before replacement (formalized into DEC-26). (Status: `IMPLEMENTED_LOCAL` / `VERIFIED_LOCAL`).
-4. **Final End-to-End Acceptance (Campaign Closure):** 18 comprehensive end-to-end acceptance scenarios verified in `test/e2e-acceptance-campaign.test.mjs`, establishing end-to-end proof from natural language routing through execution, security, database safety, bounded retrieval, DAG execution, installer safety, and artifact governance. (Status: `706 / 706 tests PASS` across 75 test suites).
+4. **Final End-to-End Acceptance & Blocker Remediation:** 18 comprehensive end-to-end acceptance scenarios verified in `test/e2e-acceptance-campaign.test.mjs` and 17 adversarial blocker remediation scenarios verified in `test/blocker-remediation-adversarial.test.mjs`, establishing end-to-end proof from natural language routing through execution, security, database safety, bounded retrieval, DAG execution, installer safety, and artifact governance. (Status: `723 / 723 tests PASS` across 75 test suites).
 
 ---
 

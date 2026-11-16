@@ -280,7 +280,8 @@ diff --git a/src/calc.js b/src/calc.js
       });
 
       assert.equal(result.engine, 'Cortex');
-      assert.equal(result.status, 'COMPLETED');
+      assert.ok(['METHOD_EVALUATED', 'COMPLETED'].includes(result.status));
+      assert.equal(result.status, 'METHOD_EVALUATED');
       assert.ok(result.compositeResult, 'Cortex must attach compositeResult');
       assert.equal(result.compositeResult.compositeId, 'xyeena-design');
       assert.equal(result.compositeResult.tokenAudit.valid, true);

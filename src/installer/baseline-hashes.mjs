@@ -190,13 +190,17 @@ export function computeUninstallConsentFingerprint({
   operation = 'UNINSTALL_MODIFIED_REMOVAL',
   runtime = 'antigravity',
   scope = 'workspace',
+  destinationIdentity = '',
+  targetDir = '',
   files = []
 } = {}) {
+  const dest = destinationIdentity || targetDir || '';
   const sorted = [...files].sort((a, b) => a.path.localeCompare(b.path));
   const lines = [
     `OP:${operation}`,
     `RUNTIME:${runtime}`,
     `SCOPE:${scope}`,
+    ...(dest ? [`DESTINATION_IDENTITY:${slash(dest)}`] : []),
     `FILE_COUNT:${sorted.length}`,
     'FILES:',
     ...sorted.map(f => [

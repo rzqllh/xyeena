@@ -31,6 +31,7 @@ import { CompositeRegistry } from './composites.mjs';
 
 export const CORTEX_EXECUTION_STATUS = Object.freeze({
   PLANNED: 'PLANNED',
+  METHOD_EVALUATED: 'METHOD_EVALUATED',
   READY_FOR_EXECUTION: 'READY_FOR_EXECUTION',
   RUNNING: 'RUNNING',
   COMPLETED: 'COMPLETED',
@@ -358,21 +359,41 @@ export class CortexOrchestrator {
 
     // Execute composite workflow if explicitly triggered
     let compositeResult = null;
+    let matchedSkill = null;
     if (plan.explicitSkills.length > 0) {
       for (const sk of plan.explicitSkills) {
         const comp = this.compositeRegistry.get(sk);
         if (comp) {
           compositeResult = comp.execute(options.input || { prompt }, options.context || {});
+          matchedSkill = comp.id || sk;
           break;
         }
       }
       if (compositeResult) {
+        const ANALYTICAL_COMPOSITES = new Set([
+          'xyeena-design',
+          'xyeena-plan',
+          'xyeena-security',
+          'xyeena-writing',
+          'xyeena-review',
+          'xyeena-research',
+          'xyeena-verify',
+          'xyeena-debug'
+        ]);
+        const isAnalytical = ANALYTICAL_COMPOSITES.has(matchedSkill) || options.asEvaluation === true;
+        const status = isAnalytical
+          ? CORTEX_EXECUTION_STATUS.METHOD_EVALUATED
+          : CORTEX_EXECUTION_STATUS.COMPLETED;
+        const message = isAnalytical
+          ? 'Explicit composite methodology evaluated successfully.'
+          : 'Explicit composite workflow executed successfully.';
+
         return {
           engine: 'Cortex',
-          status: CORTEX_EXECUTION_STATUS.COMPLETED,
+          status,
           mode: plan.mode,
           tier: plan.tier,
-          message: 'Explicit composite workflow executed successfully.',
+          message,
           compositeResult,
           plan
         };
@@ -381,12 +402,41 @@ export class CortexOrchestrator {
 
     // TIER_0_MICRO: Crisp direct execution, 0 DAG, 0 subagents, 0 extra files
     if (plan.tier === TASK_TIERS.TIER_0_MICRO) {
+      if (options.requireResponseProvider && !options.responseProvider && !options.executor) {
+        return {
+          engine: 'Cortex',
+          status: CORTEX_EXECUTION_STATUS.READY_FOR_EXECUTION,
+          mode: plan.mode,
+          tier: plan.tier,
+          message: 'Micro task planned and ready for execution with response provider.',
+          executedSteps: [],
+          compositeResult: null,
+          plan
+        };
+      }
+
+      let output = null;
+      if (typeof options.responseProvider === 'function') {
+        output = options.responseProvider(prompt);
+      } else {
+        const mathMatch = prompt.match(/(?:hitung|calculate|\bmath\b)?\s*([0-9\s+\-*/().%]+)$/i);
+        if (mathMatch && mathMatch[1] && /[0-9]/.test(mathMatch[1]) && /[+\-*/]/.test(mathMatch[1])) {
+          try {
+            const sanitized = mathMatch[1].replace(/[^0-9+\-*/().\s]/g, '');
+            output = Function(`'use strict'; return (${sanitized})`)();
+          } catch {
+            output = null;
+          }
+        }
+      }
+
       return {
         engine: 'Cortex',
         status: CORTEX_EXECUTION_STATUS.COMPLETED,
         mode: plan.mode,
         tier: plan.tier,
         message: 'Micro task executed directly with zero DAG and zero file overhead.',
+        output,
         executedSteps: plan.workflow.steps.map(s => s.id),
         compositeResult: null,
         plan
@@ -416,7 +466,48 @@ export class CortexOrchestrator {
       const executedTaskIds = [];
 
       const order = taskGraph.getExecutionOrder();
+
+      if (options.signal?.aborted) {
+        for (const taskId of order) {
+          const n = taskGraph.get(taskId);
+          if (n && (n.status === TASK_STATUS.READY || n.status === TASK_STATUS.RUNNING)) {
+            taskGraph.transition(taskId, TASK_STATUS.BLOCKED, { reason: 'Execution cancelled by signal' });
+          }
+        }
+        return {
+          engine: 'Cortex',
+          status: CORTEX_EXECUTION_STATUS.BLOCKED,
+          mode: plan.mode,
+          tier: plan.tier,
+          message: 'Execution cancelled by signal.',
+          taskCount: taskGraph.size(),
+          executedSteps: executedTaskIds,
+          taskGraph,
+          plan
+        };
+      }
+
       for (const taskId of order) {
+        if (options.signal?.aborted) {
+          for (const remainingId of order.slice(order.indexOf(taskId))) {
+            const nextNode = taskGraph.get(remainingId);
+            if (nextNode && (nextNode.status === TASK_STATUS.READY || nextNode.status === TASK_STATUS.RUNNING)) {
+              taskGraph.transition(remainingId, TASK_STATUS.BLOCKED, { reason: 'Execution cancelled by signal' });
+            }
+          }
+          return {
+            engine: 'Cortex',
+            status: CORTEX_EXECUTION_STATUS.BLOCKED,
+            mode: plan.mode,
+            tier: plan.tier,
+            message: 'Execution cancelled by signal.',
+            taskCount: taskGraph.size(),
+            executedSteps: executedTaskIds,
+            taskGraph,
+            plan
+          };
+        }
+
         const node = taskGraph.get(taskId);
         if (!node) continue;
 
@@ -436,8 +527,40 @@ export class CortexOrchestrator {
             prompt,
             plan,
             tier: plan.tier,
-            context: options.context || {}
+            context: options.context || {},
+            signal: options.signal
           });
+
+          // Check for structured failure signals: false, { success: false }, { status: 'FAILED' }
+          const isFailureSignal = res === false || (res && typeof res === 'object' && (res.success === false || res.status === 'FAILED' || res.status === 'failed'));
+
+          if (isFailureSignal) {
+            executionFailed = true;
+            const failureReason = (res && typeof res === 'object' && (res.error || res.message || res.reason)) || 'Executor returned failure signal';
+            failureError = new Error(typeof failureReason === 'string' ? failureReason : JSON.stringify(failureReason));
+            taskGraph.transition(taskId, TASK_STATUS.FAILED, res || { failed: true });
+            this.evidenceLedger.add(new EvidenceRecord({
+              claim: `Task "${taskId}" execution reported failure signal`,
+              tier: EVIDENCE_TIERS.OBSERVED,
+              provenance: 'cortex.executor',
+              status: VERDICT_STATUS.FAILED,
+              metadata: { taskId, result: res }
+            }));
+
+            // Mark remaining unexecuted tasks as BLOCKED due to upstream failure
+            const remainingIndex = order.indexOf(taskId);
+            for (let i = remainingIndex + 1; i < order.length; i++) {
+              const nextId = order[i];
+              const nextNode = taskGraph.get(nextId);
+              if (nextNode && nextNode.status === TASK_STATUS.READY) {
+                taskGraph.transition(nextId, TASK_STATUS.BLOCKED, {
+                  reason: `Execution aborted due to failure of upstream task "${taskId}"`
+                });
+              }
+            }
+            break;
+          }
+
           taskGraph.transition(taskId, TASK_STATUS.COMPLETED, res || { completed: true });
           executedTaskIds.push(taskId);
 
