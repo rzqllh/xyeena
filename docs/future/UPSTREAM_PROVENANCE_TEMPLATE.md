@@ -1,6 +1,6 @@
 # Third-party Source Provenance Template — Xyeena
 
-**Status:** TEMPLATE, not an assertion any source is currently copied.
+**Status:** TEMPLATE, not an assertion any source is currently copied.  
 **Parent:** [Future upstream integration roadmap](XYEENA_UPSTREAM_INTEGRATION_2026-11-14.md)
 
 This ledger must be populated **before** copying/adapting and publishing third-party material. Use one record per distinct source component or license boundary. Never rely on this file as a legal permission grant by itself.
@@ -42,14 +42,14 @@ This ledger must be populated **before** copying/adapting and publishing third-p
 
 ## Example record (illustrative only; no copying authorized)
 
-**ID:** RE-31 / konoha-retrieval-candidate
-**Source:** https://github.com/andycungkrinx91/konoha
-**Reference commit observed:** 9789bdd1d57d5f7a39a58406105e36127ffdb35b
-**License observed:** Apache-2.0 at LICENSE, copyright 2026 Andy Setiyawan
-**Proposed purpose:** study bounded retrieval and SQLite FTS5 integration for optional Xyeena capability
-**Reuse method:** REFERENCE_ONLY until an exact file and owner decision exist
-**Destination:** not chosen
-**Tests:** NOT_RUN by this planning task
+**ID:** RE-31 / konoha-retrieval-candidate  
+**Source:** https://github.com/andycungkrinx91/konoha  
+**Reference commit observed:** 9789bdd1d57d5f7a39a58406105e36127ffdb35b  
+**License observed:** Apache-2.0 at LICENSE, copyright 2026 Andy Setiyawan  
+**Proposed purpose:** study bounded retrieval and SQLite FTS5 integration for optional Xyeena capability  
+**Reuse method:** REFERENCE_ONLY until an exact file and owner decision exist  
+**Destination:** not chosen  
+**Tests:** NOT_RUN by this planning task  
 **Owner status:** DEFERRED until alignment and audit grilling
 
 ## NOTICE.md policy

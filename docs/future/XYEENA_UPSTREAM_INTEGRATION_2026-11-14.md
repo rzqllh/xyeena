@@ -1,10 +1,10 @@
 # Xyeena Future Roadmap — Upstream Reuse, Composite Skills, Personality, and Host Alignment
 
 **Recorded:** 2026-11-14
-**Status:** COMPLETE / ALL 32 UPSTREAM SOURCES RECONCILED & FINAL END-TO-END ACCEPTANCE VERIFIED (Baseline Remote: `bbd71abfc5045cda3c39ea7655f0a8519d88f275`, 706/706 tests PASS across 75 suites)
+**Status:** COMPLETE / ALL 32 UPSTREAM SOURCES RECONCILED & FINAL MERGE READINESS VERIFIED (723/723 tests PASS across 75 suites)
 **Master gate:** [master-plan-141026.md](../../master-plan-141026.md)
 **Authoritative decisions:** DEC-01 through DEC-32 (DEC-32: Cross-Domain Superpowers & Anti-Slop Methodologies)
-**Trigger:** Final End-to-End Execution Campaign & Closure (all 18 E2E acceptance scenarios verified).
+**Trigger:** Final End-to-End Execution Campaign & Merge Readiness (all 18 E2E acceptance scenarios + 17 blocker remediation scenarios verified).
 **Scope:** Xyeena Rig Skills + Harness only. Not the independent XYN subagents product fleet.
 
 ## A. Design goals and reasons for the pivot
@@ -13,7 +13,7 @@ The goal is a powerful, dependable Xyeena that earns quality from real upstream 
 
 Do not assume upstream code is perfect or every test is portable. Source-level contract, license provenance, integration tests and benchmarks are necessary. Reuse and adaptation may outperform rewriting, but can also import coupling, security hazards and dependency bloat. Select on evidence.
 
-**Active Implementation Status (P13):** The remote source baseline has been aligned via P12 feature publication (`bbd71abfc5045cda3c39ea7655f0a8519d88f275`). The owner has authorized sequential P13 execution (DEC-32 cross-domain methodology, P12 source hardening, upstream inventory, layered composition, 11 composite skills, and behavioral trait overlay). All 32 owner decisions are locked.
+**Active Implementation Status:** The remote source baseline has been aligned with feature rebuild and merge blockers resolved. The owner has authorized sequential execution (DEC-32 cross-domain methodology, source hardening, upstream inventory, layered composition, 11 composite skills, and behavioral trait overlay). All 32 owner decisions are locked and verified across 723 tests.
 
 ### A1. What changes from the previous rebuild
 
@@ -62,7 +62,7 @@ The original RE-01–RE-30 source locks from the local blueprint remain the only
 | RE-17 | Google DESIGN.md | 3-tier design tokens (`sys.*`, `ref.*`, `comp.*`), Material Design 3 | `REFERENCE_ONLY` (Apache-2.0, Google LLC) |
 | RE-18 | Awesome DESIGN.md | Curated design system case studies and benchmark references | `REFERENCE_ONLY` (Community benchmarks) |
 | RE-19 | Gemini Superpowers Antigravity | Host-specific skill conventions, tool declarations, schema validation | `REFERENCE_ONLY` (Native host discovery conventions) |
-| RE-20 | [rzqllh/xyeena](https://github.com/rzqllh/xyeena) | Rig harness, adapters, workflows, tests, migration | `REUSE` (MIT, native baseline, 706/706 tests PASS) |
+| RE-20 | [rzqllh/xyeena](https://github.com/rzqllh/xyeena) | Rig harness, adapters, workflows, tests, migration | `REUSE` (MIT, native baseline, 723/723 tests PASS) |
 | RE-21..30 | Normative UX/engineering/security foundations | WCAG 2.2, HIG, Material, color/UX math, memory isolation, software quality | `REFERENCE_ONLY` (Embedded pure math in `src/methods/`) |
 | **RE-31** | **[andycungkrinx91/konoha](https://github.com/andycungkrinx91/konoha)** | Bounded retrieval, index recovery, MCP manifest vs dispatcher parity, task memory isolation | `ADAPTED_BOUNDED_RETRIEVAL_VERIFIED (P17)` (Apache-2.0, Andy Setiyawan) |
 | **RE-32** | **[alchaincyf/huashu-design](https://github.com/alchaincyf/huashu-design)** | 3 visual directions exploration, standalone interactive HTML prototype specifications, truthful export capabilities | `ADAPTED_VERIFIED (P16, Optional Capability)` (MIT, alchaincyf) |
