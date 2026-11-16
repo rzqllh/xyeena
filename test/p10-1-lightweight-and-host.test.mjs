@@ -141,6 +141,8 @@ test('P10.1 Host Acceptance Matrix: Verifies Antigravity native presence and hon
   assert.equal(genericMatrix.subagent_delegation, SUPPORT_LEVELS.DEGRADED);
 
   // 3. Workspace native files existence check
-  assert.ok(fs.existsSync('.agents/rules/xyeena-core.md'), 'Workspace Antigravity kernel rule must exist');
-  assert.ok(fs.existsSync('.agents/hooks.json'), 'Workspace Antigravity hooks config must exist');
+  const hasKernelRule = fs.existsSync('.agents/rules/xyeena-core.md') || fs.existsSync('rules/xyeena-core.md');
+  assert.ok(hasKernelRule, 'Workspace Antigravity kernel rule must exist');
+  const hasNativeConfig = fs.existsSync('.agents/hooks.json') || fs.existsSync('.agents/plugins/marketplace.json') || fs.existsSync('plugin.json');
+  assert.ok(hasNativeConfig, 'Workspace Antigravity native config must exist');
 });

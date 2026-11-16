@@ -79,8 +79,10 @@ export class PolicyGovernor {
    * @param {string} targetPath
    */
   assertPathInScope(targetPath) {
-    const resolved = path.resolve(this.workspaceRoot, targetPath);
-    if (!resolved.startsWith(this.workspaceRoot)) {
+    const normalized = String(targetPath).replace(/\\/g, '/');
+    const resolved = path.resolve(this.workspaceRoot, normalized);
+    const rel = path.relative(this.workspaceRoot, resolved);
+    if (rel.startsWith('..') || path.isAbsolute(rel) || (!resolved.startsWith(this.workspaceRoot) && !resolved.startsWith(this.workspaceRoot.replace(/\\/g, '/')))) {
       throw new XyeenaError(
         ERROR_CODES.SCOPE_VIOLATION,
         `Path "${targetPath}" resolves outside workspace root "${this.workspaceRoot}". Path traversal rejected.`,

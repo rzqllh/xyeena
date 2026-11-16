@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test';
+import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -59,6 +59,13 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
     let unpackedDir;
     let mockWorkspaceDir;
 
+    before(() => {
+      if (!fs.existsSync(tarballPath)) {
+        const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+        execFileSync(npmCmd, ['pack'], { cwd: PACKAGE_ROOT, stdio: 'ignore', shell: process.platform === 'win32' });
+      }
+    });
+
     it('asserts tarball exists and contains zero internal dossiers, secrets, or zips', () => {
       assert.ok(fs.existsSync(tarballPath), `Tarball must exist at ${tarballPath}`);
 
@@ -116,7 +123,8 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
       const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
       // Execute actual npm install from local tarball
-      execFileSync(npmCmd, ['install', `"${tarballPath}"`], {
+      const installTarget = process.platform === 'win32' ? `"${tarballPath}"` : tarballPath;
+      execFileSync(npmCmd, ['install', installTarget], {
         cwd: disposableNpmDir,
         encoding: 'utf8',
         shell: process.platform === 'win32'

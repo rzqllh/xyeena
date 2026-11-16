@@ -14,7 +14,7 @@ import { MemoryStore, AgentOverlayManager } from '../../src/runtime/index.mjs';
 describe('M5 Adversarial & Hardening Verification Suite', () => {
 
   it('rejects path traversal attacks attempting to escape workspace root', () => {
-    const policy = new PolicyGovernor({ workspaceRoot: 'C:/project/root' });
+    const policy = new PolicyGovernor({ workspaceRoot: process.platform === 'win32' ? 'C:/project/root' : '/project/root' });
     const attackPaths = [
       '../../secret.env',
       '..\\..\\windows\\system32',
