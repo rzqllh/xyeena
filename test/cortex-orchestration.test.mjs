@@ -45,9 +45,10 @@ test('Cortex Natural Language: TIER_0_MICRO executes directly with zero DAG over
   const discResult = await cortex.execute(prompt);
   assert.equal(discResult.status, 'DISCUSSION_MODE');
 
-  // Forced execution of micro task executes cleanly with zero DAG
+  // Forced execution without a provider must not claim to have answered a freeform question
   const execResult = await cortex.execute(prompt, { execute: true });
-  assert.equal(execResult.status, 'COMPLETED');
+  assert.equal(execResult.status, 'READY_FOR_EXECUTION');
+  assert.equal(execResult.output, null);
   assert.equal(execResult.tier, TASK_TIERS.TIER_0_MICRO);
 });
 

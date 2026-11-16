@@ -67,6 +67,9 @@ export class LiveDatabaseAdapter {
       throw new Error('LiveDatabaseAdapter: Isolation probe requires at least 2 distinct test principals');
     }
 
+    if (typeof tableName !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(tableName)) {
+      throw new Error('LiveDatabaseAdapter: Invalid SQL table identifier; dynamic SQL identifiers must be explicitly validated');
+    }
     const [principalA, principalB] = testPrincipals;
 
     // 1. Positive query: Principal A queries data within their own tenant scope
@@ -693,69 +696,28 @@ export class SecurityMethods {
       }
     }
 
-    // Strict trust boundary rejection (DEC-31 / Single-Pass Remediation):
-    // Caller-asserted booleans, manufactured receipts, or digest objects cannot grant live verification.
-    const hadCallerAssertedReceipt = Boolean(
-      liveExecutionVerified ||
-      liveQueryReceipts ||
-      trustedQueryReceipt
+    // Fail closed for the 0.5.0 release scope: a library caller can construct
+    // an adapter, inject a mock query client, or invent a probe result. Neither
+    // a client-supplied flag nor a convention-based provenance string attests
+    // that PostgreSQL enforced the intended role/JWT and tenant isolation.
+    // Until a host-controlled, independently trusted database adapter exists,
+    // live verification claims are unsupported, even for successful probes.
+    const suppliedRuntimeEvidence = Boolean(
+      liveExecutionVerified || liveQueryReceipts || trustedQueryReceipt ||
+      liveDatabaseAdapter || liveProbeResult
     );
-
-    let receiptRejected = false;
-    let receiptRejectionReason = null;
-    if (hadCallerAssertedReceipt && !liveDatabaseAdapter && !liveProbeResult) {
-      receiptRejected = true;
-      receiptRejectionReason = 'Caller-provided receipts, digests, or boolean flags are rejected as proof of execution. Live verification requires an authorized LiveDatabaseAdapter with active connection provenance.';
-    }
-
-    // Live verification evaluation ONLY via authorized LiveDatabaseAdapter or verified probe
-    let empiricallyObservedLeak = false;
-    let liveIsolationProven = false;
-    let liveExecutionProvenance = null;
-
-    const isAuthorizedAdapter = liveDatabaseAdapter instanceof LiveDatabaseAdapter ||
-      (liveDatabaseAdapter !== null && typeof liveDatabaseAdapter === 'object' && liveDatabaseAdapter.isAuthorizedLiveAdapter === true);
-
-    const probe = liveProbeResult || (isAuthorizedAdapter && liveDatabaseAdapter.lastProbeResult ? liveDatabaseAdapter.lastProbeResult : null);
-
-    if (probe && (isAuthorizedAdapter || (typeof probe.provenance === 'string' && probe.provenance.startsWith('live-db://')))) {
-      liveExecutionProvenance = probe.provenance;
-      const negRows = probe.negativeQuery?.rowsReturned ?? 0;
-      const negDenied = probe.negativeQuery?.status === 'ACCESS_DENIED' || probe.negativeQuery?.status === 'DENIED';
-      const posRows = probe.positiveQuery?.rowsReturned ?? 0;
-      const posSuccess = probe.positiveQuery?.status === 'SUCCESS' || probe.positiveQuery?.status === 'OK';
-
-      if (negRows > 0 && !negDenied) {
-        // Empirically observed leak in live database execution!
-        empiricallyObservedLeak = true;
-      } else if (posSuccess && posRows > 0 && (negRows === 0 || negDenied)) {
-        liveIsolationProven = true;
-      }
-    }
-
-    const secure = issues.length === 0 && !empiricallyObservedLeak;
-
-    let verdict = 'RLS_MISCONFIGURATION_DETECTED';
-    let requiresLiveValidation = true;
-
-    if (empiricallyObservedLeak) {
-      // Empirically observed leak in live execution
-      verdict = 'EMPIRICALLY_OBSERVED_CROSS_TENANT_ACCESS';
-      requiresLiveValidation = false;
-    } else if (suspectedCrossTenantRisk) {
-      // Heuristic static policy risk
-      verdict = 'SUSPECTED_CROSS_TENANT_POLICY_RISK';
-      requiresLiveValidation = false;
-    } else if (secure) {
-      if (liveIsolationProven) {
-        verdict = 'RLS_LIVE_ISOLATION_VERIFIED';
-        requiresLiveValidation = false;
-      } else {
-        // DEC-31: Static check pass only; live execution receipt is required for runtime proof
-        verdict = 'STATIC_CHECK_PASS';
-        requiresLiveValidation = true;
-      }
-    }
+    const receiptRejected = suppliedRuntimeEvidence;
+    const receiptRejectionReason = suppliedRuntimeEvidence
+      ? 'Untrusted probe, adapter, boolean, or receipt cannot prove database authentication or RLS isolation. An independently trusted, host-authorized live verifier is not available in this release.'
+      : null;
+    const empiricallyObservedLeak = false;
+    const liveIsolationProven = false;
+    const liveExecutionProvenance = null;
+    const secure = issues.length === 0;
+    const verdict = suspectedCrossTenantRisk
+      ? 'SUSPECTED_CROSS_TENANT_POLICY_RISK'
+      : (secure ? 'STATIC_CHECK_PASS' : 'RLS_MISCONFIGURATION_DETECTED');
+    const requiresLiveValidation = true;
 
     return {
       tableName,

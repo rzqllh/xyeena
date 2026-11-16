@@ -391,10 +391,11 @@ jobs:
         liveDatabaseAdapter: liveAdapter,
         liveProbeResult: probe
       });
-      assert.strictEqual(liveVerifiedTable.verdict, 'RLS_LIVE_ISOLATION_VERIFIED');
-      assert.strictEqual(liveVerifiedTable.requiresLiveValidation, false);
-      assert.strictEqual(liveVerifiedTable.epistemicStatus, 'LIVE_EXECUTION_PROVEN');
-      assert.strictEqual(liveVerifiedTable.receiptVerified, true);
+      assert.strictEqual(liveVerifiedTable.verdict, 'STATIC_CHECK_PASS');
+      assert.strictEqual(liveVerifiedTable.requiresLiveValidation, true);
+      assert.strictEqual(liveVerifiedTable.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
+      assert.strictEqual(liveVerifiedTable.receiptVerified, false);
+      assert.strictEqual(liveVerifiedTable.receiptRejected, true);
 
       // 7. Empirically observed leak on live database returns EMPIRICALLY_OBSERVED_CROSS_TENANT_ACCESS
       const leakingAdapter = new LiveDatabaseAdapter({
@@ -419,9 +420,10 @@ jobs:
         liveDatabaseAdapter: leakingAdapter,
         liveProbeResult: leakProbe
       });
-      assert.strictEqual(empiricalLeakTable.verdict, 'EMPIRICALLY_OBSERVED_CROSS_TENANT_ACCESS');
-      assert.strictEqual(empiricalLeakTable.empiricallyObservedLeak, true);
-      assert.strictEqual(empiricalLeakTable.epistemicStatus, 'LIVE_EXECUTION_PROVEN');
+      assert.strictEqual(empiricalLeakTable.verdict, 'STATIC_CHECK_PASS');
+      assert.strictEqual(empiricalLeakTable.empiricallyObservedLeak, false);
+      assert.strictEqual(empiricalLeakTable.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
+      assert.strictEqual(empiricalLeakTable.receiptRejected, true);
     });
 
     it('Scenario 8: detects exposed Supabase service-role keys in client-facing frontend bundles', () => {

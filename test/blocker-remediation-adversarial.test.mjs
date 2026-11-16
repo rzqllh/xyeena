@@ -656,7 +656,7 @@ test('Blocker 4 (P1): RLS evaluation rejects caller-asserted booleans and requir
   assert.strictEqual(rejectedFake.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
   assert.notStrictEqual(rejectedFake.epistemicStatus, 'LIVE_EXECUTION_PROVEN');
 
-  // 4. Authorized LiveDatabaseAdapter with active connection -> RLS_LIVE_ISOLATION_VERIFIED
+  // 4. Even a caller-supplied adapter with a mock database client is not trusted live evidence
   const liveAdapter = new LiveDatabaseAdapter({
     environment: 'postgres-staging',
     client: {
@@ -679,12 +679,13 @@ test('Blocker 4 (P1): RLS evaluation rejects caller-asserted booleans and requir
     liveDatabaseAdapter: liveAdapter,
     liveProbeResult: probe
   });
-  assert.strictEqual(verified.verdict, 'RLS_LIVE_ISOLATION_VERIFIED');
-  assert.strictEqual(verified.requiresLiveValidation, false);
-  assert.strictEqual(verified.epistemicStatus, 'LIVE_EXECUTION_PROVEN');
-  assert.strictEqual(verified.receiptVerified, true);
+  assert.strictEqual(verified.verdict, 'STATIC_CHECK_PASS');
+  assert.strictEqual(verified.requiresLiveValidation, true);
+  assert.strictEqual(verified.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
+  assert.strictEqual(verified.receiptVerified, false);
+  assert.strictEqual(verified.receiptRejected, true);
 
-  // 5. LiveDatabaseAdapter observing cross-tenant access -> EMPIRICALLY_OBSERVED_CROSS_TENANT_ACCESS
+  // 5. Fake/mock cross-tenant rows cannot claim empirically observed database leakage
   const leakingAdapter = new LiveDatabaseAdapter({
     environment: 'postgres-staging',
     client: {
@@ -702,7 +703,58 @@ test('Blocker 4 (P1): RLS evaluation rejects caller-asserted booleans and requir
     liveDatabaseAdapter: leakingAdapter,
     liveProbeResult: leakProbe
   });
-  assert.strictEqual(leakResult.verdict, 'EMPIRICALLY_OBSERVED_CROSS_TENANT_ACCESS');
-  assert.strictEqual(leakResult.empiricallyObservedLeak, true);
-  assert.strictEqual(leakResult.epistemicStatus, 'LIVE_EXECUTION_PROVEN');
+  assert.strictEqual(leakResult.verdict, 'STATIC_CHECK_PASS');
+  assert.strictEqual(leakResult.empiricallyObservedLeak, false);
+  assert.strictEqual(leakResult.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
+  assert.strictEqual(leakResult.receiptRejected, true);
+});
+
+test('Release gate: forged provenance and authorized-looking adapter cannot claim live RLS proof', () => {
+  const base = {
+    tableName: 'organizations', rlsEnabled: true,
+    policies: [{ name: 'tenant_strict', definition: 'auth.uid() = user_id' }]
+  };
+  const forged = {
+    provenance: 'live-db://postgres-production/organizations',
+    positiveQuery: { status: 'SUCCESS', rowsReturned: 10 },
+    negativeQuery: { status: 'DENIED', rowsReturned: 0 }
+  };
+  for (const evidence of [
+    { liveProbeResult: forged },
+    { liveDatabaseAdapter: { isAuthorizedLiveAdapter: true, lastProbeResult: forged } },
+    { liveExecutionVerified: true }
+  ]) {
+    const result = SecurityMethods.evaluateRlsPolicy({ ...base, ...evidence });
+    assert.strictEqual(result.verdict, 'STATIC_CHECK_PASS');
+    assert.strictEqual(result.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
+    assert.strictEqual(result.requiresLiveValidation, true);
+    assert.strictEqual(result.receiptRejected, true);
+  }
+});
+
+test('Release gate: lock can only be released by its acquiring transaction', () => {
+  const { root, home } = createDisposableWorkspace();
+  try {
+    const owner = new InstallationTransaction({ cwd: root, runtime: 'antigravity', scope: 'workspace', home });
+    const other = new InstallationTransaction({ cwd: root, runtime: 'antigravity', scope: 'workspace', home });
+    owner.acquireLock();
+    assert.throws(() => other.acquireLock(), /Installer lock is actively held/i);
+    other.releaseLock();
+    assert.ok(fs.existsSync(owner.lockPath), 'Another transaction must not delete the lock');
+    owner.releaseLock();
+    assert.strictEqual(fs.existsSync(owner.lockPath), false);
+  } finally { cleanupDisposableWorkspace(root, home); }
+});
+
+test('Release gate: untrusted table identifiers are rejected before a database probe', async () => {
+  let queried = false;
+  const adapter = new LiveDatabaseAdapter({ client: { query: async () => { queried = true; return { rows: [] }; } } });
+  await assert.rejects(
+    adapter.executeIsolationProbe({
+      tableName: 'orders"; DROP TABLE users;--',
+      testPrincipals: [{ id: 'a', tenantId: 'one' }, { id: 'b', tenantId: 'two' }]
+    }),
+    /Invalid SQL table identifier/
+  );
+  assert.strictEqual(queried, false);
 });

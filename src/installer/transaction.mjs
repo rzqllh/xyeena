@@ -161,40 +161,55 @@ export class InstallationTransaction {
    * Acquire exclusive installer lock.
    */
   acquireLock() {
-    fs.mkdirSync(path.dirname(this.lockPath), { recursive: true });
-    if (fs.existsSync(this.lockPath)) {
-      try {
-        const existing = JSON.parse(fs.readFileSync(this.lockPath, 'utf8'));
-        const ageMs = Date.now() - (existing.timestamp || 0);
-        if (ageMs < 5 * 60 * 1000) {
-          throw new Error(`Installer lock is actively held by PID ${existing.pid} (${Math.round(ageMs / 1000)}s old)`);
-        }
-      } catch (err) {
-        if (err.message.includes('actively held')) throw err;
-      }
+    if (this.lockHeld) {
+      throw new Error('Installer lock is actively held by this transaction');
     }
-
+    fs.mkdirSync(path.dirname(this.lockPath), { recursive: true });
+    const token = crypto.randomBytes(16).toString('hex');
     const lockData = {
       pid: process.pid,
       timestamp: Date.now(),
       runtime: this.runtime,
       scope: this.scope,
-      cwd: this.cwd
+      cwd: this.cwd,
+      token
     };
-    fs.writeFileSync(this.lockPath, JSON.stringify(lockData, null, 2) + '\n');
+    let fd;
+    try {
+      // O_EXCL + O_CREAT: atomic across cooperating processes, unlike existsSync() + writeFileSync().
+      fd = fs.openSync(this.lockPath, 'wx', 0o600);
+      fs.writeFileSync(fd, JSON.stringify(lockData, null, 2) + '\n');
+      fs.fsyncSync(fd);
+    } catch (err) {
+      if (err?.code === 'EEXIST') {
+        // Do not automatically steal "stale" locks: age alone cannot establish owner death.
+        let owner = 'unknown';
+        try {
+          const existing = JSON.parse(fs.readFileSync(this.lockPath, 'utf8'));
+          owner = Number.isSafeInteger(existing.pid) ? String(existing.pid) : 'unknown';
+        } catch { /* Malformed lock is still held until deliberate recovery. */ }
+        throw new Error(`Installer lock is actively held or requires manual recovery (PID ${owner}). Do not delete a lock while an installation may be running.`);
+      }
+      throw err;
+    } finally {
+      if (fd !== undefined) fs.closeSync(fd);
+    }
     this.lockHeld = true;
+    this.lockToken = token;
   }
 
   /**
-   * Release installer lock.
+   * Release only the exact lock owned by this transaction.
    */
   releaseLock() {
-    if (fs.existsSync(this.lockPath)) {
-      try {
-        fs.unlinkSync(this.lockPath);
-      } catch { /* ignore */ }
+    if (!this.lockHeld) return;
+    const data = JSON.parse(fs.readFileSync(this.lockPath, 'utf8'));
+    if (!data || data.token !== this.lockToken || data.pid !== process.pid) {
+      throw new Error('Installer lock ownership mismatch: refusing to remove another process lock');
     }
+    fs.unlinkSync(this.lockPath);
     this.lockHeld = false;
+    this.lockToken = null;
   }
 
   /**

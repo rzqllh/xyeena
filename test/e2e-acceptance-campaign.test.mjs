@@ -399,10 +399,11 @@ Hope this helps! Let me know if you need anything else!
       liveDatabaseAdapter: liveAdapter,
       liveProbeResult: probe
     });
-    assert.strictEqual(liveCheck.verdict, 'RLS_LIVE_ISOLATION_VERIFIED');
-    assert.strictEqual(liveCheck.requiresLiveValidation, false);
-    assert.strictEqual(liveCheck.epistemicStatus, 'LIVE_EXECUTION_PROVEN');
-    assert.strictEqual(liveCheck.receiptVerified, true);
+    assert.strictEqual(liveCheck.verdict, 'STATIC_CHECK_PASS');
+    assert.strictEqual(liveCheck.requiresLiveValidation, true);
+    assert.strictEqual(liveCheck.epistemicStatus, 'STATIC_ANALYSIS_ONLY');
+    assert.strictEqual(liveCheck.receiptVerified, false);
+    assert.strictEqual(liveCheck.receiptRejected, true);
 
     // 3. PostgreSQL migration safety: flags table lock hazards
     const unsafeSql = 'CREATE INDEX idx_orders_user ON big_orders (user_id);';

@@ -84,7 +84,9 @@ diff --git a/src/calc.js b/src/calc.js
       const compResult = registry.execute('xyeena-execute', {
         isExecutionAuthorized: true,
         diff: cleanDiff,
-        stage: 'GREEN'
+        stage: 'GREEN',
+        testFailedInitially: true,
+        testPassedAfterCode: true
       });
 
       assert.equal(compResult.status, 'SUCCESS');

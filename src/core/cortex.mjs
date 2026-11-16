@@ -364,29 +364,21 @@ export class CortexOrchestrator {
       for (const sk of plan.explicitSkills) {
         const comp = this.compositeRegistry.get(sk);
         if (comp) {
-          compositeResult = comp.execute(options.input || { prompt }, options.context || {});
+          compositeResult = await comp.execute(options.input || { prompt }, options.context || {});
           matchedSkill = comp.id || sk;
           break;
         }
       }
       if (compositeResult) {
-        const ANALYTICAL_COMPOSITES = new Set([
-          'xyeena-design',
-          'xyeena-plan',
-          'xyeena-security',
-          'xyeena-writing',
-          'xyeena-review',
-          'xyeena-research',
-          'xyeena-verify',
-          'xyeena-debug'
-        ]);
-        const isAnalytical = ANALYTICAL_COMPOSITES.has(matchedSkill) || options.asEvaluation === true;
-        const status = isAnalytical
-          ? CORTEX_EXECUTION_STATUS.METHOD_EVALUATED
-          : CORTEX_EXECUTION_STATUS.COMPLETED;
-        const message = isAnalytical
-          ? 'Explicit composite methodology evaluated successfully.'
-          : 'Explicit composite workflow executed successfully.';
+        // A composite's SUCCESS/GATED return describes methodology evaluation,
+        // not host execution. Only the TaskGraph executor path can attest task completion.
+        const blocked = ['GATED', 'BLOCKED', 'BLOCKED_CONSENT_REQUIRED'].includes(compositeResult.status);
+        const status = blocked
+          ? CORTEX_EXECUTION_STATUS.BLOCKED
+          : CORTEX_EXECUTION_STATUS.METHOD_EVALUATED;
+        const message = blocked
+          ? 'Composite methodology blocked by its permission or prerequisite gate.'
+          : 'Composite methodology evaluated; no host task execution was claimed.';
 
         return {
           engine: 'Cortex',
@@ -417,7 +409,7 @@ export class CortexOrchestrator {
 
       let output = null;
       if (typeof options.responseProvider === 'function') {
-        output = options.responseProvider(prompt);
+        output = await options.responseProvider(prompt);
       } else {
         const mathMatch = prompt.match(/(?:hitung|calculate|\bmath\b)?\s*([0-9\s+\-*/().%]+)$/i);
         if (mathMatch && mathMatch[1] && /[0-9]/.test(mathMatch[1]) && /[+\-*/]/.test(mathMatch[1])) {
@@ -430,12 +422,17 @@ export class CortexOrchestrator {
         }
       }
 
+      const failed = output === false ||
+        (output && typeof output === 'object' && (output.success === false || output.status === 'FAILED'));
+      const noResult = output === null || output === undefined || output === '';
       return {
         engine: 'Cortex',
-        status: CORTEX_EXECUTION_STATUS.COMPLETED,
+        status: failed ? CORTEX_EXECUTION_STATUS.FAILED
+          : (noResult ? CORTEX_EXECUTION_STATUS.READY_FOR_EXECUTION : CORTEX_EXECUTION_STATUS.COMPLETED),
         mode: plan.mode,
         tier: plan.tier,
-        message: 'Micro task executed directly with zero DAG and zero file overhead.',
+        message: failed ? 'Micro task provider reported failure.'
+          : (noResult ? 'Micro task has no response provider or deterministic result; awaiting execution.' : 'Micro task produced an actual result.'),
         output,
         executedSteps: plan.workflow.steps.map(s => s.id),
         compositeResult: null,

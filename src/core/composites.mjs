@@ -325,8 +325,8 @@ export const COMPOSITE_DEFINITIONS = Object.freeze([
       });
 
       const tddVerification = EngineeringMethods.verifyTddCycle(input?.stage || 'GREEN', {
-        testFailedInitially: input?.testFailedInitially ?? true,
-        testPassedAfterCode: input?.testPassedAfterCode ?? true
+        testFailedInitially: input?.testFailedInitially === true,
+        testPassedAfterCode: input?.testPassedAfterCode === true
       });
 
       let safeRefactorCheck = null;
