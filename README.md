@@ -27,10 +27,10 @@ Baseline rilis yang saat ini dipublikasikan di registry npm adalah `xyeena-agent
 
 Siapkan **Node.js 22.14** atau lebih baru dan host agent yang ingin kamu gunakan.
 
-### Menggunakan Paket npm Publik (v0.4.1)
+### Menggunakan Paket npm Publik
 
 ```sh
-npx --yes xyeena-agent@0.4.1 setup
+npx --yes xyeena-agent setup
 ```
 
 Pilih scope (`global` atau `workspace`), host, dan preset skill (`essential`, `balanced`, atau `complete`). Periksa tujuan file sebelum menyetujui perubahan. Installer tidak memasukkan akun AI atau mengaktifkan izin host untukmu.
@@ -38,7 +38,7 @@ Pilih scope (`global` atau `workspace`), host, dan preset skill (`essential`, `b
 Untuk melihat pratinjau tanpa menulis file (dry-run):
 
 ```sh
-npx --yes xyeena-agent@0.4.1 setup --scope workspace --runtime codex --preset balanced --dry-run
+npx --yes xyeena-agent setup --scope workspace --runtime codex --preset balanced --dry-run
 ```
 
 Ikuti [panduan mulai](docs/GETTING-STARTED.md) atau [instalasi Windows](docs/INSTALL-WINDOWS-PEMULA.md) untuk langkah lengkap.
@@ -66,11 +66,11 @@ node bin/xyeena.mjs check --source .
 
 ---
 
-## Panduan Upgrade dari v0.4.1 ke v0.5.0
+## Panduan Upgrade dan Kompatibilitas Mundur
 
-Pemasangan v0.5.0 dirancang aman dan kompatibel mundur dengan instalasi v0.4.1 yang sudah ada di workspace atau direktori pengguna:
+Pemasangan versi 0.5.x dirancang aman dan kompatibel mundur dengan instalasi versi sebelumnya (v0.4.1 / v0.5.0) yang sudah ada di workspace atau direktori pengguna:
 
-1. **Pemeriksaan Integritas & Backup Otomatis:** Installer transaksional secara otomatis membackup instalasi v0.4.1 yang ada ke `.xyeena/backups/` sebelum melakukan perubahan file apa pun.
+1. **Pemeriksaan Integritas & Backup Otomatis:** Installer transaksional secara otomatis membackup instalasi versi sebelumnya yang ada ke `.xyeena/backups/` sebelum melakukan perubahan file apa pun.
 2. **Hybrid Diff Gate (DEC-26):** Jika ada file skill yang telah dimodifikasi oleh pengguna, installer tidak akan menimpanya secara diam-diam (bahkan bila menyertakan flag `--force`). Installer akan menampilkan diff dan mewajibkan konfirmasi eksplisit melalui `--diff-approved-fingerprint <FINGERPRINT>`.
 3. **Preservasi File Kustom:** File persona kustom pengguna di `.agents/personas/`, file memori `.agents/memory/`, dan file kustom non-Xyeena lainnya dipertahankan utuh dan tidak pernah dihapus, baik saat upgrade maupun safe uninstall.
 4. **Default Mode Windows (DEC-29):** Pada Windows, installer menggunakan mode `copy` secara default guna menghindari ketergantungan Developer Mode untuk pembuatan symlink/junction. Mode symlink tetap tersedia secara opt-in melalui `--mode symlink`.
