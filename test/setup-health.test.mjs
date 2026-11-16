@@ -100,3 +100,35 @@ test('PATH directories and links cannot spoof real executables',t=>{
     assert.equal(executable.find(x=>x.host==='gemini').hostCommandAvailable,true);
   }
 });
+
+test('setup check correctly recognizes both schema v1 (runtimes array) and schema v2 (runtime string) manifests', t => {
+  const cwd = fixture(t);
+  const stateDir = path.join(cwd, '.xyeena');
+  fs.mkdirSync(stateDir, { recursive: true });
+
+  // 1. Schema v1: runtimes array
+  fs.writeFileSync(path.join(stateDir, 'install.json'), JSON.stringify({
+    version: '0.4.1',
+    runtimes: ['antigravity', 'codex']
+  }));
+  const reportV1 = setupHealthCheck({ cwd, runtime: 'antigravity' });
+  assert.equal(reportV1.filesystem.hostListedInManifest, true);
+  const reportV1Codex = setupHealthCheck({ cwd, runtime: 'codex' });
+  assert.equal(reportV1Codex.filesystem.hostListedInManifest, true);
+  const reportV1Gemini = setupHealthCheck({ cwd, runtime: 'gemini' });
+  assert.equal(reportV1Gemini.filesystem.hostListedInManifest, false);
+
+  // 2. Schema v2: runtime singular string (v0.5.0 InstallationTransaction)
+  fs.writeFileSync(path.join(stateDir, 'install.json'), JSON.stringify({
+    schema: 2,
+    version: '0.5.0',
+    brand: 'xyeena',
+    engine: 'Cortex',
+    runtime: 'antigravity',
+    scope: 'workspace'
+  }));
+  const reportV2 = setupHealthCheck({ cwd, runtime: 'antigravity' });
+  assert.equal(reportV2.filesystem.hostListedInManifest, true);
+  const reportV2Codex = setupHealthCheck({ cwd, runtime: 'codex' });
+  assert.equal(reportV2Codex.filesystem.hostListedInManifest, false);
+});

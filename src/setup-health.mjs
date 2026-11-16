@@ -61,7 +61,9 @@ export function setupHealthCheck({cwd=process.cwd(),runtime,includeGlobal=false}
   const eligible=skills.filter(x=>x.availability==='detected');
   return {runtime,cwd:root,filesystem:{
     manifestVersion:manifest?.version||null,
-    hostListedInManifest:Array.isArray(manifest?.runtimes)&&manifest.runtimes.includes(runtime),
+    hostListedInManifest:(Array.isArray(manifest?.runtimes)&&manifest.runtimes.includes(runtime)) ||
+      manifest?.runtime === runtime ||
+      (Array.isArray(manifest?.runtime) && manifest.runtime.includes(runtime)),
     installedSkillCount:skills.length,eligibleSkillCount:eligible.length,
     orchestratorFound:!!orchestrator,
     orchestratorName:orchestrator?.name||null,
