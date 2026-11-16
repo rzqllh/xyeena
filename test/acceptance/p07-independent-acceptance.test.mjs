@@ -212,7 +212,7 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
       fs.writeFileSync(path.join(skillsDir, 'xyeena-core', 'SKILL.md'), '---\nname: xyeena-core\ndescription: Core skills\n---\n# Kernel');
 
       // Test discovery at workspace level (VERIFIED)
-      const discovered = discoverWorkspaceSkills(agyWorkspace);
+      const discovered = discoverWorkspaceSkills({ cwd: agyWorkspace });
       assert.ok(discovered.length >= 1, 'Must discover skills in workspace or package');
       assert.ok(discovered.some(s => s.name === 'xyeena-core'), 'Must include xyeena-core in discovered skills');
 
@@ -539,8 +539,12 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
   // =========================================================================
   describe('5. Evidence Reconciliation & Capability Coverage Audit', () => {
     it('audits all 64 capabilities, strictly separating COMPARATIVE_PARITY from BEHAVIOR_VERIFIED', () => {
-      const registryPath = path.join(PACKAGE_ROOT, 'docs', 'xyeena_rebuild_workspace_2026-11-03', '03-capabilities', 'CAPABILITY_COVERAGE_MATRIX.csv');
-      assert.ok(fs.existsSync(registryPath), 'Capability coverage matrix must exist');
+      const candidatePaths = [
+        path.join(PACKAGE_ROOT, 'test', 'acceptance', 'CAPABILITY_COVERAGE_MATRIX.csv'),
+        path.join(PACKAGE_ROOT, 'docs', 'xyeena_rebuild_workspace_2026-11-03', '03-capabilities', 'CAPABILITY_COVERAGE_MATRIX.csv')
+      ];
+      const registryPath = candidatePaths.find(p => fs.existsSync(p));
+      assert.ok(registryPath && fs.existsSync(registryPath), 'Capability coverage matrix must exist');
 
       const csvContent = fs.readFileSync(registryPath, 'utf8');
       const lines = csvContent.split(/\r?\n/).filter(line => line.trim().length > 0);
