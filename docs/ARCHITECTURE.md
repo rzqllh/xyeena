@@ -100,7 +100,7 @@ Superpowers and Anti-Slop are established as **cross-domain methodologies** span
 ## 5. Validation Boundaries
 
 Source validation comprises:
-- Programmatic test suite: **723 / 723 PASS** across 75 test suites (`npm test`), including 17 adversarial blocker remediation tests, 18 end-to-end acceptance scenarios, 17 specialized platform/security/retrieval/motion tests, 21 engineering intelligence & design closure tests, 12 design intelligence tests, 12 comparative validation tests, and 16 cross-domain composite tests.
+- Programmatic test suite: **726 discovered / 723 pass / 3 skipped / 0 fail** across 75 test suites (Ubuntu Node 24 release-candidate CI) (`npm test`), including 17 adversarial blocker remediation tests, 18 end-to-end acceptance scenarios, 17 specialized platform/security/retrieval/motion tests, 21 engineering intelligence & design closure tests, 12 design intelligence tests, 12 comparative validation tests, and 16 cross-domain composite tests.
 - Manifest & contract validation: 19 packaged skills + 64 capability contracts (`npm run check`).
 - Packed consumer smoke: tarball extraction and multi-host installation verification (`npm run test:consumer`).
 - Vendored harness rules: 15 / 15 PASS (`npm run test:harness`).

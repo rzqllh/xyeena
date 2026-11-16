@@ -4,7 +4,7 @@ These instructions guide AI agents working in the `rzqllh/xyeena` repository. Th
 
 ## Repository State & Architecture Authority
 
-1. **Reconciled Master Plan:** Read [master-plan-141026.md](master-plan-141026.md) and [future roadmap](docs/future/XYEENA_UPSTREAM_INTEGRATION_2026-11-14.md). All 32 owner decisions (DEC-01 to DEC-32) are locked and authoritative. The remote reconciliation seed and grill rounds have been completed, verified with 723/723 tests PASS across 75 test suites.
+1. **Reconciled Master Plan:** Read [master-plan-141026.md](master-plan-141026.md) and [future roadmap](docs/future/XYEENA_UPSTREAM_INTEGRATION_2026-11-14.md). All 32 owner decisions (DEC-01 to DEC-32) are locked and authoritative. The remote reconciliation seed and grill rounds have been completed, covered by the latest release-candidate PR CI (Ubuntu Node 24: 726 tests, 723 pass, 3 skip, 0 fail, 75 suites).
 2. **Product Identity:** Xyeena Rig is an **All-in-One Skills + Harness** toolkit. It is **not** a fleet of independent XYN subagents.
 3. **Engine:** **Cortex** is the native default intelligence layer (DEC-27). It executes lightweight tasks directly (< 5ms) and routes complex tasks through composite skills, DAG planning, and quality gates.
 4. **Settled Decisions:** Technical decisions DEC-01 through DEC-32 have already been decided and implemented/verified. **Do not repeat grill or interrogation loops** for settled architecture and engineering routines.

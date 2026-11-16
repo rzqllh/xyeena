@@ -11,8 +11,8 @@ This page separates the published baseline, newer source features, and recorded 
 | **GitHub release** | [v0.4.1](https://github.com/rzqllh/xyeena/releases/tag/v0.4.1) |
 | **npm baseline recorded by the repository** | `xyeena-agent@0.4.1`; recheck the registry before publishing a new version |
 | **Source version** | `0.5.0` (unreleased candidate in `package.json`), with all rebuild capabilities verified locally |
-| **Rebuild Foundation Status** | P00–P17 Rebuild, Cross-Domain Methodology, Design, Engineering, Specialized Platform Intelligence, Blocker Remediation & Final End-to-End Acceptance Suite completed with **723 / 723 tests PASS** across 75 suites on feature branch |
-| **Planned 0.5.0** | Limited-public release candidate readiness; all 32 upstream sources resolved with evidence; no new publication is performed by this documentation change |
+| **Rebuild Foundation Status** | P00–P17 Rebuild, Cross-Domain Methodology, Design, Engineering, Specialized Platform Intelligence, Blocker Remediation & Final End-to-End Acceptance Suite completed with **726 discovered / 723 passed / 3 skipped / 0 failed** across 75 suites (Ubuntu Node 24 release-candidate PR CI) |
+| **Planned 0.5.0** | Limited-public release candidate readiness; RE-01–RE-32 dispositions recorded, with some immutable upstream source SHAs still unverified; no new publication is performed by this documentation change |
 | **Final publication** | Requires final owner approval, exact candidate checks, and publishing configuration |
 
 Run source-only examples with `node bin/xyeena.mjs` from the intended checkout. Do not assume commands added after the 0.4.1 release exist in its npm package. Node.js 22.14+ is required.
@@ -23,7 +23,7 @@ Run source-only examples with `node bin/xyeena.mjs` from the intended checkout. 
 
 The local rebuild on `feat/rebuild-foundation-p00` establishes the following verified components:
 - **Capability Coverage:** 64 native capability contracts bound to concrete executable handlers (`BEHAVIOR_VERIFIED`: 64/64, `CONTRACT_ONLY`: 0).
-- **Golden Scenarios & Comprehensive Suites:** 7 comparative golden scenarios plus P14 8 comparative domain scenarios, P15 Design Intelligence suite, P16 Engineering Intelligence suite, P17 Specialized Platform Intelligence suite, 18 Final End-to-End Acceptance Scenarios, and 17 Adversarial Blocker Remediation Scenarios verified with **723 / 723 tests PASS** across 75 test suites.
+- **Golden Scenarios & Comprehensive Suites:** 7 comparative golden scenarios plus P14 8 comparative domain scenarios, P15 Design Intelligence suite, P16 Engineering Intelligence suite, P17 Specialized Platform Intelligence suite, 18 Final End-to-End Acceptance Scenarios, and 17 Adversarial Blocker Remediation Scenarios verified with **723 pass / 3 skipped / 0 fail** (726 discovered) across 75 test suites on Ubuntu Node 24 CI.
 - **Installer Safety:** Verified against defined adversarial scenarios (user modification diff lock, corrupted manifest fail-closed, safe uninstall preserving custom files, exclusive lock contention protection, TOCTOU prevention, `destinationIdentity` binding, selective per-file consent, symlink boundary checks, atomic rollback on mid-operation failure, consent fingerprints, copy-to-symlink conversion protection even with `--force`).
 - **Complete Upstream Source Disposition (RE-01 through RE-32):**
   - **Superpowers (RE-01)** (`obra/superpowers` v7.0.1, SHA `2ce8aa15d05bd57213e6f746f953aafb7ded7a8b`, MIT): Phased planning with context brainstorming, TDD red-green-refactor invariant, 4-phase systematic debugging, dual-axis review, epistemic verification gate, inline ledgered rulings.

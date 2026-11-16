@@ -3,21 +3,23 @@
 ## [0.5.0] - 2026-11-16
 
 ### Implemented
-- **Cortex Orchestration Engine (DEC-27):** Native default intelligence layer across all hosts. Bounded micro tasks (< 5ms) bypass ceremony; complex tasks leverage composite skills, DAG planning, and quality gates. Single exclusive governor with zero competing foreign control loops.
+- **Cortex Orchestration Engine (DEC-27):** Native routing and methodology layer for supported integrations; host execution and hook enforcement require separate evidence. Bounded micro tasks (< 5ms) bypass ceremony; complex tasks leverage composite skills, DAG planning, and quality gates. Single exclusive governor with zero competing foreign control loops.
 - **64 Native Capability Contracts & 11 Composite Skills (DEC-31):** 64 native capability contracts bound to concrete executable handlers across 9 domains (`thinking`, `design`, `engineering`, `quality`, `security`, `coordination`, `delivery`, `knowledge`, `extensibility`), plus 11 native composite skills (`/xyeena-design`, `/xyeena-plan`, `/xyeena-execute`, `/xyeena-debug`, `/xyeena-review`, `/xyeena-test`, `/xyeena-verify`, `/xyeena-security`, `/xyeena-research`, `/xyeena-writing`, `/xyeena-orchestrate`).
 - **Cross-Domain Methodology (DEC-32):** Source-backed integration of Superpowers (phased execution, red-green-refactor TDD, 4-phase debugging, dual-axis review, epistemic gates) and Anti-Slop (copywriting cliches, code comment hygiene, visual anti-slop, WCAG AA/AAA targets, mobile layout bounds) across all functional domains.
 - **Transactional Conditional Installer (DEC-26, DEC-29):** Safe transactional installer with Hybrid Diff Gate requiring explicit `--diff-approved-fingerprint` to modify user-customized files (blocking `--force` bypass), destination identity binding, per-file consent, safe uninstall preserving user-created files, Windows `copy` default (symlinks/junctions opt-in), and atomic two-way rollback on mid-operation failure.
-- **Upstream Source Reconciliation (RE-01 through RE-32):** Systematic resolution and provenance documentation for all 32 upstream sources with license audit, clean-room boundary enforcement, and attribution in `NOTICE.md`.
+- **Upstream Source Reconciliation (RE-01 through RE-32):** Disposition, attribution, and license notes for RE-01 through RE-32 in `NOTICE.md` and the provenance inventory; some host-local/reference-only sources still lack immutable source SHAs.
 - **Adaptive Artifact Governance (DEC-30):** Structural artifact generation with atomic writes and collision deduplication; prevents workspace clutter by persisting plans/audits only when explicitly requested or architecturally required.
 - **Multi-Host Compatibility:** Host configuration and portable adapters for Antigravity, Gemini CLI, OpenAI Codex, Claude Code, and Hermes Agent. Immutable host persona protection (`.agents/personas/`, `.gemini/agents/`).
 
 ### Verified
-- **Automated Test Suite:** 723 / 723 automated tests PASS across 75 test suites covering unit, contract, integration, adversarial, and end-to-end acceptance scenarios.
+- **Automated Test Suite:** Ubuntu Node 24 CI: 726 tests discovered, 723 pass, 3 skipped, 0 failures across 75 suites covering unit, contract, integration, adversarial, and end-to-end acceptance scenarios.
 - **Adversarial Installer Security:** 17 adversarial security scenarios verified (user modification diff lock, corrupted manifest fail-closed, safe uninstall preserving custom files, exclusive lock contention protection, TOCTOU prevention, `destinationIdentity` binding, selective per-file consent, symlink boundary checks, atomic rollback on mid-operation failure, consent fingerprints, copy-to-symlink conversion protection even with `--force`).
 - **Epistemic Evidence Classification (DEC-07):** Strict verification standard dividing evidence into `CONTRACT_ONLY` (0), `BEHAVIOR_VERIFIED` (64/64), `COMPARATIVE_VERIFIED` (Golden Scenarios), and `LIVE_HOST_VERIFIED`.
 - **Packaging Integrity:** Clean candidate tarball generated with `npm pack` containing zero secrets, zero personal credentials, zero test fixtures, zero `.env`, and excluding internal audit dossiers.
 
 ### Limitations
+- **RLS proof boundary:** The 0.5.0 release candidate intentionally disables live-verification verdicts for caller-controlled probes and adapters; RLS checks are static until an independently trusted host-authorized database verifier exists.
+- **Installer recovery:** Exclusive file locks are owned by a unique process token; an apparently stale lock is not auto-deleted by age alone and requires deliberate owner-checked recovery.
 - **Live Host Enforcement Gate:** Host daemon hooks are configured on disk, but live runtime interception remains truthful: `HOST CONFIGURED / LIVE ACTIVATION UNVERIFIED`. Antigravity IDE 2.5.5 remains `LIVE BLOCKED` for hook enforcement (Issue #34).
 - **Post-Run Budget Enforcement:** Token ceilings and accounting are verified after provider execution, not as pre-run provider-enforced spending caps.
 - **Separate Supervisor:** Simpul supervisor remains a separate, optional integration (Issue #35) and is not required for core Xyeena Rig.

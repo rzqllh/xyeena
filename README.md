@@ -6,7 +6,7 @@ Kamu memegang kendali penuh atas skill, preset, dan host runtime yang digunakan.
 
 Host yang memiliki integrasi instalasi: **Antigravity**, **Gemini CLI**, **OpenAI Codex**, **Claude Code**, dan **Hermes Agent**. Perlu dicatat: dukungan instalasi berbeda dari kemampuan host untuk menegakkan izin. Periksa [status dukungan](docs/STATUS.md) sebelum mengandalkannya untuk tindakan berisiko.
 
-Baseline rilis yang saat ini dipublikasikan di registry npm adalah `xyeena-agent@0.4.1`. Branch rilis ini mempersiapkan kandidat `xyeena-agent@0.5.0` dengan seluruh fitur rebuild (Cortex engine, 19 packaged skills, 64 native capability contracts, 11 composite skills, dan transactional conditional installer) yang telah diverifikasi secara lokal dengan 723/723 tests PASS.
+Baseline rilis yang saat ini dipublikasikan di registry npm adalah `xyeena-agent@0.4.1`. Branch rilis ini mempersiapkan kandidat `xyeena-agent@0.5.0` dengan seluruh fitur rebuild (Cortex engine, 19 packaged skills, 64 native capability contracts, 11 composite skills, dan transactional conditional installer) dengan CI lintas platform; pada runner Ubuntu Node 24 tercatat 723 tes lulus, 3 dilewati, dan 0 gagal dari 726 tes (75 suites).
 
 > [!NOTE]
 > Versi `xyeena-agent@0.5.0` saat ini berstatus Release Candidate (RC). Publikasi resmi ke npm registry memerlukan otorisasi eksplisit pemilik repositori dan verifikasi CI.
