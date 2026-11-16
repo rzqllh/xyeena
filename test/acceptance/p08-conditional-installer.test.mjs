@@ -117,7 +117,7 @@ describe('P08 — Conditional Installer & Legacy Replacement (AXIOVEN)', () => {
       cwd: tmpProject,
       runtime: 'antigravity',
       scope: 'workspace',
-      targetVersion: '0.4.1'
+      targetVersion: VERSION
     });
 
     const plan = tx.plan();
@@ -129,7 +129,7 @@ describe('P08 — Conditional Installer & Legacy Replacement (AXIOVEN)', () => {
     assert.ok(result.backupId);
 
     const updatedManifest = JSON.parse(fs.readFileSync(path.join(tmpProject, '.xyeena', 'install.json'), 'utf8'));
-    assert.equal(updatedManifest.version, '0.4.1');
+    assert.equal(updatedManifest.version, VERSION);
     assert.equal(updatedManifest.brand, 'xyeena');
   });
 
@@ -210,7 +210,7 @@ describe('P08 — Conditional Installer & Legacy Replacement (AXIOVEN)', () => {
       cwd: tmpProject,
       runtime: 'antigravity',
       scope: 'workspace',
-      targetVersion: '0.4.1'
+      targetVersion: VERSION
     });
 
     const plan = tx.plan();

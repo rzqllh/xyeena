@@ -6,7 +6,10 @@ Kamu memegang kendali penuh atas skill, preset, dan host runtime yang digunakan.
 
 Host yang memiliki integrasi instalasi: **Antigravity**, **Gemini CLI**, **OpenAI Codex**, **Claude Code**, dan **Hermes Agent**. Perlu dicatat: dukungan instalasi berbeda dari kemampuan host untuk menegakkan izin. Periksa [status dukungan](docs/STATUS.md) sebelum mengandalkannya untuk tindakan berisiko.
 
-Baseline rilis yang dicatat repository npm adalah `xyeena-agent@0.4.1`. Source rebuild terbaru pada branch pengembangan memiliki fitur **unreleased** (64 capability contracts, Cortex engine, dan transactional conditional installer) yang belum dipublikasikan ke npm.
+Baseline rilis yang saat ini dipublikasikan di registry npm adalah `xyeena-agent@0.4.1`. Branch rilis ini mempersiapkan kandidat `xyeena-agent@0.5.0` dengan seluruh fitur rebuild (Cortex engine, 19 packaged skills, 64 native capability contracts, 11 composite skills, dan transactional conditional installer) yang telah diverifikasi secara lokal dengan 723/723 tests PASS.
+
+> [!NOTE]
+> Versi `xyeena-agent@0.5.0` saat ini berstatus Release Candidate (RC). Publikasi resmi ke npm registry memerlukan otorisasi eksplisit pemilik repositori dan verifikasi CI.
 
 ---
 
@@ -60,6 +63,18 @@ node bin/xyeena.mjs install --runtime antigravity --scope workspace --yes
 # Validasi seluruh skill dan 64 capability contracts
 node bin/xyeena.mjs check --source .
 ```
+
+---
+
+## Panduan Upgrade dari v0.4.1 ke v0.5.0
+
+Pemasangan v0.5.0 dirancang aman dan kompatibel mundur dengan instalasi v0.4.1 yang sudah ada di workspace atau direktori pengguna:
+
+1. **Pemeriksaan Integritas & Backup Otomatis:** Installer transaksional secara otomatis membackup instalasi v0.4.1 yang ada ke `.xyeena/backups/` sebelum melakukan perubahan file apa pun.
+2. **Hybrid Diff Gate (DEC-26):** Jika ada file skill yang telah dimodifikasi oleh pengguna, installer tidak akan menimpanya secara diam-diam (bahkan bila menyertakan flag `--force`). Installer akan menampilkan diff dan mewajibkan konfirmasi eksplisit melalui `--diff-approved-fingerprint <FINGERPRINT>`.
+3. **Preservasi File Kustom:** File persona kustom pengguna di `.agents/personas/`, file memori `.agents/memory/`, dan file kustom non-Xyeena lainnya dipertahankan utuh dan tidak pernah dihapus, baik saat upgrade maupun safe uninstall.
+4. **Default Mode Windows (DEC-29):** Pada Windows, installer menggunakan mode `copy` secara default guna menghindari ketergantungan Developer Mode untuk pembuatan symlink/junction. Mode symlink tetap tersedia secara opt-in melalui `--mode symlink`.
+5. **Dry-Run Preview:** Selalu jalankan dengan `--dry-run` terlebih dahulu untuk meninjau daftar tindakan, path tujuan, dan hash perubahan sebelum menerapkan perubahan secara permanen (`--yes`).
 
 ---
 
