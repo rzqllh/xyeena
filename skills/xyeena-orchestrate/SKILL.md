@@ -3,44 +3,22 @@ name: xyeena-orchestrate
 description: Use when a task benefits from PM/controller orchestration, parallel independent specialists, executor/auditor separation, or multi-agent recovery.
 ---
 
-# Orchestrate
+# Orchestrate — v1 Procedure Entry
 
-Use a manager-controlled DAG, not an agent mesh. The governor owns topology, workflow state, task creation, joins, cancellation and consent. Workers may request another capability but do not spawn arbitrary worker networks.
+**Activate when:** Interdependent tasks require ordered joins, native delegated specialists, independent review, isolated write scopes or recovery from worker failure.
 
-Model work as immutable tasks with dependencies. Parallelize only ready independent tasks; serialize shared-write conflicts unless they are isolated in separate worktrees. Agent lifecycle and task lifecycle are separate: a worker can fail while the task returns to `READY` for reassignment.
+**Do not activate for:** A trivial answer, absent executable host adapter, a request merely to list skill names, or an unapproved multi-agent swarm.
 
-Messages stay small and typed (`ASSIGN`, `QUESTION`, `RESULT`, `FINDING`, `CHALLENGE`, `RESPONSE`, `EVIDENCE`, `BLOCKED`, `FAILED`, `CANCEL`). Large results live as artifacts. Joins reconcile contradictions through evidence rather than concatenating reports or voting.
+## Execution route
 
-Independent auditors do not inherit executor rationale. Repeated review/fix loops trip a breaker and re-diagnose or escalate instead of recursing forever.
+1. Discover host version and installed skill registry (workspace first, then trusted global); load only selected entrypoints and require permission for external tools.
+2. Build one Cortex-governed DAG with immutable task IDs, dependencies, input/output schema, risk gates and explicit worker/host tool requirements.
+3. Dispatch only through actually discovered native host mechanisms; tie each task to host dispatch ID; if none exists, report BLOCKED rather than fabricate READY/RUNNING workers.
+4. Track worker lifecycle separately from tasks: acknowledge messages, handle cancelled/stale/replayed dispatch, serialize conflicting writes and isolate verified worktrees.
+5. Join outputs by requirement and evidence; send independent review without Builder rationale, cap fix/review loops and promote to VERIFIED only after authoritative proof.
 
-## Native skill selection and execution
+**Output contract:** Task DAG, selected skill provenance, native dispatch IDs, permission/host evidence, reconciled findings, recovery checkpoint and final status.
 
-When the user gives a natural-language goal, use the host's installed Agent Skills inventory
-(workspace first, then global) to identify relevant Xyeena and third-party skills.
-Read only the selected `SKILL.md` files as needed. Do not ask the user to paste a list of
-slash commands, do not blindly load every skill, and do not invent missing skills.
+**Failure boundary:** Host configuration or a printed simulated invocation is not execution. Lost cancellation acknowledgement leaves remote side effects UNKNOWN until a host receipt resolves them.
 
-Use the native host's actual subagent/tool invocation interface when available. In Antigravity
-that may be `invoke_subagent` for independent scoped work; pass bounded task instructions,
-a suitable declared role and an isolated worktree when writes might conflict. Respect
-native IDE permission prompts. Never treat emitting a plan, naming an agent, or registering
-a synthetic READY worker as proof that a worker ran. If no real host adapter is present,
-mark execution BLOCKED and report precisely what is missing.
-
-Use the smallest relevant capability set first. Parallelize independent read-only tasks
-when useful; keep shared writes serialized or explicitly isolated. Capture actual
-file changes, test logs and evidence references before changing a task to VERIFIED.
-Unverified model summaries remain REVIEW_REQUIRED. Do not silently merge, publish,
-deploy, send communications, or broaden an approval.
-
-## Cross-host portability
-
-Xyeena orchestrates skills by their actual runtime inventory, not a memorized universal registry.
-Identify the active host (Antigravity IDE, Gemini CLI, Codex, Claude Code, or Hermes), then
-discover installed skill metadata using host-native facilities. If needed and permitted, run
-`xyeena skills discover --runtime <host>` for a read-only inventory. Do not load or invoke a
-skill if it is missing, incompatible, untrusted, or disabled. In Hermes, never treat
-`availability: requires-host-trust` as executable; only the user may trust a repository.
-Prefer the smallest adequate combination, lazy-load selected skill instructions, and ask
-the runtime to activate them through its native mechanisms. Preserve native permission
-prompts and independent verification. A directory scan is **not** proof of execution.
+Use [references/procedure.md](references/procedure.md) for decision, recovery, and adversarial cases. Use host-native execution and independent evidence, not an invented worker, host, verifier, or upstream runtime. This entrypoint alone is not evidence of behavior/host parity.

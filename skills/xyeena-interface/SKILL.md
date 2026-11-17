@@ -3,14 +3,22 @@ name: xyeena-interface
 description: Use when designing, building, redesigning, auditing, or polishing a frontend, UI, UX flow, landing page, dashboard, component library, or responsive interface.
 ---
 
-# Interface Craft
+# Interface — v1 Procedure Entry
 
-Treat design direction and quality filtering as separate jobs. First inspect the product, existing design system, real content, user/job, references and constraints. Classify the surface: **brand** surfaces can spend more visual attention; **product** surfaces make interaction and information hierarchy the priority.
+**Activate when:** A real web/mobile interface, interaction flow, design system, accessibility or responsive audit is requested.
 
-Shape before polishing: user flow, content hierarchy, states, layout logic and interaction model. Then implement within the existing stack unless changing it is justified.
+**Do not activate for:** Pure backend work, content-only changes with no interaction, or aesthetic redesign that violates a locked product brief.
 
-Use **PURPOSE, IDENTITY, HIERARCHY, RHYTHM, RESILIENCE, HUMAN, PROOF** as the craft checks. Trendy techniques are allowed when they serve a concrete goal; generic defaults are not a design direction. Avoid template-shaped composition, fake metrics, decorative controls, repetitive cards, arbitrary pills/glows/gradients, and empty marketing copy unless the product actually requires them.
+## Execution route
 
-Verify the real rendered interface. Exercise critical interactions, responsive widths, keyboard/focus where applicable, empty/loading/error states, text overflow, console/network issues and reduced-motion behavior. Static code inspection alone does not prove UI quality.
+1. Inspect product job, existing stack, design tokens, actual copy/data, target devices and accessibility constraints; classify Persuade/Operate/Read/Experience.
+2. Use UI UX Pro Max's searchable design-knowledge approach for layout/type/color/interaction references; select evidence specific to stack and surface rather than loading all guides.
+3. Explore distinct directions where the brief warrants; pick one through hierarchy, information density, interaction mechanics and design-system fit before implementation.
+4. Apply Hallmark quality floor (keyboard focus, reduced motion, no layout-thrashing motion, overflow and hit targets) plus Impeccable critique/polish; honor intentional brand exceptions with evidence.
+5. Verify rendered screenshots across relevant widths, keyboard and screen-reader semantics, empty/loading/error, responsive content, interaction and console/network; static CSS scanning cannot certify visual quality.
 
-Read `references/design-craft.md` for the detailed process when doing substantial interface work.
+**Output contract:** Surface brief and references, selected direction, token/state map, rendered QA evidence, issue-by-issue fixes and residual gaps.
+
+**Failure boundary:** A generated visual specification, static lint or screenshot of one state is not proof that mobile interactions or accessibility work.
+
+Use [references/procedure.md](references/procedure.md) for decision, recovery, and adversarial cases. Use host-native execution and independent evidence, not an invented worker, host, verifier, or upstream runtime. This entrypoint alone is not evidence of behavior/host parity.
