@@ -532,6 +532,39 @@ export class CortexOrchestrator {
             signal: options.signal
           });
 
+          // Native BLOCKED/UNKNOWN and methodology-only results cannot complete work.
+          const returnedStatus = res && typeof res === 'object'
+            ? String(res.status || '').toUpperCase()
+            : '';
+          const noExecutionStatuses = new Set([
+            'BLOCKED', 'BLOCKED_CONSENT_REQUIRED', 'GATED', 'REVIEW_REQUIRED',
+            'NOT_RUN', 'UNKNOWN', 'CANCELLED', 'CANCELED', 'PLANNED',
+            'READY_FOR_EXECUTION', 'METHOD_EVALUATED'
+          ]);
+          if (noExecutionStatuses.has(returnedStatus)) {
+            executionBlocked = true;
+            blockReason = typeof res.reason === 'string' && res.reason.trim()
+              ? res.reason
+              : 'Executor did not establish task execution: ' + returnedStatus;
+            taskGraph.transition(taskId, TASK_STATUS.BLOCKED, { reason: blockReason });
+            this.evidenceLedger.add(new EvidenceRecord({
+              claim: 'Task "' + taskId + '" was blocked by executor',
+              tier: EVIDENCE_TIERS.OBSERVED,
+              provenance: 'cortex.executor',
+              status: VERDICT_STATUS.BLOCKED,
+              metadata: { taskId, returnedStatus, reason: blockReason }
+            }));
+            for (const remainingId of order.slice(order.indexOf(taskId) + 1)) {
+              const pendingNode = taskGraph.get(remainingId);
+              if (pendingNode && pendingNode.status === TASK_STATUS.READY) {
+                taskGraph.transition(remainingId, TASK_STATUS.BLOCKED, {
+                  reason: 'Upstream task "' + taskId + '" was blocked'
+                });
+              }
+            }
+            break;
+          }
+
           // Check for structured failure signals: false, { success: false }, { status: 'FAILED' }
           const isFailureSignal = res === false || (res && typeof res === 'object' && (res.success === false || res.status === 'FAILED' || res.status === 'failed'));
 
@@ -566,11 +599,11 @@ export class CortexOrchestrator {
           executedTaskIds.push(taskId);
 
           this.evidenceLedger.add(new EvidenceRecord({
-            claim: `Task "${taskId}" executed successfully`,
+            claim: `Task "${taskId}" executor callback resolved (effects unverified)`,
             tier: EVIDENCE_TIERS.OBSERVED,
             provenance: 'cortex.executor',
-            status: VERDICT_STATUS.VERIFIED,
-            metadata: { taskId, result: res || { completed: true } }
+            status: VERDICT_STATUS.INFERRED,
+            metadata: { taskId, result: res || { completed: true }, limitation: 'Callback resolution is not independent runtime or acceptance proof.' }
           }));
         } catch (err) {
           executionFailed = true;
@@ -611,6 +644,22 @@ export class CortexOrchestrator {
         evidence: this.evidenceLedger.records,
         modifiedFiles: []
       });
+
+      if (executionBlocked) {
+        return {
+          engine: 'Cortex',
+          status: CORTEX_EXECUTION_STATUS.BLOCKED,
+          mode: plan.mode,
+          tier: plan.tier,
+          message: blockReason || 'Native execution or review remains blocked.',
+          verificationStatus: 'NOT_VERIFIED',
+          checkpointId: checkpoint.checkpointId,
+          taskCount: taskGraph.size(),
+          executedSteps: executedTaskIds,
+          taskGraph,
+          plan
+        };
+      }
 
       if (executionFailed) {
         return {
