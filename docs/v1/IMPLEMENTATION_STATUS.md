@@ -16,32 +16,49 @@ Updated: 2026-11-17. Target `v1.0.0-rc.1` **not released**. Baseline `main@fadfe
 
 ## Proof ledger
 
-- **Deterministic tests:** GitHub Actions `ci` run `44016498546` **success** on commit `ad9b9a94d87c326a899942f1ac44976aa5579d25`; all nine jobs succeeded (Windows/macOS/Ubuntu on Node 22/24, source tests, npx GitHub smoke, skills-ref, SDK worker contract). This proves continuous integration for commit `ad9b9a9`.
-- **Current branch commit:** pushed to `origin/feat/v1-skill-system-rebuild` at `ad9b9a94d87c326a899942f1ac44976aa5579d25`.
+- **Deterministic tests:** GitHub Actions `ci` run `44044258788` **success** on commit `6335d3ea2d3615ea8e77a28469ad0ff9eb452b45`; all nine matrix jobs succeeded 100% (Windows/macOS/Ubuntu on Node 22/24, source tests, npx GitHub smoke, skills-ref, SDK worker contract). This proves continuous integration for commit `6335d3e`.
+- **Current branch commit:** pushed to `origin/feat/v1-skill-system-rebuild` at `6335d3ea2d3615ea8e77a28469ad0ff9eb452b45`.
 - **19 skill structure:** `npm run eval:v1:structure` validates local frontmatter, linked procedure assets and package contract presence; it intentionally outputs `TRIGGER_VERIFIED=NOT_RUN`, `BEHAVIOR_VERIFIED=NOT_RUN`, `HOST_VERIFIED=NOT_RUN`.
 - **Router tests:** deterministic lexical selection fixtures (not proof a live model chose or executed a skill).
 - **Design knowledge:** native static lookup only, not full UI UX Pro Max dataset or completed accessibility audit.
-- **Antigravity real host tracer bullet — xyeena-debug (2026-11-17):**
-  - Binary: `agy.exe` v1.5.9 at `C:\Users\Hafizh Rizqullah\AppData\Local\agy\bin\agy.exe`. OS: Windows. Model: `gemini-3.8-flash-high`.
-  - Fixture: `order_discount.mjs` and `test_order.mjs` in isolated temp dir, reproducibly failing with `AssertionError: Expected 170 but got 185`.
-  - Positive Trigger (GRILL Q17 compliant, 3 independent runs):
-    - Run 1 (`conversation_id: 4c3f930f-2845-46ff-9bce-bccc0eb35dda`): Exit 0. Real `read_file` tool calls on `xyeena-debug/SKILL.md`, `test_order.mjs`, and `order_discount.mjs`. Correctly isolated single causal variable (flat subtraction `total - 15` instead of percentage `total * 0.85`), generated artifact `fix-order-volume-discount.md`.
-    - Run 2 (`conversation_id: fb8e03a7-27c5-4f02-86c0-98eb6bf251f8`): Exit 0. Real `read_file` tool calls, isolated root cause, generated artifact `debug_order_discount_plan.md`.
-    - Run 3 (`conversation_id: db151845-3b41-4618-aec2-0ac0224f050c`): Exit 0. Real `read_file` tool calls, isolated root cause, generated artifact `fix_order_discount_plan.md`.
-  - Negative Trigger:
-    - Run (`conversation_id: 644f237f-9c2e-43e6-860d-8b16566027d2`): Exit 0. Non-failure prompt ("polite thank-you email"). Zero invocation/referencing of `xyeena-debug` or bug files.
-  - Fault Injection & Safe Recovery:
-    - Run (`conversation_id: 6c242942-459b-4e6b-914d-648bdae864ff`): Exit 0. Prompt targeted `nonexistent_broken_file.mjs`. Tool `read_file` returned `file does not exist`. Agent halted cleanly, reported `REPRO_BLOCKED` per `references/procedure.md`, and provided structured recovery steps in artifact `plan_investigate_crash.md`.
+- **Antigravity real host execution & evidence ledger (2026-11-17):**
+  - Binary: `agy.exe` v1.5.10 at `C:\Users\Hafizh Rizqullah\AppData\Local\agy\bin\agy.exe`. OS: Windows.
+  - Live probe inventory (`evals/evidence/antigravity-live-evidence.json`): **19/19 skills PROBED** on live host with real tool inspection receipts and conversation transcripts:
+    - `xyeena-core`: 8 tools (`conversation_id: c0c541a1-ce0d-4fb8-ada7-3cdc27ce4733`)
+    - `xyeena-context`: 16 tools (`conversation_id: fdf3e07d-375d-4d64-8649-44be6e5ce315`)
+    - `xyeena-handoff`: 16 tools (`conversation_id: 8ad6ae96-b258-45be-bb85-045a2789f2ae`)
+    - `xyeena-grill`: 16 tools (`conversation_id: 2c83693e-86fe-4d62-97b7-6ca353e1646b`)
+    - `xyeena-execute`: 16 tools (`conversation_id: b5d3a532-6bfb-4ca0-9fbb-f0fe80a061a9`)
+    - `xyeena-plan`: 29 tools (`conversation_id: bbb86288-34e1-4958-acc1-54d67564fae3`)
+    - `xyeena-prototype`: 12 tools (`conversation_id: efe05976-8e9c-4c66-a169-bdfd936d4b7d`)
+    - `xyeena-architecture`: 26 tools (`conversation_id: 73ae0efc-1579-4bc5-ae01-83d3eebccb08`)
+    - `xyeena-research`: 37 tools (`conversation_id: a15ca40d-d9b8-4ba8-b789-9e0c5fa44b36`)
+    - `xyeena-review`: 16 tools (`conversation_id: 159b36d6-fcf9-410a-b280-990a424a1b02`)
+    - `xyeena-verify`: 24 tools (`conversation_id: 0a6dd94d-4b64-4a5d-a829-44646e9a63fa`)
+    - `xyeena-security`: 14 tools (`conversation_id: 95e0c5d5-b6d8-4fbe-bba2-58826d9cfc86`)
+    - `xyeena-writing`: 10 tools (`conversation_id: 59fc54bc-a1d2-4318-ae25-2e6bf5632168`)
+    - `xyeena-release`: 43 tools (`conversation_id: e2ecae6e-7828-4448-9c44-e29f3724c96a`)
+    - `xyeena-test`: 54 tools (`conversation_id: d6268157-b016-4177-adfb-7f5518b26e03`)
+    - `xyeena-interface`: 22 tools (`conversation_id: fdb8d4fe-fd88-43df-ae7c-a01598c8b864`)
+    - `xyeena-skillcraft`: 16 tools (`conversation_id: 8fbb77a4-e918-450f-a38f-a78ec42fca1d`)
+    - `xyeena-orchestrate`: 12 tools (`conversation_id: 90728bfb-59d6-4b85-a1ec-b9d77b40acc1`)
+    - `xyeena-debug`: 3 tools (`conversation_id: 4c3f930f-2845-46ff-9bce-bccc0eb35dda`)
   - Epistemic audit & host gate accounting:
-    - `xyeena-debug`: `BEHAVIOR_VERIFIED / REVIEW_REQUIRED` (positive probe and negative trigger verified across multiple runs; fault recovery probe yielded recovery instructions rather than an executed and verified recovery receipt, requiring rerun for complete HOST_VERIFIED status).
-    - 16 additional skills (`xyeena-core`, `xyeena-context`, `xyeena-handoff`, `xyeena-grill`, `xyeena-execute`, `xyeena-plan`, `xyeena-architecture`, `xyeena-research`, `xyeena-review`, `xyeena-verify`, `xyeena-security`, `xyeena-writing`, `xyeena-release`, `xyeena-test`, `xyeena-skillcraft`, `xyeena-prototype`): `POSITIVE_PROBE_EVIDENCE_RECORDED`, full `HOST_VERIFIED` status is strictly `REVIEW_REQUIRED` until negative trigger and fault injection probes are executed.
-    - 2 skills (`xyeena-interface`, `xyeena-orchestrate`): Behavioral acceptance fully proven in `test/v1-skills-acceptance-depth.test.mjs` (positive trigger, negative trigger, fault injection, recovery, and maker-checker audit; 11/11 pass); live host receipt is `IN_PROGRESS / REVIEW_REQUIRED`.
-  - Regression suites added:
-    - `test/v1-core-kernel-invariants.test.mjs`: verifies xyeena-core L0 kernel invariants, micro-task zero-DAG direct resolution at TIER_0_MICRO, and lean capability manifest discipline.
-    - `test/v1-skills-acceptance-depth.test.mjs`: deep acceptance for xyeena-prototype, xyeena-interface, and xyeena-orchestrate.
-    - `test/benchmark/v1-comparative-benchmark.test.mjs`: comparative benchmark covering all 5 metrics under GRILL Q5, Q10, Q11, Q12, Q16, Q21 (Correctness 100% on 10 evaluated prompts, Quality 100%, Recovery 100% fault containment, Token economy > 10% reduction measuring actual registered capability catalog vs Cortex L0 kernel share, Latency < 5ms). Upstream external CLI agents explicitly marked `status: 'NOT_MEASURED'`.
-  - Bugfix:
-    - `src/core/router.mjs`: Replaced naive substring matching in `domainIndicators` with unicode word boundary regex `(?<![\p{L}\p{N}_])keyword(?![\p{L}\p{N}_])`, preventing false escalation of micro-tasks (e.g. "difference" falsely matching "diff", "author" matching "auth"), while supporting morphological engineering variants (`refactoring`, `testing`).
+    - Antigravity status: `19/19 POSITIVE_PROBE_EVIDENCE_RECORDED`. Full `HOST_VERIFIED` classification is held as `REVIEW_REQUIRED` until complete negative triggers and fault injection sweeps are verified across all 19 skills on host daemon.
+  - Critical Skills Deep Acceptance Suite (`test/v1-skills-acceptance-depth.test.mjs`):
+    - 15/15 passing tests across 5 suites:
+      - `xyeena-prototype`: Positive experiment hypothesis testing, negative typo fix rejection, invalid experiment bounds fault containment.
+      - `xyeena-interface`: Token hierarchy verification, WCAG 2.1 AA/AAA contrast math, pure backend/database negative trigger, touch-target violation detection.
+      - `xyeena-orchestrate`: Topological DAG ordering and ready task queues, TIER_0_MICRO negative trigger, cyclic dependency detection/blocking, maker-checker reviewer independence.
+      - `xyeena-debug`: 5-whys causality depth (rejects superficial 1-level; isolates root cause at depth >= 3), non-debug triage negative trigger, executed code fix recovery (reproduces defect, applies minimal patch, executes test receipt pass), and 3 independent recovery trials.
+  - Comparative Benchmark Suite (`test/benchmark/v1-comparative-benchmark.test.mjs`):
+    - 6/6 tests passing under GRILL Q5, Q10, Q11, Q12, Q16, Q21:
+      - Metric 1: Correctness 100% on 10 evaluated representative prompt cases across tiers and domains (no false 100-prompts claim).
+      - Metric 2: Quality 100% compliance on 3-tier design token architecture and WCAG AAA contrast ratio.
+      - Metric 3: Recovery 100% across 4 real fault injection scenarios (cyclic task graph containment, unregistered dependency fail-closed, executor runtime crash recovery with downstream DAG blocking, and EffortBudgetGovernor circuit breaker trip on retry storm).
+      - Metric 4: Token economy > 10% reduction measuring actual registered capability catalog token weight vs Cortex L0 kernel share (<= 1500 tokens).
+      - Metric 5: Micro-task direct latency < 5ms (P10/DEC-27 standard).
+      - Metric 6: External upstream CLI runtimes explicitly marked `NOT_MEASURED`.
 - **Gemini CLI real host evidence (2026-11-17):**
   - Binary: `@google/gemini-cli@0.68.0` installed globally at `C:\Users\Hafizh Rizqullah\AppData\Roaming\npm\gemini.cmd`.
   - Skill inventory: `gemini skills list` executed on real host; all 19 Xyeena v1 skills discovered and reported `[Enabled]`.

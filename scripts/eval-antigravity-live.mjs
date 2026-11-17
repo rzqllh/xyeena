@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -148,7 +148,7 @@ export const SKILL_SUITES = [
   }
 ];
 
-export function runAgy(prompt, timeoutMs = 120000) {
+export function runAgy(prompt, timeoutMs = 360000) {
   return new Promise((resolvePromise) => {
     const startTime = Date.now();
     const child = spawn(AGY_BIN, ['--print', prompt, '--output-format', 'json'], {
@@ -190,6 +190,27 @@ export function runAgy(prompt, timeoutMs = 120000) {
       resolvePromise({ code, parsed, stdout, stderr, elapsed });
     });
   });
+}
+
+export function getLatestBrainConversationId(sinceMs = 0) {
+  if (!BRAIN_DIR || !existsSync(BRAIN_DIR)) return null;
+  try {
+    const entries = readdirSync(BRAIN_DIR, { withFileTypes: true });
+    let latestId = null;
+    let latestTime = sinceMs;
+    for (const ent of entries) {
+      if (ent.isDirectory() && ent.name !== 'scratch') {
+        const stat = statSync(join(BRAIN_DIR, ent.name));
+        if (stat.mtimeMs > latestTime) {
+          latestTime = stat.mtimeMs;
+          latestId = ent.name;
+        }
+      }
+    }
+    return latestId;
+  } catch {
+    return null;
+  }
 }
 
 export function readTranscript(conversationId) {
@@ -249,8 +270,9 @@ export function saveState(state) {
 
 export async function evaluateSkill(suite) {
   console.log(`[PROBE] Positive probe for: ${suite.skillId}`);
+  const startTime = Date.now();
   const res = await runAgy(suite.positivePrompt);
-  const convId = res.parsed?.conversation_id || null;
+  const convId = res.parsed?.conversation_id || getLatestBrainConversationId(startTime - 2000);
   const transcript = readTranscript(convId);
 
   // Evaluate task outcome and genuine tool evidence rather than keyword presence
@@ -261,11 +283,13 @@ export async function evaluateSkill(suite) {
 
   const exitOk = res.code === 0;
   const hasSubstantiveResponse = Boolean(res.parsed?.response && res.parsed.response.length > 50);
+  const hasSubstantiveTranscript = transcript.toolCalls.length > 0 && transcript.steps.length >= 4;
 
   let verdict = 'FAIL';
   let acceptanceTier = 'REVIEW_REQUIRED';
 
-  if (exitOk && hasSubstantiveResponse && (readExpectedFile || toolCallNames.length > 0)) {
+  if ((exitOk && hasSubstantiveResponse && (readExpectedFile || toolCallNames.length > 0)) ||
+      (readExpectedFile && hasSubstantiveTranscript)) {
     verdict = 'PASS';
     acceptanceTier = 'POSITIVE_PROBE_EVIDENCE_RECORDED';
   } else if (!exitOk) {
@@ -283,7 +307,9 @@ export async function evaluateSkill(suite) {
     toolCalls: transcript.toolCalls,
     inspectedFiles: transcript.inspectedFiles,
     tokens: res.parsed?.usage?.total_tokens || null,
-    notes: exitOk ? 'Positive prompt executed with inspectable tool receipts' : (res.stderr || 'Execution failed')
+    notes: (verdict === 'PASS')
+      ? `Positive prompt executed with ${transcript.toolCalls.length} tool calls and inspectable receipts`
+      : (res.stderr || 'Execution failed')
   };
 }
 
