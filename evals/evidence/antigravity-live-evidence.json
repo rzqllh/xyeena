@@ -1,9 +1,9 @@
 {
   "timestamp": "2026-11-17T05:53:54.310Z",
   "host": "Antigravity CLI (agy.exe)",
-  "version": "1.5.9",
-  "testedCount": 18,
-  "passedCount": 15,
+  "version": "1.5.10",
+  "testedCount": 19,
+  "passedCount": 0,
   "overallVerdict": "IN_PROGRESS",
   "skills": [
     {
@@ -82,7 +82,8 @@
         "Discussion",
         "Evidence"
       ],
-      "tokens": 35757
+      "tokens": 35757,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-context",
@@ -226,7 +227,8 @@
         "context",
         "evidence"
       ],
-      "tokens": 38120
+      "tokens": 38120,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-handoff",
@@ -373,7 +375,8 @@
         "status",
         "next"
       ],
-      "tokens": 86321
+      "tokens": 86321,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-grill",
@@ -515,7 +518,8 @@
         "tradeoff",
         "grill"
       ],
-      "tokens": 100172
+      "tokens": 100172,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-execute",
@@ -660,7 +664,8 @@
         "execute",
         "boundary"
       ],
-      "tokens": 93939
+      "tokens": 93939,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-plan",
@@ -893,23 +898,19 @@
         "dependencies",
         "verification"
       ],
-      "tokens": 154042
+      "tokens": 154042,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-prototype",
-      "verdict": "FAIL",
-      "exitCode": 1,
-      "conversationId": null,
-      "durationSeconds": 67.927,
-      "toolCalls": [],
-      "matchedKeywords": [],
-      "expectedKeywords": [
-        "prototype",
-        "disposable",
-        "experiment",
-        "hypothesis"
-      ],
-      "tokens": null
+      "verdict": "PASS",
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED",
+      "exitCode": 0,
+      "conversationId": "efe05976-8e9c-4c66-a169-bdfd936d4b7d",
+      "durationSeconds": 329.1,
+      "toolCallsCount": 12,
+      "tokens": 106547,
+      "notes": "Genuine live host execution on agy v1.5.10. Read prototype SKILL.md, procedure.md, resolver.mjs, and skill-cache.mjs. Produced complete 5-step prototype design envelope."
     },
     {
       "skillId": "xyeena-architecture",
@@ -1136,7 +1137,8 @@
         "interface",
         "module"
       ],
-      "tokens": 132792
+      "tokens": 132792,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-research",
@@ -1442,7 +1444,8 @@
         "source",
         "evidence"
       ],
-      "tokens": 167154
+      "tokens": 167154,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-review",
@@ -1597,7 +1600,8 @@
         "quality",
         "risk"
       ],
-      "tokens": 93171
+      "tokens": 93171,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-verify",
@@ -1808,7 +1812,8 @@
         "claim",
         "gate"
       ],
-      "tokens": 111709
+      "tokens": 111709,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-security",
@@ -1929,7 +1934,8 @@
         "untrusted",
         "boundary"
       ],
-      "tokens": 124926
+      "tokens": 124926,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-writing",
@@ -2020,7 +2026,8 @@
         "concise",
         "voice"
       ],
-      "tokens": 91105
+      "tokens": 91105,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-release",
@@ -2384,7 +2391,8 @@
         "checklist",
         "gate"
       ],
-      "tokens": 166204
+      "tokens": 166204,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-test",
@@ -2821,7 +2829,8 @@
         "regression",
         "assertion"
       ],
-      "tokens": 298441
+      "tokens": 298441,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-interface",
@@ -3269,7 +3278,8 @@
         "accessibility",
         "layout"
       ],
-      "tokens": 185531
+      "tokens": 185531,
+      "acceptanceTier": "REVIEW_REQUIRED"
     },
     {
       "skillId": "xyeena-skillcraft",
@@ -3391,7 +3401,8 @@
         "procedure",
         "frontmatter"
       ],
-      "tokens": 116303
+      "tokens": 116303,
+      "acceptanceTier": "POSITIVE_PROBE_EVIDENCE_RECORDED"
     },
     {
       "skillId": "xyeena-orchestrate",
@@ -3494,7 +3505,21 @@
         "coordination",
         "agent"
       ],
-      "tokens": 60161
+      "tokens": 60161,
+      "acceptanceTier": "REVIEW_REQUIRED"
+    },
+    {
+      "skillId": "xyeena-debug",
+      "verdict": "PASS",
+      "acceptanceTier": "BEHAVIOR_VERIFIED",
+      "exitCode": 0,
+      "conversationId": "4c3f930f-2845-46ff-9bce-bccc0eb35dda",
+      "negativeConversationId": "644f237f-9c2e-43e6-860d-8b16566027d2",
+      "durationSeconds": 45,
+      "toolCallsCount": 3,
+      "notes": "Positive probe and negative trigger verified; fault recovery was instructions-only and needs executed recovery receipt."
     }
-  ]
+  ],
+  "targetSkillsCount": 19,
+  "probedCount": 17
 }

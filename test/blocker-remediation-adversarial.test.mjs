@@ -372,7 +372,7 @@ test('Blocker 1 (P0): Automatic rollback on mid-uninstall failure restores unlin
 // BLOCKER 2: Symlink Ancestor Boundary & safeChild
 // =========================================================================
 
-test('Blocker 2 (P0): safeChild blocks non-existent targets inside symlinked ancestor escaping root', () => {
+test('Blocker 2 (P0): safeChild blocks non-existent targets inside symlinked ancestor escaping root', (t) => {
   const { root } = createDisposableWorkspace();
   const outsideDir = path.join(os.tmpdir(), `xyeena-outside-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`);
   fs.mkdirSync(outsideDir, { recursive: true });
@@ -383,7 +383,12 @@ test('Blocker 2 (P0): safeChild blocks non-existent targets inside symlinked anc
     try {
       fs.symlinkSync(outsideDir, symlinkDir, 'junction');
     } catch {
-      fs.symlinkSync(outsideDir, symlinkDir, 'dir');
+      try {
+        fs.symlinkSync(outsideDir, symlinkDir, 'dir');
+      } catch (err) {
+        if (err.code === 'EPERM') return t.skip('Symlink creation not permitted in this environment');
+        throw err;
+      }
     }
 
     // A non-existent target whose ancestor is the escaping symlink
@@ -404,7 +409,7 @@ test('Blocker 2 (P0): safeChild blocks non-existent targets inside symlinked anc
   }
 });
 
-test('Blocker 2 (P0): safeChild detects dangling symlinks along target path', () => {
+test('Blocker 2 (P0): safeChild detects dangling symlinks along target path', (t) => {
   const { root } = createDisposableWorkspace();
   const nonExistentTarget = path.join(os.tmpdir(), 'definitely-does-not-exist-target');
 
@@ -413,7 +418,12 @@ test('Blocker 2 (P0): safeChild detects dangling symlinks along target path', ()
     try {
       fs.symlinkSync(nonExistentTarget, brokenSymlink, 'file');
     } catch {
-      fs.symlinkSync(nonExistentTarget, brokenSymlink, 'junction');
+      try {
+        fs.symlinkSync(nonExistentTarget, brokenSymlink, 'junction');
+      } catch (err) {
+        if (err.code === 'EPERM' || err.code === 'ENOENT') return t.skip('Dangling symlink creation not permitted in this environment');
+        throw err;
+      }
     }
 
     // Checking a path that traverses through the dangling symlink
