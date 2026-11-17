@@ -6,10 +6,10 @@ Kamu memegang kendali penuh atas skill, preset, dan host runtime yang digunakan.
 
 Host yang memiliki integrasi instalasi: **Antigravity**, **Gemini CLI**, **OpenAI Codex**, **Claude Code**, dan **Hermes Agent**. Perlu dicatat: dukungan instalasi berbeda dari kemampuan host untuk menegakkan izin. Periksa [status dukungan](docs/STATUS.md) sebelum mengandalkannya untuk tindakan berisiko.
 
-Baseline rilis yang saat ini dipublikasikan di registry npm adalah `xyeena-agent@0.4.1`. Branch rilis ini mempersiapkan kandidat `xyeena-agent@0.5.0` dengan seluruh fitur rebuild (Cortex engine, 19 packaged skills, 64 native capability contracts, 11 composite skills, dan transactional conditional installer) dengan CI lintas platform; pada runner Ubuntu Node 24 tercatat 723 tes lulus, 3 dilewati, dan 0 gagal dari 726 tes (75 suites).
+Baseline rilis yang saat ini dipublikasikan di registry npm adalah `xyeena-agent@0.5.0`. Branch rilis ini mempersiapkan rilis patch `xyeena-agent@0.5.1` yang memperbaiki pembacaan manifest schema v2 pada diagnosa health check (`setup check`), dengan seluruh fitur rebuild (Cortex engine, 19 packaged skills, 64 native capability contracts, 11 composite skills, dan transactional conditional installer) terverifikasi dengan CI lintas platform (727 tes lulus across 75 suites).
 
 > [!NOTE]
-> Versi `xyeena-agent@0.5.0` saat ini berstatus Release Candidate (RC). Publikasi resmi ke npm registry memerlukan otorisasi eksplisit pemilik repositori dan verifikasi CI.
+> Versi `xyeena-agent@0.5.1` berstatus patch release candidate. Publikasi resmi ke npm registry memerlukan otorisasi eksplisit pemilik repositori dan verifikasi CI.
 
 ---
 
@@ -27,10 +27,10 @@ Baseline rilis yang saat ini dipublikasikan di registry npm adalah `xyeena-agent
 
 Siapkan **Node.js 22.14** atau lebih baru dan host agent yang ingin kamu gunakan.
 
-### Menggunakan Paket npm Publik (v0.4.1)
+### Menggunakan Paket npm Publik
 
 ```sh
-npx --yes xyeena-agent@0.4.1 setup
+npx --yes xyeena-agent setup
 ```
 
 Pilih scope (`global` atau `workspace`), host, dan preset skill (`essential`, `balanced`, atau `complete`). Periksa tujuan file sebelum menyetujui perubahan. Installer tidak memasukkan akun AI atau mengaktifkan izin host untukmu.
@@ -38,7 +38,7 @@ Pilih scope (`global` atau `workspace`), host, dan preset skill (`essential`, `b
 Untuk melihat pratinjau tanpa menulis file (dry-run):
 
 ```sh
-npx --yes xyeena-agent@0.4.1 setup --scope workspace --runtime codex --preset balanced --dry-run
+npx --yes xyeena-agent setup --scope workspace --runtime codex --preset balanced --dry-run
 ```
 
 Ikuti [panduan mulai](docs/GETTING-STARTED.md) atau [instalasi Windows](docs/INSTALL-WINDOWS-PEMULA.md) untuk langkah lengkap.
@@ -66,11 +66,11 @@ node bin/xyeena.mjs check --source .
 
 ---
 
-## Panduan Upgrade dari v0.4.1 ke v0.5.0
+## Panduan Upgrade dan Kompatibilitas Mundur
 
-Pemasangan v0.5.0 dirancang aman dan kompatibel mundur dengan instalasi v0.4.1 yang sudah ada di workspace atau direktori pengguna:
+Pemasangan versi 0.5.x dirancang aman dan kompatibel mundur dengan instalasi versi sebelumnya (v0.4.1 / v0.5.0) yang sudah ada di workspace atau direktori pengguna:
 
-1. **Pemeriksaan Integritas & Backup Otomatis:** Installer transaksional secara otomatis membackup instalasi v0.4.1 yang ada ke `.xyeena/backups/` sebelum melakukan perubahan file apa pun.
+1. **Pemeriksaan Integritas & Backup Otomatis:** Installer transaksional secara otomatis membackup instalasi versi sebelumnya yang ada ke `.xyeena/backups/` sebelum melakukan perubahan file apa pun.
 2. **Hybrid Diff Gate (DEC-26):** Jika ada file skill yang telah dimodifikasi oleh pengguna, installer tidak akan menimpanya secara diam-diam (bahkan bila menyertakan flag `--force`). Installer akan menampilkan diff dan mewajibkan konfirmasi eksplisit melalui `--diff-approved-fingerprint <FINGERPRINT>`.
 3. **Preservasi File Kustom:** File persona kustom pengguna di `.agents/personas/`, file memori `.agents/memory/`, dan file kustom non-Xyeena lainnya dipertahankan utuh dan tidak pernah dihapus, baik saat upgrade maupun safe uninstall.
 4. **Default Mode Windows (DEC-29):** Pada Windows, installer menggunakan mode `copy` secara default guna menghindari ketergantungan Developer Mode untuk pembuatan symlink/junction. Mode symlink tetap tersedia secara opt-in melalui `--mode symlink`.

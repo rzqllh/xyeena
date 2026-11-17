@@ -1,6 +1,6 @@
 # Getting started
 
-The [dated source and host acceptance status](STATUS.md) distinguishes published npm 0.4.1 from newer source-only features and separates native Antigravity CLI hook evidence from unverified IDE integration.
+The [dated source and host acceptance status](STATUS.md) distinguishes published npm baseline from patch features and separates native Antigravity CLI hook evidence from unverified IDE integration.
 
 
 Xyeena Rig packages Agent Skills and optional project Harness tools for five supported agent hosts. You need Node.js **22.14 or newer** and an installed agent host. No Git clone is required to use the published npm package.
@@ -10,7 +10,7 @@ Run `node bin/xyeena.mjs setup check --runtime antigravity` from updated source 
 ## Install with the wizard
 
 ```sh
-npx --yes xyeena-agent@0.4.1 setup
+npx --yes xyeena-agent setup
 ```
 
 Choose a **global** installation (user-owned directories used across projects) or **workspace** installation, then select the actual host(s) and a skill preset. Review destinations and confirm the write. Setup does not log into any AI account, bypass host trust, start a model session or make Harness global.
@@ -21,13 +21,13 @@ After installation, restart or reload the agent host and inspect its native skil
 
 ```sh
 # Inspect changes before writing.
-npx --yes xyeena-agent@0.4.1 setup --scope workspace --runtime "codex,antigravity" --preset balanced --dry-run
+npx --yes xyeena-agent setup --scope workspace --runtime "codex,antigravity" --preset balanced --dry-run
 
 # Confirm explicitly.
-npx --yes xyeena-agent@0.4.1 setup --scope workspace --runtime "codex,antigravity" --preset balanced --yes
+npx --yes xyeena-agent setup --scope workspace --runtime "codex,antigravity" --preset balanced --yes
 
 # Global user-owned copy installation.
-npx --yes xyeena-agent@0.4.1 setup --scope global --runtime codex --preset essential --yes
+npx --yes xyeena-agent setup --scope global --runtime codex --preset essential --yes
 ```
 
 Use `--mode symlink` only after reviewing persistent skill-store and platform behavior. Global installation does not install project Harness guides. See [Global installation](GLOBAL-INSTALL.md).
@@ -41,13 +41,13 @@ node bin/xyeena.mjs setup compact --runtime codex --preset complete --dry-run
 node bin/xyeena.mjs setup compact --runtime codex --preset complete --yes
 ```
 
-This is **unreleased source functionality** relative to npm `0.4.1`. It preserves other installed skills and does not silently migrate a legacy flat layout. Follow the [operator runbook](xyeena-rig/RUNBOOK.md) for ownership-aware migration, backups and rollback.
+This is **unreleased source functionality** relative to the published npm baseline. It preserves other installed skills and does not silently migrate a legacy flat layout. Follow the [operator runbook](xyeena-rig/RUNBOOK.md) for ownership-aware migration, backups and rollback.
 
 ## Inspect a setup
 
 ```sh
-npx --yes xyeena-agent@0.4.1 skills matrix
-npx --yes xyeena-agent@0.4.1 setup check --runtime codex
+npx --yes xyeena-agent skills matrix
+npx --yes xyeena-agent setup check --runtime codex
 ```
 
 Checks report detected files and eligibility clues; inspect the native host UI for real activation. If an existing file differs, preview the conflict before using `--update`. Never delete a whole skill root: it may contain third-party data.
@@ -55,10 +55,10 @@ Checks report detected files and eligibility clues; inspect the native host UI f
 ## Use the toolkit
 
 ```sh
-npx --yes xyeena-agent@0.4.1 list
-npx --yes xyeena-agent@0.4.1 audit
-npx --yes xyeena-agent@0.4.1 risk
-npx --yes xyeena-agent@0.4.1 verify
+npx --yes xyeena-agent list
+npx --yes xyeena-agent audit
+npx --yes xyeena-agent risk
+npx --yes xyeena-agent verify
 ```
 
 `verify` executes project-defined commands. To inspect routing without a model call from a source checkout:

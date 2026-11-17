@@ -8,11 +8,11 @@ This page separates the published baseline, newer source features, and recorded 
 
 | Item | Status |
 | :--- | :--- |
-| **GitHub release** | [v0.4.1](https://github.com/rzqllh/xyeena/releases/tag/v0.4.1) |
-| **npm baseline recorded by the repository** | `xyeena-agent@0.4.1`; recheck the registry before publishing a new version |
-| **Source version** | `0.5.0` (unreleased candidate in `package.json`), with all rebuild capabilities verified locally |
-| **Rebuild Foundation Status** | P00–P17 Rebuild, Cross-Domain Methodology, Design, Engineering, Specialized Platform Intelligence, Blocker Remediation & Final End-to-End Acceptance Suite completed with **726 discovered / 723 passed / 3 skipped / 0 failed** across 75 suites (Ubuntu Node 24 release-candidate PR CI) |
-| **Planned 0.5.0** | Limited-public release candidate readiness; RE-01–RE-32 dispositions recorded, with some immutable upstream source SHAs still unverified; no new publication is performed by this documentation change |
+| **GitHub release** | [v0.5.0](https://github.com/rzqllh/xyeena/releases/tag/v0.5.0) |
+| **npm baseline recorded by the repository** | `xyeena-agent@0.5.0` |
+| **Source version** | `0.5.1` (unreleased patch candidate in `package.json`), with all rebuild capabilities verified locally |
+| **Rebuild Foundation Status** | P00–P17 Rebuild, Cross-Domain Methodology, Design, Engineering, Specialized Platform Intelligence, Blocker Remediation, Final Acceptance Suite & Schema v2 Health Diagnostics with **727 discovered / 727 passed / 0 skipped / 0 failed** across 75 suites |
+| **Planned 0.5.1** | Patch release addressing Schema v2 manifest detection in health check (`hostListedInManifest`); no native hook changes |
 | **Final publication** | Requires final owner approval, exact candidate checks, and publishing configuration |
 
 Run source-only examples with `node bin/xyeena.mjs` from the intended checkout. Do not assume commands added after the 0.4.1 release exist in its npm package. Node.js 22.14+ is required.
