@@ -95,6 +95,8 @@ export class IntentRouter {
     }
 
     // Domain keywords that elevate a task beyond TIER_0_MICRO
+    // Must match whole words rather than substrings inside unrelated words
+    // (e.g. "difference" must not trigger "diff", "author" must not trigger "auth").
     const domainIndicators = [
       'test', 'tdd', 'komponen', 'component', 'modal', 'css', 'layout', 'ui',
       'database', 'api', 'auth', 'security', 'bug', 'error', 'fix', 'implement', 'buat',
@@ -102,7 +104,10 @@ export class IntentRouter {
       'slow', 'review', 'diff', 'refactor', 'migration', 'audit', 'jwt', 'token',
       'authorization', 'otorisasi', 'vulnerability', 'sanitize', 'endpoint', 'validasi', 'register'
     ];
-    const hasDomainIndicator = domainIndicators.some(k => lower.includes(k));
+    const hasDomainIndicator = domainIndicators.some(k => {
+      const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp('(?<![\\p{L}\\p{N}_])' + escaped + '(?![\\p{L}\\p{N}_])', 'u').test(lower);
+    });
 
     if (lower.length < 80 && mode === EXECUTION_MODES.DISCUSSION && !hasDomainIndicator) {
       return TASK_TIERS.TIER_0_MICRO;

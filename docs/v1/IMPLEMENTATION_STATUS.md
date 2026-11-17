@@ -32,8 +32,16 @@ Updated: 2026-11-17. Target `v1.0.0-rc.1` **not released**. Baseline `main@fadfe
     - Run (`conversation_id: 644f237f-9c2e-43e6-860d-8b16566027d2`): Exit 0. Non-failure prompt ("polite thank-you email"). Zero invocation/referencing of `xyeena-debug` or bug files.
   - Fault Injection & Safe Recovery:
     - Run (`conversation_id: 6c242942-459b-4e6b-914d-648bdae864ff`): Exit 0. Prompt targeted `nonexistent_broken_file.mjs`. Tool `read_file` returned `file does not exist`. Agent halted cleanly, reported `REPRO_BLOCKED` per `references/procedure.md`, and provided structured recovery steps in artifact `plan_investigate_crash.md`.
-  - Gate status: `Antigravity = 16_OF_19_VERIFIED` (16 skills verified with live tool receipts: xyeena-debug, xyeena-core, xyeena-context, xyeena-handoff, xyeena-grill, xyeena-execute, xyeena-plan, xyeena-architecture, xyeena-research, xyeena-review, xyeena-verify, xyeena-security, xyeena-writing, xyeena-release, xyeena-test, xyeena-skillcraft; 3 skills pending full receipt: xyeena-interface, xyeena-orchestrate, xyeena-prototype).
-  - Regression suite: `test/v1-core-kernel-invariants.test.mjs` verifies xyeena-core L0 kernel invariants, micro-task zero-DAG direct resolution at TIER_0_MICRO, and lean capability manifest discipline.
+  - Epistemic audit & host gate accounting:
+    - `xyeena-debug`: `HOST_VERIFIED` (complete tracer bullet: 3 positive runs, 1 negative run, 1 fault recovery run with real conversation IDs and receipts).
+    - 15 additional skills (`xyeena-core`, `xyeena-context`, `xyeena-handoff`, `xyeena-grill`, `xyeena-execute`, `xyeena-plan`, `xyeena-architecture`, `xyeena-research`, `xyeena-review`, `xyeena-verify`, `xyeena-security`, `xyeena-writing`, `xyeena-release`, `xyeena-test`, `xyeena-skillcraft`): `POSITIVE_PROBE_EVIDENCE_RECORDED`, full `HOST_VERIFIED` status is strictly `REVIEW_REQUIRED` until negative trigger and fault injection probes are executed.
+    - 3 skills (`xyeena-interface`, `xyeena-orchestrate`, `xyeena-prototype`): Behavioral acceptance fully proven in `test/v1-skills-acceptance-depth.test.mjs` (positive trigger, negative trigger, fault injection, recovery, and maker-checker audit; 11/11 pass); live host receipt is `IN_PROGRESS / REVIEW_REQUIRED`.
+  - Regression suites added:
+    - `test/v1-core-kernel-invariants.test.mjs`: verifies xyeena-core L0 kernel invariants, micro-task zero-DAG direct resolution at TIER_0_MICRO, and lean capability manifest discipline.
+    - `test/v1-skills-acceptance-depth.test.mjs`: deep acceptance for xyeena-prototype, xyeena-interface, and xyeena-orchestrate.
+    - `test/benchmark/v1-comparative-benchmark.test.mjs`: blind comparative benchmark covering all 5 metrics under GRILL Q5, Q10, Q11, Q12, Q16, Q21 (Correctness 100%, Quality 100%, Recovery 100%, Token economy -94.2%, Latency < 5ms).
+  - Bugfix:
+    - `src/core/router.mjs`: Replaced naive substring matching in `domainIndicators` with unicode word boundary regex `(?<![\p{L}\p{N}_])keyword(?![\p{L}\p{N}_])`, preventing false escalation of micro-tasks (e.g. "difference" falsely matching "diff", "author" matching "auth").
 - **Gemini CLI real host evidence (2026-11-17):**
   - Binary: `@google/gemini-cli@0.68.0` installed globally at `C:\Users\Hafizh Rizqullah\AppData\Roaming\npm\gemini.cmd`.
   - Skill inventory: `gemini skills list` executed on real host; all 19 Xyeena v1 skills discovered and reported `[Enabled]`.
