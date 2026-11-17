@@ -1,13 +1,13 @@
 # Upstream Source Inventory & Slash-Command Mapping — Xyeena
 
-**Status:** RE-01–RE-32 dispositions recorded; source references without immutable SHAs remain provenance-pending (not direct-reuse verification).
+**Status:** RE-01–RE-32 historical dispositions retained; RE-33 (Cindy) and RE-34 (Orca) added as v1 REFERENCE_ONLY. Source references without immutable SHAs remain provenance-pending. Historical ADAPTED_VERIFIED labels are scoped to prior deterministic suites and do not establish live-host or upstream parity.
 **Parent:** [Future Upstream Integration Roadmap](XYEENA_UPSTREAM_INTEGRATION_2026-11-14.md)
 **Governance:** DEC-01 through DEC-32 (DEC-32: Cross-Domain Superpowers & Anti-Slop Methodologies)
 **Base Commit Baseline:** `bbd71abfc5045cda3c39ea7655f0a8519d88f275`
 
 ---
 
-## 1. Upstream Source Inventory (RE-01 through RE-32)
+## 1. Upstream Source Inventory (RE-01 through RE-34)
 
 | RE ID | Canonical Source | Pinned Ref / SHA | License | Dependencies | Core Behavior & Workflow | Existing Xyeena Equivalent | Decision | Acceptance & Testing Criteria |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -34,6 +34,9 @@
 | **RE-21..30**| Normative Foundations | W3C / Apple / Google / ISO | Standards / Public | None | WCAG 2.2, Apple HIG, Material Design 3, color math, memory isolation, software testing | Embedded heuristics in `src/methods/` | **REFERENCE_ONLY** | 100% compliant contrast math (relative luminance), WCAG AA (24px) / AAA (44px) target sizes. |
 | **RE-31** | `andycungkrinx91/konoha` (`https://github.com/andycungkrinx91/konoha.git`) | `9789bdd1d57d5f7a39a58406105e36127ffdb35b` | Apache-2.0 (c) 2026 Andy Setiyawan | LangGraph, SQLite, Node >=24 (optional) | Bounded retrieval (max results, byte budget, path boundary), index corruption recovery, MCP tool manifest vs dispatcher parity, task-scoped memory isolation | `src/methods/knowledge.mjs` (`boundedRetrieve`, `auditMcpToolParity`, `verifyTaskMemoryIsolation`), `src/core/composites.mjs` | **ADAPTED_BOUNDED_RETRIEVAL_VERIFIED (P17)** | P17 Suite Scenario 1, 2, 3; LangGraph and foreign daemons rejected; Cortex remains single governor. |
 | **RE-32** | `alchaincyf/huashu-design` (`https://github.com/alchaincyf/huashu-design.git`) | `e8d1148a80d5a281d4247cffe320add3df017928` (v3.3.0) | MIT (c) 2026 alchaincyf (花叔 · 花生) | Node (playwright, pptxgenjs, pdf-lib optional) | 3 visual directions exploration, standalone interactive HTML prototype specifications, truthful capability reporting | `src/methods/design.mjs` (`exploreVisualDirections`, `generateInteractivePrototype`, `checkExportCapabilities`) | **ADAPTED_VERIFIED (P16, Optional Capability)** | P16 suite (3 visual directions exploration, interactive prototype spec with quarantine, truthful export capability reporting). |
+
+| **RE-33** | `makecindy/cindy` (`https://github.com/makecindy/cindy`) | `15e197fbbe687e81b392ea42f5a8a360404dd3ad` (observed 2026-11-17) | Apache-2.0 (repository; material-specific exceptions) | Desktop/agent backends (not bundled) | Multi-harness Claude/Codex/Pi, task context handoff, ownership and parallel independent review | Planned bounded host-adapter and `xyeena-handoff`/`xyeena-orchestrate` contracts | **REFERENCE_ONLY (V1 RESEARCH)** | Audit source and licenses, test context handoff and host-native execution without embedding a competing runtime; no state-equivalence claim. |
+| **RE-34** | `Aniekanetim/orca-agent` (`https://github.com/Aniekanetim/orca-agent`) | `027acb4efa2e6b226d40df266b86367423946d62` (main observed 2026-11-17) | MIT (repository) | Orca runtime (not bundled) | Run/Task/Dispatch, supervisor lifecycle, typed inbox, decision gates and recovery; current `worker-start` workflow | Planned `xyeena-orchestrate` and Cortex host-native worker receipt contracts | **REFERENCE_ONLY (V1 RESEARCH)** | Verify dispatch identity and stale/failed/unknown worker outcomes with native host; never infer completion from static state. |
 
 ---
 
@@ -88,9 +91,10 @@ To enforce strict epistemic honesty (DEC-31), all capability claims and test sui
    - Prominently state changes made to adapted algorithms.
    - Retain copyright, patent, and trademark notices.
    - Distinct from MIT; ensure Apache-2.0 terms are honored for derived components.
-3. **Standards & Normative References (RE-21..30):**
+3. **Additional license checkpoints (RE-33, RE-34):** Cindy is Apache-2.0 with asset-specific terms; Orca repository is MIT. Preserve notices if actual code is reused and re-check the pinned file's license before copying.
+4. **Standards & Normative References (RE-21..30):**
    - Cited as authoritative behavioral standards (e.g. W3C WCAG 2.2 relative luminance formula: $L = 0.2126R + 0.7152G + 0.0722B$).
    - Implementations are native pure-mathematical utilities in `src/methods/quality.mjs`.
-4. **Third-Party Control Loop Isolation:**
+5. **Third-Party Control Loop Isolation:**
    - No external framework (Konoha, Superpowers, LangGraph) is permitted to run as an independent background daemon or supersede Cortex.
    - All capabilities execute as synchronous or asynchronous functional handlers within the unified Xyeena Cortex registry.
