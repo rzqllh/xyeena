@@ -37,13 +37,13 @@ export class EngineeringMethods {
    * @param {object} params
    * @param {string} params.diff - Git patch or diff content
    * @param {string[]} params.specRequirements - List of acceptance criteria
-   * @param {string[]} [params.styleConventions=[]] - Repository style rules
+   * @param {string[]} [params.styleConventions=[]] - Reserved for future verified standards evaluation
    * @returns {object} Dual-axis review report
    */
   static dualAxisReview({ diff = '', specRequirements = [], styleConventions = [] }) {
     const findings = [];
 
-    // Standards checks
+    // This is a narrow static signal, not a substitute for standards review.
     if (diff.includes('console.log(')) {
       findings.push({
         axis: 'STANDARDS',
@@ -52,21 +52,26 @@ export class EngineeringMethods {
       });
     }
 
-    // Spec satisfaction checks: verify each requirement's essential keyword exists in diff
-    const lowerDiff = diff.toLowerCase();
-    const specEvaluations = specRequirements.map(req => {
-      const words = req.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-      const isSatisfied = words.some(w => lowerDiff.includes(w));
-      return {
-        requirement: req,
-        satisfied: isSatisfied
-      };
-    });
+    // A keyword in a diff never proves that an acceptance criterion is met.
+    // Requirements must be bound to independently checked tests or runtime
+    // evidence by a separate verifier before any PASS claim can be made.
+    const specEvaluations = specRequirements.map(requirement => ({
+      requirement,
+      satisfied: false,
+      verificationStatus: 'NOT_VERIFIED',
+      evidence: []
+    }));
 
     return {
       standardsFindings: findings,
+      standardsVerdict: findings.length ? 'FINDINGS_REPORTED' : 'STATIC_SCAN_NO_FINDINGS',
       specSatisfaction: specEvaluations,
-      reviewVerdict: findings.length === 0 ? 'PASS' : 'REVISION_REQUESTED'
+      reviewVerdict: findings.length ? 'REVISION_REQUESTED' : 'REVIEW_REQUIRED',
+      limitations: [
+        'Static diff inspection cannot establish semantic requirement satisfaction.',
+        'An empty standards finding list is not a standards compliance certificate.',
+        'An independent verifier must bind each requirement to inspectable proof before PASS.'
+      ]
     };
   }
 
@@ -432,22 +437,29 @@ export class EngineeringMethods {
    * @returns {object}
    */
   static grillFrontier({ decisions = [], settled = [], facts = {}, userResponses = {} }) {
-    const settledSet = new Set([...settled]);
+    const ids = new Set();
+    const invalidDecisions = [];
+    for (const decision of decisions) {
+      if (!decision || typeof decision.id !== 'string' || !decision.id.trim() || ids.has(decision.id)) {
+        invalidDecisions.push({ id: decision?.id ?? null, reason: 'MISSING_OR_DUPLICATE_DECISION_ID' });
+        continue;
+      }
+      ids.add(decision.id);
+    }
+
+    // Unknown IDs and empty responses cannot settle a decision.
+    const settledSet = new Set(settled.filter(id => ids.has(id)));
     const ambiguousConsents = [];
-
-    // Evaluate user responses and enforce DEC-31/32 explicit consent for sensitive operations
     for (const [decisionId, response] of Object.entries(userResponses)) {
-      const decision = decisions.find(d => d.id === decisionId) || {};
+      const decision = decisions.find(d => d?.id === decisionId);
+      if (!decision || !String(response).trim()) continue;
       const lowerResp = String(response).trim().toLowerCase();
-
       const isSensitive = decision.destructive === true ||
         decision.publish === true ||
         decision.globalConfig === true ||
         decision.securityBoundary === true ||
         decision.credentials === true;
-
-      const isBareAffirmative = lowerResp === 'ya' || lowerResp === 'yes' || lowerResp === 'y' || lowerResp === 'ok';
-
+      const isBareAffirmative = ['ya', 'yes', 'y', 'ok'].includes(lowerResp);
       if (isSensitive && isBareAffirmative && !decision.explicitReferentProvided) {
         ambiguousConsents.push({
           decisionId,
@@ -459,30 +471,50 @@ export class EngineeringMethods {
       }
     }
 
-    // Discoverable facts: if a decision is actually a discoverable fact and is present in facts, auto-settle it!
-    for (const d of decisions) {
-      if (d.factKey && facts[d.factKey] !== undefined) {
-        settledSet.add(d.id);
+    // Repository-discoverable facts can settle factual questions, not missing data.
+    for (const decision of decisions) {
+      if (decision?.factKey && Object.hasOwn(facts, decision.factKey) &&
+          facts[decision.factKey] !== undefined && facts[decision.factKey] !== null) {
+        settledSet.add(decision.id);
       }
     }
 
-    // Compute the frontier: decisions whose prerequisites are all settled
-    const frontier = decisions.filter(d => {
-      if (settledSet.has(d.id)) return false;
-      const blockers = d.blockedBy || [];
-      return blockers.every(b => settledSet.has(b));
-    });
+    const unresolved = decisions.filter(decision => !settledSet.has(decision?.id));
+    const frontier = unresolved.filter(decision =>
+      (decision.blockedBy || []).every(id => settledSet.has(id))
+    );
+    const blockedDecisions = unresolved
+      .filter(decision => !frontier.includes(decision))
+      .map(decision => ({
+        id: decision.id,
+        waitingOn: (decision.blockedBy || []).filter(id => !settledSet.has(id)),
+        unknownPrerequisites: (decision.blockedBy || []).filter(id => !ids.has(id))
+      }));
 
-    const isDone = frontier.length === 0 && ambiguousConsents.length === 0;
-
-    // Format frontier round
-    const formattedQuestions = frontier.map((item, index) => {
-      return `❓ **Q${index + 1}** - **${item.title}**: ${item.question}\n\n➡️ ${item.recommended}`;
-    });
+    // Frontier-empty with outstanding blocked decisions is not completion.
+    const isDone = unresolved.length === 0 &&
+      ambiguousConsents.length === 0 &&
+      invalidDecisions.length === 0;
+    const formattedQuestions = frontier.map((item, index) =>
+      `❓ **Q${index + 1}** - **${item.title}**: ${item.question}\n\n➡️ ${item.recommended}`
+    );
+    const verdict = invalidDecisions.length > 0
+      ? 'INVALID_DECISION_GRAPH'
+      : ambiguousConsents.length > 0
+        ? 'AMBIGUOUS_CONSENT_BLOCKED'
+        : isDone
+          ? 'FRONTIER_EMPTY_SHARED_UNDERSTANDING'
+          : frontier.length === 0
+            ? 'DECISION_GRAPH_BLOCKED'
+            : 'QUESTION_FRONTIER_ACTIVE';
 
     return {
       totalDecisions: decisions.length,
       settledCount: settledSet.size,
+      unresolvedCount: unresolved.length,
+      blockedCount: blockedDecisions.length,
+      blockedDecisions,
+      invalidDecisions,
       frontierCount: frontier.length,
       ambiguousConsents,
       isDone,
@@ -490,7 +522,7 @@ export class EngineeringMethods {
       formattedQuestions,
       frontier,
       agentFactFindingRule: 'Finding facts is agent responsibility; agent never asks user for discoverable codebase facts.',
-      verdict: isDone ? 'FRONTIER_EMPTY_SHARED_UNDERSTANDING' : (ambiguousConsents.length > 0 ? 'AMBIGUOUS_CONSENT_BLOCKED' : 'QUESTION_FRONTIER_ACTIVE')
+      verdict
     };
   }
 
