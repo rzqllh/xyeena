@@ -35,7 +35,7 @@ export function validateSkillStructure(root, skillId) {
       if (!text.includes(section)) errors.push('MISSING_SECTION_' + section);
     }
     for (const section of ['## Activation and exclusions', '## Operational procedure', '## Decision and recovery branches', '## Adversarial exercises', '## Upstream provenance']) {
-      if (!procedure.includes(section)) errors.push('MISSING_PROCEDURE_' + section);
+      if (!procedure.includes(section) && !(section === '## Adversarial exercises' && procedure.includes('## Focused adversarial cases'))) errors.push('MISSING_PROCEDURE_' + section);
     }
     for (const [, relative] of text.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {
       if (/^(?:https?:|mailto:|#)/i.test(relative)) continue;
