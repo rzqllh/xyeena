@@ -16,17 +16,29 @@ Updated: 2026-11-17. Target `v1.0.0-rc.1` **not released**. Baseline `main@fadfe
 
 ## Proof ledger
 
-- **Deterministic tests:** GitHub Actions `ci` run `43997415344` **success** on commit `d76d1bb0be1b6548291af71f61eda12fee774e0b`; all nine jobs succeeded, including Windows/macOS/Ubuntu, source tests, npx GitHub smoke, skills-ref, SDK worker contract. This is **source CI only**, not a native host acceptance receipt.
-- **Current branch commit:** documentation updates after `d76d1bb` do not inherit its green CI. Check exact head SHA and current workflow status before any new PASS claim.
+- **Deterministic tests:** GitHub Actions `ci` run `44016498546` **success** on commit `ad9b9a94d87c326a899942f1ac44976aa5579d25`; all nine jobs succeeded (Windows/macOS/Ubuntu on Node 22/24, source tests, npx GitHub smoke, skills-ref, SDK worker contract). This proves continuous integration for commit `ad9b9a9`.
+- **Current branch commit:** pushed to `origin/feat/v1-skill-system-rebuild` at `ad9b9a94d87c326a899942f1ac44976aa5579d25`.
 - **19 skill structure:** `npm run eval:v1:structure` validates local frontmatter, linked procedure assets and package contract presence; it intentionally outputs `TRIGGER_VERIFIED=NOT_RUN`, `BEHAVIOR_VERIFIED=NOT_RUN`, `HOST_VERIFIED=NOT_RUN`.
 - **Router tests:** deterministic lexical selection fixtures (not proof a live model chose or executed a skill).
 - **Design knowledge:** native static lookup only, not full UI UX Pro Max dataset or completed accessibility audit.
+- **Antigravity real host tracer bullet — xyeena-debug (2026-11-17):**
+  - Binary: `agy.exe` v1.5.9 at `C:\Users\Hafizh Rizqullah\AppData\Local\agy\bin\agy.exe`. OS: Windows. Model: `gemini-3.8-flash-high`.
+  - Fixture: `order_discount.mjs` and `test_order.mjs` in isolated temp dir, reproducibly failing with `AssertionError: Expected 170 but got 185`.
+  - Positive Trigger (GRILL Q17 compliant, 3 independent runs):
+    - Run 1 (`conversation_id: 4c3f930f-2845-46ff-9bce-bccc0eb35dda`): Exit 0. Real `read_file` tool calls on `xyeena-debug/SKILL.md`, `test_order.mjs`, and `order_discount.mjs`. Correctly isolated single causal variable (flat subtraction `total - 15` instead of percentage `total * 0.85`), generated artifact `fix-order-volume-discount.md`.
+    - Run 2 (`conversation_id: fb8e03a7-27c5-4f02-86c0-98eb6bf251f8`): Exit 0. Real `read_file` tool calls, isolated root cause, generated artifact `debug_order_discount_plan.md`.
+    - Run 3 (`conversation_id: db151845-3b41-4618-aec2-0ac0224f050c`): Exit 0. Real `read_file` tool calls, isolated root cause, generated artifact `fix_order_discount_plan.md`.
+  - Negative Trigger:
+    - Run (`conversation_id: 644f237f-9c2e-43e6-860d-8b16566027d2`): Exit 0. Non-failure prompt ("polite thank-you email"). Zero invocation/referencing of `xyeena-debug` or bug files.
+  - Fault Injection & Safe Recovery:
+    - Run (`conversation_id: 6c242942-459b-4e6b-914d-648bdae864ff`): Exit 0. Prompt targeted `nonexistent_broken_file.mjs`. Tool `read_file` returned `file does not exist`. Agent halted cleanly, reported `REPRO_BLOCKED` per `references/procedure.md`, and provided structured recovery steps in artifact `plan_investigate_crash.md`.
+  - Gate status: `Antigravity = TRACER_BULLET_PASS_1_OF_19` (xyeena-debug: PASS; remaining 18 skills pending verification).
 - **Gemini CLI real host evidence (2026-11-17):**
   - Binary: `@google/gemini-cli@0.68.0` installed globally at `C:\Users\Hafizh Rizqullah\AppData\Roaming\npm\gemini.cmd`.
   - Skill inventory: `gemini skills list` executed on real host; all 19 Xyeena v1 skills discovered and reported `[Enabled]`.
   - Negative/fault tracer bullet: Executed `xyeena host run --runtime gemini --goal "Review test cases" --yes` -> process exited with code 1, correctly diagnosed and classified as `[AUTH_REQUIRED]` via `classifyStderr`. Fault injection with invalid API key executed against `generativelanguage.googleapis.com` returning HTTP 400 `API_KEY_INVALID` wrapped in clean JSON error envelope.
-  - Gate status: `Gemini CLI = BLOCKED_AUTH_REQUIRED` (never falsely claimed as `HOST_VERIFIED` until genuine end-to-end positive model completion with valid API credentials).
-- **Other host inventory:** Antigravity `agy` v1.5.9 detected; Codex NOT FOUND on PATH (`BLOCKED_MISSING_BINARY`); Claude Code NOT FOUND on PATH (`BLOCKED_MISSING_BINARY`).
+  - Gate status: `Gemini CLI = BLOCKED_AUTH_REQUIRED` (OAuth tier deprecated by Google; awaiting API key or Vertex AI).
+- **Other host inventory:** Codex NOT FOUND on PATH (`BLOCKED_MISSING_BINARY`); Claude Code NOT FOUND on PATH (`BLOCKED_MISSING_BINARY`).
 - **GitHub actions:** no evidence yet from local Antigravity/Codex native host invocation, video/rendered QA, or independent comparative model run. Such gates remain blocked, not inferred.
 - **Upstreams:** historical RE-01..RE-32 retained; new RE-33 Cindy and RE-34 Orca pinned as `REFERENCE_ONLY`. No foreign coordinator bundled or copied.
 - **Compatibility:** preserve exactly 19 skill entrypoint names and one Cortex governor; package version stays 0.5.1 until authorized release.
