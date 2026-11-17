@@ -21,6 +21,12 @@ Updated: 2026-11-17. Target `v1.0.0-rc.1` **not released**. Baseline `main@fadfe
 - **19 skill structure:** `npm run eval:v1:structure` validates local frontmatter, linked procedure assets and package contract presence; it intentionally outputs `TRIGGER_VERIFIED=NOT_RUN`, `BEHAVIOR_VERIFIED=NOT_RUN`, `HOST_VERIFIED=NOT_RUN`.
 - **Router tests:** deterministic lexical selection fixtures (not proof a live model chose or executed a skill).
 - **Design knowledge:** native static lookup only, not full UI UX Pro Max dataset or completed accessibility audit.
+- **Gemini CLI real host evidence (2026-11-17):**
+  - Binary: `@google/gemini-cli@0.68.0` installed globally at `C:\Users\Hafizh Rizqullah\AppData\Roaming\npm\gemini.cmd`.
+  - Skill inventory: `gemini skills list` executed on real host; all 19 Xyeena v1 skills discovered and reported `[Enabled]`.
+  - Negative/fault tracer bullet: Executed `xyeena host run --runtime gemini --goal "Review test cases" --yes` -> process exited with code 1, correctly diagnosed and classified as `[AUTH_REQUIRED]` via `classifyStderr`. Fault injection with invalid API key executed against `generativelanguage.googleapis.com` returning HTTP 400 `API_KEY_INVALID` wrapped in clean JSON error envelope.
+  - Gate status: `Gemini CLI = BLOCKED_AUTH_REQUIRED` (never falsely claimed as `HOST_VERIFIED` until genuine end-to-end positive model completion with valid API credentials).
+- **Other host inventory:** Antigravity `agy` v1.5.9 detected; Codex NOT FOUND on PATH (`BLOCKED_MISSING_BINARY`); Claude Code NOT FOUND on PATH (`BLOCKED_MISSING_BINARY`).
 - **GitHub actions:** no evidence yet from local Antigravity/Codex native host invocation, video/rendered QA, or independent comparative model run. Such gates remain blocked, not inferred.
 - **Upstreams:** historical RE-01..RE-32 retained; new RE-33 Cindy and RE-34 Orca pinned as `REFERENCE_ONLY`. No foreign coordinator bundled or copied.
 - **Compatibility:** preserve exactly 19 skill entrypoint names and one Cortex governor; package version stays 0.5.1 until authorized release.

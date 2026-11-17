@@ -167,11 +167,18 @@ function decodeResponse(host, output) {
     last.tokens.total >= 0 ? last.tokens.total : null };
 }
 
-function classifyStderr(text) {
+export function classifyStderr(text) {
   if (typeof text !== 'string' || !text.trim()) return null;
-  if (/not found|is not recognized|not a `?[a-z0-9_-]+`? command/i.test(text)) return 'COMMAND_NOT_FOUND';
-  if (/unauthorized|authentication|not logged in|login required/i.test(text)) return 'AUTH_REQUIRED';
-  if (/rate limit|quota|too many requests/i.test(text)) return 'RATE_LIMITED';
+  if (/(?:econnrefused|econnreset|etimedout|enotfound|fetch failed|network\s+(?:error|timeout|unreachable)|socket hang up)/i.test(text))
+    return 'NETWORK_ERROR';
+  if (/not found|is not recognized|not a `?[a-z0-9_-]+`? command/i.test(text))
+    return 'COMMAND_NOT_FOUND';
+  if (/(?:rate[- ]limit|quota(?:[- ]exceeded)?|too many requests|resource_exhausted|status["\s:]+429)/i.test(text))
+    return 'RATE_LIMITED';
+  if (/(?:permission[- ]denied|access[- ]denied|insufficient[- ]permissions|status["\s:]+403)/i.test(text))
+    return 'PERMISSION_DENIED';
+  if (/(?:unauthorized|not logged in|login required|re-authenticate|authentication (?:failed|required|error)|please set an auth method|ineligibletier|unsupported_client)|(?:(?:missing|invalid|provide|pass|specify|set an?)\s+(?:a\s+valid\s+)?api[-_]?key|api[-_]?key\s+(?:not valid|invalid|missing|expired)|api_key_invalid)/i.test(text))
+    return 'AUTH_REQUIRED';
   return null;
 }
 
@@ -251,7 +258,10 @@ export function createPortableHostAdapter({ cwd = process.cwd(), runtime, select
           child = spawnImpl(launch.command, launch.args, { cwd: root, shell: false, windowsHide: true,
             stdio: ['pipe','pipe','pipe'],
             windowsVerbatimArguments: Boolean(launch.windowsVerbatimArguments) });
-        } catch { reject(new Error('Cannot launch host executable')); return; }
+        } catch (err) {
+          if (err?.name === 'AssertionError') { reject(err); return; }
+          reject(new Error('Cannot launch host executable')); return;
+        }
         timer = setTimeout(() => stopChild(new Error('Host execution timeout')), timeoutMs);
         if (signal) {
           onAbort = () => stopChild(cancelled());
