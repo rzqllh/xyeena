@@ -477,9 +477,12 @@ test('Blocker 3 (P1): Cortex executes TaskGraph with node state transitions when
   const allNodes = result.taskGraph.getAll();
   assert.ok(allNodes.every(n => n.status === TASK_STATUS.COMPLETED));
 
-  // Verify evidence ledger recorded execution
+  // Executor callback resolution is observed; task effects and host acceptance
+  // still require independent verification, never a callback-only VERIFIED claim.
   const records = cortex.evidenceLedger.records;
-  assert.ok(records.some(r => r.claim.includes('executed successfully')));
+  assert.ok(records.some(r => r.claim.includes('executor callback resolved')));
+  assert.ok(records.every(r => r.status !== 'VERIFIED'));
+  assert.equal(result.verificationStatus, 'REVIEW_REQUIRED');
 });
 
 test('Blocker 3 (P1): Cortex handles executor failures gracefully, marking remaining tasks BLOCKED', async () => {
