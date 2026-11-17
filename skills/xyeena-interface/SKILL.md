@@ -22,3 +22,7 @@ description: Use when designing, building, redesigning, auditing, or polishing a
 **Failure boundary:** A generated visual specification, static lint or screenshot of one state is not proof that mobile interactions or accessibility work.
 
 Use [references/procedure.md](references/procedure.md) for decision, recovery, and adversarial cases. Use host-native execution and independent evidence, not an invented worker, host, verifier, or upstream runtime. This entrypoint alone is not evidence of behavior/host parity.
+
+## Selective design knowledge lookup
+
+Use the bundled `scripts/search-design-knowledge.mjs` against `knowledge/design-index.json` for targeted guidance, e.g. `node skills/xyeena-interface/scripts/search-design-knowledge.mjs "dashboard filter" nextjs operate`. This returns **reference-only guidance**, not live UI acceptance. Verify real rendering, interaction and accessibility before claiming quality.

@@ -1,0 +1,632 @@
+{
+  "schemaVersion": 1,
+  "status": "REFERENCE_ONLY_CURATED_XYEENA_NOT_FULL_UPSTREAM_DATABASE",
+  "description": "Small native design-knowledge index for targeted lookup, not a claim of full UI UX Pro Max parity or WCAG certification.",
+  "records": [
+    {
+      "id": "ui-operational-hierarchy",
+      "title": "Operational dashboard hierarchy",
+      "categories": [
+        "layout",
+        "information-architecture"
+      ],
+      "surfaces": [
+        "operate"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "dashboard",
+        "admin",
+        "operations",
+        "table",
+        "filter",
+        "dense"
+      ],
+      "guidance": "Start from the primary operational decision and most frequent task. Keep status, active filters, error recovery and row actions legible; do not turn every datum into an ornamental card.",
+      "checks": [
+        "Users can find primary action and current system state without guessing",
+        "Filter/sort and row actions remain keyboard-accessible",
+        "Data density matches operational frequency"
+      ],
+      "refs": [
+        "RE-10",
+        "RE-07",
+        "RE-11"
+      ]
+    },
+    {
+      "id": "ui-persuade-hero",
+      "title": "Persuasive landing-page structure",
+      "categories": [
+        "layout",
+        "content"
+      ],
+      "surfaces": [
+        "persuade"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "landing",
+        "hero",
+        "marketing",
+        "conversion",
+        "cta"
+      ],
+      "guidance": "Lead with a specific audience/job and believable promise. Show concrete proof before elaborate decoration, and give the primary CTA a clear consequence.",
+      "checks": [
+        "Hero explains for whom and why, using factual claims",
+        "Primary and secondary actions are distinguished",
+        "Proof does not invent testimonials or metrics"
+      ],
+      "refs": [
+        "RE-07",
+        "RE-10",
+        "RE-03"
+      ]
+    },
+    {
+      "id": "ui-readable-longform",
+      "title": "Readable long-form surfaces",
+      "categories": [
+        "typography",
+        "layout"
+      ],
+      "surfaces": [
+        "read"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "article",
+        "docs",
+        "documentation",
+        "readability",
+        "reading"
+      ],
+      "guidance": "Use a stable reading column, clear heading structure and calm type scale. Support long words, code samples and narrow screens without horizontal overflow.",
+      "checks": [
+        "Heading levels reflect document hierarchy",
+        "Long content and code can scroll without clipping critical text",
+        "Line length and spacing support reading"
+      ],
+      "refs": [
+        "RE-07",
+        "RE-11",
+        "RE-21..30"
+      ]
+    },
+    {
+      "id": "ui-experience-feedback",
+      "title": "Immersive experience feedback",
+      "categories": [
+        "interaction",
+        "motion"
+      ],
+      "surfaces": [
+        "experience"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "experience",
+        "immersive",
+        "game",
+        "feedback",
+        "animation"
+      ],
+      "guidance": "Define interaction feedback and performance budgets before visual effects. Reduced-motion and non-visual alternatives must preserve critical state information.",
+      "checks": [
+        "Action feedback is immediate and perceivable",
+        "No essential information exists only in motion",
+        "Interaction runs within target device budget"
+      ],
+      "refs": [
+        "RE-07",
+        "RE-09",
+        "RE-14"
+      ]
+    },
+    {
+      "id": "a11y-focus",
+      "title": "Visible keyboard focus and logical order",
+      "categories": [
+        "accessibility",
+        "interaction"
+      ],
+      "surfaces": [
+        "any"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "keyboard",
+        "focus",
+        "focus-visible",
+        "tab",
+        "modal"
+      ],
+      "guidance": "Every keyboard-reachable interactive element needs a visible focus indicator. Preserve logical focus order, modal focus containment and escape/return behavior.",
+      "checks": [
+        "Focus indicator is visible against adjacent colors",
+        "Tab order reflects visual/semantic order",
+        "Dialog restores focus to initiating control"
+      ],
+      "refs": [
+        "RE-09",
+        "RE-21..30"
+      ]
+    },
+    {
+      "id": "a11y-contrast",
+      "title": "Text and component contrast",
+      "categories": [
+        "accessibility",
+        "color"
+      ],
+      "surfaces": [
+        "any"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "contrast",
+        "color",
+        "aa",
+        "aaa",
+        "text",
+        "readability"
+      ],
+      "guidance": "Calculate WCAG relative luminance and contrast for actual text and backgrounds. Typical WCAG AA targets are 4.5:1 for normal text and 3:1 for large text; verify current standards for non-text components.",
+      "checks": [
+        "Measured text contrast meets selected compliance goal",
+        "States remain perceivable without color alone",
+        "Disabled and hover states do not hide critical information"
+      ],
+      "refs": [
+        "RE-11",
+        "RE-21..30"
+      ]
+    },
+    {
+      "id": "a11y-pointer-target",
+      "title": "Touch and pointer target boundaries",
+      "categories": [
+        "accessibility",
+        "mobile"
+      ],
+      "surfaces": [
+        "any"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "tap",
+        "touch",
+        "pointer",
+        "target",
+        "mobile",
+        "hit area"
+      ],
+      "guidance": "Design comfortably tappable controls; check WCAG 2.2 minimum 24x24 CSS px or applicable spacing exceptions, while platform guidelines often recommend larger targets such as 44x44 for touch comfort.",
+      "checks": [
+        "Target dimensions and spacing are measured",
+        "Dense toolbars remain navigable on narrow screens",
+        "User overrides do not break functional minimums"
+      ],
+      "refs": [
+        "RE-03",
+        "RE-11",
+        "RE-21..30"
+      ]
+    },
+    {
+      "id": "a11y-state-messages",
+      "title": "Error, loading and empty states",
+      "categories": [
+        "accessibility",
+        "interaction",
+        "content"
+      ],
+      "surfaces": [
+        "any"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "error",
+        "loading",
+        "empty",
+        "status",
+        "validation",
+        "feedback"
+      ],
+      "guidance": "Model loading, empty, partial failure, permission denial and recovery. State messages should name what happened and the next safe user action; announce essential asynchronous changes accessibly.",
+      "checks": [
+        "Critical errors have a recovery path",
+        "Loading does not block keyboard navigation silently",
+        "Status information is not only color or icon"
+      ],
+      "refs": [
+        "RE-07",
+        "RE-11",
+        "RE-03"
+      ]
+    },
+    {
+      "id": "motion-compositor",
+      "title": "Compositor-friendly animation",
+      "categories": [
+        "motion",
+        "performance"
+      ],
+      "surfaces": [
+        "any"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "motion",
+        "animation",
+        "transition",
+        "transform",
+        "layout",
+        "performance"
+      ],
+      "guidance": "Prefer opacity and transform animation for non-layout effects. Avoid broad transition: all and per-frame top/left/width mutations; respect reduced-motion and measure on target hardware.",
+      "checks": [
+        "No repeated layout thrash under animation",
+        "prefers-reduced-motion preserves state",
+        "No arbitrary animation for routine state changes"
+      ],
+      "refs": [
+        "RE-09",
+        "RE-14"
+      ]
+    },
+    {
+      "id": "tokens-three-tier",
+      "title": "Design token layers",
+      "categories": [
+        "design-system",
+        "color",
+        "typography"
+      ],
+      "surfaces": [
+        "any"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "tokens",
+        "design system",
+        "palette",
+        "semantic",
+        "component",
+        "theme"
+      ],
+      "guidance": "Separate primitive/reference tokens from semantic/system roles and component slots. Components reference semantic roles rather than hard-coding one-off colors.",
+      "checks": [
+        "Token relationships support dark/light or product themes",
+        "Contrast checked for every semantic foreground/background pair",
+        "No ungoverned duplicate colors drift across screens"
+      ],
+      "refs": [
+        "RE-11",
+        "RE-17",
+        "RE-18"
+      ]
+    },
+    {
+      "id": "nextjs-server-client",
+      "title": "Next.js client/server boundaries",
+      "categories": [
+        "implementation",
+        "performance"
+      ],
+      "surfaces": [
+        "any"
+      ],
+      "stacks": [
+        "nextjs"
+      ],
+      "keywords": [
+        "nextjs",
+        "next.js",
+        "react",
+        "rsc",
+        "app router",
+        "client",
+        "server"
+      ],
+      "guidance": "Keep noninteractive data/UI on server boundaries when practical. Place 'use client' at minimal interactive leaf boundaries, avoid shipping secrets, and align hydration with real states.",
+      "checks": [
+        "No browser API executes server-side",
+        "Client components do not import server-only secrets",
+        "Async data states and suspense boundaries are user-legible"
+      ],
+      "refs": [
+        "RE-13",
+        "RE-11"
+      ]
+    },
+    {
+      "id": "react-effect-cleanup",
+      "title": "React animation lifecycle",
+      "categories": [
+        "implementation",
+        "motion"
+      ],
+      "surfaces": [
+        "any"
+      ],
+      "stacks": [
+        "react",
+        "nextjs"
+      ],
+      "keywords": [
+        "react",
+        "gsap",
+        "effect",
+        "animation",
+        "cleanup",
+        "ssr"
+      ],
+      "guidance": "Own animation instances within component lifecycle, revert effects on unmount, and keep SSR/hydration paths stable. Use existing animation stack before introducing a dependency.",
+      "checks": [
+        "No animation remains after unmount",
+        "Reduced-motion option is present",
+        "Dependency and bundle cost justified"
+      ],
+      "refs": [
+        "RE-14",
+        "RE-13"
+      ]
+    },
+    {
+      "id": "tailwind-semantic",
+      "title": "Tailwind and component-system consistency",
+      "categories": [
+        "implementation",
+        "design-system"
+      ],
+      "surfaces": [
+        "any"
+      ],
+      "stacks": [
+        "tailwind",
+        "nextjs",
+        "react"
+      ],
+      "keywords": [
+        "tailwind",
+        "shadcn",
+        "css",
+        "component",
+        "tokens",
+        "spacing"
+      ],
+      "guidance": "Use component primitives and shared semantic design tokens consistently. Do not style every component with ad hoc utility combinations that undermine visual hierarchy and maintainability.",
+      "checks": [
+        "Focus and disabled states covered",
+        "Responsive combinations do not overflow",
+        "Shared components respect semantic tokens"
+      ],
+      "refs": [
+        "RE-11",
+        "RE-13",
+        "RE-09"
+      ]
+    },
+    {
+      "id": "responsive-density",
+      "title": "Responsive information density",
+      "categories": [
+        "responsive",
+        "layout"
+      ],
+      "surfaces": [
+        "any"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "responsive",
+        "mobile",
+        "tablet",
+        "desktop",
+        "overflow",
+        "viewport"
+      ],
+      "guidance": "Adapt information hierarchy, not merely width. Decide which fields/actions remain visible, move secondary controls to discoverable menus only if usable, and test short viewports.",
+      "checks": [
+        "No horizontal clipping of essential actions",
+        "No CTA hidden under fixed bottom regions",
+        "Long labels and localized copy wrap correctly"
+      ],
+      "refs": [
+        "RE-11",
+        "RE-03",
+        "RE-09"
+      ]
+    },
+    {
+      "id": "form-progressive",
+      "title": "Form guidance and validation",
+      "categories": [
+        "interaction",
+        "content"
+      ],
+      "surfaces": [
+        "operate",
+        "persuade"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "form",
+        "validation",
+        "onboarding",
+        "field",
+        "input",
+        "submit"
+      ],
+      "guidance": "Explain required information, validation timing, privacy and submit outcome. Preserve values after recoverable errors; do not use decorative controls with inert handlers.",
+      "checks": [
+        "Every field has accessible label/help/error association",
+        "Submit button state is actionable and truthful",
+        "Keyboard submission and error focus are verified"
+      ],
+      "refs": [
+        "RE-07",
+        "RE-11"
+      ]
+    },
+    {
+      "id": "data-viz-truth",
+      "title": "Data visualization evidence and labeling",
+      "categories": [
+        "data-visualization",
+        "content"
+      ],
+      "surfaces": [
+        "operate",
+        "read"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "chart",
+        "graph",
+        "metrics",
+        "kpi",
+        "trend",
+        "dashboard"
+      ],
+      "guidance": "Define unit, aggregation grain, comparison period and source before plotting. Avoid invented KPIs, deceptive axes and color-only categories; prioritize the action the chart enables.",
+      "checks": [
+        "Every displayed number has source/period/unit",
+        "Axes and missing data are clearly labeled",
+        "No qualitative 'up/down' claim without comparison context"
+      ],
+      "refs": [
+        "RE-03",
+        "RE-07",
+        "RE-11"
+      ]
+    },
+    {
+      "id": "impeccable-critique",
+      "title": "Brief-first critique and polish",
+      "categories": [
+        "critique",
+        "design-ops"
+      ],
+      "surfaces": [
+        "any"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "impeccable",
+        "critique",
+        "polish",
+        "craft",
+        "audit",
+        "design quality"
+      ],
+      "guidance": "First evaluate against the user's explicit brief and required workflows; then inspect visual hierarchy, alignment, rhythm, interaction consistency, accessibility, copy and novelty. Recommend targeted refinements, not unrequested redesign.",
+      "checks": [
+        "Each critique points to a visible defect and desired outcome",
+        "Intentional user style overrides respected",
+        "Before/after changes measured on actual rendered surface"
+      ],
+      "refs": [
+        "RE-07",
+        "RE-09",
+        "RE-03"
+      ]
+    },
+    {
+      "id": "hallmark-floor",
+      "title": "Baseline UI floor",
+      "categories": [
+        "accessibility",
+        "motion",
+        "responsive"
+      ],
+      "surfaces": [
+        "any"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "hallmark",
+        "quality floor",
+        "reduced motion",
+        "focus-visible",
+        "overflow"
+      ],
+      "guidance": "Apply non-negotiable functional floor: focus indication, reduced motion, bounded overflow, working controls, legible state and no avoidable layout jank. Record scoped waivers and why they do not harm core use.",
+      "checks": [
+        "No transition: all on complex layout changes",
+        "Keyboard focus remains visible",
+        "Short/narrow viewport states remain usable"
+      ],
+      "refs": [
+        "RE-09",
+        "RE-21..30"
+      ]
+    },
+    {
+      "id": "visual-slop-context",
+      "title": "Intent-aware anti-slop",
+      "categories": [
+        "critique",
+        "content"
+      ],
+      "surfaces": [
+        "any"
+      ],
+      "stacks": [
+        "any"
+      ],
+      "keywords": [
+        "anti-slop",
+        "gradient",
+        "glow",
+        "card",
+        "pill",
+        "generic",
+        "aesthetic"
+      ],
+      "guidance": "Flag repeated purposeless cards, ornamental badges, fake metrics and generic slogans when they harm hierarchy. Do not categorically prohibit gradients, pills or expressive brands requested by the user.",
+      "checks": [
+        "Critique identifies harm and alternative",
+        "Brand direction preserved where intentional",
+        "No unsupported marketing claim"
+      ],
+      "refs": [
+        "RE-03",
+        "RE-10",
+        "RE-07"
+      ]
+    }
+  ]
+}
