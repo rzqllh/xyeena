@@ -198,7 +198,7 @@
       "state": "DEFINE"
     },
     "negative": {
-      "prompt": "Rewrite? No, explain what rewrites are",
+      "prompt": "Explain why rewritten paragraphs differ",
       "state": "DEFINE"
     },
     "scope": "router"
