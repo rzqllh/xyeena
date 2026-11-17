@@ -1,6 +1,6 @@
 # Xyeena Rig v1 — Implementation and evidence ledger
 
-Updated: 2026-11-17. Target `v1.0.0-rc.1` **not released**. Baseline `main@fadfe17914c1b1a7d416075b333085dfc6cfd99d`. Draft PR #75. No merge or publish authorization exercised.
+Updated: 2026-11-17. Target `v1.0.0-rc.1` **not released**. Baseline `main@fadfe17914c1b1a7d416075b333085dfc6cfd99d`. Draft PR #75. Owner conditionally authorized automatic merge/release under Q15 **only when every acceptance gate passes**; no merge, tag, or publication has been executed.
 
 ## Scope accounting
 
@@ -16,14 +16,22 @@ Updated: 2026-11-17. Target `v1.0.0-rc.1` **not released**. Baseline `main@fadfe
 
 ## Proof ledger
 
-- **Deterministic tests:** GitHub Actions `ci` run `43996864762` succeeded on commit `39a4dbe60c1a2aeb77fd8815d394b47a1bfbe63c` (before subsequent Cortex changes).
-- **Current branch commit:** query GitHub CI after latest push; do not reuse the prior pass as proof for new changes.
+- **Deterministic tests:** GitHub Actions `ci` run `43997415344` **success** on commit `d76d1bb0be1b6548291af71f61eda12fee774e0b`; all nine jobs succeeded, including Windows/macOS/Ubuntu, source tests, npx GitHub smoke, skills-ref, SDK worker contract. This is **source CI only**, not a native host acceptance receipt.
+- **Current branch commit:** documentation updates after `d76d1bb` do not inherit its green CI. Check exact head SHA and current workflow status before any new PASS claim.
 - **19 skill structure:** `npm run eval:v1:structure` validates local frontmatter, linked procedure assets and package contract presence; it intentionally outputs `TRIGGER_VERIFIED=NOT_RUN`, `BEHAVIOR_VERIFIED=NOT_RUN`, `HOST_VERIFIED=NOT_RUN`.
 - **Router tests:** deterministic lexical selection fixtures (not proof a live model chose or executed a skill).
 - **Design knowledge:** native static lookup only, not full UI UX Pro Max dataset or completed accessibility audit.
 - **GitHub actions:** no evidence yet from local Antigravity/Codex native host invocation, video/rendered QA, or independent comparative model run. Such gates remain blocked, not inferred.
 - **Upstreams:** historical RE-01..RE-32 retained; new RE-33 Cindy and RE-34 Orca pinned as `REFERENCE_ONLY`. No foreign coordinator bundled or copied.
 - **Compatibility:** preserve exactly 19 skill entrypoint names and one Cortex governor; package version stays 0.5.1 until authorized release.
+
+## Owner decisions and Gemini CLI continuity
+
+- GRILL Q1–Q22 are locked and documented in [GEMINI-CONTINUITY.md](GEMINI-CONTINUITY.md). Four supported v1 hosts are **Antigravity, Codex, Claude Code and Gemini CLI**; each must be host verified.
+- Full 19-skill live trigger/execution and fault/recovery coverage, independent final recheck, >=3 independent critical runs, and blind comparisons against v0.5.1/relevant upstream are not yet performed.
+- Every eligible benchmark metric must improve at least 10%; an already-perfect score must remain perfect. An unqualified regression yields NO-GO.
+- Automatic merge/release is only conditionally authorized **after all gates actually pass**. If post-release checks fail, use technically feasible rollback and safe npm mitigation; never claim npm publication is reversible.
+- After Gemini CLI compaction, re-read its continuity instructions from disk. Do not invent acceptance results from old conversation summaries.
 
 ## Working acceptance commands
 
@@ -42,4 +50,4 @@ These are repeatable commands, not a statement that every one has passed on the 
 
 ## Release rule
 
-No `1.0.0` release and no `FULL_PARITY` upstream claim on static documentation, deterministic lexer, unit tests, successful `npm pack`, or `Cortex.getStatus().status === 'ONLINE'`. Keep PR draft until owner accepts the remaining execution and evidence gates.
+No `1.0.0` release and no `FULL_PARITY` upstream claim on static documentation, deterministic lexer, unit tests, successful `npm pack`, or `Cortex.getStatus().status === 'ONLINE'`. Keep PR draft and do not publish until the owner-approved, measurable execution, benchmark and release gates have all actually passed; Q15 conditionally approves automation, not bypass of those gates.
