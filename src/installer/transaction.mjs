@@ -982,6 +982,7 @@ export class InstallationTransaction {
           }
 
           const skillFiles = listFilesRecursive(skillPath);
+          const removedOwnedFilePaths = [];
           for (const rel of skillFiles) {
             const absFilePath = path.join(skillPath, rel);
             const packageKey = `${skillName}/${rel}`;
@@ -1015,6 +1016,28 @@ export class InstallationTransaction {
 
             fs.unlinkSync(absFilePath);
             removed.push(targetRel);
+            removedOwnedFilePaths.push(absFilePath);
+          }
+
+          // Remove only empty nested directories that were parents of actual
+          // Xyeena-owned removed files. Never sweep unrelated empty folders
+          // or any directory still containing user/modified assets.
+          const removableParents = new Set();
+          for (const ownedFilePath of removedOwnedFilePaths) {
+            let parentDir = path.dirname(ownedFilePath);
+            while (parentDir !== skillPath && parentDir.startsWith(skillPath + path.sep)) {
+              removableParents.add(parentDir);
+              parentDir = path.dirname(parentDir);
+            }
+          }
+          for (const ownedParent of [...removableParents].sort((a, b) => b.length - a.length)) {
+            try {
+              const stat = fs.lstatSync(ownedParent);
+              if (!stat.isDirectory() || stat.isSymbolicLink()) continue;
+              fs.rmdirSync(ownedParent);
+            } catch (err) {
+              if (!['ENOENT', 'ENOTEMPTY', 'EEXIST'].includes(err.code)) throw err;
+            }
           }
 
           // Clean directory only if completely empty
