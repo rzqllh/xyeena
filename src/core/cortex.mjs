@@ -91,6 +91,8 @@ export class CortexOrchestrator {
       'xyeena-review', 'xyeena-test', 'xyeena-verify', 'xyeena-security',
       'xyeena-research', 'xyeena-writing', 'xyeena-orchestrate',
       'xyeena-core', 'xyeena-interface', 'xyeena-architecture', 'xyeena-release',
+      'xyeena-context', 'xyeena-handoff', 'xyeena-grill', 'xyeena-prototype',
+      'xyeena-skillcraft',
       'antislop', 'brainstorming', 'tdd', 'ponytail', 'caveman', 'hallmark',
       'impeccable', 'huashu-design', 'ui-ux-pro-max', 'design-taste-frontend',
       'verification-before-completion', 'dispatching-parallel-agents',
@@ -98,7 +100,7 @@ export class CortexOrchestrator {
     ];
 
     for (const skill of knownSkills) {
-      const regex = new RegExp(`\\b${skill.replace('-', '[-_]?')}\\b`, 'i');
+      const regex = new RegExp(`\\b${skill.replaceAll('-', '[-_]?')}\\b`, 'i');
       if (regex.test(lower) && !explicit.includes(skill)) {
         explicit.push(skill);
       }
@@ -459,6 +461,8 @@ export class CortexOrchestrator {
     // If an executor is provided, execute tasks through TaskGraph state machine
     if (executorFn) {
       let executionFailed = false;
+      let executionBlocked = false;
+      let blockReason = null;
       let failureError = null;
       const executedTaskIds = [];
 
@@ -626,6 +630,8 @@ export class CortexOrchestrator {
       return {
         engine: 'Cortex',
         status: CORTEX_EXECUTION_STATUS.COMPLETED,
+        verificationStatus: 'REVIEW_REQUIRED',
+        hostAcceptance: 'NOT_VERIFIED',
         mode: plan.mode,
         tier: plan.tier,
         message: plan.tier === TASK_TIERS.TIER_1_STANDARD
@@ -705,6 +711,9 @@ export class CortexOrchestrator {
       engine: 'Cortex',
       version: VERSION,
       status: 'ONLINE',
+      statusScope: 'IN_PROCESS_REGISTRY_ONLY',
+      nativeHostExecution: 'NOT_PROBED',
+      liveOrchestrationVerified: false,
       isDefault: true,
       role: 'Native Default Intelligence Layer',
       registrySize: this.registry.size(),
