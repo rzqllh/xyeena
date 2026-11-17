@@ -344,8 +344,10 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
         diff: '+ function deleteAccount(id) { db.users.delete(id); }',
         specRequirements: ['Allow users to delete their own account']
       });
-      assert.equal(review.reviewVerdict, 'PASS');
-      assert.equal(review.specSatisfaction[0].satisfied, true);
+      // Diff text alone cannot prove that the account belongs to the requester.
+      assert.equal(review.reviewVerdict, 'REVIEW_REQUIRED');
+      assert.equal(review.specSatisfaction[0].satisfied, false);
+      assert.equal(review.specSatisfaction[0].verificationStatus, 'NOT_VERIFIED');
     });
 
     // --- C. Anti-Slop Golden Scenario ---
