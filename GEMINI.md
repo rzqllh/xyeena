@@ -1,5 +1,9 @@
 # Gemini / Antigravity Repository Entry — Xyeena
 
+## v1 Gemini CLI continuation and compaction protection
+
+**Before v1 work and after any chat compaction**, re-open [docs/v1/GEMINI-CONTINUITY.md](docs/v1/GEMINI-CONTINUITY.md) from the **current checkout** and follow its Q1–Q22 acceptance decisions, evidence contract, and short recovery prompt. Check `git status`, branch, exact HEAD, and exact-commit CI first. The v0.5.1 release-candidate results below **do not prove v1**. Four live host acceptance gates and the all-metrics benchmark remain mandatory; source CI alone cannot authorize release.
+
 When working in `rzqllh/xyeena`, follow [AGENTS.md](AGENTS.md) and [master-plan-141026.md](master-plan-141026.md).
 
 - **Architecture:** Xyeena Rig is an All-in-One Skills + Harness toolkit with **Cortex** as its native default intelligence layer (DEC-27).
