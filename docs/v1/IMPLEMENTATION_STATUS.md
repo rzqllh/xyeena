@@ -32,7 +32,8 @@ Updated: 2026-11-17. Target `v1.0.0-rc.1` **not released**. Baseline `main@fadfe
     - Run (`conversation_id: 644f237f-9c2e-43e6-860d-8b16566027d2`): Exit 0. Non-failure prompt ("polite thank-you email"). Zero invocation/referencing of `xyeena-debug` or bug files.
   - Fault Injection & Safe Recovery:
     - Run (`conversation_id: 6c242942-459b-4e6b-914d-648bdae864ff`): Exit 0. Prompt targeted `nonexistent_broken_file.mjs`. Tool `read_file` returned `file does not exist`. Agent halted cleanly, reported `REPRO_BLOCKED` per `references/procedure.md`, and provided structured recovery steps in artifact `plan_investigate_crash.md`.
-  - Gate status: `Antigravity = TRACER_BULLET_PASS_1_OF_19` (xyeena-debug: PASS; remaining 18 skills pending verification).
+  - Gate status: `Antigravity = 16_OF_19_VERIFIED` (16 skills verified with live tool receipts: xyeena-debug, xyeena-core, xyeena-context, xyeena-handoff, xyeena-grill, xyeena-execute, xyeena-plan, xyeena-architecture, xyeena-research, xyeena-review, xyeena-verify, xyeena-security, xyeena-writing, xyeena-release, xyeena-test, xyeena-skillcraft; 3 skills pending full receipt: xyeena-interface, xyeena-orchestrate, xyeena-prototype).
+  - Regression suite: `test/v1-core-kernel-invariants.test.mjs` verifies xyeena-core L0 kernel invariants, micro-task zero-DAG direct resolution at TIER_0_MICRO, and lean capability manifest discipline.
 - **Gemini CLI real host evidence (2026-11-17):**
   - Binary: `@google/gemini-cli@0.68.0` installed globally at `C:\Users\Hafizh Rizqullah\AppData\Roaming\npm\gemini.cmd`.
   - Skill inventory: `gemini skills list` executed on real host; all 19 Xyeena v1 skills discovered and reported `[Enabled]`.
