@@ -1,0 +1,417 @@
+{
+  "version": 1,
+  "specification": "R7A - Reproducible Upstream Source Library",
+  "generatedAt": "2026-11-18T03:45:00.000Z",
+  "governance": {
+    "policy": "R7A",
+    "codexIndependentReviewGate": "G1",
+    "vendorRule": "DO_NOT_SILENTLY_VENDOR",
+    "sourceDirectory": "references/sources/",
+    "excludedFromPackaging": true,
+    "excludedFromGit": true
+  },
+  "upstreams": {
+    "RE-01": {
+      "id": "RE-01",
+      "name": "superpowers",
+      "canonicalUrl": "https://github.com/obra/superpowers.git",
+      "commitSha": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+      "release": "v7.0.1",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2025 Jesse Vincent",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "SOURCE_INSPECTED",
+      "mappedSkills": [
+        "xyeena-core",
+        "xyeena-plan",
+        "xyeena-execute",
+        "xyeena-test",
+        "xyeena-debug",
+        "xyeena-verify",
+        "xyeena-release",
+        "xyeena-orchestrate",
+        "xyeena-review"
+      ],
+      "mappedMethods": [
+        "src/methods/thinking.mjs",
+        "src/methods/engineering.mjs",
+        "src/core/composites.mjs"
+      ],
+      "notes": "Phased planning, TDD, systematic debugging, subagent coordination, verification-before-completion."
+    },
+    "RE-02": {
+      "id": "RE-02",
+      "name": "superior-skills",
+      "canonicalUrl": "https://github.com/KodekaTeam/superior-skills.git",
+      "commitSha": "3735e084d4ab310605bd945b53c674c87d2d7dbf",
+      "release": "HEAD",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 KodekaTeam",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "SOURCE_INSPECTED",
+      "mappedSkills": [
+        "xyeena-architecture",
+        "xyeena-review",
+        "xyeena-debug"
+      ],
+      "mappedMethods": [
+        "src/methods/engineering.mjs"
+      ],
+      "notes": "Deep module seams, Clean Architecture boundaries, safe refactor, code-as-documentation, dual-axis review."
+    },
+    "RE-03": {
+      "id": "RE-03",
+      "name": "anti-slop",
+      "canonicalUrl": "https://github.com/miqdadbadjuber/anti-slop.git",
+      "commitSha": "b1cdf87d49b1653293d58424516fd80394008345",
+      "release": "HEAD",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Miqdad Badjuber",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "SOURCE_INSPECTED",
+      "mappedSkills": [
+        "xyeena-interface",
+        "xyeena-writing"
+      ],
+      "mappedMethods": [
+        "src/methods/quality.mjs"
+      ],
+      "notes": "Code comment hygiene, copywriting clichés, touch targets (24px/44px), mobile overflow, color contrast, visual slop."
+    },
+    "RE-04": {
+      "id": "RE-04",
+      "name": "ponytail",
+      "canonicalUrl": "https://github.com/DietrichGebert/ponytail.git",
+      "commitSha": "96608e078b2d5ea607c5c3b8b5a54d1c1fba6846",
+      "release": "HEAD",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 DietrichGebert",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "SOURCE_INSPECTED",
+      "mappedSkills": [
+        "xyeena-execute",
+        "xyeena-review"
+      ],
+      "mappedMethods": [
+        "src/methods/engineering.mjs"
+      ],
+      "notes": "Smallest-correct-change heuristic, lean diffs, anti-overengineering debt ledger, adaptive effort (lite/full/ultra)."
+    },
+    "RE-05": {
+      "id": "RE-05",
+      "name": "caveman",
+      "canonicalUrl": "https://github.com/JuliusBrussee/caveman.git",
+      "commitSha": "b4ee71d557d96e3cbc14f88fa6e953a1362865f5",
+      "release": "HEAD",
+      "license": "Apache-2.0 / MIT",
+      "copyright": "Copyright (c) 2026 Julius Brussee",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "SOURCE_INSPECTED",
+      "mappedSkills": [
+        "xyeena-context",
+        "xyeena-writing",
+        "xyeena-verify",
+        "xyeena-research"
+      ],
+      "mappedMethods": [
+        "src/methods/engineering.mjs"
+      ],
+      "notes": "Context economy, verbatim payload preservation, verify-and-stop discipline, safe refactor boundaries."
+    },
+    "RE-06": {
+      "id": "RE-06",
+      "name": "security-audit-skill",
+      "canonicalUrl": "https://github.com/cloudflare/security-audit-skill.git",
+      "commitSha": "c1c8a8c1471069fb0e188eeaff69b8e8db6564a8",
+      "release": "HEAD",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2025-2026 Cloudflare, Inc.",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "SOURCE_INSPECTED",
+      "mappedSkills": [
+        "xyeena-security"
+      ],
+      "mappedMethods": [
+        "src/methods/security.mjs"
+      ],
+      "notes": "Security finding schema validation, source-to-sink trace, duplicate suppression, scoped diff review default."
+    },
+    "RE-07": {
+      "id": "RE-07",
+      "name": "impeccable",
+      "canonicalUrl": "https://github.com/pbakaus/impeccable.git",
+      "commitSha": "PROVENANCE_PENDING",
+      "release": "UNPINNED_HOST_REFERENCE",
+      "license": "Apache-2.0",
+      "copyright": "Copyright (c) pbakaus / Impeccable contributors",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "PROVENANCE_PENDING",
+      "mappedSkills": [
+        "xyeena-interface"
+      ],
+      "mappedMethods": [
+        "src/methods/design.mjs"
+      ],
+      "notes": "4 surface modes (Persuade, Operate, Read, Experience), brief primacy, craft critique."
+    },
+    "RE-08": {
+      "id": "RE-08",
+      "name": "mattpocock-skills",
+      "canonicalUrl": "https://github.com/mattpocock/skills.git",
+      "commitSha": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "release": "HEAD",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Matt Pocock",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "SOURCE_INSPECTED",
+      "mappedSkills": [
+        "xyeena-grill",
+        "xyeena-plan"
+      ],
+      "mappedMethods": [
+        "src/methods/engineering.mjs"
+      ],
+      "notes": "Question-frontier grilling, to-spec technical specification synthesis, to-tickets tracer bullets with expand-contract."
+    },
+    "RE-09": {
+      "id": "RE-09",
+      "name": "hallmark",
+      "canonicalUrl": "https://github.com/togethercomputer/hallmark.git",
+      "commitSha": "PROVENANCE_PENDING",
+      "release": "UNPINNED_HOST_REFERENCE",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Hallmark contributors",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "PROVENANCE_PENDING",
+      "mappedSkills": [
+        "xyeena-interface"
+      ],
+      "mappedMethods": [
+        "src/methods/design.mjs"
+      ],
+      "notes": "The Floor (transitions, animation layout thrashing, focus-visible, reduced motion, overflow-x: clip), waivers."
+    },
+    "RE-10": {
+      "id": "RE-10",
+      "name": "taste-skill",
+      "canonicalUrl": "https://github.com/Leonxlnx/taste-skill.git",
+      "commitSha": "PROVENANCE_PENDING",
+      "release": "UNPINNED_HOST_REFERENCE",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Leonxlnx",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "PROVENANCE_PENDING",
+      "mappedSkills": [
+        "xyeena-interface"
+      ],
+      "mappedMethods": [
+        "src/methods/design.mjs"
+      ],
+      "notes": "Page vs App Screen separation, quiet operational borders, substance over thin restraint."
+    },
+    "RE-11": {
+      "id": "RE-11",
+      "name": "ui-ux-pro-max",
+      "canonicalUrl": "https://github.com/nextlevelbuilder/ui-ux-pro-max.git",
+      "commitSha": "PROVENANCE_PENDING",
+      "release": "UNPINNED_HOST_REFERENCE",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2024 Next Level Builder",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "PROVENANCE_PENDING",
+      "mappedSkills": [
+        "xyeena-interface"
+      ],
+      "mappedMethods": [
+        "src/methods/design.mjs"
+      ],
+      "notes": "3-tier token architecture, WCAG AA/AAA targets (4.5:1 / 24px vs 7:1 / 44px), mobile layout bounds."
+    },
+    "RE-12": {
+      "id": "RE-12",
+      "name": "anthropic-skills",
+      "canonicalUrl": "https://github.com/anthropics/skills.git",
+      "commitSha": "PROVENANCE_PENDING",
+      "release": "TAGGED_RELEASES",
+      "license": "MIT / Source-Available",
+      "copyright": "Copyright (c) Anthropic",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "PROVENANCE_PENDING",
+      "mappedSkills": [
+        "xyeena-skillcraft"
+      ],
+      "mappedMethods": [
+        "src/validate.mjs",
+        "src/methods/extensibility.mjs"
+      ],
+      "notes": "Standard Agent Skills formatting and directory conventions."
+    },
+    "RE-14": {
+      "id": "RE-14",
+      "name": "gsap-skills",
+      "canonicalUrl": "https://github.com/greensock/gsap-skills.git",
+      "commitSha": "aed9cfd3277740755f6bfc1155c7aa645403b760",
+      "release": "HEAD",
+      "license": "MIT (docs) / Standard (GSAP)",
+      "copyright": "Copyright (c) GreenSock / GSAP contributors",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "SOURCE_INSPECTED",
+      "mappedSkills": [
+        "xyeena-interface"
+      ],
+      "mappedMethods": [
+        "src/methods/design.mjs"
+      ],
+      "notes": "Motion performance (compositor transforms vs layout thrashing), React lifecycle cleanup (useGSAP/ctx.revert), SSR safety."
+    },
+    "RE-15": {
+      "id": "RE-15",
+      "name": "trailofbits-skills",
+      "canonicalUrl": "https://github.com/trailofbits/skills.git",
+      "commitSha": "149d7b21f4067765b82e67029730b42d228ef4b4",
+      "release": "HEAD",
+      "license": "CC-BY-SA-4.0",
+      "copyright": "Copyright (c) 2026 Trail of Bits",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "SOURCE_INSPECTED",
+      "mappedSkills": [
+        "xyeena-security"
+      ],
+      "mappedMethods": [
+        "src/methods/security.mjs"
+      ],
+      "notes": "Threat modeling, security invariant validation, GitHub Actions workflow security, pattern-match false positive rejection. Clean-room reference only."
+    },
+    "RE-16": {
+      "id": "RE-16",
+      "name": "supabase-agent-skills",
+      "canonicalUrl": "https://github.com/supabase/agent-skills.git",
+      "commitSha": "c9be0e931b7930f7d02126d04774d904c381e7d7",
+      "release": "HEAD",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Supabase",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "SOURCE_INSPECTED",
+      "mappedSkills": [
+        "xyeena-security"
+      ],
+      "mappedMethods": [
+        "src/methods/security.mjs"
+      ],
+      "notes": "Row Level Security (RLS) tenant isolation evaluation, service-role key exposure detection, safe PostgreSQL transactional migrations."
+    },
+    "RE-31": {
+      "id": "RE-31",
+      "name": "konoha",
+      "canonicalUrl": "https://github.com/andycungkrinx91/konoha.git",
+      "commitSha": "9789bdd1d57d5f7a39a58406105e36127ffdb35b",
+      "release": "HEAD",
+      "license": "Apache-2.0",
+      "copyright": "Copyright (c) 2026 Andy Setiyawan",
+      "relevantSourcePaths": [
+        "src/"
+      ],
+      "verificationStatus": "SOURCE_INSPECTED",
+      "mappedSkills": [
+        "xyeena-context",
+        "xyeena-research"
+      ],
+      "mappedMethods": [
+        "src/methods/knowledge.mjs"
+      ],
+      "notes": "Bounded retrieval (max results, byte budget, path boundary), index corruption recovery, MCP tool manifest vs dispatcher parity, task-scoped memory isolation."
+    },
+    "RE-32": {
+      "id": "RE-32",
+      "name": "huashu-design",
+      "canonicalUrl": "https://github.com/alchaincyf/huashu-design.git",
+      "commitSha": "e8d1148a80d5a281d4247cffe320add3df017928",
+      "release": "v3.3.0",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 alchaincyf (花叔 · 花生)",
+      "relevantSourcePaths": [
+        "skills/"
+      ],
+      "verificationStatus": "SOURCE_INSPECTED",
+      "mappedSkills": [
+        "xyeena-prototype"
+      ],
+      "mappedMethods": [
+        "src/methods/design.mjs"
+      ],
+      "notes": "3 visual directions exploration, standalone interactive HTML prototype specifications, truthful capability reporting."
+    },
+    "RE-33": {
+      "id": "RE-33",
+      "name": "cindy",
+      "canonicalUrl": "https://github.com/makecindy/cindy.git",
+      "commitSha": "15e197fbbe687e81b392ea42f5a8a360404dd3ad",
+      "release": "HEAD",
+      "license": "Apache-2.0",
+      "copyright": "Copyright (c) 2026 makecindy contributors",
+      "relevantSourcePaths": [
+        "src/"
+      ],
+      "verificationStatus": "SOURCE_INSPECTED",
+      "mappedSkills": [
+        "xyeena-handoff",
+        "xyeena-context"
+      ],
+      "mappedMethods": [
+        "src/methods/coordination.mjs"
+      ],
+      "notes": "Multi-harness Claude/Codex/Pi, task context handoff, ownership and parallel independent review."
+    },
+    "RE-34": {
+      "id": "RE-34",
+      "name": "orca-agent",
+      "canonicalUrl": "https://github.com/Aniekanetim/orca-agent.git",
+      "commitSha": "027acb4efa2e6b226d40df266b86367423946d62",
+      "release": "HEAD",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Aniekan Etim",
+      "relevantSourcePaths": [
+        "src/"
+      ],
+      "verificationStatus": "SOURCE_INSPECTED",
+      "mappedSkills": [
+        "xyeena-orchestrate"
+      ],
+      "mappedMethods": [
+        "src/methods/coordination.mjs",
+        "src/task-graph.mjs"
+      ],
+      "notes": "Run/Task/Dispatch, supervisor lifecycle, typed inbox, decision gates and recovery."
+    }
+  }
+}

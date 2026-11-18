@@ -81,7 +81,9 @@ describe('M2 Native Methods: Unit Verification Suite', () => {
       });
       assert.strictEqual(review.standardsFindings.length, 1);
       assert.strictEqual(review.standardsFindings[0].axis, 'STANDARDS');
-      assert.strictEqual(review.specSatisfaction[0].satisfied, true);
+      assert.strictEqual(review.specSatisfaction[0].satisfied, false);
+      assert.strictEqual(review.specSatisfaction[0].verificationStatus, 'NOT_VERIFIED');
+      assert.strictEqual(review.reviewVerdict, 'REVISION_REQUESTED');
     });
 
     it('enforces TDD red-green-refactor cycle', () => {

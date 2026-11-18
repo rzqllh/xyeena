@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
-import { previewPortableHost, createPortableHostAdapter } from '../src/portable-cli-adapter.mjs';
+import { previewPortableHost, createPortableHostAdapter, classifyStderr } from '../src/portable-cli-adapter.mjs';
 import { runTaskGraph } from '../src/task-runner.mjs';
 
 function fixture(t) {
@@ -21,8 +21,18 @@ function addSkill(cwd, relative, name) {
 }
 function mockProcess(output, { exitCode=0, expectedCommand=null, argsCheck=null, capture=null, stderrOutput='' }={}) {
   return (command,args,options) => {
-    if(expectedCommand)assert.ok(command===expectedCommand || path.basename(command, path.extname(command))===expectedCommand);
-    if(argsCheck)argsCheck(args);
+    let effectiveCommand = command;
+    let effectiveArgs = args;
+    if (process.platform === 'win32' && /cmd(\.exe)?$/i.test(command) && Array.isArray(args) &&
+        args[0] === '/d' && args[1] === '/s' && args[2] === '/c' && typeof args[3] === 'string') {
+      const match = args[3].match(/^""([^"]+)"(?:\s+(.*))?"$/);
+      if (match) {
+        effectiveCommand = match[1];
+        effectiveArgs = match[2] ? match[2].split(/\s+/) : [];
+      }
+    }
+    if(expectedCommand)assert.ok(effectiveCommand===expectedCommand || path.basename(effectiveCommand, path.extname(effectiveCommand))===expectedCommand);
+    if(argsCheck)argsCheck(effectiveArgs);
     assert.equal(options.shell,false);
     const child=new EventEmitter();
     child.stdin=new PassThrough();child.stdout=new PassThrough();child.stderr=new PassThrough();
@@ -526,4 +536,24 @@ test('portable host stdout/stderr byte budgets stop the child and prevent fabric
     await assert.rejects(pending,stream==='stdout'?/Host output exceeded limit/:/Host diagnostic output exceeded limit/);
     assert.equal(child.killCount,1);
   }
+});
+
+test('classifyStderr differentiates auth, permission, rate-limit, network and command errors', () => {
+  assert.equal(classifyStderr(''), null);
+  assert.equal(classifyStderr(null), null);
+  assert.equal(classifyStderr("gemini: The term 'gemini' is not recognized as a name of a cmdlet"), 'COMMAND_NOT_FOUND');
+  assert.equal(classifyStderr('bash: gemini: command not found'), 'COMMAND_NOT_FOUND');
+  assert.equal(classifyStderr('Resource has been exhausted (e.g. check quota). status: 429'), 'RATE_LIMITED');
+  assert.equal(classifyStderr('Too many requests, rate limit exceeded'), 'RATE_LIMITED');
+  assert.equal(classifyStderr('Error: status 403 Forbidden - access denied to resource'), 'PERMISSION_DENIED');
+  assert.equal(classifyStderr('Permission denied for scope read-write'), 'PERMISSION_DENIED');
+  assert.equal(classifyStderr('TypeError: fetch failed on https://example.com/api?api_key=secret123 (ECONNREFUSED)'), 'NETWORK_ERROR');
+  assert.equal(classifyStderr('Request failed with error: socket hang up'), 'NETWORK_ERROR');
+  assert.equal(classifyStderr('ETIMEDOUT: network timeout during connection setup'), 'NETWORK_ERROR');
+  assert.equal(classifyStderr('Please set an Auth method in your settings.json or specify GEMINI_API_KEY'), 'AUTH_REQUIRED');
+  assert.equal(classifyStderr('IneligibleTierError: This client is no longer supported for Gemini Code Assist for individuals'), 'AUTH_REQUIRED');
+  assert.equal(classifyStderr('API key not valid. Please pass a valid API key. (reason: API_KEY_INVALID)'), 'AUTH_REQUIRED');
+  assert.equal(classifyStderr('Unauthorized: login required to proceed'), 'AUTH_REQUIRED');
+  assert.equal(classifyStderr('Authentication failed: missing api_key'), 'AUTH_REQUIRED');
+  assert.equal(classifyStderr('Logged request for metric table api_key_usage_daily successfully'), null);
 });

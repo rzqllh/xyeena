@@ -43,7 +43,8 @@
     "configure:repo": "node ./scripts/configure-repo.mjs",
     "pack:check": "npm pack --dry-run",
     "test:consumer": "node scripts/consumer-smoke.mjs",
-    "test:harness": "node scripts/run-vendored-tests.mjs"
+    "test:harness": "node scripts/run-vendored-tests.mjs",
+    "eval:v1:structure": "node ./src/eval-v1.mjs"
   },
   "engines": {
     "node": ">=22.14.0"

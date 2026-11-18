@@ -1,0 +1,230 @@
+[
+  {
+    "skillId": "xyeena-core",
+    "positive": {
+      "prompt": "A small factual question: what is a constant?",
+      "state": "TRIAGE"
+    },
+    "negative": {
+      "prompt": "What is 2 + 2?",
+      "state": "TRIAGE"
+    },
+    "scope": "kernel"
+  },
+  {
+    "skillId": "xyeena-context",
+    "positive": {
+      "prompt": "Recover active context after compaction",
+      "state": "TRIAGE"
+    },
+    "negative": {
+      "prompt": "Could you contextualize this sentence?",
+      "state": "TRIAGE"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-handoff",
+    "positive": {
+      "prompt": "Prepare a new session",
+      "state": "TRIAGE"
+    },
+    "negative": {
+      "prompt": "What do sessions mean in a protocol?",
+      "state": "TRIAGE"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-research",
+    "positive": {
+      "prompt": "Check the latest official API docs",
+      "state": "DISCOVER"
+    },
+    "negative": {
+      "prompt": "Show a resourceful approach",
+      "state": "DISCOVER"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-grill",
+    "positive": {
+      "prompt": "grill gua soal desain",
+      "state": "DISCOVER"
+    },
+    "negative": {
+      "prompt": "Make grilled cheese instructions",
+      "state": "DISCOVER"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-plan",
+    "positive": {
+      "prompt": "Create an implementation plan with dependencies",
+      "state": "PLAN"
+    },
+    "negative": {
+      "prompt": "Research planets",
+      "state": "PLAN"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-architecture",
+    "positive": {
+      "prompt": "Review the architecture boundaries of this module",
+      "state": "DISCOVER"
+    },
+    "negative": {
+      "prompt": "Discuss architectural history",
+      "state": "DISCOVER"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-execute",
+    "positive": {
+      "prompt": "implement this plan now",
+      "state": "EXECUTE"
+    },
+    "negative": {
+      "prompt": "Define execution in English",
+      "state": "EXECUTE"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-debug",
+    "positive": {
+      "prompt": "Investigate this crash",
+      "state": "DEBUG"
+    },
+    "negative": {
+      "prompt": "Write about debuggerless systems",
+      "state": "DEBUG"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-prototype",
+    "positive": {
+      "prompt": "Run a prototype for a virtualizer",
+      "state": "PROTOTYPE"
+    },
+    "negative": {
+      "prompt": "List prototyping trends",
+      "state": "PROTOTYPE"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-test",
+    "positive": {
+      "prompt": "Write a tdd regression check",
+      "state": "EXECUTE"
+    },
+    "negative": {
+      "prompt": "Explain the latest suites",
+      "state": "EXECUTE"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-review",
+    "positive": {
+      "prompt": "review the pull request diff",
+      "state": "REVIEW"
+    },
+    "negative": {
+      "prompt": "Generate a preview image",
+      "state": "REVIEW"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-verify",
+    "positive": {
+      "prompt": "verify the completed patch",
+      "state": "VERIFY"
+    },
+    "negative": {
+      "prompt": "Define verification as a concept",
+      "state": "VERIFY"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-security",
+    "positive": {
+      "prompt": "review the rls enforcement logic",
+      "state": "REVIEW"
+    },
+    "negative": {
+      "prompt": "Who is the author?",
+      "state": "REVIEW"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-release",
+    "positive": {
+      "prompt": "Prepare release notes and publish checklist",
+      "state": "RELEASE"
+    },
+    "negative": {
+      "prompt": "What does releasing mean?",
+      "state": "RELEASE"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-interface",
+    "positive": {
+      "prompt": "redesign dashboard UI",
+      "state": "DEFINE"
+    },
+    "negative": {
+      "prompt": "Explain the word suites",
+      "state": "DEFINE"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-writing",
+    "positive": {
+      "prompt": "rewrite this copywriting headline",
+      "state": "DEFINE"
+    },
+    "negative": {
+      "prompt": "Explain why rewritten paragraphs differ",
+      "state": "DEFINE"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-skillcraft",
+    "positive": {
+      "prompt": "Create an agent skill SKILL.md",
+      "state": "DEFINE"
+    },
+    "negative": {
+      "prompt": "Explain general skills vocabulary",
+      "state": "DEFINE"
+    },
+    "scope": "router"
+  },
+  {
+    "skillId": "xyeena-orchestrate",
+    "positive": {
+      "prompt": "Coordinate a subagent on independent tasks",
+      "state": "PLAN"
+    },
+    "negative": {
+      "prompt": "Define subagentship as a word",
+      "state": "PLAN"
+    },
+    "scope": "router"
+  }
+]

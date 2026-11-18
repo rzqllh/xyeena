@@ -15,6 +15,20 @@ function sandbox(t){
   fs.mkdirSync(home);fs.mkdirSync(cwd);
   return {home,cwd};
 }
+
+function canSymlink(){
+  try {
+    const probeTarget = path.join(os.tmpdir(), `symprobe-tgt-${Date.now()}-${Math.random()}`);
+    const probeLink = path.join(os.tmpdir(), `symprobe-lnk-${Date.now()}-${Math.random()}`);
+    fs.mkdirSync(probeTarget, { recursive: true });
+    fs.symlinkSync(probeTarget, probeLink, process.platform === 'win32' ? 'junction' : 'dir');
+    fs.unlinkSync(probeLink);
+    fs.rmdirSync(probeTarget);
+    return true;
+  } catch {
+    return false;
+  }
+}
 test('global destinations are explicitly isolated per host; Hermes profile supported',t=>{
   const {cwd,home}=sandbox(t);
   const dirs={antigravity:'.gemini/config/skills',gemini:'.gemini/skills',
@@ -50,6 +64,7 @@ test('global copy installs into selected user home without touching workspace',t
   assert.equal(previewSetup(opts).filesToWrite,0);
 });
 test('global symlink uses durable home store instead of npm cache and is discovered by routing',t=>{
+  if (!canSymlink()) { t.skip('Symlink/junction not permitted in this environment'); return; }
   const {cwd,home}=sandbox(t);
   const opts={cwd,home,scope:'global',mode:'symlink',runtime:'antigravity,gemini,claude',preset:'balanced'};
   const plan=previewSetup(opts);
@@ -70,6 +85,7 @@ test('global symlink uses durable home store instead of npm cache and is discove
   assert.deepEqual(fs.readdirSync(cwd),[]);
 });
 test('workspace symlink is selected explicitly and does not follow npm cache eviction',t=>{
+  if (!canSymlink()) { t.skip('Symlink/junction not permitted in this environment'); return; }
   const {cwd,home}=sandbox(t);
   const opts={cwd,home,scope:'workspace',mode:'symlink',runtime:'antigravity',preset:'essential',harness:'essential'};
   const preview=previewSetup(opts);
@@ -101,6 +117,7 @@ test('global copy preserves unrelated existing skill by default and backs it up 
   assert.doesNotMatch(fs.readFileSync(path.join(skill,'SKILL.md'),'utf8'),/CUSTOM/);
 });
 test('foreign symlinks and modified immutable store are refused',t=>{
+  if (!canSymlink()) { t.skip('Symlink/junction not permitted in this environment'); return; }
   const {cwd,home}=sandbox(t);
   const malicious=path.join(fs.realpathSync(home),'.gemini/skills/xyeena-core');
   const elsewhere=path.join(home,'elsewhere');
@@ -129,6 +146,7 @@ test('beginner wizard defaults global to copy and reports actual per-host verifi
   assert.doesNotMatch(out.join(''),/Installation method:/);
 });
 test('beginner wizard offers symlink for workspace only',async t=>{
+  if (!canSymlink()) { t.skip('Symlink/junction not permitted in this environment'); return; }
   const {cwd,home}=sandbox(t);
   const answers=['2','3','1','2','1','y'];let idx=0;const out=[];
   const result=await guidedSetup({cwd,home,selectLocation:true,ask:async()=>answers[idx++],output:{write:v=>out.push(v)}});
@@ -145,6 +163,7 @@ test('global Harness must stay project-scoped instead of silently faking host gu
 });
 
 test('upgrades an earlier Xyeena-managed global junction without replacing foreign links',t=>{
+  if (!canSymlink()) { t.skip('Symlink/junction not permitted in this environment'); return; }
   const {cwd,home}=sandbox(t);
   const canonicalHome=fs.realpathSync(home);
   const old=path.join(canonicalHome,'.xyeena/skill-store/v0.3.0/xyeena-core-0123456789abcdef');

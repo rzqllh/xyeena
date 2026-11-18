@@ -71,3 +71,7 @@ site/.vercel/
 docs/xyeena_rebuild_workspace_*.zip
 docs/xyeena_rebuild_workspace_*/
 xyeena_rebuild_workspace_*.zip
+
+# Upstream source snapshots (R7A)
+references/sources/
+

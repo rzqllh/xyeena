@@ -1,0 +1,482 @@
+{
+  "schemaVersion": 1,
+  "baselineCommit": "fadfe17914c1b1a7d416075b333085dfc6cfd99d",
+  "releaseTarget": "1.0.0",
+  "scope": "Skill system + Cortex + host adapters + package + behavioral evaluations",
+  "note": "A mapping is a planned comparison/adaptation, not a claim that upstream was executed or behavioral parity achieved.",
+  "upstreams": [
+    {
+      "id": "RE-01",
+      "name": "Superpowers",
+      "source": "obra/superpowers",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-02",
+      "name": "Superior Skills",
+      "source": "KodekaTeam/superior-skills",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-03",
+      "name": "Anti-Slop",
+      "source": "miqdadbadjuber/anti-slop",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-04",
+      "name": "Ponytail",
+      "source": "DietrichGebert/ponytail",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-05",
+      "name": "Caveman",
+      "source": "JuliusBrussee/caveman",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-06",
+      "name": "Cloudflare Security Audit",
+      "source": "cloudflare/security-audit-skill",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-07",
+      "name": "Impeccable",
+      "source": "pbakaus/impeccable",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-08",
+      "name": "Matt Pocock Skills",
+      "source": "mattpocock/skills",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-09",
+      "name": "Hallmark",
+      "source": "togethercomputer/hallmark",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-10",
+      "name": "Taste Skill",
+      "source": "Leonxlnx/taste-skill",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-11",
+      "name": "UI UX Pro Max",
+      "source": "nextlevelbuilder/ui-ux-pro-max",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-12",
+      "name": "Anthropic Skills",
+      "source": "anthropics/skills",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-13",
+      "name": "Vercel Agent Skills",
+      "source": "vercel/agent-skills",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-14",
+      "name": "GSAP Skills",
+      "source": "greensock/gsap-skills",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-15",
+      "name": "Trail of Bits Skills",
+      "source": "trailofbits/skills",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-16",
+      "name": "Supabase Agent Skills",
+      "source": "supabase/agent-skills",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-17",
+      "name": "Google DESIGN.md",
+      "source": "normative-design-reference",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-18",
+      "name": "Awesome DESIGN.md",
+      "source": "normative-design-reference",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-19",
+      "name": "Gemini Superpowers / Antigravity",
+      "source": "host-specific-reference",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-20",
+      "name": "Xyeena Rig foundation",
+      "source": "rzqllh/xyeena",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-21..30",
+      "name": "Normative standards",
+      "source": "W3C/Apple/Google/ISO",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-31",
+      "name": "Konoha",
+      "source": "andycungkrinx91/konoha",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-32",
+      "name": "Huashu Design",
+      "source": "alchaincyf/huashu-design",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-33",
+      "name": "Cindy",
+      "source": "makecindy/cindy",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    },
+    {
+      "id": "RE-34",
+      "name": "Orca",
+      "source": "Aniekanetim/orca-agent",
+      "disposition": "REFERENCE_ONLY_UNTIL_SOURCE_AND_BEHAVIOR_VERIFIED"
+    }
+  ],
+  "skills": [
+    {
+      "id": "xyeena-core",
+      "domain": "governance",
+      "upstreamRefs": [
+        "RE-01",
+        "RE-03",
+        "RE-20",
+        "RE-21..30"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-context",
+      "domain": "governance",
+      "upstreamRefs": [
+        "RE-05",
+        "RE-20",
+        "RE-31",
+        "RE-33"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-handoff",
+      "domain": "governance",
+      "upstreamRefs": [
+        "RE-01",
+        "RE-05",
+        "RE-33",
+        "RE-34"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-research",
+      "domain": "discovery-planning",
+      "upstreamRefs": [
+        "RE-12",
+        "RE-17",
+        "RE-18",
+        "RE-31"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-grill",
+      "domain": "discovery-planning",
+      "upstreamRefs": [
+        "RE-08",
+        "RE-01",
+        "RE-20"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-plan",
+      "domain": "discovery-planning",
+      "upstreamRefs": [
+        "RE-01",
+        "RE-08",
+        "RE-04"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-architecture",
+      "domain": "discovery-planning",
+      "upstreamRefs": [
+        "RE-02",
+        "RE-13",
+        "RE-16"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-execute",
+      "domain": "engineering",
+      "upstreamRefs": [
+        "RE-01",
+        "RE-02",
+        "RE-04",
+        "RE-05"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-debug",
+      "domain": "engineering",
+      "upstreamRefs": [
+        "RE-01",
+        "RE-02",
+        "RE-05"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-prototype",
+      "domain": "engineering",
+      "upstreamRefs": [
+        "RE-32",
+        "RE-11",
+        "RE-14"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-test",
+      "domain": "quality-release",
+      "upstreamRefs": [
+        "RE-01",
+        "RE-02",
+        "RE-21..30"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-review",
+      "domain": "quality-release",
+      "upstreamRefs": [
+        "RE-01",
+        "RE-02",
+        "RE-03",
+        "RE-04"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-verify",
+      "domain": "quality-release",
+      "upstreamRefs": [
+        "RE-01",
+        "RE-05",
+        "RE-20"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-security",
+      "domain": "quality-release",
+      "upstreamRefs": [
+        "RE-06",
+        "RE-15",
+        "RE-16"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-release",
+      "domain": "quality-release",
+      "upstreamRefs": [
+        "RE-01",
+        "RE-05",
+        "RE-20"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-interface",
+      "domain": "design-content",
+      "upstreamRefs": [
+        "RE-03",
+        "RE-07",
+        "RE-09",
+        "RE-10",
+        "RE-11",
+        "RE-13",
+        "RE-14",
+        "RE-17",
+        "RE-18",
+        "RE-21..30",
+        "RE-32"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-writing",
+      "domain": "design-content",
+      "upstreamRefs": [
+        "RE-03",
+        "RE-07",
+        "RE-10"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-skillcraft",
+      "domain": "meta-orchestration",
+      "upstreamRefs": [
+        "RE-01",
+        "RE-12",
+        "RE-20"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    },
+    {
+      "id": "xyeena-orchestrate",
+      "domain": "meta-orchestration",
+      "upstreamRefs": [
+        "RE-01",
+        "RE-19",
+        "RE-20",
+        "RE-31",
+        "RE-33",
+        "RE-34"
+      ],
+      "status": "V1_REBUILD_NOT_VERIFIED",
+      "gates": [
+        "STRUCTURE_VALID",
+        "TRIGGER_VERIFIED",
+        "BEHAVIOR_VERIFIED",
+        "HOST_VERIFIED"
+      ]
+    }
+  ]
+}

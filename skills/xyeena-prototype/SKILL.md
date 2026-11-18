@@ -3,12 +3,22 @@ name: xyeena-prototype
 description: Use when a design or debugging decision depends on technical behavior that static inspection or documentation cannot establish reliably, and a small disposable experiment can answer it.
 ---
 
-# Prototype
+# Prototype — v1 Procedure Entry
 
-Prototype to answer one question, not to sneak an unreviewed implementation into production.
+**Activate when:** One bounded technical unknown can be settled with a disposable experiment.
 
-State the unknown first. Build the smallest experiment that can discriminate between the plausible answers. Prefer an isolated fixture, scratch route, temporary harness, or disposable branch over changing production architecture.
+**Do not activate for:** Routine implementation, production-ready UI request, or irreversible migration without authorization.
 
-Run the experiment and record the observed result as evidence. Separate what the prototype proved from what remains inferred. Delete or clearly quarantine throwaway machinery unless the user explicitly chooses to promote it through the normal planning, testing, and review path.
+## Execution route
 
-A prototype is complete when the question is answered or the experiment establishes why it cannot currently be answered. It is not complete merely because demo code exists.
+1. Phrase one falsifiable question, enumerate plausible outcomes and define stopping threshold and budget.
+2. Isolate the experiment in a scratch harness, temporary route or disposable worktree with zero production credentials and bounded side effects.
+3. Capture baseline, run controlled variants and collect outputs (including failures) under documented versions.
+4. Map observed result to the decision it informs; separate proven behavior from assumptions and performance noise.
+5. Quarantine/delete disposable artifacts only when ownership is verified; promotion to product requires normal plan, review and tests.
+
+**Output contract:** Experiment specification, actual observations, conclusions with limits and disposition of throwaway artifacts.
+
+**Failure boundary:** An attractive screenshot or running demo does not establish compatibility, security, accessibility, or fitness for production.
+
+Use [references/procedure.md](references/procedure.md) for decision and recovery branches. Route execution through Cortex and real host capabilities; reading this skill is not evidence of invocation or behavioral parity. Do not claim HOST_VERIFIED without an actual host-version-specific receipt.

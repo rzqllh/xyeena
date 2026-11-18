@@ -30,6 +30,20 @@ function cleanupDisposableWorkspace(root) {
   }
 }
 
+function canSymlink() {
+  try {
+    const probeTarget = path.join(os.tmpdir(), `symprobe-tgt-${Date.now()}-${Math.random()}`);
+    const probeLink = path.join(os.tmpdir(), `symprobe-lnk-${Date.now()}-${Math.random()}`);
+    fs.mkdirSync(probeTarget, { recursive: true });
+    fs.symlinkSync(probeTarget, probeLink, process.platform === 'win32' ? 'junction' : 'dir');
+    fs.unlinkSync(probeLink);
+    fs.rmdirSync(probeTarget);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 test('P10.1 Installer Adversarial: Custom user file inside official skill directory is preserved on install and update', () => {
   const { root, home } = createDisposableWorkspace();
 
@@ -269,7 +283,11 @@ test('P10.1 Installer Adversarial: Path traversal in destination root triggers s
   }
 });
 
-test('P13 Hardening Adversarial: Symlink mode with force cannot destroy custom user files (DEC-26)', () => {
+test('P13 Hardening Adversarial: Symlink mode with force cannot destroy custom user files (DEC-26)', (t) => {
+  if (!canSymlink()) {
+    t.skip('Symlink/junction not permitted in this environment');
+    return;
+  }
   const { root, home } = createDisposableWorkspace();
 
   try {

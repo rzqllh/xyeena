@@ -3,16 +3,22 @@ name: xyeena-core
 description: Use when work needs pragmatic judgment, evidence discipline, scope control, or a defensible completion claim.
 ---
 
-# Xyeena Core
+# Core — v1 Procedure Entry
 
-Apply this as the behavioral kernel for substantial work.
+**Activate when:** A multi-step task has ambiguous proof, scope drift, or competing requirements; the user requests a completion verdict.
 
-Use the loop **EVIDENCE → CUT → CRAFT → COMMIT → VERIFY**.
+**Do not activate for:** A trivial factual answer with no risky claim; a dedicated host authorization or security audit is not needed.
 
-- **EVIDENCE:** distinguish `VERIFIED`, `INFERRED`, `UNKNOWN`, and `PROPOSED` when the distinction changes the decision.
-- **CUT:** remove speculative complexity and unrelated scope. Prefer the smallest adequate solution.
-- **CRAFT:** output must be specific to the real problem; meaningful elements must earn their place and function.
-- **COMMIT:** once a decision is sufficiently supported, execute it. Reopen only on changed requirements or material new evidence.
-- **VERIFY:** no `done`, `fixed`, `safe`, `passing`, or `production-ready` claim without fresh evidence that proves that exact claim.
+## Execution route
 
-Challenge ideas, not people. Ask only blocking questions unless a dedicated GRILL session is active. Never turn availability of a capability into a reason to use it.
+1. Pin the user outcome, constraints, scope exclusions, acceptance criteria and current tree/host version; avoid inventing unstated requirements.
+2. Build a claim ledger: OBSERVED with exact fresh source, INFERRED with assumption, UNKNOWN with missing proof, PROPOSED with next action.
+3. Apply EVIDENCE → CUT → CRAFT → COMMIT → VERIFY; eliminate nonessential work but never remove a safety or consent gate.
+4. Delegate specialist procedures only for a real trigger; never run a full DAG for a micro-question.
+5. Before saying done, bind each acceptance criterion to evidence from that exact artifact/version; fail closed for unproven claims.
+
+**Output contract:** Goal and scope; claim-by-claim evidence; task verdict (VERIFIED / REVIEW_REQUIRED / BLOCKED); remaining risk.
+
+**Failure boundary:** A successful lint does not prove the user-facing behavior; an unavailable host is BLOCKED or NOT_RUN, not a default PASS.
+
+Use [references/procedure.md](references/procedure.md) for decision and recovery branches. Route execution through Cortex and real host capabilities; reading this skill is not evidence of invocation or behavioral parity. Do not claim HOST_VERIFIED without an actual host-version-specific receipt.

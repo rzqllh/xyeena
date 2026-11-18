@@ -238,7 +238,9 @@ diff --git a/src/user.js b/src/user.js
       assert.equal(reviewRes.mode, 'READ_ONLY');
 
       // Axis 1 & Standards
-      assert.equal(reviewRes.reviewResult.specSatisfaction[0].satisfied, true);
+      // A function name in a patch is not evidence of requirement satisfaction.
+      assert.equal(reviewRes.reviewResult.specSatisfaction[0].satisfied, false);
+      assert.equal(reviewRes.reviewResult.specSatisfaction[0].verificationStatus, 'NOT_VERIFIED');
       assert.ok(reviewRes.reviewResult.standardsFindings.some(f => f.message.includes('console.log')));
 
       // Anti-Slop Code Comment Hygiene

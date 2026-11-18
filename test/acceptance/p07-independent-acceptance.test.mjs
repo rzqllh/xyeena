@@ -122,9 +122,10 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
       const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
       const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
-      // Execute actual npm install from local tarball
+      // Execute actual npm install from local tarball with isolated local cache
       const installTarget = process.platform === 'win32' ? `"${tarballPath}"` : tarballPath;
-      execFileSync(npmCmd, ['install', installTarget], {
+      const localCache = path.join(disposableNpmDir, '.npm-cache');
+      execFileSync(npmCmd, ['install', '--cache', localCache, installTarget], {
         cwd: disposableNpmDir,
         encoding: 'utf8',
         shell: process.platform === 'win32'
@@ -344,8 +345,10 @@ describe('XYEENA P07: Independent Release Acceptance Suite', () => {
         diff: '+ function deleteAccount(id) { db.users.delete(id); }',
         specRequirements: ['Allow users to delete their own account']
       });
-      assert.equal(review.reviewVerdict, 'PASS');
-      assert.equal(review.specSatisfaction[0].satisfied, true);
+      // Diff text alone cannot prove that the account belongs to the requester.
+      assert.equal(review.reviewVerdict, 'REVIEW_REQUIRED');
+      assert.equal(review.specSatisfaction[0].satisfied, false);
+      assert.equal(review.specSatisfaction[0].verificationStatus, 'NOT_VERIFIED');
     });
 
     // --- C. Anti-Slop Golden Scenario ---
