@@ -1,5 +1,7 @@
 # Veyra v1.0 — Implementation Roadmap (Dependency-Driven Waves)
 
+> Historical milestone plan. For current release evidence, consult qualification/RELEASE-GATE-DECISION.md.
+
 > **Execution Strategy:** Implementation follows 7 dependency-driven waves (DEC-09). Each wave forms an independently reviewable milestone with strict superiority and verification criteria.
 > **Current Status:** Wave 0 Complete (Canonical Reconciliation & Baseline Freeze).
 > **Wave Governance:** Skill implementation (Waves 1 through 6) remains strictly gated until Owner GO is received.
@@ -21,8 +23,8 @@ flowchart TD
 ## Wave Breakdown & Milestone Gates
 
 ### Wave 0: Workspace Bootstrap & Canonical Baseline (Status: `COMPLETE`)
-- **Scope:** 35 Canonical Owner Decisions locked (DEC-01..35); integrated Developer Brief and Planning Baseline; 21 upstream repositories pinned with 100% SHA-256 manifest match; dual-layer provenance verified; preflight & continuation drivers validated.
-- **Exit Gate:** All 35 canonical decisions locked; 100% archive SHA-256 match; portable checkpoint verified; Owner review.
+- **Scope:** 35 Canonical Owner Decisions locked (DEC-01..35); integrated Developer Brief and Planning Baseline; 21 upstreams pinned in lockfile and local archive hash reported; pinned source commit identity and manifest contents NOT independently verified; preflight & continuation drivers validated.
+- **Exit Gate:** All 35 canonical decisions locked; local archive checksum reported; source provenance remains release-gated; portable checkpoint verified; Owner review.
 
 ### Wave 1: Core Governance & Context (Status: `GATED / WAITING_FOR_OWNER_GO`)
 - **Skills:** `veyra-core`, `veyra-context`, `veyra-handoff`

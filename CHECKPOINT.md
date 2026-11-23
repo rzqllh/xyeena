@@ -1,7 +1,7 @@
 # Veyra v1.0 Workspace Checkpoint
 
-> **Status:** `REVIEW_READY` (Comprehensive Remediation Complete, 21 Suites / 63 Node Tests + 17 Python Tests Passing)
-> **Active Phase:** Independent Review Remediation Finalization (Branch `veyra-review`, DEC-01 through DEC-35 LOCKED)
+> **Status:** `REVIEW_READY / STABLE_RELEASE_BLOCKED` (72/72 Node tests PASS on GitHub CI; release evidence gates incomplete)
+> **Active Phase:** Independent qualification evidence correction; native multi-host E2E and IP review pending
 > **Timestamp:** 2026-11-23T13:10:00+07:00
 > **Authority:** Canonical Owner Decisions Register (DEC-01 through DEC-35) — 100% LOCKED
 > **Skill Implementation:** 19/19 Skills IMPLEMENTED, REMEDIATED & CODE-VERIFIED (Operational instructions added, native host linking, zero external runtime npm dependencies)
@@ -9,12 +9,12 @@
 > - P0 Installer: Pre-existing user files collision detection, backup, byte-for-byte atomic restoration, user-modified files preservation, traversal and null-byte rejection.
 > - P0 Evidence: LIVE_HOST_VERIFIED restricted to verified process execution via executeAndVerify with cryptographic HMAC signatures; synthetic and caller-forged receipts stamped SYNTHETIC_RECEIPT and rejected for release gates.
 > - P0 Scope: Cross-cutting path traversal safety integrated into validateExecutionScope.
-> - P1 Preflight: Insecure GIT_SSL_NO_VERIFY removed; canonical archive SHA-256 verified; local commit SHA verification; missing/corrupt archives fail explicitly with safe --recover-online recovery path; standalone manifest ledger audit.
+> - P1 Preflight: TLS override removed; CI lockfile metadata checked. Pinned source SHA and ledger content NOT independently verified.
 > - P1 CI: 5/5 template validation errors fixed; hardcoded Windows paths eliminated; run-tests.mjs cross-platform runner added; both CI workflows configured to trigger on veyra-review branch.
 > - P1 Skills: All 19 SKILL.md equipped with practical Operational Instructions linking native host tools to engine.mjs; 100% parity between skills/ and .agents/skills/; prefix-based intent routing hardened.
-> - P1 Benchmark: Added capability-matched agent-level task completion & verification governance evaluation (Benchmark 5) with explicit tier: 'PROXY_VALIDATED' metadata (DEC-14 / DEC-35).
-> - P2 Consistency: Unified canonical veyra-interface naming with veyra-ui alias; basic permissive license checks verified across 21 components; deep legal review deferred to pre-release.
-> **Release Gate Status:** `REVIEW_READY` / `MERGE_AND_RELEASE_BLOCKED` (Pushed to review branch for independent review; public release and merge to main strictly gated by Owner approval).
+> - P1 Benchmark: Historical A/B/C scores RETRACTED; new evaluation is local function proxy only, not comparative agent testing.
+> - P2 Consistency: UI alias retained; upstream license registry has 0 verified licenses and NOTICE.md/package.json conflict requires Owner decision.
+> **Release Gate Status:** `REVIEW_READY / STABLE_BLOCKED`; no merge, tag, npm publish or public release.
 
 ---
 
@@ -53,28 +53,16 @@ All 35 Owner Decisions DEC-01 through DEC-35 are established directly from the O
 | **Wave 5** | Design & Content | `veyra-interface` (alias: `veyra-ui`), `veyra-writing` | `tests/wave5/wave5.test.mjs` | **VERIFIED** |
 | **Wave 6** | Meta-Orchestration | `veyra-skillcraft`, `veyra-orchestrate` | `tests/wave6/wave6.test.mjs` | **VERIFIED** |
 
-### Benchmark, Installer, Security & Multi-Host Verification Summary
-- **Test Suite Results:** 63/63 Node.js tests passing across 21 suites (0 errors, 0 failures, 0 skips) + 17 Python tests (16 pass, 1 skipped).
-- **Fair Capability-Matched Benchmarks (5/5 PASS):**
-  - Benchmark 1: Context Management Economy vs Fixed-Window Head+Tail Truncation (100% technical facts retained vs 0% for standard window drop; >30% byte reduction).
-  - Benchmark 2: Scope Fencing Precision vs Naive String Prefix Matcher (100% containment of path traversal escapes and protected configs; 0 false positives).
-  - Benchmark 3: Kahn-DAG Cycle Detection & Topological Scheduling vs Naive Linear Runner (100% deadlock prevention and accurate cycle node identification).
-  - Benchmark 4: Interface Accessibility Floor (WCAG 2.2 AA) vs Blind CSS Parsing (Exact perceptual contrast calculation: AA 4.5:1, AAA 7.0:1, 44px min touch target bounds).
-  - Benchmark 5: Simulated Capability-Matched Agent Pipeline Governance (`PROXY_VALIDATED` evaluation per DEC-14 / DEC-35).
-- **Installer, Verification & Rollback (7/7 PASS):**
-  - Clean project-local installation and `.veyra-manifest.json` cryptographic ledger creation (`PASS`).
-  - Tamper detection on modified files (`PASS`).
-  - Safe uninstall preserving all user-created files (`PASS`).
-  - License audit: Permissive baseline compliance (MIT / Apache-2.0 across all 21 upstreams; deep legal review deferred to pre-release) (`PASS`).
-  - Pre-existing user files collision detection and atomic restoration (`PASS`).
-  - Adversarial manifest path traversal and null-byte rejection (`PASS`).
-- **Security Audit (4/4 PASS):** Path traversal, credential leak scanning (AWS, GitHub, RSA), RLS multi-tenant leaks, and raw injection sanitization.
-- **Host Execution:**
-  - Windows 11 Node.js v24: `LIVE_HOST_PASS` (all 21 suites passing locally).
-  - Ubuntu Linux & macOS: Configured in `.github/workflows/ci-matrix.yml` (`UNVERIFIED_LOCAL`).
-  - Google Gemini / Antigravity IDE: `LIVE_HOST_PASS`.
-  - OpenAI Codex CLI & Claude Code CLI: `NOT_AVAILABLE_LOCALLY` (Codex review package generated for upload).
-- **Parity:** 19/19 skills verified strictly byte-for-byte identical between `skills/` and `.agents/skills/`.
+### Corrected Qualification Status
+
+- **CI:** 72 Node regressions PASS; 9/9 OS/Node matrix jobs and V4 validation PASS (run 45149890281).
+- **8/8 Host Test Report:** Direct Node.js engine integration only. This is not native Gemini agent E2E.
+- **Native Agent E2E:** Gemini, Codex and Claude = NOT_RUN in the available traces.
+- **A/B/C:** Previous 100.0% / 50.8% / 22.2% superiority percentages RETRACTED. Local-function proxy checks are not agent comparisons.
+- **Upstream:** Lockfile metadata valid; local archive SHA match reported; pinned source SHA identities and manifest contents not independently verified.
+- **IP:** License entries are declarations only (auditedCount 0). Package MIT declaration conflicts with NOTICE.md and requires owner decision.
+- **Safety:** Installer and verification regression tests cover the known safety cases. This does not authorize public distribution.
+- **Evidence source:** [qualification/RELEASE-GATE-DECISION.md](qualification/RELEASE-GATE-DECISION.md).
 
 ---
 
@@ -111,7 +99,7 @@ All workspace documents in `docs/` are synchronized with the 35 Canonical Owner 
 When an agent receives `continue` or resumes work in this workspace:
 
 1. **Read this checkpoint first** to understand current state and boundaries.
-2. **Current State:** `STABLE_RELEASE_CANDIDATE_READY`. All 19 skills across Waves 1-6 are implemented, hardened, and verified with 56 passing tests across 20 suites.
+2. **Current State:** `REVIEW_READY / STABLE_RELEASE_BLOCKED`. Tests are green, but live agent E2E, fair A/B/C and legal release gates are incomplete. Follow qualification/ evidence.
 3. **Independent Review Status:** Evidence package prepared at `Downloads/veyra-v1.0-codex-review-package.zip` for external Codex review.
 4. **Release Gate Boundary:** Public release is strictly GATED. **DO NOT perform git push, npm publish, or tag a release without explicit Owner instruction.**
 5. **Legacy Protection:** `xyeena` legacy repository remains strictly **READ-ONLY**.
