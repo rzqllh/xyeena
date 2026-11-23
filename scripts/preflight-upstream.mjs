@@ -69,6 +69,7 @@ function readZipEntries(zipPath) {
 async function main() {
   const args = process.argv.slice(2);
   const recoverOnline = args.includes('--recover-online');
+  const metadataOnly = args.includes('--metadata-only');
 
   console.log('=== Veyra v1.0 Upstream Preflight Verification ===\n');
 
@@ -80,6 +81,20 @@ async function main() {
   const lock = JSON.parse(readFileSync(LOCK_FILE, 'utf8'));
   console.log(`[OK] Loaded lockfile: ${lock.snapshotType} (observed: ${lock.observedDate})`);
   console.log(`[OK] Declared upstream repositories: ${lock.upstreams.length}/21`);
+  if (metadataOnly) {
+    const repos = Array.isArray(lock.upstreams) ? lock.upstreams : [];
+    const ids = new Set(repos.map(u => u.id));
+    if (repos.length !== 21 || ids.size !== 21 || !repos.every(u =>
+      typeof u.id === 'string' && /^[a-z0-9-]+$/.test(u.id) &&
+      typeof u.repo === 'string' && /^[A-Za-z0-9_.-]+\\/[A-Za-z0-9_.-]+$/.test(u.repo) &&
+      typeof u.sha === 'string' && /^[a-f0-9]{40}$/i.test(u.sha))) {
+      console.error('[FAIL] Invalid frozen upstream lockfile metadata.');
+      process.exit(1);
+    }
+    console.log('[PASS] Pinned lockfile metadata schema verified: 21 unique upstreams.');
+    console.log('[UNVERIFIED] Physical upstream archive and pinned source contents NOT CHECKED in metadata-only mode.');
+    return;
+  }
 
   let zipPath = ZIP_CANDIDATE_PATHS.find(p => existsSync(p));
 
@@ -210,12 +225,9 @@ async function main() {
     const manifestStat = fstatSync(openSync(MANIFEST_FILE, 'r'));
     console.log(`[INFO] Upstream cryptographic ledger references/manifest.json is present (${(manifestStat.size / (1024 * 1024)).toFixed(1)} MB).`);
     console.log('[UNVERIFIED] Local upstream archive and unpacked sources are not present in this checkout.');
-    console.log('[NOTE] Baseline ledger is intact; full physical source tree is UNVERIFIED until unpacked or recovered via:');
+    console.log('[NOTE] Ledger file presence alone is NOT a source integrity verification. Recover and verify via:');
     console.log('       node scripts/preflight-upstream.mjs --recover-online\n');
-    if (process.env.CI) {
-      console.log('[CI] Preflight check completed: manifest ledger verified intact. Live source verification skipped in CI.');
-      return;
-    }
+    // No environment-variable shortcut: full preflight must fail without actual source material.
   }
 
   console.error('\n[FAIL] Upstream archive and local sources are missing.');

@@ -10,6 +10,7 @@
     "test": "node scripts/run-tests.mjs",
     "test:wave1": "node --test tests/wave1/*.test.mjs",
     "preflight": "node scripts/preflight-upstream.mjs",
+    "preflight:metadata": "node scripts/preflight-upstream.mjs --metadata-only",
     "preflight:recover": "node scripts/preflight-upstream.mjs --recover-online",
     "continue": "node scripts/continue.mjs",
     "status": "node scripts/continue.mjs",

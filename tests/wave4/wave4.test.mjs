@@ -3,10 +3,41 @@ import assert from 'node:assert/strict';
 import { classifyTestSuites, evaluateSuiteResult } from '../../skills/veyra-test/engine.mjs';
 import { evaluateDualAxisReview } from '../../skills/veyra-review/engine.mjs';
 import { generateVerificationReceipt, executeAndVerify, validateCompletionClaims } from '../../skills/veyra-verify/engine.mjs';
+import * as verificationExports from '../../skills/veyra-verify/engine.mjs';
+import { spawnSync } from 'node:child_process';
+import { cpSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { scanSecretLeaks, auditRlsPolicies, auditInputSanitization } from '../../skills/veyra-security/engine.mjs';
 import { calculateSemVer, validateMigrationRollback } from '../../skills/veyra-release/engine.mjs';
 
 describe('Veyra Wave 4 — Quality, Security & Release Skills', () => {
+  test('full preflight fails closed in CI when physical sources are absent', () => {
+    const root = mkdtempSync(join(tmpdir(), 'veyra-upstream-preflight-'));
+    try {
+      mkdirSync(join(root, 'scripts'), { recursive: true });
+      mkdirSync(join(root, 'references'), { recursive: true });
+      cpSync('scripts/preflight-upstream.mjs', join(root, 'scripts', 'preflight-upstream.mjs'));
+      cpSync('references/upstreams.lock.json', join(root, 'references', 'upstreams.lock.json'));
+      const outcome = spawnSync(process.execPath, [join(root, 'scripts', 'preflight-upstream.mjs')], {
+        cwd: root, encoding: 'utf8',
+        env: { ...process.env, USERPROFILE: root, CI: 'true' }
+      });
+      assert.notEqual(outcome.status, 0, 'Full upstream preflight must not report PASS without sources');
+      assert.match(outcome.stderr, /Upstream archive and local sources are missing/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('preflight metadata mode labels upstream contents UNVERIFIED', () => {
+    const res = spawnSync(process.execPath, ['scripts/preflight-upstream.mjs', '--metadata-only'], {
+      cwd: process.cwd(), encoding: 'utf8'
+    });
+    assert.equal(res.status, 0);
+    assert.match(res.stdout, /Pinned lockfile metadata schema verified/);
+    assert.match(res.stdout, /UNVERIFIED.*contents NOT CHECKED/);
+  });
   test('veyra-test: classifies suites and evaluates results', () => {
     const classification = classifyTestSuites([
       'tests/unit/core.test.mjs',
@@ -63,6 +94,13 @@ describe('Veyra Wave 4 — Quality, Security & Release Skills', () => {
     assert.equal(liveReceipt.evidenceTier, 'LIVE_HOST_VERIFIED');
     assert.ok(liveReceipt.executionProof.durationMs >= 0);
     assert.ok(liveReceipt.executionProof.outputHash.length === 64);
+
+    assert.equal('signExecutionProof' in verificationExports, false, 'Signing key is not exposed as public API');
+    const fakeLabel = { ...syntheticReceipt, evidenceTier: 'LIVE_HOST_VERIFIED' };
+    assert.equal(validateCompletionClaims([fakeLabel], ['test-synth']).verified, false, 'Caller cannot forge a trusted tier label');
+    const clonedReceipt = { ...liveReceipt };
+    assert.equal(validateCompletionClaims([clonedReceipt], ['node-version-check']).verified, false, 'Cloned signed receipts must not pass in-process verification');
+    assert.equal(validateCompletionClaims([syntheticReceipt], ['test-synth'], { disallowSynthetic: false }).verified, false, 'Legacy options cannot bypass trusted evidence');
 
     const liveCompletion = validateCompletionClaims([liveReceipt], ['node-version-check']);
     assert.equal(liveCompletion.verified, true);

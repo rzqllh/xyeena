@@ -26,8 +26,12 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Verify Upstream Integrity Preflight
-        run: npm run preflight
+      - name: Verify Frozen Upstream Lockfile Metadata (source contents not checked)
+        run: npm run preflight:metadata
+
+      - name: Full Upstream Source Integrity Gate (release branches only)
+        if: startsWith(github.ref, 'refs/heads/release/')
+        run: npm run preflight:recover && npm run preflight
 
       - name: Run Full Test Suite (21 Suites, 61 Tests)
         run: npm test

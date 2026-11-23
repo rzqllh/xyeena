@@ -60,11 +60,54 @@ export function isSafePath(baseDir, relativeFilePath) {
   return true;
 }
 
+
+function isSafeTree(root, rel) {
+  if (!isSafePath(root, rel)) return false;
+  const absolute = resolve(root, rel);
+  let current = resolve(root);
+  for (const part of relative(current, absolute).split(sep)) {
+    if (!part || part === '.') continue;
+    current = join(current, part);
+    try {
+      const st = lstatSync(current);
+      if (st.isSymbolicLink()) return false;
+      if (current !== absolute && !st.isDirectory()) return false;
+    } catch (error) {
+      if (error.code !== 'ENOENT') return false;
+    }
+  }
+  return true;
+}
+
+function validateManifestSafety(root, manifest) {
+  if (!manifest || !Array.isArray(manifest.files) || !Array.isArray(manifest.installedSkills)) return 'INVALID_MANIFEST_STRUCTURE';
+  const backup = String(manifest.backupLocation || '').replace(/\\/g, '/');
+  if (!backup.startsWith('.veyra-backup/') || !isSafeTree(root, backup)) return 'UNSAFE_BACKUP_LOCATION';
+  const names = new Set();
+  for (const skill of manifest.installedSkills) {
+    if (typeof skill !== 'string' || !/^veyra-[a-z0-9-]+$/.test(skill)) return 'UNSAFE_SKILL_NAME';
+  }
+  for (const item of manifest.files) {
+    if (!item || typeof item.path !== 'string' || !/^(?:skills|\.agents\/skills)\/veyra-[a-z0-9-]+\/.+/.test(item.path)) return 'UNSAFE_FILE_ENTRY';
+    if (!isSafeTree(root, item.path) || !/^[a-f0-9]{64}$/i.test(item.sha256 || '')) return 'UNSAFE_FILE_PATH_OR_HASH';
+    if (names.has(item.path)) return 'DUPLICATE_MANIFEST_FILE';
+    names.add(item.path);
+    if (item.preExisting === true) {
+      if (!item.backupPath || !isSafeTree(root, item.backupPath)) return 'UNSAFE_BACKUP_FILE';
+      const relBackup = item.backupPath.replace(/\\/g, '/');
+      if (!relBackup.startsWith(backup + '/')) return 'BACKUP_OUTSIDE_OWNED_DIRECTORY';
+      if (!/^[a-f0-9]{64}$/i.test(item.preExistingSha256 || '')) return 'INVALID_PREEXISTING_HASH';
+    }
+  }
+  return null;
+}
+
 export function installVeyra(options = {}) {
   const {
     targetDir = process.cwd(),
     mode = process.platform === 'win32' ? 'copy' : 'copy',
-    selectedSkills = null
+    selectedSkills = null,
+    allowOverwrite = false
   } = options;
 
   const resolvedTarget = resolve(targetDir);
@@ -76,14 +119,9 @@ export function installVeyra(options = {}) {
   }
 
   const backupDir = join(resolvedTarget, '.veyra-backup', `backup-${Date.now()}`);
-  mkdirSync(backupDir, { recursive: true });
-
   const manifestPath = join(resolvedTarget, '.veyra-manifest.json');
   const targetSkillsDir = join(resolvedTarget, 'skills');
   const targetAgentSkillsDir = join(resolvedTarget, '.agents', 'skills');
-  mkdirSync(targetSkillsDir, { recursive: true });
-  mkdirSync(targetAgentSkillsDir, { recursive: true });
-
   const allAvailableSkills = readdirSync(skillsSource).filter(name => {
     return statSync(join(skillsSource, name)).isDirectory();
   });
@@ -91,6 +129,27 @@ export function installVeyra(options = {}) {
   const skillsToInstall = selectedSkills && Array.isArray(selectedSkills)
     ? allAvailableSkills.filter(s => selectedSkills.includes(s))
     : allAvailableSkills;
+
+  // Plan the entire install before any user-owned file is changed.
+  if (existsSync(manifestPath)) throw new Error('EXISTING_VEYRA_INSTALLATION: safe update requires a separate migration');
+  const collisions = [];
+  for (const skill of skillsToInstall) {
+    for (const file of scanDirectory(join(skillsSource, skill))) {
+      for (const prefix of ['skills', '.agents/skills']) {
+        const relativeFile = prefix + '/' + skill + '/' + file.relPath;
+        if (!isSafeTree(resolvedTarget, relativeFile)) throw new Error('UNSAFE_INSTALL_PATH: ' + relativeFile);
+        if (existsSync(join(resolvedTarget, relativeFile))) collisions.push(relativeFile);
+      }
+    }
+  }
+  if (collisions.length && allowOverwrite !== true) {
+    const error = new Error('INSTALL_COLLISION_REQUIRES_EXPLICIT_APPROVAL: ' + collisions.join(', '));
+    error.collisions = collisions;
+    throw error;
+  }
+  mkdirSync(backupDir, { recursive: true });
+  mkdirSync(targetSkillsDir, { recursive: true });
+  mkdirSync(targetAgentSkillsDir, { recursive: true });
 
   const installedFiles = [];
 
@@ -218,55 +277,13 @@ export function verifyInstallation(targetDir = process.cwd()) {
 export function rollbackInstallation(targetDir = process.cwd()) {
   const resolvedTarget = resolve(targetDir);
   const manifestPath = join(resolvedTarget, '.veyra-manifest.json');
-  if (!existsSync(manifestPath)) {
-    return { success: false, error: 'Cannot rollback: .veyra-manifest.json not found.' };
-  }
-
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  const backupLocation = manifest.backupLocation;
-  if (!isSafePath(resolvedTarget, backupLocation)) {
-    return { success: false, error: 'Unsafe backup location in manifest.' };
-  }
-  const backupPath = resolve(resolvedTarget, backupLocation);
-  const preservedModified = [];
-
-  for (const item of (manifest.files || [])) {
-    if (!isSafePath(resolvedTarget, item.path)) {
-      console.warn(`[WARN] Skipping unsafe path in manifest during rollback: ${item.path}`);
-      continue;
-    }
-    const full = resolve(resolvedTarget, item.path);
-    if (!existsSync(full)) continue;
-
-    const lstat = lstatSync(full);
-    if (lstat.isSymbolicLink()) {
-      unlinkSync(full);
-      continue;
-    }
-
-    const currentHash = hashFile(full);
-    if (currentHash === item.sha256) {
-      unlinkSync(full);
-    } else {
-      // User modified: back up before rollback
-      const backupMod = full + '.user-modified';
-      copyFileSync(full, backupMod);
-      unlinkSync(full);
-      preservedModified.push({ path: item.path, backedUpTo: backupMod });
-    }
-  }
-
-  // Restore backup if exists
-  if (existsSync(backupPath)) {
-    const backupSkills = join(backupPath, 'skills');
-    const backupAgents = join(backupPath, '.agents');
-    if (existsSync(backupSkills)) cpSync(backupSkills, join(resolvedTarget, 'skills'), { recursive: true });
-    if (existsSync(backupAgents)) cpSync(backupAgents, join(resolvedTarget, '.agents'), { recursive: true });
-  }
-
-  rmSync(manifestPath, { force: true });
-
-  return { success: true, restoredFrom: backupPath, preservedModified };
+  if (!existsSync(manifestPath)) return { success: false, error: 'Cannot rollback: manifest missing.' };
+  let manifest;
+  try { manifest = JSON.parse(readFileSync(manifestPath, 'utf8')); }
+  catch (error) { return { success: false, error: 'Invalid manifest: ' + error.message }; }
+  // Rollback and uninstall share the same conservative restoration rules.
+  const outcome = uninstallVeyra(targetDir);
+  return { ...outcome, restoredFrom: manifest.backupLocation, preservedModified: outcome.preservedUserFiles || [] };
 }
 
 export function uninstallVeyra(targetDir = process.cwd()) {
@@ -276,11 +293,16 @@ export function uninstallVeyra(targetDir = process.cwd()) {
     return { success: false, error: 'Cannot uninstall: .veyra-manifest.json not found.' };
   }
 
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  let manifest;
+  try { manifest = JSON.parse(readFileSync(manifestPath, 'utf8')); }
+  catch (error) { return { success: false, error: 'Invalid manifest: ' + error.message }; }
+  const manifestProblem = validateManifestSafety(resolvedTarget, manifest);
+  if (manifestProblem) return { success: false, error: manifestProblem };
   let deletedFiles = 0;
   let restoredFiles = 0;
   const preservedUserFiles = [];
-  const backupDir = manifest.backupLocation ? join(resolvedTarget, manifest.backupLocation) : null;
+  const backupDir = resolve(resolvedTarget, manifest.backupLocation);
+  let unresolvedPreExisting = false;
 
   for (const item of (manifest.files || [])) {
     if (!isSafePath(resolvedTarget, item.path)) {
@@ -301,13 +323,17 @@ export function uninstallVeyra(targetDir = process.cwd()) {
 
     // If file was pre-existing before Veyra was installed:
     if (item.preExisting === true) {
-      const backupFile = backupDir ? join(backupDir, item.path) : null;
-      if (backupFile && existsSync(backupFile)) {
+      const backupFile = resolve(resolvedTarget, item.backupPath);
+      // The user may have edited the Veyra-installed copy. Never overwrite that edit.
+      if (currentHash !== item.sha256) {
+        preservedUserFiles.push({ path: item.path, reason: 'EDITED_AFTER_INSTALL', originalBackup: item.backupPath });
+        unresolvedPreExisting = true;
+      } else if (!isSafeTree(resolvedTarget, item.backupPath) || !existsSync(backupFile) || hashFile(backupFile) !== item.preExistingSha256) {
+        preservedUserFiles.push({ path: item.path, reason: 'BACKUP_MISSING_OR_MODIFIED' });
+        unresolvedPreExisting = true;
+      } else {
         copyFileSync(backupFile, full);
         restoredFiles++;
-      } else {
-        // Pre-existing file with no backup: PRESERVE! Never delete user file!
-        preservedUserFiles.push({ path: item.path, reason: 'PRE_EXISTING_USER_FILE' });
       }
       continue;
     }
@@ -347,10 +373,12 @@ export function uninstallVeyra(targetDir = process.cwd()) {
   removeEmptyDir(join(resolvedTarget, '.agents', 'skills'));
   removeEmptyDir(join(resolvedTarget, '.agents'));
 
-  rmSync(manifestPath, { force: true });
+  // Retain the manifest and original backups until a collision is resolved.
+  if (!unresolvedPreExisting) rmSync(manifestPath, { force: true });
 
   return {
-    success: true,
+    success: !unresolvedPreExisting,
+    needsManualResolution: unresolvedPreExisting,
     deletedFiles,
     restoredFiles,
     preservedUserFiles,
@@ -403,7 +431,7 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(__filename)) {
   const targetDir = targetArgIdx !== -1 ? process.argv[targetArgIdx + 1] : process.cwd();
 
   if (command === 'install') {
-    const res = installVeyra({ targetDir });
+    const res = installVeyra({ targetDir, allowOverwrite: process.argv.includes('--allow-overwrite') });
     console.log(`[PASS] Installed ${res.installedSkills.length} skills (${res.installedCount} files) into ${targetDir}`);
   } else if (command === 'verify') {
     const res = verifyInstallation(targetDir);
@@ -419,14 +447,16 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(__filename)) {
     }
   } else if (command === 'rollback') {
     const res = rollbackInstallation(targetDir);
-    console.log(`[PASS] Rolled back successfully.`);
+    if (!res.success) { console.error(`[FAIL] Rollback incomplete: ${res.error || 'unresolved user edits'}`); process.exitCode = 1; }
+    else console.log(`[PASS] Rolled back successfully.`);
   } else if (command === 'uninstall') {
     const res = uninstallVeyra(targetDir);
-    console.log(`[PASS] Uninstalled ${res.deletedFiles} owned files. User files preserved.`);
+    if (!res.success) { console.error(`[FAIL] Uninstall incomplete: ${res.error || 'unresolved user edits'}`); process.exitCode = 1; }
+    else console.log(`[PASS] Uninstalled ${res.deletedFiles} owned files. User files preserved.`);
   } else if (command === 'license-audit') {
     const res = auditLicenses();
     console.log(`[PASS] License audit: compliant = ${res.compliant} across ${res.registry.length} entries.`);
   } else {
-    console.log('Usage: node bin/veyra.mjs <install|verify|rollback|uninstall|license-audit> [--target <dir>]');
+    console.log('Usage: node bin/veyra.mjs <install|verify|rollback|uninstall|license-audit> [--target <dir>] [--allow-overwrite]');
   }
 }

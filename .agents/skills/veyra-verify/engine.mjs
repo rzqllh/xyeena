@@ -10,14 +10,15 @@ import { createHash, createHmac, randomBytes } from 'node:crypto';
 
 // Runtime session secret for HMAC signing of authentic process executions
 const RUNTIME_HMAC_SECRET = randomBytes(32).toString('hex');
+const TRUSTED_LIVE_RECEIPTS = new WeakSet();
 
-export function signExecutionProof(taskName, command, exitCode, outputHash, timestamp) {
+function signExecutionProof(taskName, command, exitCode, outputHash, timestamp) {
   const hmac = createHmac('sha256', RUNTIME_HMAC_SECRET);
   hmac.update(`${taskName}|${command}|${exitCode}|${outputHash}|${timestamp}`);
   return hmac.digest('hex');
 }
 
-export function verifyExecutionProof(proof, taskName, command, exitCode, timestamp) {
+function verifyExecutionProof(proof, taskName, command, exitCode, timestamp) {
   if (!proof || typeof proof !== 'object') return false;
   if (!proof.signature || typeof proof.signature !== 'string') return false;
   const expectedSig = signExecutionProof(taskName, command, exitCode, proof.outputHash || '', timestamp);
@@ -30,8 +31,9 @@ export function generateVerificationReceipt(taskName, command, exitCode, outputS
   const passed = exitCode === 0;
 
   // Cryptographic signature check: callers CANNOT forge LIVE_HOST_VERIFIED by merely passing { realExecution: true }
-  const isAuthentic = executionProof && verifyExecutionProof(executionProof, taskName, command, exitCode, executionProof.executedAt || timestamp);
-  const attemptedForgery = Boolean(executionProof && executionProof.realExecution === true && !isAuthentic);
+  // This public factory is always synthetic. Only executeAndVerify may create trusted live receipts.
+  const isAuthentic = false;
+  const attemptedForgery = Boolean(executionProof);
 
   const evidenceTier = !passed
     ? 'EXECUTION_FAILED'
@@ -147,7 +149,16 @@ export function executeAndVerify(taskName, commandOrExecutable, argsOrOptions = 
     signature
   };
 
-  return generateVerificationReceipt(taskName, commandStr, exitCode, outputSummary, executionProof);
+  const receipt = generateVerificationReceipt(taskName, commandStr, exitCode, outputSummary);
+  if (!passed) return receipt;
+  const trusted = Object.freeze({
+    ...receipt,
+    evidenceTier: 'LIVE_HOST_VERIFIED',
+    executionProof: Object.freeze(executionProof),
+    isForged: false
+  });
+  TRUSTED_LIVE_RECEIPTS.add(trusted);
+  return trusted;
 }
 
 export function validateCompletionClaims(receipts = [], requiredTasks = [], options = {}) {
@@ -164,7 +175,10 @@ export function validateCompletionClaims(receipts = [], requiredTasks = [], opti
       forgedRejected.push(req);
     } else if (!rcpt.passed) {
       failed.push(req);
-    } else if (rcpt.evidenceTier !== 'LIVE_HOST_VERIFIED' && options.disallowSynthetic !== false) {
+    } else if (rcpt.evidenceTier !== 'LIVE_HOST_VERIFIED' ||
+               !TRUSTED_LIVE_RECEIPTS.has(rcpt) ||
+               !verifyExecutionProof(rcpt.executionProof, rcpt.taskName, rcpt.command, rcpt.exitCode, rcpt.executionProof?.executedAt) ||
+               rcpt.executionProof?.executedSuccessfully !== true) {
       syntheticRejected.push(req);
     }
   }

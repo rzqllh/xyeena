@@ -68,6 +68,11 @@ describe('Veyra v1.0 — Installer, Verification & Rollback (DEC-18, DEC-19, DEC
     writeFileSync(manifestPath, JSON.stringify(manifestData, null, 2), 'utf8');
 
     // Run uninstall
+    const blocked = uninstallVeyra(TEMP_TARGET);
+    assert.equal(blocked.success, false, 'Malformed manifest must fail closed before changing any files');
+    const safeManifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    safeManifest.files = safeManifest.files.filter(x => !x.path.includes('..'));
+    writeFileSync(manifestPath, JSON.stringify(safeManifest, null, 2), 'utf8');
     const uninstallResult = uninstallVeyra(TEMP_TARGET);
     assert.equal(uninstallResult.success, true);
     assert.ok(uninstallResult.deletedFiles > 0);
@@ -100,7 +105,7 @@ describe('Veyra v1.0 — Installer, Verification & Rollback (DEC-18, DEC-19, DEC
     }
   });
 
-  test('6. Pre-existing Collision & Atomic Restoration: backs up pre-existing user files and restores byte-for-byte on uninstall', () => {
+  test('6. Pre-existing Collision & Explicit Restoration: blocks implicit overwrite and restores approved collision', () => {
     const COLLISION_TARGET = join(process.cwd(), 'scratch_collision_target_' + Date.now());
     mkdirSync(join(COLLISION_TARGET, 'skills', 'veyra-core'), { recursive: true });
 
@@ -109,10 +114,15 @@ describe('Veyra v1.0 — Installer, Verification & Rollback (DEC-18, DEC-19, DEC
     const originalContent = '--- ORIGINAL USER CUSTOM DOCUMENTATION ---';
     writeFileSync(userOriginalFile, originalContent, 'utf8');
 
-    // Install Veyra
+    // Default must not overwrite an existing user file or create a manifest.
+    assert.throws(() => installVeyra({ targetDir: COLLISION_TARGET, selectedSkills: ['veyra-core'] }), /INSTALL_COLLISION_REQUIRES_EXPLICIT_APPROVAL/);
+    assert.equal(readFileSync(userOriginalFile, 'utf8'), originalContent);
+    assert.equal(existsSync(join(COLLISION_TARGET, '.veyra-manifest.json')), false);
+    // Simulate the user's explicit approval of a scoped replacement.
     const installResult = installVeyra({
       targetDir: COLLISION_TARGET,
-      selectedSkills: ['veyra-core']
+      selectedSkills: ['veyra-core'],
+      allowOverwrite: true
     });
     assert.equal(installResult.success, true);
 
@@ -137,6 +147,24 @@ describe('Veyra v1.0 — Installer, Verification & Rollback (DEC-18, DEC-19, DEC
     rmSync(COLLISION_TARGET, { recursive: true, force: true });
   });
 
+  test('8. Collision updates after installation remain untouched; backup retained for manual resolution', () => {
+    const root = join(process.cwd(), 'scratch_collision_modified_' + Date.now());
+    const path = join(root, 'skills', 'veyra-core', 'SKILL.md');
+    mkdirSync(join(root, 'skills', 'veyra-core'), { recursive: true });
+    writeFileSync(path, 'MY_ORIGINAL', 'utf8');
+    installVeyra({ targetDir: root, selectedSkills: ['veyra-core'], allowOverwrite: true });
+    writeFileSync(path, 'MY_NEWER_WORK', 'utf8');
+    const result = uninstallVeyra(root);
+    assert.equal(result.success, false);
+    assert.equal(result.needsManualResolution, true);
+    assert.equal(readFileSync(path, 'utf8'), 'MY_NEWER_WORK');
+    assert.ok(existsSync(join(root, '.veyra-manifest.json')));
+    assert.ok(result.preservedUserFiles.some(x => x.reason === 'EDITED_AFTER_INSTALL'));
+    const original = join(root, '.veyra-backup');
+    assert.ok(existsSync(original));
+    rmSync(root, { recursive: true, force: true });
+  });
+
   test('7. Adversarial Manifest Paths: blocks traversal, null bytes, and URL encodings', () => {
     const ADV_TARGET = join(process.cwd(), 'scratch_adv_target_' + Date.now());
     mkdirSync(ADV_TARGET, { recursive: true });
@@ -157,7 +185,8 @@ describe('Veyra v1.0 — Installer, Verification & Rollback (DEC-18, DEC-19, DEC
     assert.ok(verifyResult);
 
     const uninstallResult = uninstallVeyra(ADV_TARGET);
-    assert.equal(uninstallResult.success, true);
+    assert.equal(uninstallResult.success, false, 'Adversarial manifest must fail closed');
+    assert.ok(existsSync(join(ADV_TARGET, 'skills', 'veyra-core', 'SKILL.md')));
 
     rmSync(ADV_TARGET, { recursive: true, force: true });
   });
