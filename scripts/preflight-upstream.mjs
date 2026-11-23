@@ -86,7 +86,7 @@ async function main() {
     const ids = new Set(repos.map(u => u.id));
     if (repos.length !== 21 || ids.size !== 21 || !repos.every(u =>
       typeof u.id === 'string' && /^[a-z0-9-]+$/.test(u.id) &&
-      typeof u.repo === 'string' && /^[A-Za-z0-9_.-]+\\/[A-Za-z0-9_.-]+$/.test(u.repo) &&
+      typeof u.repo === 'string' && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(u.repo) &&
       typeof u.sha === 'string' && /^[a-f0-9]{40}$/i.test(u.sha))) {
       console.error('[FAIL] Invalid frozen upstream lockfile metadata.');
       process.exit(1);
