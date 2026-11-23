@@ -2,24 +2,25 @@
   "timestamp": "2026-11-23T09:03:01.589Z",
   "lockfile": {
     "status": "LOCKFILE_VALID",
-    "path": "C:\\Users\\Hafizh Rizqullah\\Documents\\Code\\_active\\veyra-staging\\references\\upstreams.lock.json",
+    "path": "references/upstreams.lock.json",
     "snapshotType": "frozen-upstream-baseline",
     "observedDate": "2026-11-20",
     "count": 21
   },
   "archive": {
-    "status": "ARCHIVE_VERIFIED",
-    "path": "C:\\Users\\Hafizh Rizqullah\\Downloads\\veyra-v1.0-upstream-latest.zip",
+    "status": "LOCAL_ARCHIVE_SHA256_MATCH_REPORTED",
+    "path": "local-user-archive/veyra-v1.0-upstream-latest.zip",
     "sha256": "b6081f09b1be68f15b73babb1411835756860a338845d7f5be4918fb5b4f2c1f",
     "entryCount": 45640
   },
   "manifest": {
-    "status": "LEDGER_PRESENT",
-    "path": "C:\\Users\\Hafizh Rizqullah\\Documents\\Code\\_active\\veyra-staging\\references\\manifest.json",
+    "status": "LEDGER_PRESENT_NOT_VALIDATED",
+    "path": "references/manifest.json",
     "sizeMb": "10.8 MB"
   },
   "sources": {
-    "status": "UNPACKED_SOURCE_NOT_EXTRACTED_LOCALLY"
+    "status": "PINNED_SOURCE_SHA_NOT_VERIFIED",
+    "verifiedCount": 0
   },
   "upstreams": [
     {
@@ -27,147 +28,153 @@
       "repo": "obra/superpowers",
       "pinnedSha": "22f0b463e7a5e579904dd6211a520321035526f7",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "superpowers-skills",
       "repo": "obra/superpowers-skills",
       "pinnedSha": "cdcd624ad3fd8026deb692e565351854569798dd",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "superior-skills",
       "repo": "KodekaTeam/superior-skills",
       "pinnedSha": "b600920ec07a4f3f426405882c42f77d5c245ad9",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "anti-slop",
       "repo": "miqdadbadjuber/anti-slop",
       "pinnedSha": "1969b459f843603ba2efbbb24e8e1bf963c889b3",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "ponytail",
       "repo": "DietrichGebert/ponytail",
       "pinnedSha": "96608e078b2d5ea607c5c3b8b5a54d1c1fba6846",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "caveman",
       "repo": "JuliusBrussee/caveman",
       "pinnedSha": "a192894723a8f47e7f504c7b5041967ff1f18e55",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "cloudflare-security-audit",
       "repo": "cloudflare/security-audit-skill",
       "pinnedSha": "c1c8a8c1471069fb0e188eeaff69b8e8db6564a8",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "impeccable",
       "repo": "pbakaus/impeccable",
       "pinnedSha": "b49177d32788f2dc585c42831d845dacf1ebed2c",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "mattpocock-skills",
       "repo": "mattpocock/skills",
       "pinnedSha": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "hallmark",
       "repo": "Nutlope/hallmark",
       "pinnedSha": "04977e15f3dfd6ee4b74c887dac3eb52665d6c92",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "taste-skill",
       "repo": "Leonxlnx/taste-skill",
       "pinnedSha": "f6b76575f949707b4e3c37cd86cb44b0b98643e8",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "ui-ux-pro-max",
       "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
       "pinnedSha": "2de1134dc4d1cfe112934611ae5803ae17a1bd7e",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "anthropic-skills",
       "repo": "anthropics/skills",
       "pinnedSha": "e4bb5d960d87126ff3b3a8af1a104b7db67560ba",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "vercel-agent-skills",
       "repo": "vercel-labs/agent-skills",
       "pinnedSha": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "gsap-skills",
       "repo": "greensock/gsap-skills",
       "pinnedSha": "aed9cfd3277740755f6bfc1155c7aa645403b760",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "trailofbits-skills",
       "repo": "trailofbits/skills",
       "pinnedSha": "149d7b21f4067765b82e67029730b42d228ef4b4",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "supabase-agent-skills",
       "repo": "supabase/agent-skills",
       "pinnedSha": "c9be0e931b7930f7d02126d04774d904c381e7d7",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "konoha",
       "repo": "andycungkrinx91/konoha",
       "pinnedSha": "1c2c6559dc256f9f83f9d280126474b7cb25f85b",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "huashu-design",
       "repo": "alchaincyf/huashu-design",
       "pinnedSha": "e8d1148a80d5a281d4247cffe320add3df017928",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "cindy",
       "repo": "makecindy/cindy",
       "pinnedSha": "a0f50a3ce0eea0b841254469bbacb6b20c7b3ed9",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     },
     {
       "id": "orca",
       "repo": "Aniekanetim/orca-agent",
       "pinnedSha": "027acb4efa2e6b226d40df266b86367423946d62",
       "presentInArchive": true,
-      "tier": "ARCHIVE_VERIFIED"
+      "tier": "ARCHIVE_ENTRY_REPORTED_SOURCE_SHA_UNVERIFIED"
     }
-  ]
+  ],
+  "auditCorrection": {
+    "classification": "INCOMPLETE_PROVENANCE",
+    "reason": "Public source data does not independently verify archive bytes, manifest contents or pinned Git commit identities",
+    "sourceCommit": "a8c038a9bd965029f21547715e7079d2596213f9",
+    "pathRedacted": true
+  }
 }

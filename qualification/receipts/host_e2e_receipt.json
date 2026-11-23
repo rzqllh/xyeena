@@ -2,16 +2,16 @@
   "timestamp": "2026-11-23T09:01:21.110Z",
   "host": {
     "name": "Google Gemini CLI / Antigravity Agent",
-    "status": "AVAILABLE",
+    "status": "CLI_VERSION_REPORTED",
     "version": "0.68.0",
-    "environment": "LIVE_HOST"
+    "environment": "NODE_INTEGRATION_HARNESS"
   },
   "allHosts": {
     "gemini_antigravity": {
       "name": "Google Gemini CLI / Antigravity Agent",
-      "status": "AVAILABLE",
+      "status": "CLI_VERSION_REPORTED",
       "version": "0.68.0",
-      "environment": "LIVE_HOST"
+      "environment": "NODE_INTEGRATION_HARNESS"
     },
     "openai_codex": {
       "name": "OpenAI Codex CLI",
@@ -69,5 +69,13 @@
       "passed": true,
       "details": "User file and modified Veyra file preserved; unmodified files cleanly removed"
     }
-  ]
+  ],
+  "testScope": "NODE_INTEGRATION_ONLY",
+  "nativeAgentE2EStatus": "NOT_RUN",
+  "agentSessionsExecuted": 0,
+  "auditCorrection": {
+    "classification": "E2E_CLAIM_DOWNGRADED",
+    "reason": "Runner imports and invokes Node engines directly; no Gemini agent prompt or tool trace",
+    "sourceCommit": "a8c038a9bd965029f21547715e7079d2596213f9"
+  }
 }

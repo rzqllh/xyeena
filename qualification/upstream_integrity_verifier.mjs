@@ -71,7 +71,8 @@ export async function verifyUpstreamIntegrity() {
     lockfile: { status: 'UNKNOWN', path: LOCK_FILE, count: 0 },
     archive: { status: 'UNKNOWN', path: null, sha256: null, entryCount: 0 },
     manifest: { status: 'UNKNOWN', path: MANIFEST_FILE, sizeMb: 0 },
-    sources: { status: 'UNPACKED_SOURCE_NOT_EXTRACTED_LOCALLY' },
+    sources: { status: 'PINNED_SOURCE_SHA_NOT_VERIFIED', checkedCount: 0 },
+    claimScope: 'LOCAL_ARCHIVE_HASH_AND_ENTRY_PRESENCE_ONLY',
     upstreams: []
   };
 
@@ -110,7 +111,7 @@ export async function verifyUpstreamIntegrity() {
     if (computedHash === CANONICAL_ARCHIVE_SHA256) {
       const entries = readZipEntries(zipPath);
       verification.archive.entryCount = entries.length;
-      verification.archive.status = 'ARCHIVE_VERIFIED';
+      verification.archive.status = 'LOCAL_ARCHIVE_SHA256_MATCHED';
       console.log(`[OK] Archive central directory: ${entries.length} entries.`);
 
       let matchedUpstreams = 0;
@@ -122,11 +123,11 @@ export async function verifyUpstreamIntegrity() {
           repo: u.repo,
           pinnedSha: u.sha,
           presentInArchive: isPresent,
-          tier: isPresent ? 'ARCHIVE_VERIFIED' : 'NOT_FOUND_IN_ARCHIVE'
+          tier: isPresent ? 'ARCHIVE_ENTRY_PRESENT_PIN_NOT_VERIFIED' : 'NOT_FOUND_IN_ARCHIVE'
         });
         if (isPresent) matchedUpstreams++;
       }
-      console.log(`[PASS] Pinned upstreams present in archive: ${matchedUpstreams}/21`);
+      console.log(`[INFO] Archive folders found: ${matchedUpstreams}/21. Individual pinned commit SHAs NOT verified.`);
     } else {
       verification.archive.status = 'CHECKSUM_MISMATCH';
       console.error(`[FAIL] Archive checksum mismatch! Expected: ${CANONICAL_ARCHIVE_SHA256}`);
@@ -141,7 +142,7 @@ export async function verifyUpstreamIntegrity() {
     const stat = fstatSync(openSync(MANIFEST_FILE, 'r'));
     const sizeMb = (stat.size / (1024 * 1024)).toFixed(1);
     verification.manifest = {
-      status: 'LEDGER_PRESENT',
+      status: 'LEDGER_PRESENT_NOT_CONTENT_VERIFIED',
       path: MANIFEST_FILE,
       sizeMb: `${sizeMb} MB`
     };
@@ -158,7 +159,9 @@ export async function verifyUpstreamIntegrity() {
 }
 
 if (process.argv[1] && process.argv[1].endsWith('upstream_integrity_verifier.mjs')) {
-  verifyUpstreamIntegrity().catch(err => {
+  verifyUpstreamIntegrity().then(receipt => {
+    if (receipt.archive.status === 'CHECKSUM_MISMATCH') process.exitCode = 1;
+  }).catch(err => {
     console.error(err);
     process.exit(1);
   });

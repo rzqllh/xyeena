@@ -438,13 +438,14 @@ export function auditLicenses() {
     { component: 'Aniekanetim/orca-agent (RE-34)', license: 'MIT', permissible: true }
   ];
 
-  const allPermissible = licenseRegistry.every(l => l.permissible);
+  // This registry is a declaration, not a source-file license audit.
+  // Never treat hardcoded flags as proof of intellectual-property compliance.
   return {
-    compliant: allPermissible,
-    registry: licenseRegistry,
-    auditedCount: licenseRegistry.length,
-    status: 'BASELINE_PERMISSIVE_VERIFIED',
-    note: 'Baseline audit of 21 declared upstreams. Exhaustive legal review deferred to pre-release gate.'
+    compliant: null,
+    registry: licenseRegistry.map(entry => ({ ...entry, verified: false })),
+    auditedCount: 0,
+    status: 'DECLARATIONS_ONLY_LEGAL_REVIEW_REQUIRED',
+    note: 'Third-party LICENSE/NOTICE contents and owner distribution rights have not been independently verified.'
   };
 }
 
@@ -479,7 +480,7 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(__filename)) {
     else console.log(`[PASS] Uninstalled ${res.deletedFiles} owned files. User files preserved.`);
   } else if (command === 'license-audit') {
     const res = auditLicenses();
-    console.log(`[PASS] License audit: compliant = ${res.compliant} across ${res.registry.length} entries.`);
+    console.log(`[UNVERIFIED] License declarations inventoried: ${res.registry.length}; audited = ${res.auditedCount}. Release legal gate remains blocked.`);
   } else {
     console.log('Usage: node bin/veyra.mjs <install|verify|rollback|uninstall|license-audit> [--target <dir>] [--allow-overwrite]');
   }

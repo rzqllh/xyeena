@@ -97,12 +97,14 @@ describe('Veyra v1.0 — Installer, Verification & Rollback (DEC-18, DEC-19, DEC
     rmSync(TEMP_TARGET, { recursive: true, force: true });
   });
 
-  test('5. License Compliance: audits 100% permissive licenses', () => {
+  test('5. License inventory must not claim legal compliance without provenance', () => {
     const licenseAudit = auditLicenses();
-    assert.equal(licenseAudit.compliant, true);
+    assert.equal(licenseAudit.compliant, null);
+    assert.equal(licenseAudit.auditedCount, 0);
+    assert.equal(licenseAudit.status, 'DECLARATIONS_ONLY_LEGAL_REVIEW_REQUIRED');
     assert.ok(licenseAudit.registry.length >= 21);
     for (const item of licenseAudit.registry) {
-      assert.equal(item.permissible, true, `License for ${item.component} must be permissive`);
+      assert.equal(item.verified, false);
     }
   });
 

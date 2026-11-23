@@ -4,7 +4,8 @@
  * Zero external dependencies.
  */
 
-import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync, readFileSync, rmSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 import { installVeyra, verifyInstallation, uninstallVeyra, auditLicenses } from '../bin/veyra.mjs';
@@ -18,7 +19,7 @@ import { scanSecretLeaks, auditRlsPolicies } from '../skills/veyra-security/engi
 import { calculateContrastRatio } from '../skills/veyra-interface/engine.mjs';
 
 const ROOT = resolve(process.cwd());
-const SCRATCH_DIR = join(ROOT, 'qualification', 'scratch_e2e_project');
+const SCRATCH_DIR = mkdtempSync(join(tmpdir(), 'veyra-node-integration-'));
 
 export async function runHostE2E() {
   console.log('=== Veyra v1.0 Phase 2: Native Host E2E Verification ===\n');
@@ -27,9 +28,9 @@ export async function runHostE2E() {
   const hosts = {
     'gemini_antigravity': {
       name: 'Google Gemini CLI / Antigravity Agent',
-      status: 'AVAILABLE',
+      status: 'NOT_DETECTED',
       version: null,
-      environment: 'LIVE_HOST'
+      environment: 'NODE_INTEGRATION_HARNESS'
     },
     'openai_codex': {
       name: 'OpenAI Codex CLI',
@@ -48,8 +49,10 @@ export async function runHostE2E() {
   try {
     const ver = execSync('gemini --version', { encoding: 'utf8' }).trim();
     hosts.gemini_antigravity.version = ver;
+    hosts.gemini_antigravity.status = 'CLI_DETECTED_ONLY';
   } catch {
-    hosts.gemini_antigravity.version = 'Antigravity Runtime (Gemini 2.5)';
+    hosts.gemini_antigravity.version = null;
+    hosts.gemini_antigravity.status = 'CLI_NOT_DETECTED';
   }
 
   console.log(`Detected Host: ${hosts.gemini_antigravity.name} (${hosts.gemini_antigravity.version})`);
@@ -57,7 +60,7 @@ export async function runHostE2E() {
   console.log(`Claude Code: ${hosts.anthropic_claude.status}\n`);
 
   // Prepare isolated scratch directory
-  if (existsSync(SCRATCH_DIR)) rmSync(SCRATCH_DIR, { recursive: true, force: true });
+  // A unique temporary directory avoids deleting existing user project data.
   mkdirSync(SCRATCH_DIR, { recursive: true });
 
   const testResults = [];
@@ -235,15 +238,19 @@ export async function runHostE2E() {
   rmSync(SCRATCH_DIR, { recursive: true, force: true });
 
   const totalPass = testResults.filter(t => t.passed).length;
-  console.log(`\nHost E2E Results: ${totalPass}/${testResults.length} PASS\n`);
+  console.log(`\nNode integration results (NOT native agent E2E): ${totalPass}/${testResults.length} PASS\n`);
 
   const receipt = {
     timestamp: new Date().toISOString(),
+    testScope: 'NODE_INTEGRATION_ONLY',
+    nativeAgentE2EStatus: 'NOT_RUN',
+    agentSessionsExecuted: 0,
     host: hosts.gemini_antigravity,
     allHosts: hosts,
     testsTotal: testResults.length,
     testsPassed: totalPass,
-    results: testResults
+    results: testResults,
+    evidenceBoundary: 'Direct Node.js engine calls; no Gemini/Codex/Claude prompt was executed by this runner'
   };
 
   writeFileSync(
