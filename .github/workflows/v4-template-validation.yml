@@ -1,0 +1,49 @@
+name: V4 template structural validation
+on:
+  push:
+    paths:
+      - 'templates/**'
+      - '.vibe/**'
+      - '.claude/**'
+      - '.agents/**'
+      - '.cursor/**'
+      - '.github/instructions/**'
+      - '.github/copilot-instructions.md'
+      - 'scripts/v4.py'
+      - 'tests/**'
+      - 'AGENTS.md'
+      - 'START-HERE.md'
+      - 'CLAUDE.md'
+      - 'GEMINI.md'
+      - 'MASTER-PROMPT.md'
+  pull_request:
+    paths:
+      - 'templates/**'
+      - '.vibe/**'
+      - '.claude/**'
+      - '.agents/**'
+      - '.cursor/**'
+      - '.github/instructions/**'
+      - '.github/copilot-instructions.md'
+      - 'scripts/v4.py'
+      - 'tests/**'
+      - 'AGENTS.md'
+      - 'START-HERE.md'
+      - 'CLAUDE.md'
+      - 'GEMINI.md'
+      - 'MASTER-PROMPT.md'
+permissions:
+  contents: read
+jobs:
+  template-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check package contract
+        run: python scripts/v4.py check --template
+      - name: Run regression tests
+        run: python -m unittest discover -s tests -v
+# This checks the distributed template structure, NOT a project's production readiness.

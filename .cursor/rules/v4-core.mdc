@@ -1,0 +1,7 @@
+---
+description: Optional pointer for users browsing template authoring material
+globs: "START-HERE.md,templates/**/*.md"
+alwaysApply: false
+---
+
+For generated projects use `AGENTS.md` as the source of general instructions. This rule adds no duplicate bootstrap.

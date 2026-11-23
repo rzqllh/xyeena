@@ -1,0 +1,393 @@
+{
+  "schema_version": "1.0",
+  "assessment_date": "2026-11-18",
+  "method": "Manual inspection of canonical pages, selected skill instructions and official standards; source SHAs not retrieved. Dynamic content requires refresh before claims about latest code.",
+  "runtime_skill_dependencies": 0,
+  "sources": [
+    {
+      "id": "antislop",
+      "name": "miqdadbadjuber/anti-slop",
+      "canonical_url": "https://github.com/miqdadbadjuber/anti-slop",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "MIT",
+      "status": "verified-primary",
+      "domains": [
+        "global",
+        "copy",
+        "ui",
+        "accessibility",
+        "code"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "A context-independent truth/quality filter with contextual applicability. Do not import upstream fixed formatting prohibitions universally.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "hallmark",
+      "name": "Nutlope/hallmark",
+      "canonical_url": "https://github.com/Nutlope/hallmark/blob/main/skills/hallmark/SKILL.md",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "MIT",
+      "status": "verified-primary",
+      "domains": [
+        "design",
+        "ui"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Locked design tokens, brand evidence, no invented metrics/assets, inspect before aesthetic decisions.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "impeccable",
+      "name": "pbakaus/impeccable",
+      "canonical_url": "https://github.com/pbakaus/impeccable/blob/main/.pi/skills/impeccable/SKILL.md",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "Apache-2.0",
+      "status": "verified-primary",
+      "domains": [
+        "design",
+        "ui",
+        "accessibility"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Separate UI creation, critique, accessibility, polish and visual verification. Do not claim to run bundled commands.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "ui-ux-pro-max",
+      "name": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "canonical_url": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "MIT",
+      "status": "verified-primary",
+      "domains": [
+        "design",
+        "ui",
+        "platform"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Domain-specific choices in layout, typography, color, interactions, frameworks, not a preselected visual system.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "design-taste",
+      "name": "changemaner/design-taste-frontend",
+      "canonical_url": "https://github.com/changemaner/design-taste-frontend/blob/master/SKILL.md",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "unverified",
+      "status": "partial",
+      "domains": [
+        "design",
+        "ui"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Audience and product-led art direction, reject generic defaults, examine existing brand. Exact license not independently checked for this source.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "taste-skill",
+      "name": "ChgoChad/taste-skill (source indicates migration to Leonxlnx)",
+      "canonical_url": "https://github.com/ChgoChad/taste-skill",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "MIT (reported by repository)",
+      "status": "partial",
+      "domains": [
+        "design",
+        "ui"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Scene-by-scene composition and browser validation; do not adopt rigid layout constraints as universal.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "anthropic-frontend",
+      "name": "anthropics/skills frontend-design",
+      "canonical_url": "https://github.com/anthropics/skills/blob/main/skills/frontend-design/SKILL.md",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "LICENSE.txt, check exact terms",
+      "status": "partial",
+      "domains": [
+        "design",
+        "ui",
+        "copy"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Distinct composition and preflight visual plan with original content. Not bundled or redistributed.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "superpowers",
+      "name": "obra/superpowers",
+      "canonical_url": "https://github.com/obra/superpowers",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "MIT",
+      "status": "verified-primary",
+      "domains": [
+        "engineering",
+        "orchestration",
+        "testing"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Brainstorm → specification → plan → deliberate development → QA, systematic debugging, test-first where appropriate.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "superior-skills",
+      "name": "KodekaTeam/superior-skills",
+      "canonical_url": "https://github.com/KodekaTeam/superior-skills",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "MIT",
+      "status": "verified-primary",
+      "domains": [
+        "global",
+        "design",
+        "engineering",
+        "documentation"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Contextual routing, local evidence and verified implementation continuity without duplicate boilerplate.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "orca",
+      "name": "stablyai/orca orchestration",
+      "canonical_url": "https://github.com/stablyai/orca/blob/main/skills/orchestration/SKILL.md",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "MIT",
+      "status": "verified-primary",
+      "domains": [
+        "orchestration"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Bounded tasks and supervised workers with explicit status/gates; no Orca runtime dependency or fictional agents.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "vercel-agent-skills",
+      "name": "vercel-labs/agent-skills",
+      "canonical_url": "https://github.com/vercel-labs/agent-skills",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "see repository licenses",
+      "status": "partial",
+      "domains": [
+        "ui",
+        "performance",
+        "engineering"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "React/Next performance and web interface audit guidance; only relevant to those stacks.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "diataxis",
+      "name": "Diátaxis",
+      "canonical_url": "https://diataxis.fr/",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "site terms, no copied text",
+      "status": "verified-primary",
+      "domains": [
+        "documentation"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Separate onboarding/tutorial, how-to, reference and explanations by reader need.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "arc42",
+      "name": "arc42",
+      "canonical_url": "https://arc42.org/",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "site terms, no copied text",
+      "status": "verified-primary",
+      "domains": [
+        "architecture"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Architecture context, constraints, building blocks, runtime/deployment, quality and risks.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "c4",
+      "name": "C4 model",
+      "canonical_url": "https://c4model.com/diagrams",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "site terms, no copied text",
+      "status": "verified-primary",
+      "domains": [
+        "architecture"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Use context/container/component diagrams only when they improve stakeholder understanding.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "oas",
+      "name": "OpenAPI Initiative",
+      "canonical_url": "https://spec.openapis.org/oas/v3.2.1.html",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "specification terms, no copied text",
+      "status": "verified-primary",
+      "domains": [
+        "api"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Use machine-readable API contracts; latest verified spec OAS 3.2.1 (2026-09-10), tool compatibility separately checked.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "jsonschema",
+      "name": "JSON Schema",
+      "canonical_url": "https://json-schema.org/draft/2020-12/",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "specification terms, no copied text",
+      "status": "verified-primary",
+      "domains": [
+        "schema",
+        "api",
+        "data"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Machine-readable schema and external validation; stdlib CLI is NOT a full JSON Schema validator.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "owasp-asvs",
+      "name": "OWASP ASVS 5.0.0",
+      "canonical_url": "https://asvs.owasp.org/downloads/",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "project terms, no copied text",
+      "status": "verified-primary",
+      "domains": [
+        "security",
+        "testing"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Risk-based web security verification; not a compliance certificate.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "nist-ssdf",
+      "name": "NIST SP 800-218",
+      "canonical_url": "https://csrc.nist.gov/pubs/sp/800/218/final",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "public standard, no copied text",
+      "status": "verified-primary",
+      "domains": [
+        "security",
+        "engineering"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Secure development program practices with explicit scope.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "wcag22",
+      "name": "W3C WCAG 2.2",
+      "canonical_url": "https://www.w3.org/TR/WCAG22/",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "specification terms, no copied text",
+      "status": "verified-primary",
+      "domains": [
+        "design",
+        "accessibility"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Accessibility success criteria and testing protocols, not a blanket compliance claim.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "agentsmd",
+      "name": "AGENTS.md",
+      "canonical_url": "https://agents.md/",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "public guidance",
+      "status": "verified-primary",
+      "domains": [
+        "orchestration"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Portable project instruction entrypoint; must check actual host discovery.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "gemini-cli",
+      "name": "google-gemini/gemini-cli GEMINI.md",
+      "canonical_url": "https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/gemini-md.md",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "public guidance",
+      "status": "verified-primary",
+      "domains": [
+        "orchestration"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Repository instruction file discovery; not proof of Antigravity-specific auto-load.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "copilot-custom",
+      "name": "GitHub Copilot custom instructions",
+      "canonical_url": "https://docs.github.com/en/copilot/reference/custom-instructions-support",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "public guidance",
+      "status": "verified-primary",
+      "domains": [
+        "orchestration"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Repository-wide Copilot custom instructions support varies by surface.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "cindy",
+      "name": "Cindy agent skills (identity unresolved)",
+      "canonical_url": "",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "unverified",
+      "status": "candidate",
+      "domains": [
+        "orchestration"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Name only: no canonical repository established; do not import rules or claim upstream integration.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    },
+    {
+      "id": "konoha",
+      "name": "Konoha agent skills (identity unresolved)",
+      "canonical_url": "",
+      "source_ref": "mutable branch / website snapshot; exact commit SHA not captured",
+      "license": "unverified",
+      "status": "candidate",
+      "domains": [
+        "orchestration"
+      ],
+      "assessed_on": "2026-11-18",
+      "adopted_principle": "Name only: no canonical repository established; do not import rules or claim upstream integration.",
+      "bundled_source": false,
+      "requires_runtime_skill": false
+    }
+  ]
+}

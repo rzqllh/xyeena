@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/vibe-v4/project-state.schema.json",
+  "title": "v4 Project State",
+  "type": "object",
+  "required": [
+    "version",
+    "project_name",
+    "project_types",
+    "risk",
+    "phase",
+    "active_documents",
+    "baseline_approved",
+    "approval_evidence",
+    "owner_decisions",
+    "open_blockers",
+    "last_reviewed_at"
+  ],
+  "properties": {
+    "version": {
+      "const": "4.0.0"
+    },
+    "project_name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "project_types": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk": {
+      "enum": [
+        "unknown",
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "phase": {
+      "enum": [
+        "uninitialized",
+        "discovery",
+        "research",
+        "specification",
+        "review",
+        "approved",
+        "implementation",
+        "verification",
+        "release",
+        "maintenance"
+      ]
+    },
+    "active_documents": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "baseline_approved": {
+      "type": "boolean"
+    },
+    "approval_evidence": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "owner_decisions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "open_blockers": {
+      "type": "array"
+    },
+    "last_reviewed_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

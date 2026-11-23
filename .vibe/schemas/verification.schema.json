@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/vibe-v4/verification.schema.json",
+  "type": "object",
+  "required": [
+    "version",
+    "checks"
+  ],
+  "properties": {
+    "version": {
+      "const": "1.0"
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "test_ids",
+          "command_or_procedure",
+          "environment",
+          "executed_at",
+          "result",
+          "evidence_path"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "test_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "command_or_procedure": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string"
+          },
+          "executed_at": {
+            "type": "string"
+          },
+          "result": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "NOT RUN",
+              "N/A"
+            ]
+          },
+          "evidence_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

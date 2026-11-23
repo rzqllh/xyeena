@@ -1,0 +1,6 @@
+---
+description: Security-specific review for auth and policy files
+globs: "**/{auth,security,permissions}/**,**/*.{policy,tf}"
+alwaysApply: false
+---
+Consult `.vibe/standards/SECURITY.md` when relevant. Test actual enforcement.

@@ -1,0 +1,6 @@
+---
+description: Apply domain UI/UX quality when editing visual surfaces
+globs: "**/*.{tsx,jsx,vue,svelte,css,scss,html}"
+alwaysApply: false
+---
+Consult `.vibe/standards/DESIGN-QUALITY.md` if present; verify real UI states and accessibility.

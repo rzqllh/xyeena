@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/vibe-v4/evidence.schema.json",
+  "type": "object",
+  "required": [
+    "version",
+    "records"
+  ],
+  "properties": {
+    "version": {
+      "const": "1.0"
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "claim",
+          "status",
+          "source_type",
+          "source",
+          "verified_at",
+          "scope",
+          "limitations"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^EV-[0-9]{3,}$"
+          },
+          "claim": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "Confirmed",
+              "Inferred",
+              "Proposed",
+              "Unknown",
+              "Contradicted"
+            ]
+          },
+          "source_type": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "verified_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scope": {
+            "type": "string"
+          },
+          "limitations": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

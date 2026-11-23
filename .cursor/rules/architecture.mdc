@@ -1,0 +1,6 @@
+---
+description: Architecture and infrastructure boundaries
+globs: "**/ARCHITECTURE.md,**/infra/**"
+alwaysApply: false
+---
+Compare designs to implementation and provider configuration.

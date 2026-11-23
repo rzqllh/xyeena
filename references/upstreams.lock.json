@@ -1,0 +1,320 @@
+{
+  "schemaVersion": 1,
+  "snapshotType": "frozen-upstream-baseline",
+  "observedDate": "2026-11-20",
+  "purpose": "Official Veyra v1.0 upstream source baseline for offline/local initialization and pinned SHA recovery",
+  "upstreams": [
+    {
+      "id": "superpowers",
+      "repo": "obra/superpowers",
+      "sha": "22f0b463e7a5e579904dd6211a520321035526f7",
+      "category": "skill-framework",
+      "include": [
+        "skills",
+        "scripts",
+        "hooks",
+        "docs",
+        "tests",
+        ".agents",
+        ".antigravity-plugin",
+        ".claude-plugin",
+        ".codex-plugin"
+      ]
+    },
+    {
+      "id": "superpowers-skills",
+      "repo": "obra/superpowers-skills",
+      "sha": "cdcd624ad3fd8026deb692e565351854569798dd",
+      "category": "skills-library",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests"
+      ]
+    },
+    {
+      "id": "superior-skills",
+      "repo": "KodekaTeam/superior-skills",
+      "sha": "b600920ec07a4f3f426405882c42f77d5c245ad9",
+      "category": "skills-library",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests",
+        "agents"
+      ]
+    },
+    {
+      "id": "anti-slop",
+      "repo": "miqdadbadjuber/anti-slop",
+      "sha": "1969b459f843603ba2efbbb24e8e1bf963c889b3",
+      "category": "quality-skills",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "rules",
+        "docs",
+        "tests"
+      ]
+    },
+    {
+      "id": "ponytail",
+      "repo": "DietrichGebert/ponytail",
+      "sha": "96608e078b2d5ea607c5c3b8b5a54d1c1fba6846",
+      "category": "engineering-skill",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests"
+      ]
+    },
+    {
+      "id": "caveman",
+      "repo": "JuliusBrussee/caveman",
+      "sha": "a192894723a8f47e7f504c7b5041967ff1f18e55",
+      "category": "engineering-skill",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests"
+      ]
+    },
+    {
+      "id": "cloudflare-security-audit",
+      "repo": "cloudflare/security-audit-skill",
+      "sha": "c1c8a8c1471069fb0e188eeaff69b8e8db6564a8",
+      "category": "security-skill",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests"
+      ]
+    },
+    {
+      "id": "impeccable",
+      "repo": "pbakaus/impeccable",
+      "sha": "b49177d32788f2dc585c42831d845dacf1ebed2c",
+      "category": "ui-design-skill",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests",
+        "commands"
+      ]
+    },
+    {
+      "id": "mattpocock-skills",
+      "repo": "mattpocock/skills",
+      "sha": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
+      "category": "product-engineering-skills",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests"
+      ]
+    },
+    {
+      "id": "hallmark",
+      "repo": "Nutlope/hallmark",
+      "sha": "04977e15f3dfd6ee4b74c887dac3eb52665d6c92",
+      "category": "ui-design-skill",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests",
+        "src"
+      ]
+    },
+    {
+      "id": "taste-skill",
+      "repo": "Leonxlnx/taste-skill",
+      "sha": "f6b76575f949707b4e3c37cd86cb44b0b98643e8",
+      "category": "ui-design-skill",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests"
+      ]
+    },
+    {
+      "id": "ui-ux-pro-max",
+      "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sha": "2de1134dc4d1cfe112934611ae5803ae17a1bd7e",
+      "category": "ui-design-skills",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests",
+        "src",
+        ".claude"
+      ]
+    },
+    {
+      "id": "anthropic-skills",
+      "repo": "anthropics/skills",
+      "sha": "e4bb5d960d87126ff3b3a8af1a104b7db67560ba",
+      "category": "agent-skills",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests"
+      ]
+    },
+    {
+      "id": "vercel-agent-skills",
+      "repo": "vercel-labs/agent-skills",
+      "sha": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62",
+      "category": "frontend-engineering-skills",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests"
+      ]
+    },
+    {
+      "id": "gsap-skills",
+      "repo": "greensock/gsap-skills",
+      "sha": "aed9cfd3277740755f6bfc1155c7aa645403b760",
+      "category": "animation-skills",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests"
+      ]
+    },
+    {
+      "id": "trailofbits-skills",
+      "repo": "trailofbits/skills",
+      "sha": "149d7b21f4067765b82e67029730b42d228ef4b4",
+      "category": "security-skills",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests"
+      ]
+    },
+    {
+      "id": "supabase-agent-skills",
+      "repo": "supabase/agent-skills",
+      "sha": "c9be0e931b7930f7d02126d04774d904c381e7d7",
+      "category": "database-security-skills",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests"
+      ]
+    },
+    {
+      "id": "konoha",
+      "repo": "andycungkrinx91/konoha",
+      "sha": "1c2c6559dc256f9f83f9d280126474b7cb25f85b",
+      "category": "runtime-reference",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests",
+        "src",
+        "packages"
+      ]
+    },
+    {
+      "id": "huashu-design",
+      "repo": "alchaincyf/huashu-design",
+      "sha": "e8d1148a80d5a281d4247cffe320add3df017928",
+      "category": "design-skill",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "tests",
+        "src"
+      ]
+    },
+    {
+      "id": "cindy",
+      "repo": "makecindy/cindy",
+      "sha": "a0f50a3ce0eea0b841254469bbacb6b20c7b3ed9",
+      "category": "orchestration-runtime-reference",
+      "include": [
+        "skills",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "packages/maker-core/src",
+        "packages/maker-core/skills",
+        "apps/desktop/src",
+        "apps/desktop/skills"
+      ]
+    },
+    {
+      "id": "orca",
+      "repo": "Aniekanetim/orca-agent",
+      "sha": "027acb4efa2e6b226d40df266b86367423946d62",
+      "category": "orchestration-runtime-reference",
+      "include": [
+        "skills",
+        "skill-guides",
+        "skill-stubs",
+        "scripts",
+        "references",
+        "data",
+        "docs",
+        "src",
+        "tests"
+      ]
+    }
+  ]
+}

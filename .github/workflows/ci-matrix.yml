@@ -1,0 +1,38 @@
+name: Veyra v1.0 Full Matrix Verification
+
+on:
+  push:
+    branches: [ main, release/** ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-matrix:
+    name: Node ${{ matrix.node-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [20.x, 22.x, 24.x]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Verify Upstream Integrity Preflight
+        run: npm run preflight
+
+      - name: Run Full Test Suite (20 Suites, 56 Tests)
+        run: npm test
+
+      - name: Test Veyra CLI Installation & Verification
+        run: |
+          node bin/veyra.mjs verify
+          node bin/veyra.mjs license-audit

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/vibe-v4/requirements.schema.json",
+  "type": "object",
+  "required": [
+    "version",
+    "requirements"
+  ],
+  "properties": {
+    "version": {
+      "const": "1.0"
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status",
+          "evidence_ids",
+          "acceptance_ids",
+          "test_ids"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^REQ-[0-9]{3,}$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "Proposed",
+              "Approved",
+              "Implemented",
+              "Verified",
+              "Deferred"
+            ]
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "acceptance_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^AC-[0-9]{3,}$"
+            }
+          },
+          "test_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^TEST-[0-9]{3,}$"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

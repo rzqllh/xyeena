@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/vibe-v4/catalog.schema.json",
+  "type": "object",
+  "required": [
+    "version",
+    "scope",
+    "activation",
+    "default_global_standard",
+    "templates"
+  ],
+  "properties": {
+    "version": {
+      "const": "4.0.0"
+    },
+    "scope": {
+      "const": "universal"
+    },
+    "activation": {
+      "const": "adaptive"
+    },
+    "default_global_standard": {
+      "type": "string"
+    },
+    "templates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "output",
+          "template",
+          "category",
+          "tags",
+          "trigger",
+          "priority",
+          "upstream"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,963 @@
+{
+  "version": "4.0.0",
+  "scope": "universal",
+  "activation": "adaptive",
+  "default_global_standard": ".vibe/standards/ANTISLOP.md",
+  "templates": [
+    {
+      "id": "brd",
+      "output": "BRD.md",
+      "template": "templates/BRD.md",
+      "category": "product",
+      "tags": [
+        "nonsoftware",
+        "web",
+        "mobile",
+        "api",
+        "game",
+        "ai",
+        "data",
+        "infra"
+      ],
+      "trigger": "Business stakeholders, ROI, procurement, org policy or multi-team processes",
+      "priority": "conditional",
+      "upstream": [
+        "diataxis",
+        "superior-skills"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "prd",
+      "output": "PRD.md",
+      "template": "templates/PRD.md",
+      "category": "product",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Every material project needs an outcome/requirement contract; small projects can keep it concise",
+      "priority": "recommended",
+      "upstream": [
+        "diataxis",
+        "superior-skills",
+        "superpowers"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "design",
+      "output": "DESIGN.md",
+      "template": "templates/DESIGN.md",
+      "category": "design",
+      "tags": [
+        "web",
+        "mobile",
+        "desktop",
+        "game"
+      ],
+      "trigger": "User-facing visual UI, product experience, or user journeys",
+      "priority": "conditional",
+      "upstream": [
+        "antislop",
+        "hallmark",
+        "impeccable",
+        "ui-ux-pro-max",
+        "design-taste",
+        "taste-skill",
+        "anthropic-frontend",
+        "wcag22"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "architecture",
+      "output": "ARCHITECTURE.md",
+      "template": "templates/ARCHITECTURE.md",
+      "category": "engineering",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Multiple components/integrations, significant runtime trade-offs or maintainability risk",
+      "priority": "conditional",
+      "upstream": [
+        "arc42",
+        "c4",
+        "superpowers"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "roadmap",
+      "output": "ROADMAP.md",
+      "template": "templates/ROADMAP.md",
+      "category": "delivery",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Milestones, multiple stakeholders, or work lasting beyond one atomic task",
+      "priority": "recommended",
+      "upstream": [
+        "superpowers",
+        "superior-skills"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "research",
+      "output": "docs/research.md",
+      "template": "templates/docs/research.md",
+      "category": "research",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Current niche behavior, technology selection, platform/legal/market claims require research",
+      "priority": "conditional",
+      "upstream": [
+        "diataxis",
+        "superior-skills"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "personas",
+      "output": "docs/personas.md",
+      "template": "templates/docs/personas.md",
+      "category": "product",
+      "tags": [
+        "web",
+        "mobile",
+        "desktop",
+        "game",
+        "cli"
+      ],
+      "trigger": "More than one user class or accessibility context alters requirements",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "user-stories",
+      "output": "docs/user-stories.md",
+      "template": "templates/docs/user-stories.md",
+      "category": "product",
+      "tags": [
+        "all"
+      ],
+      "trigger": "User-value backlog needs small feature slices",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "use-cases",
+      "output": "docs/use-cases.md",
+      "template": "templates/docs/use-cases.md",
+      "category": "product",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Complex workflows, multiple actors, transaction boundaries or alternate paths",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "glossary",
+      "output": "docs/glossary.md",
+      "template": "templates/docs/glossary.md",
+      "category": "governance",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Business terms, role names, statuses or acronyms risk ambiguity",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "nfr",
+      "output": "docs/nonfunctional-requirements.md",
+      "template": "templates/docs/nonfunctional-requirements.md",
+      "category": "quality",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Measurable reliability, scalability, safety, accessibility or performance requirements exist",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "acceptance",
+      "output": "docs/acceptance-criteria.md",
+      "template": "templates/docs/acceptance-criteria.md",
+      "category": "quality",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Shared review across product, design, engineering, QA or external sponsors",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "tech-stack",
+      "output": "docs/tech-stack.md",
+      "template": "templates/docs/tech-stack.md",
+      "category": "engineering",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Nontrivial runtime/library/service choices need evidence-backed comparison",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "schema",
+      "output": "docs/schema.md",
+      "template": "templates/docs/schema.md",
+      "category": "data",
+      "tags": [
+        "api",
+        "web",
+        "mobile",
+        "desktop",
+        "data",
+        "game",
+        "ai"
+      ],
+      "trigger": "Persistent data relations, multi-user ownership, migrations or retention are relevant",
+      "priority": "conditional",
+      "upstream": [
+        "jsonschema",
+        "owasp-asvs"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "data-contract",
+      "output": "docs/data-contract.md",
+      "template": "templates/docs/data-contract.md",
+      "category": "data",
+      "tags": [
+        "data",
+        "ai",
+        "api",
+        "web",
+        "mobile",
+        "infra"
+      ],
+      "trigger": "Cross-system datasets, events, ETL, ML training or analytics boundaries",
+      "priority": "conditional",
+      "upstream": [
+        "jsonschema",
+        "superior-skills"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "api-spec",
+      "output": "docs/api-spec.md",
+      "template": "templates/docs/api-spec.md",
+      "category": "api",
+      "tags": [
+        "api",
+        "web",
+        "mobile",
+        "desktop",
+        "ai",
+        "game"
+      ],
+      "trigger": "Exposed HTTP/GraphQL/RPC/events/webhooks/jobs or external integrations",
+      "priority": "conditional",
+      "upstream": [
+        "oas",
+        "jsonschema"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "security",
+      "output": "docs/security.md",
+      "template": "templates/docs/security.md",
+      "category": "security",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Any user data, permissions, network service, credentials, third-party integration or physical risks",
+      "priority": "conditional",
+      "upstream": [
+        "owasp-asvs",
+        "nist-ssdf",
+        "superpowers"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "privacy",
+      "output": "docs/privacy.md",
+      "template": "templates/docs/privacy.md",
+      "category": "security",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Personal, sensitive, biometric, location, billing or behavioral data is processed",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "threat-model",
+      "output": "docs/threat-model.md",
+      "template": "templates/docs/threat-model.md",
+      "category": "security",
+      "tags": [
+        "all"
+      ],
+      "trigger": "External exposure, authentication, privileged data, payments, sensitive AI tools or physical systems",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "adr",
+      "output": "docs/adr/ADR-0001.md",
+      "template": "templates/docs/adr/ADR-0001.md",
+      "category": "governance",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Irreversible or material architectural/product/security trade-off",
+      "priority": "conditional",
+      "upstream": [
+        "arc42",
+        "superpowers"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "task",
+      "output": "docs/task.md",
+      "template": "templates/docs/task.md",
+      "category": "delivery",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Work spans multiple steps or ownership boundaries",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "tdd",
+      "output": "docs/tdd.md",
+      "template": "templates/docs/tdd.md",
+      "category": "quality",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Implementation follows test-driven development or needs reproducible defect correction",
+      "priority": "conditional",
+      "upstream": [
+        "superpowers"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "technical-design",
+      "output": "docs/technical-design.md",
+      "template": "templates/docs/technical-design.md",
+      "category": "engineering",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Subsystem implementation has meaningful design complexity distinct from test-driven-development",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "test-plan",
+      "output": "docs/test-plan.md",
+      "template": "templates/docs/test-plan.md",
+      "category": "quality",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Any executable or verifiable deliverable needs a testing strategy",
+      "priority": "recommended",
+      "upstream": [
+        "superpowers",
+        "owasp-asvs",
+        "wcag22"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "edge-cases",
+      "output": "docs/edge-cases.md",
+      "template": "templates/docs/edge-cases.md",
+      "category": "quality",
+      "tags": [
+        "all"
+      ],
+      "trigger": "User-visible state machines, failure-heavy flows or complex data boundaries",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "traceability",
+      "output": "docs/traceability.md",
+      "template": "templates/docs/traceability.md",
+      "category": "governance",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Multiple requirements, regulated work or multi-agent project needs cross-document proof",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "styleguide",
+      "output": "docs/styleguide.md",
+      "template": "templates/docs/styleguide.md",
+      "category": "design",
+      "tags": [
+        "web",
+        "mobile",
+        "desktop",
+        "game"
+      ],
+      "trigger": "Multiple UI surfaces/components or branded product design system",
+      "priority": "conditional",
+      "upstream": [
+        "antislop",
+        "hallmark",
+        "impeccable",
+        "ui-ux-pro-max"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "design-tokens",
+      "output": "docs/design-tokens.md",
+      "template": "templates/docs/design-tokens.md",
+      "category": "design",
+      "tags": [
+        "web",
+        "mobile",
+        "desktop",
+        "game"
+      ],
+      "trigger": "A real token system must be codified and validated",
+      "priority": "conditional",
+      "upstream": [
+        "hallmark",
+        "impeccable"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "accessibility",
+      "output": "docs/accessibility.md",
+      "template": "templates/docs/accessibility.md",
+      "category": "design",
+      "tags": [
+        "web",
+        "mobile",
+        "desktop",
+        "game",
+        "cli"
+      ],
+      "trigger": "User interface, assistive input, public-facing experience or compliance scope",
+      "priority": "conditional",
+      "upstream": [
+        "wcag22",
+        "antislop",
+        "impeccable"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "content-design",
+      "output": "docs/content-design.md",
+      "template": "templates/docs/content-design.md",
+      "category": "design",
+      "tags": [
+        "web",
+        "mobile",
+        "desktop",
+        "game",
+        "cli"
+      ],
+      "trigger": "User-facing copy, notifications, onboarding, forms, content-heavy surfaces",
+      "priority": "conditional",
+      "upstream": [
+        "antislop",
+        "superior-skills"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "i18n",
+      "output": "docs/localization.md",
+      "template": "templates/docs/localization.md",
+      "category": "design",
+      "tags": [
+        "web",
+        "mobile",
+        "desktop",
+        "game",
+        "cli"
+      ],
+      "trigger": "More than one locale, time zone, currency, RTL or translation workflow",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "analytics",
+      "output": "docs/analytics-plan.md",
+      "template": "templates/docs/analytics-plan.md",
+      "category": "data",
+      "tags": [
+        "web",
+        "mobile",
+        "desktop",
+        "game",
+        "ai"
+      ],
+      "trigger": "Product success metrics, observability of user behavior or experiments",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "experiment",
+      "output": "docs/experiment.md",
+      "template": "templates/docs/experiment.md",
+      "category": "research",
+      "tags": [
+        "web",
+        "mobile",
+        "desktop",
+        "ai",
+        "game"
+      ],
+      "trigger": "Hypothesis comparison or feature experiment",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "infra",
+      "output": "docs/infra.md",
+      "template": "templates/docs/infra.md",
+      "category": "operations",
+      "tags": [
+        "web",
+        "mobile",
+        "desktop",
+        "api",
+        "data",
+        "ai",
+        "game",
+        "infra"
+      ],
+      "trigger": "Hosting, network, cloud resources, access or infrastructure changes",
+      "priority": "conditional",
+      "upstream": [
+        "nist-ssdf"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "deployment",
+      "output": "docs/deployment.md",
+      "template": "templates/docs/deployment.md",
+      "category": "operations",
+      "tags": [
+        "web",
+        "mobile",
+        "desktop",
+        "api",
+        "game",
+        "ai",
+        "infra"
+      ],
+      "trigger": "Artifacts are published, deployed, distributed or installed",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "setup",
+      "output": "docs/setup.md",
+      "template": "templates/docs/setup.md",
+      "category": "operations",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Anyone besides original builder must reproduce development or use environment",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "contributing",
+      "output": "docs/contributing.md",
+      "template": "templates/docs/contributing.md",
+      "category": "governance",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Multiple contributors or external PRs need shared workflow",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "observability",
+      "output": "docs/observability.md",
+      "template": "templates/docs/observability.md",
+      "category": "operations",
+      "tags": [
+        "api",
+        "web",
+        "mobile",
+        "desktop",
+        "data",
+        "ai",
+        "game",
+        "infra"
+      ],
+      "trigger": "Runtime monitoring, failures or SLOs need diagnosis",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "runbook",
+      "output": "docs/runbook.md",
+      "template": "templates/docs/runbook.md",
+      "category": "operations",
+      "tags": [
+        "api",
+        "web",
+        "mobile",
+        "desktop",
+        "data",
+        "ai",
+        "game",
+        "infra"
+      ],
+      "trigger": "Someone must operate, troubleshoot or restore deployed system",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "incident",
+      "output": "docs/incident-response.md",
+      "template": "templates/docs/incident-response.md",
+      "category": "operations",
+      "tags": [
+        "api",
+        "web",
+        "mobile",
+        "desktop",
+        "data",
+        "ai",
+        "game",
+        "infra"
+      ],
+      "trigger": "Public-facing service, sensitive data, operational obligations or security risks",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "release",
+      "output": "docs/release-plan.md",
+      "template": "templates/docs/release-plan.md",
+      "category": "delivery",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Project delivers a versioned artifact or externally visible change",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "migration",
+      "output": "docs/migration-plan.md",
+      "template": "templates/docs/migration-plan.md",
+      "category": "data",
+      "tags": [
+        "data",
+        "api",
+        "web",
+        "mobile",
+        "desktop",
+        "ai",
+        "infra"
+      ],
+      "trigger": "Existing persisted records, public contract or user state must migrate",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "performance",
+      "output": "docs/performance.md",
+      "template": "templates/docs/performance.md",
+      "category": "quality",
+      "tags": [
+        "web",
+        "mobile",
+        "desktop",
+        "api",
+        "data",
+        "ai",
+        "game",
+        "infra"
+      ],
+      "trigger": "Latency/FPS/throughput/energy/memory are user-visible or system constraints",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "feature-flags",
+      "output": "docs/feature-flags.md",
+      "template": "templates/docs/feature-flags.md",
+      "category": "delivery",
+      "tags": [
+        "web",
+        "mobile",
+        "desktop",
+        "api",
+        "ai",
+        "game"
+      ],
+      "trigger": "Safe rollout requires controlled feature toggles or experiments",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "agent-orchestration",
+      "output": "docs/agent-orchestration.md",
+      "template": "templates/docs/agent-orchestration.md",
+      "category": "orchestration",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Multiple AI agents or tool hosts participate in work",
+      "priority": "conditional",
+      "upstream": [
+        "superpowers",
+        "orca",
+        "superior-skills"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "agent-handoff",
+      "output": "docs/agent-handoff.md",
+      "template": "templates/docs/agent-handoff.md",
+      "category": "orchestration",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Agent work crosses sessions, models, hosts or people",
+      "priority": "conditional",
+      "upstream": [
+        "orca",
+        "superpowers"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "prompt-spec",
+      "output": "docs/prompt-spec.md",
+      "template": "templates/docs/prompt-spec.md",
+      "category": "ai",
+      "tags": [
+        "ai"
+      ],
+      "trigger": "Application behavior depends on system/developer/user prompts or retrieval",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "ai-evals",
+      "output": "docs/ai-evals.md",
+      "template": "templates/docs/ai-evals.md",
+      "category": "ai",
+      "tags": [
+        "ai"
+      ],
+      "trigger": "LLM/ML performance, RAG correctness, agent outcomes or model comparison matter",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "model-policy",
+      "output": "docs/model-policy.md",
+      "template": "templates/docs/model-policy.md",
+      "category": "ai",
+      "tags": [
+        "ai"
+      ],
+      "trigger": "Third-party models/provider contracts, data transfer or AI tool actions impact users",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "game-design",
+      "output": "docs/game-design.md",
+      "template": "templates/docs/game-design.md",
+      "category": "game",
+      "tags": [
+        "game"
+      ],
+      "trigger": "Interactive game mechanics, player progression, multiplayer, balance or live ops",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "mobile",
+      "output": "docs/mobile-platform.md",
+      "template": "templates/docs/mobile-platform.md",
+      "category": "platform",
+      "tags": [
+        "mobile"
+      ],
+      "trigger": "Native/mobile web differences, app-store policy or device constraints affect design",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "desktop",
+      "output": "docs/desktop-platform.md",
+      "template": "templates/docs/desktop-platform.md",
+      "category": "platform",
+      "tags": [
+        "desktop"
+      ],
+      "trigger": "Windows/macOS/Linux desktop runtime, packaging, filesystem or OS permissions matter",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "cli-contract",
+      "output": "docs/cli-contract.md",
+      "template": "templates/docs/cli-contract.md",
+      "category": "platform",
+      "tags": [
+        "cli"
+      ],
+      "trigger": "Command-line flags, exit codes, piping or scripting stability are public contracts",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "embedded",
+      "output": "docs/hardware-interface.md",
+      "template": "templates/docs/hardware-interface.md",
+      "category": "platform",
+      "tags": [
+        "embedded"
+      ],
+      "trigger": "Firmware, sensors, actuators, physical safety or real-time control",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "master-prompt",
+      "output": "docs/master-prompt.md",
+      "template": "templates/docs/master-prompt.md",
+      "category": "orchestration",
+      "tags": [
+        "all"
+      ],
+      "trigger": "A portable human instruction launcher is needed across chat hosts",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "implementation-log",
+      "output": "docs/implementation-log.md",
+      "template": "templates/docs/implementation-log.md",
+      "category": "governance",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Material verified changes need concise durable future-maintainer context",
+      "priority": "conditional",
+      "upstream": [
+        "superior-skills"
+      ],
+      "notes": ""
+    },
+    {
+      "id": "project-readme",
+      "output": "docs/project-readme-draft.md",
+      "template": "templates/docs/project-readme-draft.md",
+      "category": "delivery",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Project-specific onboarding, usage and release information should replace template-oriented root README after approval",
+      "priority": "optional",
+      "upstream": [
+        "diataxis",
+        "antislop"
+      ],
+      "notes": "Project README is drafted here so the template README at root is not silently overwritten. Merge it into README.md only with explicit approval."
+    },
+    {
+      "id": "feature-spec",
+      "output": "docs/features/FEATURE-001.md",
+      "template": "templates/docs/features/FEATURE-001.md",
+      "category": "product",
+      "tags": [
+        "all"
+      ],
+      "trigger": "Complex feature needs its own specification independent of overarching PRD",
+      "priority": "optional",
+      "upstream": [],
+      "notes": ""
+    },
+    {
+      "id": "generative-ui",
+      "output": "docs/generative-ui.md",
+      "template": "templates/docs/generative-ui.md",
+      "category": "design",
+      "tags": [
+        "ai",
+        "web",
+        "mobile",
+        "optional"
+      ],
+      "trigger": "Interactive AI-rendered surfaces, schema-driven UI, agent-driven forms or tool actions",
+      "priority": "conditional",
+      "upstream": [],
+      "notes": "Use only if UI is genuinely generated from model output"
+    }
+  ]
+}

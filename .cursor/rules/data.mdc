@@ -1,0 +1,6 @@
+---
+description: Database contracts and migrations
+globs: "**/*.{sql,prisma,dbml},**/migrations/**"
+alwaysApply: false
+---
+Review schema and migration reality. Do not assume an applied production schema.
