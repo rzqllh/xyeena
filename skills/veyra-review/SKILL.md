@@ -18,3 +18,13 @@ Perform independent, dual-axis code reviews evaluating architectural seams and s
 1. Dual-Axis Discipline: Reviews must inspect both architectural boundaries and diff-level safety.
 2. Blocker Gate: High/Critical severity findings immediately result in a BLOCKED verdict.
 3. Constructive Findings: Every finding must include concrete line citations and actionable remedies.
+
+## Operational Instructions
+1. Discovery & Activation: Activated during code review passes, pull request audits, or pre-commit verification.
+2. Engine Invocation:
+   - Programmatic: `import { evaluateDualAxisReview, calculateComplexityEstimate } from './engine.mjs'`
+   - Command: `node -e "import('./skills/veyra-review/engine.mjs').then(m => console.log(m.evaluateDualAxisReview({ diffLines: [], architecturalRules: [] })))"`
+3. Native Host Integration:
+   - Antigravity / Gemini CLI: Review git diffs against architectural rules and code hygiene guidelines; flag blockers with file:line pointers.
+   - Claude Code / Codex: Enforce two-axis evaluation: functional correctness and architectural alignment.
+4. Output & Verification: Emit prioritized findings (Critical, High, Medium, Low) with actionable remediation steps.

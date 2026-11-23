@@ -7,8 +7,8 @@ import { compressContext } from '../../skills/veyra-context/engine.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const candidateXyeenaPaths = [
-  resolve(ROOT, '../../xyeena/AGENTS.md'),
-  'C:/Users/Hafizh Rizqullah/Documents/Code/_active/xyeena/AGENTS.md',
+  resolve(ROOT, '..', 'xyeena', 'AGENTS.md'),
+  resolve(ROOT, '..', '..', 'xyeena', 'AGENTS.md'),
   join(ROOT, 'docs', 'PLANNING_BASELINE.md')
 ];
 const xyeenaPath = candidateXyeenaPaths.find(p => existsSync(p)) || join(ROOT, 'docs', 'PLANNING_BASELINE.md');

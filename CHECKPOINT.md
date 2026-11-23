@@ -1,11 +1,19 @@
 # Veyra v1.0 Workspace Checkpoint
 
-> **Status:** `STABLE_RELEASE_CANDIDATE_READY` (Waves 0-6 Complete, 20 Suites / 56 Tests Passing)
-> **Active Phase:** Enterprise-Grade Stable Release Gate Audit (DEC-01 through DEC-35 100% LOCKED)
-> **Timestamp:** 2026-11-22T16:15:00+07:00
+> **Status:** `REVIEW_READY` (Remediation Complete, 21 Suites / 61 Tests Passing)
+> **Active Phase:** Independent Review Remediation Finalization (Branch `veyra-review`, DEC-01 through DEC-35 LOCKED)
+> **Timestamp:** 2026-11-23T12:38:00+07:00
 > **Authority:** Canonical Owner Decisions Register (DEC-01 through DEC-35) — 100% LOCKED
-> **Skill Implementation:** 19/19 Skills IMPLEMENTED, HARDENED & SELF_VERIFIED (Canonical contracts synchronized, zero external runtime npm dependencies)
-> **Release Gate Status:** `NO_GO FOR IMMEDIATE PUBLIC RELEASE` / `STABLE_RELEASE_CANDIDATE_READY` (Local verification 100% PASS; public release gated by Owner approval pending independent Codex review & CI matrix execution on Linux/macOS)
+> **Skill Implementation:** 19/19 Skills IMPLEMENTED, REMEDIATED & CODE-VERIFIED (Operational instructions added, native host linking, zero external runtime npm dependencies)
+> **Remediation Findings (7/7 Resolved):**
+> - P0 Installer: Safe rollback/uninstall preserves user files & modified Veyra files; directory cleanup protects non-empty user dirs; path traversal in manifest rejected.
+> - P0 Evidence: LIVE_HOST_VERIFIED restricted to verified process execution via executeAndVerify; synthetic receipts marked SYNTHETIC_RECEIPT and rejected for release gates.
+> - P1 Preflight: Insecure GIT_SSL_NO_VERIFY removed; canonical archive SHA-256 verified; missing/corrupt archives fail explicitly with safe --recover-online recovery path.
+> - P1 CI: 5/5 template validation errors fixed; hardcoded Windows paths eliminated; both CI workflows configured to trigger on veyra-review branch.
+> - P1 Skills: All 19 SKILL.md equipped with practical Operational Instructions linking native host tools to engine.mjs; 100% parity between skills/ and .agents/skills/.
+> - P1 Benchmark: Added capability-matched agent-level task completion & verification governance evaluation (Benchmark 5).
+> - P2 Consistency: Unified canonical veyra-interface naming with veyra-ui alias; basic permissive license checks verified; deep legal review deferred to pre-release.
+> **Release Gate Status:** `REVIEW_READY` / `MERGE_AND_RELEASE_BLOCKED` (Pushed to review branch for independent review; public release and merge to main strictly gated by Owner approval).
 
 ---
 

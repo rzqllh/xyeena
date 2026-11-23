@@ -42,19 +42,51 @@ describe('Veyra v1.0 — Installer, Verification & Rollback (DEC-18, DEC-19, DEC
     assert.equal(verifyResult.modified[0].path, 'skills/veyra-core/SKILL.md');
   });
 
-  test('4. Safe Uninstall: preserves user files while removing owned files', () => {
+  test('4. Safe Uninstall & Destructive Edge Cases: preserves user files & modified Veyra files', () => {
+    // 1. Root user file
     const userFile = join(TEMP_TARGET, 'custom-user-script.js');
     writeFileSync(userFile, 'console.log("Important user logic");', 'utf8');
 
+    // 2. Extra user file inside an installed skill directory
+    const userSkillNote = join(TEMP_TARGET, 'skills', 'veyra-interface', 'custom-notes.md');
+    writeFileSync(userSkillNote, '# User custom notes inside skill dir', 'utf8');
+
+    // 3. User-modified Veyra file (from Test 3, skills/veyra-core/SKILL.md was modified)
+    const modifiedCoreFile = join(TEMP_TARGET, 'skills', 'veyra-core', 'SKILL.md');
+
+    // 4. File outside target that an adversarial manifest might try to delete
+    const outsideTarget = join(TEMP_TARGET, '..', 'scratch_outside_victim_' + Date.now() + '.txt');
+    writeFileSync(outsideTarget, 'CRITICAL HOST DATA', 'utf8');
+
+    // Inject path traversal into manifest to test defense
+    const manifestPath = join(TEMP_TARGET, '.veyra-manifest.json');
+    const manifestData = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    manifestData.files.push({
+      path: '../../' + outsideTarget.split(/[\\/]/).pop(),
+      sha256: 'deadbeef'
+    });
+    writeFileSync(manifestPath, JSON.stringify(manifestData, null, 2), 'utf8');
+
+    // Run uninstall
     const uninstallResult = uninstallVeyra(TEMP_TARGET);
     assert.equal(uninstallResult.success, true);
     assert.ok(uninstallResult.deletedFiles > 0);
 
-    // User file MUST be preserved
+    // Assertions for preservation:
+    // a. Root user file MUST be preserved
     assert.ok(existsSync(userFile), 'User-created files must never be removed on uninstall');
-    // Installed skill directory must be removed
-    assert.equal(existsSync(join(TEMP_TARGET, 'skills', 'veyra-core')), false);
+    // b. User file inside skill directory MUST be preserved
+    assert.ok(existsSync(userSkillNote), 'User files inside skill directories must never be removed');
+    // c. Skill directory containing user file must NOT be removed
+    assert.ok(existsSync(join(TEMP_TARGET, 'skills', 'veyra-interface')), 'Skill directory containing user files must be preserved');
+    // d. User-modified Veyra file MUST be preserved
+    assert.ok(existsSync(modifiedCoreFile), 'User-modified Veyra files must never be deleted on uninstall');
+    assert.equal(readFileSync(modifiedCoreFile, 'utf8'), 'Tampered content');
+    // e. Adversarial path traversal target MUST NOT be touched
+    assert.ok(existsSync(outsideTarget), 'Adversarial path traversal in manifest must be blocked');
 
+    // Clean up outside victim
+    if (existsSync(outsideTarget)) rmSync(outsideTarget, { force: true });
     // Clean up temp
     rmSync(TEMP_TARGET, { recursive: true, force: true });
   });

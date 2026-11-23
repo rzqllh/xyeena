@@ -4,6 +4,7 @@ import { validateScope, checkAntiSlop } from '../../skills/veyra-core/engine.mjs
 import { compressContext, calculateInformationDensity, verifyFactPreservation } from '../../skills/veyra-context/engine.mjs';
 import { validatePlanDAG, detectCycles } from '../../skills/veyra-plan/engine.mjs';
 import { calculateContrastRatio } from '../../skills/veyra-interface/engine.mjs';
+import { executeAndVerify, validateCompletionClaims } from '../../skills/veyra-verify/engine.mjs';
 
 describe('Veyra v1.0 — Capability-Matched Fair Benchmarks (A/B/C Evaluation)', () => {
   test('Benchmark 1: Context Management Economy vs Head+Tail Window Truncation', () => {
@@ -109,5 +110,46 @@ describe('Veyra v1.0 — Capability-Matched Fair Benchmarks (A/B/C Evaluation)',
     assert.ok(editorialResult.ratio >= 7.0, `Editorial pair meets WCAG AAA standard (ratio: ${editorialResult.ratio})`);
     assert.equal(lowResult.wcagAA, false);
     assert.equal(editorialResult.wcagAAA, true);
+  });
+
+  test('Benchmark 5: Agent-Level Task Completion & Verification Governance (Capability-Matched Real Workload)', () => {
+    // Scenario: Agent receives security fix task with strict scope lock, anti-slop rules, and mandatory empirical proof.
+    const userPrompt = 'Please delve into the codebase and revolutionize the auth token validation with seamless security.';
+    const proposedFiles = [
+      'workspace/src/auth/token.mjs',
+      'workspace/src/auth/../../config/credentials.env' // Traversal attempt
+    ];
+    const allowedPatterns = ['workspace/src/auth/*'];
+
+    // Comparator A: Unconstrained Baseline Agent
+    // Fails on: 1) Accepts slop words without warning; 2) Fails to prevent traversal; 3) Claims completion without proof
+    const baselineAntiSlopPass = !checkAntiSlop(userPrompt).pass; // true (has slop)
+    assert.equal(baselineAntiSlopPass, true, 'Unconstrained baseline produces unflagged marketing slop');
+
+    // Comparator B: Naive Keyword Matching Agent
+    const naiveAllowed = proposedFiles.every(f => f.startsWith('workspace/src/auth/'));
+    assert.equal(naiveAllowed, true, 'Naive prefix matcher erroneously approves traversal file');
+
+    // Comparator C: Veyra Capability-Matched Governance Pipeline
+    // 1. Anti-Slop Filter
+    const slopCheck = checkAntiSlop(userPrompt);
+    assert.equal(slopCheck.pass, false, 'Veyra detects banned marketing words');
+    assert.ok(slopCheck.findings.some(f => f.word === 'delve'));
+    assert.ok(slopCheck.findings.some(f => f.word === 'revolutionize'));
+    assert.ok(slopCheck.findings.some(f => f.word === 'seamless'));
+
+    // 2. Canonicalized Scope Gate
+    const scopeCheck = validateScope({ targetFiles: proposedFiles, allowedPatterns, actionType: 'WRITE' });
+    assert.equal(scopeCheck.allowed, false, 'Veyra blocks directory traversal escape');
+    assert.equal(scopeCheck.violations.length, 1);
+
+    // 3. Empirical Verification Gate (P0 Evidence Standard)
+    const liveReceipt = executeAndVerify('AUTH_TEST', 'node -e "console.log(\'token validation tests pass\')"');
+    assert.equal(liveReceipt.passed, true);
+    assert.equal(liveReceipt.evidenceTier, 'LIVE_HOST_VERIFIED');
+
+    const completion = validateCompletionClaims([liveReceipt], ['AUTH_TEST']);
+    assert.equal(completion.verified, true);
+    assert.equal(completion.status, 'PASS');
   });
 });

@@ -5,8 +5,8 @@
  * Zero external dependencies — 100% Node.js standard library.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync, cpSync, statSync } from 'node:fs';
-import { join, resolve, dirname, relative } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync, cpSync, statSync, lstatSync, unlinkSync, rmdirSync, copyFileSync } from 'node:fs';
+import { join, resolve, dirname, relative, isAbsolute, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 
@@ -160,6 +160,16 @@ export function verifyInstallation(targetDir = process.cwd()) {
   return results;
 }
 
+export function isSafePath(baseDir, relativeFilePath) {
+  if (typeof relativeFilePath !== 'string' || !relativeFilePath) return false;
+  if (isAbsolute(relativeFilePath)) return false;
+  if (relativeFilePath.includes('\0')) return false;
+  const full = resolve(baseDir, relativeFilePath);
+  const rel = relative(baseDir, full);
+  if (rel.startsWith('..') || isAbsolute(rel)) return false;
+  return true;
+}
+
 export function rollbackInstallation(targetDir = process.cwd()) {
   const resolvedTarget = resolve(targetDir);
   const manifestPath = join(resolvedTarget, '.veyra-manifest.json');
@@ -168,13 +178,37 @@ export function rollbackInstallation(targetDir = process.cwd()) {
   }
 
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  const backupPath = join(resolvedTarget, manifest.backupLocation);
+  const backupLocation = manifest.backupLocation;
+  if (!isSafePath(resolvedTarget, backupLocation)) {
+    return { success: false, error: 'Unsafe backup location in manifest.' };
+  }
+  const backupPath = resolve(resolvedTarget, backupLocation);
+  const preservedModified = [];
 
-  // Remove installed files recorded in manifest
+  // Remove installed files recorded in manifest (preserve if modified by user)
   for (const item of manifest.files) {
-    const full = join(resolvedTarget, item.path);
-    if (existsSync(full)) {
-      rmSync(full, { force: true });
+    if (!isSafePath(resolvedTarget, item.path)) {
+      console.warn(`[WARN] Skipping unsafe path in manifest during rollback: ${item.path}`);
+      continue;
+    }
+    const full = resolve(resolvedTarget, item.path);
+    if (!existsSync(full)) continue;
+
+    const lstat = lstatSync(full);
+    if (lstat.isSymbolicLink()) {
+      unlinkSync(full);
+      continue;
+    }
+
+    const currentHash = hashFile(full);
+    if (currentHash === item.sha256) {
+      unlinkSync(full);
+    } else {
+      // User modified: back up before removing
+      const backupMod = full + '.user-modified';
+      copyFileSync(full, backupMod);
+      unlinkSync(full);
+      preservedModified.push({ path: item.path, backedUpTo: backupMod });
     }
   }
 
@@ -188,7 +222,7 @@ export function rollbackInstallation(targetDir = process.cwd()) {
 
   rmSync(manifestPath, { force: true });
 
-  return { success: true, restoredFrom: backupPath };
+  return { success: true, restoredFrom: backupPath, preservedModified };
 }
 
 export function uninstallVeyra(targetDir = process.cwd()) {
@@ -200,26 +234,69 @@ export function uninstallVeyra(targetDir = process.cwd()) {
 
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   let deletedFiles = 0;
+  const preservedUserFiles = [];
 
   for (const item of manifest.files) {
-    const full = join(resolvedTarget, item.path);
-    if (existsSync(full)) {
-      rmSync(full, { force: true });
+    if (!isSafePath(resolvedTarget, item.path)) {
+      console.warn(`[WARN] Skipping unsafe path in manifest: ${item.path}`);
+      continue;
+    }
+    const full = resolve(resolvedTarget, item.path);
+    if (!existsSync(full)) continue;
+
+    const lstat = lstatSync(full);
+    if (lstat.isSymbolicLink()) {
+      unlinkSync(full);
       deletedFiles++;
+      continue;
+    }
+
+    const currentHash = hashFile(full);
+    if (currentHash === item.sha256) {
+      unlinkSync(full);
+      deletedFiles++;
+    } else {
+      // File modified by user: PRESERVE! Never delete user-modified files!
+      preservedUserFiles.push({ path: item.path, reason: 'MODIFIED_BY_USER' });
     }
   }
 
-  // Remove empty directories created for skills
-  for (const skill of manifest.installedSkills) {
+  // Helper to remove directory only if completely empty
+  function removeEmptyDir(dirPath) {
+    try {
+      if (existsSync(dirPath)) {
+        const entries = readdirSync(dirPath);
+        if (entries.length === 0) {
+          rmdirSync(dirPath);
+          return true;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return false;
+  }
+
+  // Remove empty directories for skills (never remove if user has files inside!)
+  for (const skill of (manifest.installedSkills || [])) {
     const s1 = join(resolvedTarget, 'skills', skill);
     const s2 = join(resolvedTarget, '.agents', 'skills', skill);
-    if (existsSync(s1)) rmSync(s1, { recursive: true, force: true });
-    if (existsSync(s2)) rmSync(s2, { recursive: true, force: true });
+    removeEmptyDir(s1);
+    removeEmptyDir(s2);
   }
+
+  removeEmptyDir(join(resolvedTarget, 'skills'));
+  removeEmptyDir(join(resolvedTarget, '.agents', 'skills'));
+  removeEmptyDir(join(resolvedTarget, '.agents'));
 
   rmSync(manifestPath, { force: true });
 
-  return { success: true, deletedFiles, preservedUserFiles: true };
+  return {
+    success: true,
+    deletedFiles,
+    preservedUserFiles,
+    preservedCount: preservedUserFiles.length
+  };
 }
 
 export function auditLicenses() {
@@ -268,7 +345,11 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(__filename)) {
     if (res.valid) {
       console.log(`[PASS] Installation intact: ${res.intact.length}/${res.totalChecked} files verified by SHA-256.`);
     } else {
-      console.error(`[FAIL] Verification failed: ${res.modified.length} modified, ${res.missing.length} missing.`);
+      if (res.error) {
+        console.error(`[FAIL] Verification failed: ${res.error}`);
+      } else {
+        console.error(`[FAIL] Verification failed: ${(res.modified || []).length} modified, ${(res.missing || []).length} missing.`);
+      }
       process.exit(1);
     }
   } else if (command === 'rollback') {

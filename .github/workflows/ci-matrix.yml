@@ -2,9 +2,9 @@ name: Veyra v1.0 Full Matrix Verification
 
 on:
   push:
-    branches: [ main, release/** ]
+    branches: [ main, veyra-review, release/** ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, veyra-review ]
   workflow_dispatch:
 
 jobs:
@@ -29,10 +29,12 @@ jobs:
       - name: Verify Upstream Integrity Preflight
         run: npm run preflight
 
-      - name: Run Full Test Suite (20 Suites, 56 Tests)
+      - name: Run Full Test Suite (21 Suites, 61 Tests)
         run: npm test
 
       - name: Test Veyra CLI Installation & Verification
         run: |
-          node bin/veyra.mjs verify
+          node bin/veyra.mjs install --target ./cli-test-target
+          node bin/veyra.mjs verify --target ./cli-test-target
+          node bin/veyra.mjs uninstall --target ./cli-test-target
           node bin/veyra.mjs license-audit

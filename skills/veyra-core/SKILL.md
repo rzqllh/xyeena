@@ -26,3 +26,13 @@ Enforce disciplined engineering judgment, eliminate generic AI filler, and lock 
 - `validateScope({ targetFiles: string[], allowedPatterns: string[], actionType: string }) => { verdict: 'ALLOWED'|'BLOCKED_SCOPE', allowed: boolean, violations: string[] }`
 - `checkAntiSlop(text: string) => { pass: boolean, findings: Array<{ type: string, word?: string, index: number }> }`
 - `classifyClaim(statement: string, receipt?: object) => { category: 'OBSERVED'|'INFERENCE'|'UNKNOWN'|'PROPOSAL', confidence: number }`
+
+## Operational Instructions
+1. Discovery & Activation: Always-on baseline filter for every user turn and every file modification operation.
+2. Engine Invocation:
+   - Programmatic: `import { validateScope, checkAntiSlop, classifyClaim } from './engine.mjs'`
+   - Command: `node -e "import('./skills/veyra-core/engine.mjs').then(m => console.log(m.validateScope({ targetFiles: [], allowedPatterns: ['*'], actionType: 'READ' })))"`
+3. Native Host Integration:
+   - Antigravity / Gemini CLI: Before executing `edit_file` or `write_file`, run `validateScope` against allowed patterns. On user text output, verify zero anti-slop buzzwords and zero forbidden em-dashes.
+   - Claude Code / Codex: Check epistemic classification on all claims: label OBSERVED only when supported by fresh tool output.
+4. Output & Verification: Return clear, evidence-based responses without boilerplate or scope drift.

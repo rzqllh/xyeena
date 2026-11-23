@@ -2,7 +2,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { classifyTestSuites, evaluateSuiteResult } from '../../skills/veyra-test/engine.mjs';
 import { evaluateDualAxisReview } from '../../skills/veyra-review/engine.mjs';
-import { generateVerificationReceipt, validateCompletionClaims } from '../../skills/veyra-verify/engine.mjs';
+import { generateVerificationReceipt, executeAndVerify, validateCompletionClaims } from '../../skills/veyra-verify/engine.mjs';
 import { scanSecretLeaks, auditRlsPolicies, auditInputSanitization } from '../../skills/veyra-security/engine.mjs';
 import { calculateSemVer, validateMigrationRollback } from '../../skills/veyra-release/engine.mjs';
 
@@ -33,13 +33,27 @@ describe('Veyra Wave 4 — Quality, Security & Release Skills', () => {
   });
 
   test('veyra-verify: receipts and completion claims', () => {
-    const receipt = generateVerificationReceipt('test-run', 'npm test', 0, '25 passed');
-    assert.equal(receipt.passed, true);
-    assert.equal(receipt.evidenceTier, 'LIVE_HOST_VERIFIED');
+    // 1. Synthetic call without process execution must yield SYNTHETIC_RECEIPT
+    const syntheticReceipt = generateVerificationReceipt('test-synth', 'npm test', 0, '25 passed');
+    assert.equal(syntheticReceipt.passed, true);
+    assert.equal(syntheticReceipt.evidenceTier, 'SYNTHETIC_RECEIPT', 'Synthetic receipt without execution proof must NOT be LIVE_HOST_VERIFIED');
 
-    const completion = validateCompletionClaims([receipt], ['test-run']);
-    assert.equal(completion.verified, true);
-    assert.equal(completion.status, 'PASS');
+    // Synthetic receipt is rejected for production completion claim
+    const synthCompletion = validateCompletionClaims([syntheticReceipt], ['test-synth']);
+    assert.equal(synthCompletion.verified, false);
+    assert.equal(synthCompletion.status, 'REJECTED');
+    assert.ok(synthCompletion.syntheticRejected.includes('test-synth'));
+
+    // 2. Real execution via executeAndVerify achieves LIVE_HOST_VERIFIED
+    const liveReceipt = executeAndVerify('node-version-check', 'node -v');
+    assert.equal(liveReceipt.passed, true);
+    assert.equal(liveReceipt.evidenceTier, 'LIVE_HOST_VERIFIED');
+    assert.ok(liveReceipt.executionProof.durationMs >= 0);
+    assert.ok(liveReceipt.executionProof.outputHash.length === 64);
+
+    const liveCompletion = validateCompletionClaims([liveReceipt], ['node-version-check']);
+    assert.equal(liveCompletion.verified, true);
+    assert.equal(liveCompletion.status, 'PASS');
   });
 
   test('veyra-security: secret scanning and RLS policy checking', () => {

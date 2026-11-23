@@ -4,7 +4,7 @@ import { routeTaskByIntent, resolveExecutionStrategy } from '../../skills/veyra-
 import { validateScope, evaluateAntiSlop, classifyClaim } from '../../skills/veyra-core/engine.mjs';
 import { validatePlanDAG } from '../../skills/veyra-plan/engine.mjs';
 import { trackTddPhase, validateExecutionScope } from '../../skills/veyra-execute/engine.mjs';
-import { generateVerificationReceipt, validateCompletionClaims } from '../../skills/veyra-verify/engine.mjs';
+import { generateVerificationReceipt, executeAndVerify, validateCompletionClaims } from '../../skills/veyra-verify/engine.mjs';
 import { serializeCheckpoint, parseCheckpoint } from '../../skills/veyra-handoff/engine.mjs';
 import { calculateContrastRatio } from '../../skills/veyra-interface/engine.mjs';
 
@@ -57,11 +57,9 @@ describe('Veyra v1.0 — Real Agent Behavioral E2E Simulation', () => {
     assert.equal(tdd.currentPhase, 'GREEN');
 
     // Step 4: Verification Receipt Generation — Cryptographically recorded evidence
-    const receipt = generateVerificationReceipt(
+    const receipt = executeAndVerify(
       'TASK_API',
-      'node --test tests/api.test.mjs',
-      0,
-      '✔ 5 tests passed in 45ms'
+      'node -e "console.log(\'5 tests passed in 45ms\')"'
     );
     assert.equal(receipt.passed, true);
     assert.equal(receipt.evidenceTier, 'LIVE_HOST_VERIFIED');
