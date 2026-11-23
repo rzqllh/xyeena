@@ -7,13 +7,13 @@
     "veyra": "./bin/veyra.mjs"
   },
   "scripts": {
-    "test": "node --test tests/**/*.test.mjs",
+    "test": "node scripts/run-tests.mjs",
     "test:wave1": "node --test tests/wave1/*.test.mjs",
     "preflight": "node scripts/preflight-upstream.mjs",
     "preflight:recover": "node scripts/preflight-upstream.mjs --recover-online",
     "continue": "node scripts/continue.mjs",
     "status": "node scripts/continue.mjs",
-    "test:all": "node --test tests/**/*.test.mjs",
+    "test:all": "node scripts/run-tests.mjs",
     "test:wave2": "node --test tests/wave2/*.test.mjs",
     "test:wave3": "node --test tests/wave3/*.test.mjs",
     "test:wave4": "node --test tests/wave4/*.test.mjs",
