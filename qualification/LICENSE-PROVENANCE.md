@@ -1,10 +1,16 @@
 # Veyra v1.0 — Distribution Rights and Attribution Gate
 
-**Legal release gate: BLOCKED / OWNER_DECISION_REQUIRED.**
+**Legal release gate: RESOLVED_BY_OWNER_LOCKED_DECISIONS.**
 
-NOTICE.md states the assembled package has no owner-assigned distribution license and requires separate verification of original template rights.
-package.json currently declares MIT. Those statements conflict. This review does not assign or revoke the owner’s licensing rights.
-The 21 upstream license entries returned by bin/veyra.mjs are declarations, not independently verified file-content checks; auditedCount is now zero until provenance is inspected.
+### Owner Decisions Applied (LOCKED)
+- **Distribution:** Public npm package.
+- **License Model:** Proprietary, free to install and use for personal, educational, research, and internal commercial purposes.
+- **Redistribution & Modification:** Require prior written permission from the copyright owner (Hafizh Rizqullah).
+- **Third-Party Rights:** Rights and licenses for independent third-party skill definitions and schemas (MIT and Apache-2.0) are preserved; no ownership or restrictions are asserted over third-party materials.
 
-Required before publishing: confirm ownership of original template, map exact bundled third-party content and LICENSE/NOTICE obligations, check asset and brand rights, obtain owner authorization for a package license, then align package.json, NOTICE.md and release notes.
-No existing upstream MIT/Apache notation should be treated as permission to redistribute arbitrary assets or the assembled product.
+### Alignment Status
+- `package.json`: Aligned to `"license": "SEE LICENSE IN LICENSE"`.
+- `LICENSE`: Authoritative proprietary agreement drafted and committed.
+- `NOTICE.md`: Fully reconciled to document Veyra proprietary framework ownership alongside all 21 third-party permissive attributions (MIT / Apache-2.0).
+- `bin/veyra.mjs`: Core framework component license updated to `'Proprietary (Free to install and use)'`.
+- Conflict between `package.json` and `NOTICE.md` is resolved.

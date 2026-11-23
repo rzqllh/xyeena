@@ -415,7 +415,7 @@ export function auditLicenses() {
   const upstreams = existsSync(lockPath) ? JSON.parse(readFileSync(lockPath, 'utf8')).upstreams : [];
   
   const licenseRegistry = [
-    { component: 'veyra-core-framework', license: 'MIT', permissible: true },
+    { component: 'veyra-core-framework', license: 'Proprietary (Free to install and use)', permissible: true },
     { component: 'obra/superpowers (RE-01)', license: 'MIT', permissible: true },
     { component: 'KodekaTeam/superior-skills (RE-03)', license: 'MIT', permissible: true },
     { component: 'miqdadbadjuber/anti-slop (RE-04)', license: 'MIT', permissible: true },

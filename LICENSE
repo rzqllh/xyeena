@@ -1,0 +1,19 @@
+# Veyra Software License Agreement
+
+Copyright (c) 2026 Hafizh Rizqullah. All rights reserved.
+
+## 1. Grant of License
+Permission is hereby granted, free of charge, to any person or organization obtaining a copy of the Veyra software, CLI, and associated documentation files (the "Software"), to install, run, and use the Software for personal, educational, research, or commercial internal purposes, subject to the following conditions:
+
+## 2. Restrictions
+- **Redistribution:** You may not redistribute, sub-license, publish, broadcast, distribute, mirror, or otherwise convey copies of the Software, in whole or in part, in source or binary form, to third parties without prior written permission from the copyright owner (Hafizh Rizqullah).
+- **Modification & Derivative Works:** You may not create derivative works, modify, or adapt the core Software codebase for public redistribution without prior written permission from the copyright owner.
+- **Attribution:** The above copyright notice, this permission notice, and all third-party notices must be included in all copies or substantial portions of the Software.
+
+## 3. Third-Party Components & Notice
+The Software incorporates and references independent third-party skill definitions, schemas, and specifications licensed under permissive open-source licenses (including MIT and Apache-2.0).
+- Nothing in this License alters, limits, or supersedes your rights or permissions granted under the original third-party licenses for those specific third-party components.
+- A comprehensive inventory of third-party attributions, licenses, and notices is provided in `NOTICE.md`.
+
+## 4. Disclaimer of Warranty & Limitation of Liability
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

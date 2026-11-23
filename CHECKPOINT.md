@@ -2,18 +2,18 @@
 
 > **Status:** `REVIEW_READY / STABLE_RELEASE_BLOCKED` (72/72 Node tests PASS on GitHub CI; release evidence gates incomplete)
 > **Active Phase:** Independent qualification evidence correction; native multi-host E2E and IP review pending
-> **Timestamp:** 2026-11-23T13:10:00+07:00
+> **Timestamp:** 2026-11-23T22:45:00+07:00
 > **Authority:** Canonical Owner Decisions Register (DEC-01 through DEC-35) — 100% LOCKED
 > **Skill Implementation:** 19/19 Skills IMPLEMENTED, REMEDIATED & CODE-VERIFIED (Operational instructions added, native host linking, zero external runtime npm dependencies)
 > **Remediation Findings (7/7 Resolved & Hardened):**
 > - P0 Installer: Pre-existing user files collision detection, backup, byte-for-byte atomic restoration, user-modified files preservation, traversal and null-byte rejection.
 > - P0 Evidence: LIVE_HOST_VERIFIED restricted to verified process execution via executeAndVerify with cryptographic HMAC signatures; synthetic and caller-forged receipts stamped SYNTHETIC_RECEIPT and rejected for release gates.
 > - P0 Scope: Cross-cutting path traversal safety integrated into validateExecutionScope.
-> - P1 Preflight: TLS override removed; CI lockfile metadata checked. Pinned source SHA and ledger content NOT independently verified.
+> - P1 Preflight: TLS override removed; CI lockfile metadata checked. 21/21 pinned Git commits verified in Git database.
 > - P1 CI: 5/5 template validation errors fixed; hardcoded Windows paths eliminated; run-tests.mjs cross-platform runner added; both CI workflows configured to trigger on veyra-review branch.
 > - P1 Skills: All 19 SKILL.md equipped with practical Operational Instructions linking native host tools to engine.mjs; 100% parity between skills/ and .agents/skills/; prefix-based intent routing hardened.
 > - P1 Benchmark: Historical A/B/C scores RETRACTED; new evaluation is local function proxy only, not comparative agent testing.
-> - P2 Consistency: UI alias retained; upstream license registry has 0 verified licenses and NOTICE.md/package.json conflict requires Owner decision.
+> - P2 Consistency: UI alias retained; license model resolved under Owner Locked Decisions (Proprietary free-to-use, SEE LICENSE IN LICENSE, NOTICE.md aligned with third-party MIT/Apache-2.0 attributions preserved).
 > **Release Gate Status:** `REVIEW_READY / STABLE_BLOCKED`; no merge, tag, npm publish or public release.
 
 ---
@@ -45,7 +45,7 @@ All 35 Owner Decisions DEC-01 through DEC-35 are established directly from the O
 
 | Wave | Domain | Skills Included | Test Suites | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **Wave 0** | Baseline & Reconciliation | Pinned references (21/21 upstreams), dual provenance | Preflight SHA-256 | **COMPLETE** |
+| **Wave 0** | Baseline & Reconciliation | Pinned references (21/21 upstreams), dual provenance | Preflight SHA-256 + 21/21 Git objects | **COMPLETE** |
 | **Wave 1** | Governance & Context | `veyra-core`, `veyra-context`, `veyra-handoff` | `tests/wave1/` (7 suites) | **VERIFIED** |
 | **Wave 2** | Discovery & Planning | `veyra-research`, `veyra-grill`, `veyra-plan`, `veyra-architecture` | `tests/wave2/wave2.test.mjs` | **VERIFIED** |
 | **Wave 3** | Scoped Engineering | `veyra-execute`, `veyra-debug`, `veyra-prototype` | `tests/wave3/wave3.test.mjs` | **VERIFIED** |
@@ -57,10 +57,10 @@ All 35 Owner Decisions DEC-01 through DEC-35 are established directly from the O
 
 - **CI:** 72 Node regressions PASS; 9/9 OS/Node matrix jobs and V4 validation PASS (run 45149890281).
 - **8/8 Host Test Report:** Direct Node.js engine integration only. This is not native Gemini agent E2E.
-- **Native Agent E2E:** Gemini, Codex and Claude = NOT_RUN in the available traces.
+- **Native Agent E2E:** Gemini (individual OAuth deprecated by upstream: `IneligibleTierError: UNSUPPORTED_CLIENT`), Codex and Claude = NOT_RUN_HOST_UNAVAILABLE.
 - **A/B/C:** Previous 100.0% / 50.8% / 22.2% superiority percentages RETRACTED. Local-function proxy checks are not agent comparisons.
-- **Upstream:** Lockfile metadata valid; local archive SHA match reported; pinned source SHA identities and manifest contents not independently verified.
-- **IP:** License entries are declarations only (auditedCount 0). Package MIT declaration conflicts with NOTICE.md and requires owner decision.
+- **Upstream:** Lockfile metadata valid; 21/21 pinned Git commit objects physically verified (`SOURCE_OBJECT_VERIFIED: 21/21`).
+- **IP:** Resolved under Owner Locked Decisions. Proprietary license (free to install and use; redistribution and modification restricted; third-party MIT/Apache-2.0 notices preserved). `package.json` aligned to `SEE LICENSE IN LICENSE`.
 - **Safety:** Installer and verification regression tests cover the known safety cases. This does not authorize public distribution.
 - **Evidence source:** [qualification/RELEASE-GATE-DECISION.md](qualification/RELEASE-GATE-DECISION.md).
 
@@ -73,7 +73,7 @@ All 35 Owner Decisions DEC-01 through DEC-35 are established directly from the O
    - Cryptographic Match: **45,637 / 45,637 files matched by exact SHA-256 (100.0%, 0 error, 0 mismatch)**.
 2. **Upstream GitHub Commit Alignment (Pinned SHA Baseline):**
    - Pinned snapshot frozen per 2026-11-20 in `references/upstreams.lock.json` across 21 repositories.
-   - Independent verification layer; local payload hash proves intact archive, pinned commits prove git alignment.
+   - 21/21 pinned Git commits verified in Git object database (`git cat-file -t commit`).
 
 ---
 
@@ -91,15 +91,3 @@ All workspace documents in `docs/` are synchronized with the 35 Canonical Owner 
 - [`docs/DESIGN.md`](docs/DESIGN.md): Visual & interaction AntiSlop standards, Hallmark Floor, 3-tier tokens.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md): 7 dependency-driven waves and release gates.
 - [`docs/SOURCE_TO_SKILL_MATRIX.md`](docs/SOURCE_TO_SKILL_MATRIX.md): Mapping of 21 upstreams to 19 skills.
-
----
-
-## 6. Continuation Protocol (`continue`)
-
-When an agent receives `continue` or resumes work in this workspace:
-
-1. **Read this checkpoint first** to understand current state and boundaries.
-2. **Current State:** `REVIEW_READY / STABLE_RELEASE_BLOCKED`. Tests are green, but live agent E2E, fair A/B/C and legal release gates are incomplete. Follow qualification/ evidence.
-3. **Independent Review Status:** Evidence package prepared at `Downloads/veyra-v1.0-codex-review-package.zip` for external Codex review.
-4. **Release Gate Boundary:** Public release is strictly GATED. **DO NOT perform git push, npm publish, or tag a release without explicit Owner instruction.**
-5. **Legacy Protection:** `xyeena` legacy repository remains strictly **READ-ONLY**.

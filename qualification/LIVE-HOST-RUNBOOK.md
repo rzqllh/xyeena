@@ -37,6 +37,6 @@ Official CLI references:
 - Claude: https://code.claude.com/docs/en/cli-reference
 
 ## Current result
-Gemini: NOT_RUN native agent E2E (existing 8/8 are Node integrations).
-Codex: NOT_RUN native agent E2E.
-Claude: NOT_RUN native agent E2E.
+- Gemini CLI: Executable `gemini.cmd` (v0.2.2) present. Headless execution tested with existing OAuth credentials (`google_accounts.json` / `oauth_creds.json`); failed with `IneligibleTierError: This client is no longer supported for Gemini Code Assist for individuals. To continue using Gemini, please migrate to the Antigravity suite of products: https://antigravity.google (reasonCode: 'UNSUPPORTED_CLIENT')`. Standalone individual OAuth headless execution is deprecated by Google upstream. Status: BLOCKED_UPSTREAM_CLIENT_DEPRECATED (requires Vertex AI or paid Gemini API key for headless agent runs).
+- Codex CLI: Checked via `where.exe codex`: Not found in PATH. Status: NOT_RUN_HOST_UNAVAILABLE.
+- Claude Code: Checked via `where.exe claude`: Not found in PATH. Status: NOT_RUN_HOST_UNAVAILABLE.

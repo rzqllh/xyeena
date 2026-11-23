@@ -1,7 +1,33 @@
 # Attribution, original synthesis and licensing
 
-The v4 documentation, scripts and schemas are locally authored for this template. It was **informed by** third-party skills and specifications listed in `.vibe/upstream/sources.json`. No upstream skill source tree, installer, dependency, imagery, font, or hidden plugin has been bundled.
+## 1. Veyra Core Framework
+The Veyra software, CLI harness, engine architecture, schemas, and original synthesis are authored and copyrighted by Hafizh Rizqullah.
+Copyright (c) 2026 Hafizh Rizqullah. All rights reserved.
+Licensed under the proprietary Veyra Software License Agreement (free to install and run; redistribution and modification for public redistribution require owner permission). See `LICENSE` for full terms.
 
-Copyright/License for this *new v4 distribution* has **not** been assigned by the project owner. Do not assume MIT/Apache-2.0/CC0 rights for the assembled distribution or redistribute it publicly under an invented license. Confirm the original v3 ZIP ownership/license separately before publishing, forking, or commercial distribution.
+## 2. Third-Party Skills and Specifications
+Veyra incorporates, adapts, and references third-party skills, prompt conventions, and specifications under their respective permissive open-source licenses. No claim of ownership is made over third-party materials. All original third-party copyright notices and license permissions are preserved:
 
-Citations and upstream licenses do **not** transfer or grant trademark, brand asset or software distribution rights. If copying actual upstream materials later, inspect their exact LICENSE, NOTICE, binary/assets and share-alike requirements, and preserve notices accordingly.
+- **superpowers** (RE-01) — obra/superpowers — MIT License — Copyright (c) Jesse Vincent
+- **superpowers-skills** (RE-02) — obra/superpowers-skills — MIT License — Copyright (c) Jesse Vincent
+- **superior-skills** (RE-03) — KodekaTeam/superior-skills — MIT License — Copyright (c) Kodeka Team
+- **anti-slop** (RE-04) — miqdadbadjuber/anti-slop — MIT License — Copyright (c) Miqdad Badjuber
+- **ponytail** (RE-05) — DietrichGebert/ponytail — MIT License — Copyright (c) Dietrich Gebert
+- **caveman** (RE-06) — JuliusBrussee/caveman — MIT License — Copyright (c) Julius Brussee
+- **security-audit** (RE-07) — cloudflare/security-audit — MIT License — Copyright (c) Cloudflare, Inc.
+- **impeccable** (RE-08) — pbakaus/impeccable — MIT License — Copyright (c) Paul Bakaus
+- **mattpocock/skills** (RE-09) — mattpocock/skills — MIT License — Copyright (c) Matt Pocock
+- **hallmark** (RE-10) — Nutlope/hallmark — MIT License — Copyright (c) Hassan El Mghari
+- **taste** (RE-11) — Leonxlnx/taste — MIT License — Copyright (c) Leonxlnx
+- **ui-ux-pro-max** (RE-12) — nextlevelbuilder/ui-ux-pro-max — MIT License — Copyright (c) Next Level Builder
+- **anthropics/skills** (RE-13) — anthropics/skills — MIT License — Copyright (c) Anthropic, PBC
+- **vercel/agent-skills** (RE-14) — vercel/agent-skills — Apache License 2.0 — Copyright (c) Vercel, Inc.
+- **greensock/gsap-skills** (RE-15) — greensock/gsap-skills — MIT License — Copyright (c) GreenSock
+- **trailofbits/skills** (RE-16) — trailofbits/skills — Apache License 2.0 — Copyright (c) Trail of Bits, Inc.
+- **supabase/agent-skills** (RE-17) — supabase/agent-skills — Apache License 2.0 — Copyright (c) Supabase, Inc.
+- **konoha** (RE-18) — andycungkrinx91/konoha — Apache License 2.0 — Copyright (c) Andy Cung
+- **huashu-design** (RE-19) — alchaincyf/huashu-design — MIT License — Copyright (c) alchaincyf
+- **cindy** (RE-33) — makecindy/cindy — Apache License 2.0 — Copyright (c) makecindy
+- **orca-agent** (RE-34) — Aniekanetim/orca-agent — MIT License — Copyright (c) Aniekan Etim
+
+Citations and upstream licenses do not transfer or grant trademark or brand asset rights. All third-party trademarks remain the property of their respective owners.
