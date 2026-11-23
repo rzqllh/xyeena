@@ -2,6 +2,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { installVeyra, verifyInstallation, rollbackInstallation, uninstallVeyra, auditLicenses } from '../../bin/veyra.mjs';
 
 const TEMP_TARGET = join(process.cwd(), 'scratch_test_target_' + Date.now());
@@ -190,4 +191,37 @@ describe('Veyra v1.0 — Installer, Verification & Rollback (DEC-18, DEC-19, DEC
 
     rmSync(ADV_TARGET, { recursive: true, force: true });
   });
+  test('9. Forged manifest cannot claim and remove a user file inside a skill directory', () => {
+    const root = join(process.cwd(), 'scratch_manifest_ownership_' + Date.now());
+    installVeyra({ targetDir: root, selectedSkills: ['veyra-core'] });
+    const victim = join(root, 'skills', 'veyra-core', 'my-user-work.txt');
+    writeFileSync(victim, 'OWNER_DATA', 'utf8');
+    const manifestFile = join(root, '.veyra-manifest.json');
+    const manifest = JSON.parse(readFileSync(manifestFile, 'utf8'));
+    manifest.files.push({
+      path: 'skills/veyra-core/my-user-work.txt',
+      sha256: createHash('sha256').update('OWNER_DATA').digest('hex'),
+      preExisting: false
+    });
+    writeFileSync(manifestFile, JSON.stringify(manifest, null, 2));
+    const result = uninstallVeyra(root);
+    assert.equal(result.success, false);
+    assert.equal(result.error, 'UNTRUSTED_MANIFEST_OWNERSHIP');
+    assert.equal(readFileSync(victim, 'utf8'), 'OWNER_DATA');
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  test('10. Missing Veyra replacement restores original pre-existing user file', () => {
+    const root = join(process.cwd(), 'scratch_missing_replacement_' + Date.now());
+    const originalFile = join(root, 'skills', 'veyra-core', 'SKILL.md');
+    mkdirSync(join(root, 'skills', 'veyra-core'), { recursive: true });
+    writeFileSync(originalFile, 'ORIGINAL_USER_CONTENT', 'utf8');
+    installVeyra({ targetDir: root, selectedSkills: ['veyra-core'], allowOverwrite: true });
+    rmSync(originalFile, { force: true });
+    const result = uninstallVeyra(root);
+    assert.equal(result.success, true);
+    assert.equal(readFileSync(originalFile, 'utf8'), 'ORIGINAL_USER_CONTENT');
+    rmSync(root, { recursive: true, force: true });
+  });
+
 });

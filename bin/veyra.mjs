@@ -92,6 +92,13 @@ function validateManifestSafety(root, manifest) {
     if (!isSafeTree(root, item.path) || !/^[a-f0-9]{64}$/i.test(item.sha256 || '')) return 'UNSAFE_FILE_PATH_OR_HASH';
     if (names.has(item.path)) return 'DUPLICATE_MANIFEST_FILE';
     names.add(item.path);
+    // The manifest is user-editable. Never let it claim a non-package file as Veyra-owned.
+    const fragments = item.path.replace(/\\/g, '/').split('/');
+    const skillIndex = fragments[0] === 'skills' ? 1 : 2;
+    const packaged = join(VEYRA_SOURCE_ROOT, 'skills', fragments[skillIndex], ...fragments.slice(skillIndex + 1));
+    if (!existsSync(packaged) || !lstatSync(packaged).isFile() || hashFile(packaged) !== item.sha256) {
+      return 'UNTRUSTED_MANIFEST_OWNERSHIP';
+    }
     if (item.preExisting === true) {
       if (!item.backupPath || !isSafeTree(root, item.backupPath)) return 'UNSAFE_BACKUP_FILE';
       const relBackup = item.backupPath.replace(/\\/g, '/');
@@ -131,6 +138,8 @@ export function installVeyra(options = {}) {
     : allAvailableSkills;
 
   // Plan the entire install before any user-owned file is changed.
+  if (!isSafeTree(resolvedTarget, '.veyra-manifest.json')) throw new Error('UNSAFE_MANIFEST_PATH');
+  if (!isSafeTree(resolvedTarget, relative(resolvedTarget, backupDir))) throw new Error('UNSAFE_BACKUP_PATH');
   if (existsSync(manifestPath)) throw new Error('EXISTING_VEYRA_INSTALLATION: safe update requires a separate migration');
   const collisions = [];
   for (const skill of skillsToInstall) {
@@ -310,7 +319,22 @@ export function uninstallVeyra(targetDir = process.cwd()) {
       continue;
     }
     const full = resolve(resolvedTarget, item.path);
-    if (!existsSync(full)) continue;
+    if (!existsSync(full)) {
+      // A deleted Veyra replacement does not justify losing the original user file.
+      if (item.preExisting === true) {
+        const backupFile = resolve(resolvedTarget, item.backupPath);
+        if (isSafeTree(resolvedTarget, item.backupPath) && existsSync(backupFile) &&
+            hashFile(backupFile) === item.preExistingSha256) {
+          mkdirSync(dirname(full), { recursive: true });
+          copyFileSync(backupFile, full);
+          restoredFiles++;
+        } else {
+          unresolvedPreExisting = true;
+          preservedUserFiles.push({ path: item.path, reason: 'MISSING_DESTINATION_AND_BACKUP' });
+        }
+      }
+      continue;
+    }
 
     const lstat = lstatSync(full);
     if (lstat.isSymbolicLink()) {
