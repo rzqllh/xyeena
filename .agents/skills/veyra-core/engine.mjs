@@ -11,6 +11,21 @@ export const BANNED_AI_WORDS = [
 
 export const FORBIDDEN_PUNCTUATION = [/—/g, /–/g];
 
+export function normalizePath(p) {
+  if (typeof p !== 'string') return '';
+  return p.replace(/\\/g, '/');
+}
+
+export function isPathSafe(p) {
+  if (typeof p !== 'string' || !p.trim()) return false;
+  if (p.includes('\0')) return false;
+  const n = normalizePath(p);
+  if (n.startsWith('/') || /^[a-zA-Z]:/.test(n)) return false;
+  const parts = n.split('/');
+  if (parts.some(seg => seg === '..' || seg === '%2e%2e' || seg === '%2E%2E')) return false;
+  return true;
+}
+
 export function validateScope(options = {}) {
   const { targetFiles = [], allowedPatterns = [], actionType = 'READ', dangerousOperations = [], isDestructive = false } = options;
   if (!Array.isArray(targetFiles)) throw new TypeError('targetFiles must be an array');
@@ -18,13 +33,15 @@ export function validateScope(options = {}) {
 
   const violations = [];
   for (const file of targetFiles) {
-    if (file.includes('..') || file.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(file)) {
+    if (!isPathSafe(file)) {
       violations.push(file);
       continue;
     }
+    const normalizedFile = normalizePath(file);
     const isAllowed = allowedPatterns.some(pattern => {
-      if (pattern.endsWith('*')) return file.startsWith(pattern.slice(0, -1));
-      return file === pattern;
+      const normPattern = normalizePath(pattern);
+      if (normPattern.endsWith('*')) return normalizedFile.startsWith(normPattern.slice(0, -1));
+      return normalizedFile === normPattern;
     });
     if (!isAllowed) violations.push(file);
   }

@@ -99,4 +99,66 @@ describe('Veyra v1.0 — Installer, Verification & Rollback (DEC-18, DEC-19, DEC
       assert.equal(item.permissible, true, `License for ${item.component} must be permissive`);
     }
   });
+
+  test('6. Pre-existing Collision & Atomic Restoration: backs up pre-existing user files and restores byte-for-byte on uninstall', () => {
+    const COLLISION_TARGET = join(process.cwd(), 'scratch_collision_target_' + Date.now());
+    mkdirSync(join(COLLISION_TARGET, 'skills', 'veyra-core'), { recursive: true });
+
+    // User already had this file before Veyra was installed
+    const userOriginalFile = join(COLLISION_TARGET, 'skills', 'veyra-core', 'SKILL.md');
+    const originalContent = '--- ORIGINAL USER CUSTOM DOCUMENTATION ---';
+    writeFileSync(userOriginalFile, originalContent, 'utf8');
+
+    // Install Veyra
+    const installResult = installVeyra({
+      targetDir: COLLISION_TARGET,
+      selectedSkills: ['veyra-core']
+    });
+    assert.equal(installResult.success, true);
+
+    // Manifest should record preExisting: true and backup
+    const manifestPath = join(COLLISION_TARGET, '.veyra-manifest.json');
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    const preExistingEntry = manifest.files.find(f => f.path === 'skills/veyra-core/SKILL.md');
+    assert.ok(preExistingEntry);
+    assert.equal(preExistingEntry.preExisting, true);
+    assert.ok(preExistingEntry.backupPath);
+    assert.ok(existsSync(join(COLLISION_TARGET, preExistingEntry.backupPath)));
+
+    // Uninstall Veyra
+    const uninstallResult = uninstallVeyra(COLLISION_TARGET);
+    assert.equal(uninstallResult.success, true);
+
+    // Original user content MUST be restored byte-for-byte
+    assert.ok(existsSync(userOriginalFile));
+    assert.equal(readFileSync(userOriginalFile, 'utf8'), originalContent);
+
+    // Clean up
+    rmSync(COLLISION_TARGET, { recursive: true, force: true });
+  });
+
+  test('7. Adversarial Manifest Paths: blocks traversal, null bytes, and URL encodings', () => {
+    const ADV_TARGET = join(process.cwd(), 'scratch_adv_target_' + Date.now());
+    mkdirSync(ADV_TARGET, { recursive: true });
+
+    installVeyra({ targetDir: ADV_TARGET, selectedSkills: ['veyra-core'] });
+    const manifestPath = join(ADV_TARGET, '.veyra-manifest.json');
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+
+    // Inject malicious targets into manifest
+    manifest.files.push(
+      { path: '../evil.txt', sha256: 'dead' },
+      { path: 'skills/%2e%2e/evil2.txt', sha256: 'beef' },
+      { path: 'skills/test\0file.txt', sha256: 'cafe' }
+    );
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+
+    const verifyResult = verifyInstallation(ADV_TARGET);
+    assert.ok(verifyResult);
+
+    const uninstallResult = uninstallVeyra(ADV_TARGET);
+    assert.equal(uninstallResult.success, true);
+
+    rmSync(ADV_TARGET, { recursive: true, force: true });
+  });
 });

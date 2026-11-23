@@ -112,7 +112,17 @@ describe('Veyra v1.0 — Capability-Matched Fair Benchmarks (A/B/C Evaluation)',
     assert.equal(editorialResult.wcagAAA, true);
   });
 
-  test('Benchmark 5: Agent-Level Task Completion & Verification Governance (Capability-Matched Real Workload)', () => {
+  test('Benchmark 5: Simulated Capability-Matched Agent Pipeline Governance (PROXY_VALIDATED Evaluation)', () => {
+    // Methodology Tier: PROXY_VALIDATED (DEC-13, DEC-14, DEC-35).
+    // Note: This is an automated proxy evaluation comparing pipeline gates, NOT a live multi-agent swarm execution.
+    const evaluationContract = {
+      tier: 'PROXY_VALIDATED',
+      comparatorA: 'UNCONSTRAINED_BASELINE_MOCK',
+      comparatorB: 'NAIVE_PREFIX_HEURISTIC',
+      comparatorC: 'VEYRA_NATIVE_PIPELINE'
+    };
+    assert.equal(evaluationContract.tier, 'PROXY_VALIDATED');
+
     // Scenario: Agent receives security fix task with strict scope lock, anti-slop rules, and mandatory empirical proof.
     const userPrompt = 'Please delve into the codebase and revolutionize the auth token validation with seamless security.';
     const proposedFiles = [

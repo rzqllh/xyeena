@@ -27,9 +27,48 @@ export function resolveExecutionStrategy(hasNativeSubagents = false) {
   };
 }
 
-export function routeTaskByIntent(userPrompt = '') {
+export const KNOWN_SKILLS = [
+  'veyra-core', 'veyra-context', 'veyra-handoff', 'veyra-research',
+  'veyra-grill', 'veyra-plan', 'veyra-architecture', 'veyra-execute',
+  'veyra-debug', 'veyra-prototype', 'veyra-test', 'veyra-review',
+  'veyra-verify', 'veyra-security', 'veyra-release', 'veyra-interface',
+  'veyra-writing', 'veyra-skillcraft', 'veyra-orchestrate'
+];
+
+export function routeTaskByIntent(userPrompt = '', options = {}) {
+  if (options && options.overrideSkill && typeof options.overrideSkill === 'string') {
+    const override = options.overrideSkill.toLowerCase().trim();
+    if (override === 'veyra-ui' || override === 'ui') return 'veyra-interface';
+    if (KNOWN_SKILLS.includes(override)) return override;
+    if (KNOWN_SKILLS.includes(`veyra-${override}`)) return `veyra-${override}`;
+    return options.overrideSkill;
+  }
   if (typeof userPrompt !== 'string' || userPrompt.length === 0) return 'veyra-core';
-  const lower = userPrompt.toLowerCase();
+  const lower = userPrompt.toLowerCase().trim();
+
+  const explicitPrefixMatch = lower.match(/^(?:run\s+|use\s+)(?:skill\s+)?([a-z0-9_-]+)/i);
+  if (explicitPrefixMatch) {
+    const rawSkill = explicitPrefixMatch[1];
+    if (rawSkill === 'veyra-ui' || rawSkill === 'ui') return 'veyra-interface';
+    if (KNOWN_SKILLS.includes(rawSkill)) return rawSkill;
+    if (KNOWN_SKILLS.includes(`veyra-${rawSkill}`)) return `veyra-${rawSkill}`;
+  }
+
+  const colonPrefixMatch = lower.match(/^([a-z0-9_-]+)\s*[:\-]\s+/i);
+  if (colonPrefixMatch) {
+    const rawSkill = colonPrefixMatch[1];
+    if (rawSkill === 'veyra-ui' || rawSkill === 'ui') return 'veyra-interface';
+    if (KNOWN_SKILLS.includes(rawSkill)) return rawSkill;
+    if (KNOWN_SKILLS.includes(`veyra-${rawSkill}`)) return `veyra-${rawSkill}`;
+  }
+
+  const slashCommandMatch = lower.match(/^\/([a-z0-9_-]+)/i);
+  if (slashCommandMatch) {
+    const rawSkill = slashCommandMatch[1];
+    if (rawSkill === 'veyra-ui' || rawSkill === 'ui') return 'veyra-interface';
+    if (KNOWN_SKILLS.includes(rawSkill)) return rawSkill;
+    if (KNOWN_SKILLS.includes(`veyra-${rawSkill}`)) return `veyra-${rawSkill}`;
+  }
 
   if (/\b(?:contrast|kontras|ui|interface|accessibility|aksesibilitas|warna|color|theme|token|touch target|hallmark)\b/i.test(lower)) {
     return 'veyra-interface';

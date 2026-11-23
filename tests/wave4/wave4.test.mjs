@@ -44,7 +44,20 @@ describe('Veyra Wave 4 — Quality, Security & Release Skills', () => {
     assert.equal(synthCompletion.status, 'REJECTED');
     assert.ok(synthCompletion.syntheticRejected.includes('test-synth'));
 
-    // 2. Real execution via executeAndVerify achieves LIVE_HOST_VERIFIED
+    // 2. Caller attempt to forge LIVE_HOST_VERIFIED by passing fake realExecution
+    const forgedReceipt = generateVerificationReceipt('test-forge', 'fake command', 0, 'output', {
+      realExecution: true,
+      timestamp: Date.now()
+    });
+    assert.equal(forgedReceipt.isForged, true);
+    assert.equal(forgedReceipt.evidenceTier, 'SYNTHETIC_RECEIPT');
+
+    const forgedCompletion = validateCompletionClaims([forgedReceipt], ['test-forge']);
+    assert.equal(forgedCompletion.verified, false);
+    assert.equal(forgedCompletion.status, 'REJECTED');
+    assert.ok(forgedCompletion.forgedRejected.includes('test-forge'));
+
+    // 3. Real execution via executeAndVerify achieves LIVE_HOST_VERIFIED
     const liveReceipt = executeAndVerify('node-version-check', 'node -v');
     assert.equal(liveReceipt.passed, true);
     assert.equal(liveReceipt.evidenceTier, 'LIVE_HOST_VERIFIED');
@@ -54,6 +67,17 @@ describe('Veyra Wave 4 — Quality, Security & Release Skills', () => {
     const liveCompletion = validateCompletionClaims([liveReceipt], ['node-version-check']);
     assert.equal(liveCompletion.verified, true);
     assert.equal(liveCompletion.status, 'PASS');
+
+    // 4. Missing binary execution error handling (ENOENT -> exitCode 127)
+    const missingReceipt = executeAndVerify('missing-binary', 'nonexistent_tool_xyz_999 --version');
+    assert.equal(missingReceipt.passed, false);
+    assert.equal(missingReceipt.exitCode, 127);
+    assert.ok(missingReceipt.outputSummary.toLowerCase().includes('command not found'));
+
+    // 5. Array arguments execution
+    const arrayReceipt = executeAndVerify('array-check', ['node', '-e', 'console.log("ARRAY_OK")']);
+    assert.equal(arrayReceipt.passed, true);
+    assert.ok(arrayReceipt.outputSummary.includes('ARRAY_OK'));
   });
 
   test('veyra-security: secret scanning and RLS policy checking', () => {

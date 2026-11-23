@@ -4,14 +4,35 @@
  * Zero external dependencies.
  */
 
+export function normalizePath(p) {
+  if (typeof p !== 'string') return '';
+  return p.replace(/\\/g, '/');
+}
+
+export function isPathSafe(p) {
+  if (typeof p !== 'string' || !p.trim()) return false;
+  if (p.includes('\0')) return false;
+  const n = normalizePath(p);
+  if (n.startsWith('/') || /^[a-zA-Z]:/.test(n)) return false;
+  const parts = n.split('/');
+  if (parts.some(seg => seg === '..' || seg === '%2e%2e' || seg === '%2E%2E')) return false;
+  return true;
+}
+
 export function validateExecutionScope(allowedFiles = [], filesToModify = []) {
   const disallowed = [];
   for (const f of filesToModify) {
+    if (!isPathSafe(f)) {
+      disallowed.push(f);
+      continue;
+    }
+    const normF = normalizePath(f);
     const isAllowed = allowedFiles.some(pattern => {
-      if (pattern.endsWith('*')) {
-        return f.startsWith(pattern.slice(0, -1));
+      const normPattern = normalizePath(pattern);
+      if (normPattern.endsWith('*')) {
+        return normF.startsWith(normPattern.slice(0, -1));
       }
-      return f === pattern;
+      return normF === normPattern;
     });
     if (!isAllowed) disallowed.push(f);
   }

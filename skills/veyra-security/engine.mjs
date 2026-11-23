@@ -1,8 +1,11 @@
 /**
  * Veyra Security Engine — veyra-security
  * Secret leak detection, RLS policy audit, untrusted input boundaries (DEC-31).
+ * Note: Pattern scanners provide perimeter defense and do not guarantee total application security without formal penetration testing.
  * Zero external dependencies.
  */
+
+export const ADVISORY_DISCLAIMER = 'Automated pattern scanning provides defense-in-depth heuristics and does not constitute a comprehensive security or penetration audit.';
 
 export function scanSecretLeaks(content = '') {
   if (typeof content !== 'string') return [];

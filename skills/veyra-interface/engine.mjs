@@ -1,8 +1,11 @@
 /**
  * Veyra Interface Engine — veyra-interface (Canonical, aliased: veyra-ui)
  * WCAG 2.2 contrast ratio, Hallmark Floor craft auditing, 3-tier design tokens, touch targets.
+ * Note: Automated calculations are heuristic aids and do not replace manual user or assistive technology testing.
  * Zero external dependencies.
  */
+
+export const ADVISORY_DISCLAIMER = 'Automated contrast and token checks are heuristic verifications and do not guarantee total WCAG 2.2 accessibility without human review.';
 
 function hexToRgb(hex) {
   const clean = hex.replace('#', '');

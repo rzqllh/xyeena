@@ -2,6 +2,7 @@
 /**
  * Veyra v1.0 CLI Installer & Harness Governance Engine
  * Implements DEC-18 (Thin CLI), DEC-19 (Workspace-First), DEC-20 (Rollback & Safe Uninstall), DEC-29 (Platform-Aware).
+ * Strict P0 Data Safety: protects pre-existing files, modified files, nested custom files, and rejects path traversal.
  * Zero external dependencies — 100% Node.js standard library.
  */
 
@@ -28,15 +29,35 @@ export function scanDirectory(dirPath, base = '') {
   if (!existsSync(dirPath)) return results;
   const entries = readdirSync(dirPath, { withFileTypes: true });
   for (const entry of entries) {
-    const full = join(dirPath, entry.name);
-    const rel = base ? `${base}/${entry.name}` : entry.name;
+    const fullPath = join(dirPath, entry.name);
+    const relPath = base ? `${base}/${entry.name}` : entry.name;
     if (entry.isDirectory()) {
-      results = results.concat(scanDirectory(full, rel));
+      results = results.concat(scanDirectory(fullPath, relPath));
     } else if (entry.isFile()) {
-      results.push({ fullPath: full, relPath: rel, hash: hashFile(full) });
+      results.push({
+        name: entry.name,
+        relPath: relPath.replace(/\\/g, '/'),
+        fullPath,
+        hash: hashFile(fullPath)
+      });
     }
   }
   return results;
+}
+
+export function isSafePath(baseDir, relativeFilePath) {
+  if (typeof relativeFilePath !== 'string' || !relativeFilePath.trim()) return false;
+  if (relativeFilePath.includes('\0')) return false;
+  const normalized = relativeFilePath.replace(/\\/g, '/');
+  if (normalized.startsWith('/') || /^[a-zA-Z]:/.test(normalized)) return false;
+  const segments = normalized.split('/');
+  if (segments.some(s => s === '..' || s === '%2e%2e' || s === '%2E%2E')) return false;
+
+  const resolvedBase = resolve(baseDir);
+  const full = resolve(resolvedBase, relativeFilePath);
+  const rel = relative(resolvedBase, full);
+  if (rel.startsWith('..') || isAbsolute(rel)) return false;
+  return true;
 }
 
 export function installVeyra(options = {}) {
@@ -58,8 +79,6 @@ export function installVeyra(options = {}) {
   mkdirSync(backupDir, { recursive: true });
 
   const manifestPath = join(resolvedTarget, '.veyra-manifest.json');
-  const existingManifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : null;
-
   const targetSkillsDir = join(resolvedTarget, 'skills');
   const targetAgentSkillsDir = join(resolvedTarget, '.agents', 'skills');
   mkdirSync(targetSkillsDir, { recursive: true });
@@ -77,29 +96,56 @@ export function installVeyra(options = {}) {
 
   for (const skill of skillsToInstall) {
     const skillSrc = join(skillsSource, skill);
-    const skillTarget = join(targetSkillsDir, skill);
-    const agentSkillTarget = join(targetAgentSkillsDir, skill);
+    const sourceFiles = scanDirectory(skillSrc);
 
-    // Backup if already exists
-    if (existsSync(skillTarget)) {
-      cpSync(skillTarget, join(backupDir, 'skills', skill), { recursive: true });
-    }
-    if (existsSync(agentSkillTarget)) {
-      cpSync(agentSkillTarget, join(backupDir, '.agents', 'skills', skill), { recursive: true });
-    }
+    for (const f of sourceFiles) {
+      const rel1 = `skills/${skill}/${f.relPath}`.replace(/\\/g, '/');
+      const rel2 = `.agents/skills/${skill}/${f.relPath}`.replace(/\\/g, '/');
 
-    cpSync(skillSrc, skillTarget, { recursive: true });
-    cpSync(skillSrc, agentSkillTarget, { recursive: true });
+      if (!isSafePath(resolvedTarget, rel1) || !isSafePath(resolvedTarget, rel2)) {
+        throw new Error(`Unsafe path detected during installation: ${rel1}`);
+      }
 
-    const skillFiles = scanDirectory(skillTarget);
-    for (const f of skillFiles) {
+      const dest1 = join(resolvedTarget, rel1);
+      const dest2 = join(resolvedTarget, rel2);
+
+      // Pre-existing collision check & backup
+      const preExisting1 = existsSync(dest1);
+      let preHash1 = null;
+      if (preExisting1) {
+        preHash1 = hashFile(dest1);
+        const bkp1 = join(backupDir, rel1);
+        mkdirSync(dirname(bkp1), { recursive: true });
+        copyFileSync(dest1, bkp1);
+      }
+
+      const preExisting2 = existsSync(dest2);
+      let preHash2 = null;
+      if (preExisting2) {
+        preHash2 = hashFile(dest2);
+        const bkp2 = join(backupDir, rel2);
+        mkdirSync(dirname(bkp2), { recursive: true });
+        copyFileSync(dest2, bkp2);
+      }
+
+      mkdirSync(dirname(dest1), { recursive: true });
+      mkdirSync(dirname(dest2), { recursive: true });
+      copyFileSync(f.fullPath, dest1);
+      copyFileSync(f.fullPath, dest2);
+
       installedFiles.push({
-        path: `skills/${skill}/${f.relPath}`.replace(/\\\\/g, '/'),
-        sha256: f.hash
+        path: rel1,
+        sha256: f.hash,
+        preExisting: Boolean(preExisting1),
+        preExistingSha256: preHash1,
+        backupPath: preExisting1 ? join(relative(resolvedTarget, backupDir), rel1).replace(/\\/g, '/') : null
       });
       installedFiles.push({
-        path: `.agents/skills/${skill}/${f.relPath}`.replace(/\\\\/g, '/'),
-        sha256: f.hash
+        path: rel2,
+        sha256: f.hash,
+        preExisting: Boolean(preExisting2),
+        preExistingSha256: preHash2,
+        backupPath: preExisting2 ? join(relative(resolvedTarget, backupDir), rel2).replace(/\\/g, '/') : null
       });
     }
   }
@@ -110,7 +156,7 @@ export function installVeyra(options = {}) {
     platform: process.platform,
     mode,
     installedSkills: skillsToInstall,
-    backupLocation: relative(resolvedTarget, backupDir).replace(/\\\\/g, '/'),
+    backupLocation: relative(resolvedTarget, backupDir).replace(/\\/g, '/'),
     files: installedFiles
   };
 
@@ -129,45 +175,44 @@ export function verifyInstallation(targetDir = process.cwd()) {
   const resolvedTarget = resolve(targetDir);
   const manifestPath = join(resolvedTarget, '.veyra-manifest.json');
   if (!existsSync(manifestPath)) {
-    return { valid: false, error: 'No .veyra-manifest.json found in target directory.' };
+    return { valid: false, error: 'No .veyra-manifest.json found in target directory.', intact: [], modified: [], missing: [], totalChecked: 0 };
   }
 
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  const results = {
-    intact: [],
-    modified: [],
-    missing: [],
-    totalChecked: manifest.files.length,
-    valid: true
-  };
+  try {
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    const results = {
+      intact: [],
+      modified: [],
+      missing: [],
+      totalChecked: (manifest.files || []).length,
+      valid: true
+    };
 
-  for (const item of manifest.files) {
-    const full = join(resolvedTarget, item.path);
-    if (!existsSync(full)) {
-      results.missing.push(item.path);
-      results.valid = false;
-    } else {
-      const currentHash = hashFile(full);
-      if (currentHash === item.sha256) {
-        results.intact.push(item.path);
-      } else {
-        results.modified.push({ path: item.path, expected: item.sha256, actual: currentHash });
+    for (const item of (manifest.files || [])) {
+      if (!isSafePath(resolvedTarget, item.path)) {
+        results.modified.push({ path: item.path, expected: item.sha256, actual: 'UNSAFE_PATH' });
         results.valid = false;
+        continue;
+      }
+      const full = join(resolvedTarget, item.path);
+      if (!existsSync(full)) {
+        results.missing.push(item.path);
+        results.valid = false;
+      } else {
+        const currentHash = hashFile(full);
+        if (currentHash === item.sha256) {
+          results.intact.push(item.path);
+        } else {
+          results.modified.push({ path: item.path, expected: item.sha256, actual: currentHash });
+          results.valid = false;
+        }
       }
     }
+
+    return results;
+  } catch (err) {
+    return { valid: false, error: `Corrupt manifest: ${err.message}`, intact: [], modified: [], missing: [], totalChecked: 0 };
   }
-
-  return results;
-}
-
-export function isSafePath(baseDir, relativeFilePath) {
-  if (typeof relativeFilePath !== 'string' || !relativeFilePath) return false;
-  if (isAbsolute(relativeFilePath)) return false;
-  if (relativeFilePath.includes('\0')) return false;
-  const full = resolve(baseDir, relativeFilePath);
-  const rel = relative(baseDir, full);
-  if (rel.startsWith('..') || isAbsolute(rel)) return false;
-  return true;
 }
 
 export function rollbackInstallation(targetDir = process.cwd()) {
@@ -185,8 +230,7 @@ export function rollbackInstallation(targetDir = process.cwd()) {
   const backupPath = resolve(resolvedTarget, backupLocation);
   const preservedModified = [];
 
-  // Remove installed files recorded in manifest (preserve if modified by user)
-  for (const item of manifest.files) {
+  for (const item of (manifest.files || [])) {
     if (!isSafePath(resolvedTarget, item.path)) {
       console.warn(`[WARN] Skipping unsafe path in manifest during rollback: ${item.path}`);
       continue;
@@ -204,7 +248,7 @@ export function rollbackInstallation(targetDir = process.cwd()) {
     if (currentHash === item.sha256) {
       unlinkSync(full);
     } else {
-      // User modified: back up before removing
+      // User modified: back up before rollback
       const backupMod = full + '.user-modified';
       copyFileSync(full, backupMod);
       unlinkSync(full);
@@ -234,9 +278,11 @@ export function uninstallVeyra(targetDir = process.cwd()) {
 
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   let deletedFiles = 0;
+  let restoredFiles = 0;
   const preservedUserFiles = [];
+  const backupDir = manifest.backupLocation ? join(resolvedTarget, manifest.backupLocation) : null;
 
-  for (const item of manifest.files) {
+  for (const item of (manifest.files || [])) {
     if (!isSafePath(resolvedTarget, item.path)) {
       console.warn(`[WARN] Skipping unsafe path in manifest: ${item.path}`);
       continue;
@@ -252,6 +298,21 @@ export function uninstallVeyra(targetDir = process.cwd()) {
     }
 
     const currentHash = hashFile(full);
+
+    // If file was pre-existing before Veyra was installed:
+    if (item.preExisting === true) {
+      const backupFile = backupDir ? join(backupDir, item.path) : null;
+      if (backupFile && existsSync(backupFile)) {
+        copyFileSync(backupFile, full);
+        restoredFiles++;
+      } else {
+        // Pre-existing file with no backup: PRESERVE! Never delete user file!
+        preservedUserFiles.push({ path: item.path, reason: 'PRE_EXISTING_USER_FILE' });
+      }
+      continue;
+    }
+
+    // Veyra installed file:
     if (currentHash === item.sha256) {
       unlinkSync(full);
       deletedFiles++;
@@ -261,7 +322,7 @@ export function uninstallVeyra(targetDir = process.cwd()) {
     }
   }
 
-  // Helper to remove directory only if completely empty
+  // Remove directory only if completely empty
   function removeEmptyDir(dirPath) {
     try {
       if (existsSync(dirPath)) {
@@ -277,12 +338,9 @@ export function uninstallVeyra(targetDir = process.cwd()) {
     return false;
   }
 
-  // Remove empty directories for skills (never remove if user has files inside!)
   for (const skill of (manifest.installedSkills || [])) {
-    const s1 = join(resolvedTarget, 'skills', skill);
-    const s2 = join(resolvedTarget, '.agents', 'skills', skill);
-    removeEmptyDir(s1);
-    removeEmptyDir(s2);
+    removeEmptyDir(join(resolvedTarget, 'skills', skill));
+    removeEmptyDir(join(resolvedTarget, '.agents', 'skills', skill));
   }
 
   removeEmptyDir(join(resolvedTarget, 'skills'));
@@ -294,6 +352,7 @@ export function uninstallVeyra(targetDir = process.cwd()) {
   return {
     success: true,
     deletedFiles,
+    restoredFiles,
     preservedUserFiles,
     preservedCount: preservedUserFiles.length
   };
@@ -328,7 +387,13 @@ export function auditLicenses() {
   ];
 
   const allPermissible = licenseRegistry.every(l => l.permissible);
-  return { compliant: allPermissible, registry: licenseRegistry };
+  return {
+    compliant: allPermissible,
+    registry: licenseRegistry,
+    auditedCount: licenseRegistry.length,
+    status: 'BASELINE_PERMISSIVE_VERIFIED',
+    note: 'Baseline audit of 21 declared upstreams. Exhaustive legal review deferred to pre-release gate.'
+  };
 }
 
 // CLI Execution handler
