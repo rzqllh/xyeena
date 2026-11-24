@@ -34,6 +34,8 @@ function matchGlob(file, pattern) {
   if (typeof pattern !== 'string' || !pattern.trim() ||
       !isPathSafe(pattern.replace(/\*\*?/g, 'x').replace(/\?/g, 'x'))) return false;
   const pat = normalizePath(pattern);
+  // Legacy folder/* patterns were recursive prefixes; preserve that published contract.
+  if (pat.endsWith('/*') && !pat.includes('**')) return file.startsWith(pat.slice(0, -1));
   const escaped = pat.replace(/[.+^$()|[\]{}\\]/g, '\\$&')
     .replace(/\*\*/g, '\x00').replace(/\*/g, '[^/]*')
     .replace(/\?/g, '[^/]').replace(/\x00/g, '.*');

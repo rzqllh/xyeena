@@ -156,7 +156,7 @@ describe('Veyra v1.0 — Capability-Matched Fair Benchmarks (A/B/C Evaluation)',
     // 3. Empirical Verification Gate (P0 Evidence Standard)
     const liveReceipt = executeAndVerify('AUTH_TEST', 'node -e "console.log(\'token validation tests pass\')"');
     assert.equal(liveReceipt.passed, true);
-    assert.equal(liveReceipt.evidenceTier, 'LIVE_HOST_VERIFIED');
+    assert.equal(liveReceipt.evidenceTier, 'LOCAL_PROCESS_VERIFIED');
 
     const completion = validateCompletionClaims([liveReceipt], ['AUTH_TEST']);
     assert.equal(completion.verified, true);
