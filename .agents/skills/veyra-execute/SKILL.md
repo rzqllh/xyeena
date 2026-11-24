@@ -1,6 +1,6 @@
 ---
 name: veyra-execute
-description: Scoped implementation specialist with strict TDD state tracking and smallest-change auditing.
+description: Use when implementing a user-approved code change with scoped files and regression protection.
 version: 1.0.0
 aliases:
   - execute
@@ -20,11 +20,16 @@ Execute approved implementation tasks with locked scope, minimal churn, and veri
 3. Minimal Churn: Reject opportunistic refactoring or reformatting of adjacent code.
 
 ## Operational Instructions
-1. Discovery & Activation: Activated when user issues explicit implementation authorization (GO / implement / execute).
-2. Engine Invocation:
-   - Programmatic: `import { validateExecutionScope, trackTddPhase, validatePatchIntegrity } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-execute/engine.mjs').then(m => console.log(m.trackTddPhase(['RED', 'GREEN'])))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Follow Red-Green-Refactor cycle. Run test command before writing implementation, then execute smallest correct diff.
-   - Claude Code / Codex: Ensure changes are strictly localized within approved scope patterns without collateral refactoring.
-4. Output & Verification: Output clean git diff, passing test evidence, and concise summary of changes.
+1. Native Host Integration: Inspect git diff and real file changes, validate declared scope, then run tests with the Veyra verification CLI.
+2. Engine entry: `import { validateExecutionScope, trackTddPhase, validatePatchIntegrity } from './engine.mjs'`
+3. Evidence boundary: Passing validateExecutionScope on model-supplied targetFiles is advisory, not a filesystem enforcement hook.
+
+## Red flags
+- "Tests probably pass" without an actual test command and exit code.
+- Validator received a planned file list, but no actual git diff was inspected.
+- User approval for one edit was treated as authorization for unrelated changes.
+
+## Pressure tests
+1. Agent tries to edit an unapproved config while a code fix is authorized: reject and request scope approval.
+2. Failing regression: do not claim fixed until command receipt passes.
+3. TDD steps are listed but never executed: report NOT_RUN, not GREEN.

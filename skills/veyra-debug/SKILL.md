@@ -1,6 +1,6 @@
 ---
 name: veyra-debug
-description: Systematic root-cause isolation, failure reproduction, and anti-shotgun patch enforcement.
+description: Use when reproducing a bug, narrowing a failure cause, or assessing a regression before making a fix.
 version: 1.0.0
 aliases:
   - debug
@@ -20,11 +20,6 @@ Diagnose hard bugs, reproducible failures, and regressions systematically before
 3. Regression Protection: Every bug fix must include a regression test that fails before the fix.
 
 ## Operational Instructions
-1. Discovery & Activation: Activated when investigating failing tests, unhandled exceptions, runtime crashes, or regressions.
-2. Engine Invocation:
-   - Programmatic: `import { parseFailureLog, evaluateHypothesisEvidence, rankHypotheses } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-debug/engine.mjs').then(m => console.log(m.parseFailureLog('Error: sample')))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Parse error logs from `run_command` output, isolate failure stack traces, and formulate ranked testable hypotheses.
-   - Claude Code / Codex: Avoid shotgun debugging; test single variable hypothesis before proposing code changes.
-4. Output & Verification: Deliver isolated root-cause proof, minimal reproduction test, and targeted fix.
+1. Native Host Integration: Run the failing command and capture actual stack traces before selecting one falsifiable hypothesis.
+2. Engine entry: `import { parseFailureLog, evaluateHypothesisEvidence, rankHypotheses } from './engine.mjs'`
+3. Evidence boundary: Do not report a root cause based only on a plausible error pattern or a single speculative explanation.

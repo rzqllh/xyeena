@@ -64,11 +64,11 @@ describe('Veyra Core — Universal Anti-Slop Filter (DEC-05)', () => {
 });
 
 describe('Veyra Core — Epistemic Evidence Classification (DEC-07)', () => {
-  test('classifies verified receipt as OBSERVED', () => {
+  test('rejects untrusted claim arrays as unobserved', () => {
     const claim = 'Verification output passed: 45637 / 45637 files matched by SHA-256.';
     const res = classifyEvidence(claim, ['45637 / 45637']);
-    assert.equal(res.category, 'OBSERVED');
-    assert.equal(res.confidence, 1.0);
+    assert.equal(res.category, 'UNKNOWN');
+    assert.equal(res.confidence, 0.0);
   });
 
   test('classifies unverified conjecture as UNKNOWN', () => {

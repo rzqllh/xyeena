@@ -1,6 +1,6 @@
 ---
 name: veyra-skillcraft
-description: Skill authoring, validation, and lifecycle governance.
+description: Use when authoring, validating, or comparing agent skills and their host discovery metadata.
 version: 1.0.0
 aliases:
   - skillcraft
@@ -20,11 +20,6 @@ Author, validate, and govern standardized Agent Skills adhering to multi-host na
 3. Strict Parity: Host discovery copies must match the source skill byte-for-byte.
 
 ## Operational Instructions
-1. Discovery & Activation: Activated when creating, authoring, auditing, or packaging new Agent Skills or SKILL.md files.
-2. Engine Invocation:
-   - Programmatic: `import { validateSkillStructure, auditSkillTokenBudget } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-skillcraft/engine.mjs').then(m => console.log(m.validateSkillStructure('sample')))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Validate YAML frontmatter, ensure Invariants block exists, and check L0 token budget <= 1,500 tokens.
-   - Claude Code / Codex: Ensure parity between `skills/` and `.agents/skills/` distribution directories.
-4. Output & Verification: Verify valid skill structure and token-budget compliance.
+1. Native Host Integration: Compare actual SKILL.md frontmatter, behavioral instructions, and mirrored distribution copies.
+2. Engine entry: `import { validateSkillStructure, auditSkillTokenBudget } from './engine.mjs'`
+3. Evidence boundary: Frontmatter validity is not proof of agent discovery, skill use, or improved task outcomes.

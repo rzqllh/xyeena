@@ -1,6 +1,6 @@
 ---
 name: veyra-prototype
-description: Disposable experiment spikes and throwaway prototype isolation.
+description: Use when testing a reversible hypothesis in an isolated temporary workspace.
 version: 1.0.0
 aliases:
   - prototype
@@ -20,11 +20,6 @@ Validate uncertain design decisions through disposable, isolated spike implement
 3. Mandatory Cleanup: Must maintain a removal manifest for all temporary scratch files.
 
 ## Operational Instructions
-1. Discovery & Activation: Activated when exploring unverified technical hypotheses, library spikes, or disposable experiments.
-2. Engine Invocation:
-   - Programmatic: `import { createSpikeHarness, auditSpikeIsolation, generateCleanupManifest } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-prototype/engine.mjs').then(m => console.log(m.createSpikeHarness('spike-1', './scratch')))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Create isolated test spikes in `scratch/`, run disposable experiments, and ensure production files are untouched.
-   - Claude Code / Codex: Generate cleanup manifest to guarantee zero leftover experimental artifacts.
-4. Output & Verification: Return conclusive experimental answer and clean up temporary test files.
+1. Native Host Integration: Create a disposable scratch environment and collect a reproducible command/output before interpreting the result.
+2. Engine entry: `import { createSpikeHarness, auditSpikeIsolation, generateCleanupManifest } from './engine.mjs'`
+3. Evidence boundary: Prototypes are not production validation; don't copy experimental code into production without approval.

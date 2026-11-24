@@ -1,6 +1,6 @@
 ---
 name: veyra-security
-description: Advisory security auditing, secret leak detection, RLS policy validation, and untrusted input boundaries.
+description: Use when auditing secrets, RLS policies, SSRF exposure, or untrusted-input boundaries.
 version: 1.0.0
 aliases:
   - security
@@ -21,11 +21,6 @@ Audit code and configurations against security vulnerabilities, credential leaks
 3. Injection Defense: Dynamic SQL or shell command interpolations are classified as CRITICAL risks.
 
 ## Operational Instructions
-1. Discovery & Activation: Activated when writing authentication, authorization, database queries, API routes, or scanning secrets.
-2. Engine Invocation:
-   - Programmatic: `import { scanSecretLeaks, auditRlsPolicies, auditInputSanitization, detectPathTraversal } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-security/engine.mjs').then(m => console.log(m.scanSecretLeaks('sample code')))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Scan staged code for hardcoded tokens (AWS, GitHub, JWT), verify input sanitization, and block path traversal.
-   - Claude Code / Codex: Ensure Row Level Security (RLS) is active on user tables and untrusted inputs are strictly parameterized.
-4. Output & Verification: Deliver zero-leak security audit certificate with verified boundary checks.
+1. Native Host Integration: Read source and execute relevant checks; trace exploitability across guards and configuration before assigning severity.
+2. Engine entry: `import { scanSecretLeaks, auditRlsPolicies, auditInputSanitization, detectPathTraversal } from './engine.mjs'`
+3. Evidence boundary: Finding a fallback constant does not alone prove exploitability; differentiate OBSERVED code from inferred impact.

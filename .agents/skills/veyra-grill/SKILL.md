@@ -1,6 +1,6 @@
 ---
 name: veyra-grill
-description: Question-frontier interview, architectural stress-testing, and contradiction discovery.
+description: Use when a requirement, architecture choice, or safety assumption has unresolved consequential ambiguity.
 version: 1.0.0
 aliases:
   - grill
@@ -20,11 +20,16 @@ Relentlessly test plans, requirements, and assumptions before implementation to 
 3. Falsifiable Frontier: Questions are targeted and testable, not polite open-ended chats.
 
 ## Operational Instructions
-1. Discovery & Activation: Activated during requirement gathering, architecture brainstorming, or when user asks for deep design stress-testing.
-2. Engine Invocation:
-   - Programmatic: `import { generateQuestionFrontier, detectAmbiguities, detectContradictions } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-grill/engine.mjs').then(m => console.log(m.generateQuestionFrontier([])))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Prompt user with focused, non-trivial multiple choice questions or sharp architectural tradeoff inquiries.
-   - Claude Code / Codex: Challenge implicit assumptions and probe edge-case failure modes before freezing specifications.
-4. Output & Verification: Resolve open ambiguities and document locked decisions in project register.
+1. Native Host Integration: Ask only questions that change the decision; capture explicit owner approval before destructive or architectural actions.
+2. Engine entry: `import { generateQuestionFrontier, detectAmbiguities, detectContradictions } from './engine.mjs'`
+3. Evidence boundary: A generated question list is not evidence that the user approved the answers.
+
+## Red flags
+- Ambiguous requirement silently converted into a locked decision.
+- A proposed plan is treated as user authorization.
+- Repeated low-value questions block an otherwise safe task.
+
+## Pressure tests
+1. Owner says "what if": discuss options without initiating edits.
+2. Destructive migration lacks rollback: ask for a decision before execution.
+3. Answer already exists in context: do not ask it again.

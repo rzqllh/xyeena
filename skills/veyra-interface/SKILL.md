@@ -1,6 +1,6 @@
 ---
 name: veyra-interface
-description: Editorial interface craft, WCAG 2.2 accessibility contrast checker, Hallmark Floor standards, 3-tier design tokens.
+description: Use when auditing or implementing interactive UI, contrast, responsive layout, or touch targets.
 version: 1.0.0
 aliases:
   - veyra-ui
@@ -23,11 +23,6 @@ Craft editorial, responsive user interfaces compliant with WCAG 2.2 accessibilit
 3. Mobile Touch Targets: Interactive touch targets must meet minimum 44x44px bounds.
 
 ## Operational Instructions
-1. Discovery & Activation: Activated when designing or reviewing UI components, styles, color palettes, typography, or accessibility. Canonical alias: veyra-ui.
-2. Engine Invocation:
-   - Programmatic: `import { calculateContrastRatio, auditHallmarkFloor, auditDesignTokens, auditTouchTargetSize } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-interface/engine.mjs').then(m => console.log(m.calculateContrastRatio('#0F172A', '#F8FAFC')))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Inspect CSS and component styles with `read_file`, verify WCAG 2.2 AA (4.5:1) text contrast, and check 44x44px touch targets.
-   - Claude Code / Codex: Enforce 3-tier token architecture and eliminate generic AI purple gradients and card tropes.
-4. Output & Verification: Produce accessible, responsive UI code compliant with WCAG 2.2 AA and anti-slop visual standards.
+1. Native Host Integration: Inspect the actual component and styles; calculate color contrast from actual foreground/background pairs.
+2. Engine entry: `import { calculateContrastRatio, auditHallmarkFloor, auditDesignTokens, auditTouchTargetSize } from './engine.mjs'`
+3. Evidence boundary: WCAG 2.2 SC 2.5.8 has exceptions and a 24 CSS px baseline; Veyra's 44px target is a stricter design choice.

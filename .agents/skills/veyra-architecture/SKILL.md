@@ -1,6 +1,6 @@
 ---
 name: veyra-architecture
-description: Deep module boundary auditing, Clean Architecture seam enforcement, and coupling metrics.
+description: Use when inspecting module dependencies, coupling, circular imports, or architecture boundaries.
 version: 1.0.0
 aliases:
   - architecture
@@ -20,11 +20,6 @@ Define and enforce deep module boundaries, dependency inversion, and architectur
 3. No Circular Imports: Module dependency graphs must remain strictly acyclic.
 
 ## Operational Instructions
-1. Discovery & Activation: Activated when user requests architectural review, dependency auditing, modular boundaries, or refactoring safety.
-2. Engine Invocation:
-   - Programmatic: `import { auditModuleBoundaries, calculateAfferentEfferentCoupling, detectCircularImports } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-architecture/engine.mjs').then(m => console.log(m.detectCircularImports([])))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Scan codebase module imports using `read_file` or static analysis before suggesting boundary changes.
-   - Claude Code / Codex: Evaluate coupling metrics and flag any circular dependency before generating code plans.
-4. Output & Verification: Emit module coupling report with Instability (I) scores and zero circular import cycles.
+1. Native Host Integration: Inspect actual imports, deployment layout, and file paths before claiming a coupling or boundary defect.
+2. Engine entry: `import { auditModuleBoundaries, calculateAfferentEfferentCoupling, detectCircularImports } from './engine.mjs'`
+3. Evidence boundary: Engine can measure a supplied dependency graph; a model-written graph is not proof of the repository graph.

@@ -1,6 +1,6 @@
 ---
 name: veyra-review
-description: Dual-axis architectural depth and surgical safety code review.
+description: Use when reviewing concrete code changes for correctness, regressions, safety, and architecture impact.
 version: 1.0.0
 aliases:
   - review
@@ -20,11 +20,6 @@ Perform independent, dual-axis code reviews evaluating architectural seams and s
 3. Constructive Findings: Every finding must include concrete line citations and actionable remedies.
 
 ## Operational Instructions
-1. Discovery & Activation: Activated during code review passes, pull request audits, or pre-commit verification.
-2. Engine Invocation:
-   - Programmatic: `import { evaluateDualAxisReview, calculateComplexityEstimate } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-review/engine.mjs').then(m => console.log(m.evaluateDualAxisReview({ diffLines: [], architecturalRules: [] })))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Review git diffs against architectural rules and code hygiene guidelines; flag blockers with file:line pointers.
-   - Claude Code / Codex: Enforce two-axis evaluation: functional correctness and architectural alignment.
-4. Output & Verification: Emit prioritized findings (Critical, High, Medium, Low) with actionable remediation steps.
+1. Native Host Integration: Inspect the actual diff, related callers and tests; evaluate both correctness and scope.
+2. Engine entry: `import { evaluateDualAxisReview, calculateComplexityEstimate } from './engine.mjs'`
+3. Evidence boundary: The reviewer engine scores structured findings; it cannot independently discover missing code or prove regressions.

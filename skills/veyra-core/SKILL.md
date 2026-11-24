@@ -1,6 +1,6 @@
 ---
 name: veyra-core
-description: Core pragmatic engineering discipline, universal anti-slop filters, epistemic claim classification, and strict scope fencing.
+description: Use when checking proposed file scope, classifying execution claims, or editing repetitive AI copy.
 version: 1.0.0
 aliases:
   - core
@@ -18,21 +18,26 @@ Enforce disciplined engineering judgment, eliminate generic AI filler, and lock 
 
 ## Invariants
 1. Scope Lock: Modifications to files outside explicitly approved patterns are strictly BLOCKED.
-2. Anti-Slop: Banned words ('delve', 'testament', 'seamless', 'revolutionize') and em/en-dashes are flagged.
-3. Epistemic Grounding: No claim may be labeled OBSERVED without concrete, verified tool output or receipt.
+2. Anti-Slop: Flag boilerplate marketing phrases and em dashes; retain legitimate technical terms and numeric en-dash ranges.
+3. Epistemic Grounding: OBSERVED is limited to a successful command-exit assertion backed by the persisted signed receipt; semantic conclusions require independent inspection.
 4. Zero External Dependencies: Implemented strictly using Node.js built-in standard library.
 
 ## Schema
-- `validateScope({ targetFiles: string[], allowedPatterns: string[], actionType: string }) => { verdict: 'ALLOWED'|'BLOCKED_SCOPE', allowed: boolean, violations: string[] }`
+- `validateScope({ targetFiles: string[], allowedPatterns: string[], actionType: string }) => { verdict: 'PROCEED'|'BLOCKED_SCOPE'|'NEEDS_OWNER_APPROVAL', allowed: boolean, violations: string[] }`
 - `checkAntiSlop(text: string) => { pass: boolean, findings: Array<{ type: string, word?: string, index: number }> }`
-- `classifyClaim(statement: string, receipt?: object) => { category: 'OBSERVED'|'INFERENCE'|'UNKNOWN'|'PROPOSAL', confidence: number }`
+- `classifyClaim(statement: string, receipt?: object, options?: object) => { category: 'OBSERVED'|'INFERENCE'|'UNKNOWN', confidence: number }`; OBSERVED requires `COMMAND_EXIT_ZERO:<taskName>` and a valid journal receipt.
 
 ## Operational Instructions
-1. Discovery & Activation: Always-on baseline filter for every user turn and every file modification operation.
-2. Engine Invocation:
-   - Programmatic: `import { validateScope, checkAntiSlop, classifyClaim } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-core/engine.mjs').then(m => console.log(m.validateScope({ targetFiles: [], allowedPatterns: ['*'], actionType: 'READ' })))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Before executing `edit_file` or `write_file`, run `validateScope` against allowed patterns. On user text output, verify zero anti-slop buzzwords and zero forbidden em-dashes.
-   - Claude Code / Codex: Check epistemic classification on all claims: label OBSERVED only when supported by fresh tool output.
-4. Output & Verification: Return clear, evidence-based responses without boilerplate or scope drift.
+1. Native Host Integration: Inspect actual changed files, not just agent-supplied targetFiles; validateScope is a proposed-path advisory unless a trusted tool hook enforces it.
+2. Engine entry: `import { validateScope, checkAntiSlop, classifyClaim } from './engine.mjs'`
+3. Evidence boundary: Only `COMMAND_EXIT_ZERO:<task>` with a persisted signed receipt can be OBSERVED; other claims require source inspection. See veyra-verify.
+
+## Red flags
+- "I checked scope" means the agent passed a self-selected list to validateScope, not that filesystem writes were constrained.
+- "Tests pass" is marked OBSERVED because the model supplied `['trust me']`.
+- A path pattern `src/**` is mistaken for an OS sandbox. It is not.
+
+## Pressure tests
+1. A fabricated evidence array must classify UNKNOWN.
+2. A live signed node -v receipt must not certify "the bug is fixed".
+3. An encoded traversal in targetFiles must fail the path check.

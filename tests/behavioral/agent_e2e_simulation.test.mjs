@@ -62,7 +62,7 @@ describe('Veyra v1.0 — Real Agent Behavioral E2E Simulation', () => {
       'node -e "console.log(\'5 tests passed in 45ms\')"'
     );
     assert.equal(receipt.passed, true);
-    assert.equal(receipt.evidenceTier, 'LIVE_HOST_VERIFIED');
+    assert.equal(receipt.evidenceTier, 'LOCAL_PROCESS_VERIFIED');
 
     const completionValidation = validateCompletionClaims([receipt], ['TASK_API']);
     assert.equal(completionValidation.verified, true);
@@ -89,8 +89,8 @@ describe('Veyra v1.0 — Real Agent Behavioral E2E Simulation', () => {
     assert.equal(antiSlopCheck.pass, true, 'Clean factual output passes anti-slop gate');
 
     const epistemicClaim = classifyClaim(rawFactualOutput, ['exited with code 0']);
-    assert.equal(epistemicClaim.category, 'OBSERVED');
-    assert.equal(epistemicClaim.confidence, 1.0);
+    assert.equal(epistemicClaim.category, 'UNKNOWN');
+    assert.equal(epistemicClaim.confidence, 0.0);
 
     const slopOutput = 'I am pleased to revolutionize this cutting-edge solution with vital game-changing power.';
     const slopCheck = evaluateAntiSlop(slopOutput);

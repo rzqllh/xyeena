@@ -1,6 +1,6 @@
 ---
 name: veyra-handoff
-description: Structured session continuation, deterministic checkpoint serialization, recovery, and state resumption.
+description: Use when transferring work between agents or resuming after compaction without losing verified state.
 version: 1.0.0
 aliases:
   - handoff
@@ -22,11 +22,6 @@ Serialize and parse structured Markdown checkpoints, enabling seamless session r
 3. Corruption Tolerance: Gracefully falls back to baseline recovery state if a checkpoint file is truncated.
 
 ## Operational Instructions
-1. Discovery & Activation: Activated at milestone boundaries, end of session, or when transitioning context across agents.
-2. Engine Invocation:
-   - Programmatic: `import { serializeCheckpoint, createCheckpoint, parseCheckpoint } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-handoff/engine.mjs').then(m => console.log(m.serializeCheckpoint({ status: 'ACTIVE' })))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Write updated state directly to `CHECKPOINT.md` on disk with exact git commit SHA, active wave, and todo items.
-   - Claude Code / Codex: Re-read `CHECKPOINT.md` on session resume to maintain continuous context without duplicate work.
-4. Output & Verification: Deliver parseable, standardized markdown checkpoint with 100% verified state.
+1. Native Host Integration: Read the actual checkpoint and current Git HEAD; reconcile stale entries against tool outputs before resuming.
+2. Engine entry: `import { serializeCheckpoint, createCheckpoint, parseCheckpoint } from './engine.mjs'`
+3. Evidence boundary: Serialized text proves format, not truthfulness or freshness of saved claims.

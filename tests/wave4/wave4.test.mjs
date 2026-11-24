@@ -91,15 +91,15 @@ describe('Veyra Wave 4 — Quality, Security & Release Skills', () => {
     // 3. Real execution via executeAndVerify achieves LIVE_HOST_VERIFIED
     const liveReceipt = executeAndVerify('node-version-check', 'node -v');
     assert.equal(liveReceipt.passed, true);
-    assert.equal(liveReceipt.evidenceTier, 'LIVE_HOST_VERIFIED');
+    assert.equal(liveReceipt.evidenceTier, 'LOCAL_PROCESS_VERIFIED');
     assert.ok(liveReceipt.executionProof.durationMs >= 0);
     assert.ok(liveReceipt.executionProof.outputHash.length === 64);
 
     assert.equal('signExecutionProof' in verificationExports, false, 'Signing key is not exposed as public API');
-    const fakeLabel = { ...syntheticReceipt, evidenceTier: 'LIVE_HOST_VERIFIED' };
+    const fakeLabel = { ...syntheticReceipt, evidenceTier: 'LOCAL_PROCESS_VERIFIED' };
     assert.equal(validateCompletionClaims([fakeLabel], ['test-synth']).verified, false, 'Caller cannot forge a trusted tier label');
     const clonedReceipt = { ...liveReceipt };
-    assert.equal(validateCompletionClaims([clonedReceipt], ['node-version-check']).verified, false, 'Cloned signed receipts must not pass in-process verification');
+    assert.equal(validateCompletionClaims([clonedReceipt], ['node-version-check']).verified, true, 'Signed receipts must survive cloning and process boundaries');
     assert.equal(validateCompletionClaims([syntheticReceipt], ['test-synth'], { disallowSynthetic: false }).verified, false, 'Legacy options cannot bypass trusted evidence');
 
     const liveCompletion = validateCompletionClaims([liveReceipt], ['node-version-check']);

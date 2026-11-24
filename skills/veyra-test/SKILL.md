@@ -1,6 +1,6 @@
 ---
 name: veyra-test
-description: Automated test execution, regression suite management, and test category classification.
+description: Use when executing regression tests, investigating failed assertions, or checking acceptance criteria.
 version: 1.0.0
 aliases:
   - test
@@ -20,11 +20,6 @@ Verify system behavior with fresh automated test suites across unit, integration
 3. Adequate Assertions: Every test case must declare observable assertions (density >= 1.5).
 
 ## Operational Instructions
-1. Discovery & Activation: Activated when writing tests, structuring test suites, or evaluating test coverage and assertions.
-2. Engine Invocation:
-   - Programmatic: `import { classifyTestSuites, evaluateSuiteResult, auditAssertionDensity } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-test/engine.mjs').then(m => console.log(m.classifyTestSuites([])))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Categorize suites into unit, integration, and regression; execute tests using native test runners (`node --test`).
-   - Claude Code / Codex: Prevent assertion-free smoke tests; enforce meaningful behavioral expectations.
-4. Output & Verification: Output execution duration, test counts, pass/fail breakdown, and regression safety confirmation.
+1. Native Host Integration: Execute real test commands via veyra-verify CLI instead of inferring PASS from existing test files.
+2. Engine entry: `import { classifyTestSuites, evaluateSuiteResult, auditAssertionDensity } from './engine.mjs'`
+3. Evidence boundary: A passing command exit code establishes that invocation succeeded, not that all behavior is correct.

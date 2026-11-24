@@ -1,6 +1,6 @@
 ---
 name: veyra-research
-description: Primary-source evidence bounding, citation extraction, provenance verification, and fact grounding.
+description: Use when a factual or technical decision needs current primary-source verification.
 version: 1.0.0
 aliases:
   - research
@@ -20,11 +20,6 @@ Investigate technical questions against verified primary sources, enforce strict
 3. No Hallucinated URLs: All cited links and file paths must exist and match regex standards.
 
 ## Operational Instructions
-1. Discovery & Activation: Activated when gathering external technical documentation, verifying library APIs, or checking source specifications.
-2. Engine Invocation:
-   - Programmatic: `import { validateSourceEvidence, extractCitations, calculateCredibilityTier } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-research/engine.mjs').then(m => console.log(m.calculateCredibilityTier('https://github.com')))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Inspect primary documentation files or pinned upstream references; extract exact line numbers and citations.
-   - Claude Code / Codex: Prioritize official documentation and high-trust repos; reject hallucinated APIs and unverified blog posts.
-4. Output & Verification: Provide primary-source citations with concrete file paths, URLs, and credibility ratings.
+1. Native Host Integration: Retrieve and inspect the relevant source directly and distinguish quoted evidence from inference.
+2. Engine entry: `import { validateSourceEvidence, extractCitations, calculateCredibilityTier } from './engine.mjs'`
+3. Evidence boundary: Do not label a source verified based solely on a URL, citation placeholder, or generated summary.

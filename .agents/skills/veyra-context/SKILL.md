@@ -1,6 +1,6 @@
 ---
 name: veyra-context
-description: Context economy, token payload compression, technical fact preservation invariance, and memory boundary fencing.
+description: Use when compressing long technical context while preserving file paths, SHAs, decisions, and open blockers.
 version: 1.0.0
 aliases:
   - context
@@ -22,11 +22,6 @@ Manage conversation context efficiently, compress redundant tokens, and preserve
 3. Memory Boundary: Pinned anchor slots are strictly protected during memory sliding-window trimming.
 
 ## Operational Instructions
-1. Discovery & Activation: Activated automatically prior to compaction, before injecting large conversation histories, or when extracting factual anchors.
-2. Engine Invocation:
-   - Programmatic: `import { compressContext, extractTechnicalFacts, calculateInformationDensity } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-context/engine.mjs').then(m => console.log(m.compressContext('sample')))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Filter out redundant polite turns and verify that all commit SHAs, file paths, and DEC-xx IDs are preserved in context.
-   - Claude Code / Codex: Run semantic compression before generating compact checkpoints or handoffs.
-4. Output & Verification: Confirm 100% technical fact preservation and verify payload size reduction.
+1. Native Host Integration: Compare the actual input and compressed output for lost technical facts; save a checkpoint only when evidence is preserved.
+2. Engine entry: `import { compressContext, extractTechnicalFacts, calculateInformationDensity } from './engine.mjs'`
+3. Evidence boundary: Compression metrics alone cannot prove semantic fidelity to an uninspected conversation.

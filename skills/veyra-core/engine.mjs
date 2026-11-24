@@ -4,67 +4,54 @@
  * Zero external dependencies (pure Node.js ES Module).
  */
 
+import { validateCompletionClaims } from '../veyra-verify/engine.mjs';
+
 export const BANNED_AI_WORDS = [
-  /\b(?:delve|tapestry|beacon|testament to|testament|seamless|revolutionize|game-changer|crucial|vital|robust|cutting-edge|pleased to|happy to help)\b/gi,
+  /\b(?:delve|tapestry|beacon|testament to|testament|seamless|revolutionize|game-changer|cutting-edge|pleased to|happy to help)\b/gi,
   /\b(?:unleash|empower|elevate|streamline|harness the power|unlock the potential)\b/gi
 ];
 
-export const FORBIDDEN_PUNCTUATION = [/—/g, /–/g];
+export const FORBIDDEN_PUNCTUATION = [/—/g];
 
 export function normalizePath(p) {
   if (typeof p !== 'string') return '';
   return p.replace(/\\/g, '/');
 }
-
 export function isPathSafe(p) {
-  if (typeof p !== 'string' || !p.trim()) return false;
-  if (p.includes('\0')) return false;
-  const n = normalizePath(p);
-  if (n.startsWith('/') || /^[a-zA-Z]:/.test(n)) return false;
-  const parts = n.split('/');
-  if (parts.some(seg => seg === '..' || seg === '%2e%2e' || seg === '%2E%2E')) return false;
-  return true;
+  if (typeof p !== 'string' || !p.trim() || p.includes('\0')) return false;
+  let value = normalizePath(p);
+  for (let i = 0; i < 4; i++) {
+    let decoded;
+    try { decoded = decodeURIComponent(value); } catch { return false; }
+    if (decoded === value) break;
+    value = decoded;
+  }
+  value = normalizePath(value);
+  if (value.startsWith('/') || /^[a-zA-Z]:/.test(value) || value.startsWith('//')) return false;
+  return !value.split('/').some(seg => seg === '..' || seg === '.' || seg === '');
 }
-
+function matchGlob(file, pattern) {
+  if (typeof pattern !== 'string' || !pattern.trim() ||
+      !isPathSafe(pattern.replace(/\*\*?/g, 'x').replace(/\?/g, 'x'))) return false;
+  const pat = normalizePath(pattern);
+  const escaped = pat.replace(/[.+^$()|[\]{}\\]/g, '\\$&')
+    .replace(/\*\*/g, '\x00').replace(/\*/g, '[^/]*')
+    .replace(/\?/g, '[^/]').replace(/\x00/g, '.*');
+  return new RegExp('^' + escaped + '$').test(file);
+}
 export function validateScope(options = {}) {
   const { targetFiles = [], allowedPatterns = [], actionType = 'READ', dangerousOperations = [], isDestructive = false } = options;
   if (!Array.isArray(targetFiles)) throw new TypeError('targetFiles must be an array');
   if (!Array.isArray(allowedPatterns)) throw new TypeError('allowedPatterns must be an array');
-
-  const violations = [];
-  for (const file of targetFiles) {
-    if (!isPathSafe(file)) {
-      violations.push(file);
-      continue;
-    }
-    const normalizedFile = normalizePath(file);
-    const isAllowed = allowedPatterns.some(pattern => {
-      const normPattern = normalizePath(pattern);
-      if (normPattern.endsWith('*')) return normalizedFile.startsWith(normPattern.slice(0, -1));
-      return normalizedFile === normPattern;
-    });
-    if (!isAllowed) violations.push(file);
+  const violations = targetFiles.filter(file =>
+    !isPathSafe(file) || !allowedPatterns.some(pattern => matchGlob(normalizePath(file), pattern))
+  );
+  if (dangerousOperations.length > 0 || isDestructive === true) {
+    return { verdict: 'NEEDS_OWNER_APPROVAL', allowed: false, actionType, violations, requiresOwnerApproval: true };
   }
-
-  const hasDangerous = dangerousOperations.length > 0 || isDestructive === true;
-  if (hasDangerous) {
-    return {
-      verdict: 'NEEDS_OWNER_APPROVAL',
-      allowed: false,
-      actionType,
-      violations,
-      requiresOwnerApproval: true
-    };
-  }
-
-  const isAllowed = violations.length === 0;
-  return {
-    verdict: isAllowed ? 'PROCEED' : 'BLOCKED_SCOPE',
-    allowed: isAllowed,
-    actionType,
-    violations,
-    requiresOwnerApproval: !isAllowed
-  };
+  const allowed = violations.length === 0;
+  return { verdict: allowed ? 'PROCEED' : 'BLOCKED_SCOPE',
+    allowed, actionType, violations, requiresOwnerApproval: !allowed };
 }
 
 export function evaluateScope(options) {
@@ -105,34 +92,27 @@ export function evaluateAntiSlop(text) {
   return checkAntiSlop(text);
 }
 
-export function classifyClaim(statement, evidenceReceipt = null) {
-  if (!statement || typeof statement !== 'string') throw new TypeError('statement must be a non-empty string');
-  if (Array.isArray(evidenceReceipt)) {
-    if (evidenceReceipt.length > 0) {
-      return { category: 'OBSERVED', confidence: 1.0, statement, evidence: evidenceReceipt };
-    } else {
-      return { category: 'UNKNOWN', confidence: 0.0, statement, evidence: null };
-    }
+export function classifyClaim(statement, evidenceReceipt = null, options = {}) {
+  if (typeof statement !== 'string' || !statement.trim()) throw new TypeError('statement must be a non-empty string');
+  // Only a machine-checkable command-exit claim may be OBSERVED.
+  // A real receipt cannot establish semantic assertions like "the bug is fixed".
+  if (evidenceReceipt && !Array.isArray(evidenceReceipt) &&
+      statement === 'COMMAND_EXIT_ZERO:' + evidenceReceipt.taskName &&
+      validateCompletionClaims([evidenceReceipt], [evidenceReceipt.taskName], options).verified) {
+    return { category: 'OBSERVED', confidence: 1, statement,
+      evidence: { receiptId: evidenceReceipt.receiptId, scope: 'COMMAND_EXIT_ZERO_ONLY' } };
   }
-  if (evidenceReceipt && evidenceReceipt.verified === true) {
-    return { category: 'OBSERVED', confidence: 1.0, statement, evidence: evidenceReceipt };
+  if (/\b(?:likely|probably|suggests|implies|assumed|estimated)\b/i.test(statement)) {
+    return { category: 'INFERENCE', confidence: 0.5, statement, evidence: null };
   }
-  if (evidenceReceipt && evidenceReceipt.verified === false) {
-    return { category: 'PROPOSAL', confidence: 0.5, statement, evidence: evidenceReceipt };
-  }
-  const inferenceMarkers = [/\b(?:likely|probably|suggests|implies|assumed|estimated)\b/i];
-  const isLikelyInference = inferenceMarkers.some(re => re.test(statement));
-  if (isLikelyInference) {
-    return { category: 'INFERENCE', confidence: 0.7, statement, evidence: null };
-  }
-  return { category: 'UNKNOWN', confidence: 0.0, statement, evidence: null };
+  return { category: 'UNKNOWN', confidence: 0, statement, evidence: null };
 }
 
 export const classifyEvidence = classifyClaim;
 
 export function auditSmallestChange(modifiedFiles = [], agreedTaskScope = []) {
   if (!Array.isArray(modifiedFiles)) throw new TypeError('modifiedFiles must be an array');
-  const extraneous = modifiedFiles.filter(f => !agreedTaskScope.some(scope => f.startsWith(scope.replace(/\*$/, ''))));
+  const extraneous = modifiedFiles.filter(f => !isPathSafe(f) || !agreedTaskScope.some(scope => matchGlob(normalizePath(f), scope)));
   const isMinimal = extraneous.length === 0;
   return {
     isMinimal,

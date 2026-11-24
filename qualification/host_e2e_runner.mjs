@@ -201,14 +201,14 @@ export async function runHostE2E() {
   const forgedValidation = validateCompletionClaims([forgedReceipt], ['calc-test']);
 
   const pass7 = liveReceipt.passed === true &&
-                liveReceipt.evidenceTier === 'LIVE_HOST_VERIFIED' &&
+                liveReceipt.evidenceTier === 'LOCAL_PROCESS_VERIFIED' &&
                 forgedReceipt.isForged === true &&
                 completionValidation.verified === true &&
                 forgedValidation.verified === false;
   testResults.push({
     test: '7. Cryptographic execution receipts & forgery defense',
     passed: pass7,
-    details: 'Real process granted LIVE_HOST_VERIFIED with HMAC signature; forged receipt rejected'
+    details: 'Executed local process generated persisted signed receipt; forged receipt rejected'
   });
   console.log(`  -> ${pass7 ? 'PASS' : 'FAIL'}: ${testResults[6].details}`);
 

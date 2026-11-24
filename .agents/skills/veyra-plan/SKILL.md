@@ -1,6 +1,6 @@
 ---
 name: veyra-plan
-description: Dependency-ordered phased execution planning, DAG acyclicity validation, critical path analysis.
+description: Use when building a dependency-ordered implementation plan with real prerequisites and acceptance criteria.
 version: 1.0.0
 aliases:
   - plan
@@ -20,11 +20,6 @@ Transform complex multi-step technical requirements into dependency-ordered exec
 3. Blast Radius Approval: High risk tier tasks require explicit Owner authorization.
 
 ## Operational Instructions
-1. Discovery & Activation: Activated when planning multi-step features, complex refactors, or cross-cutting migrations.
-2. Engine Invocation:
-   - Programmatic: `import { validatePlanDAG, detectCycles, estimateBlastRadius, calculateCriticalPath } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-plan/engine.mjs').then(m => console.log(m.validatePlanDAG([])))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Construct acyclic execution DAGs, verify task dependencies, and estimate file blast radius before execution.
-   - Claude Code / Codex: Structure plans into sequential, reviewable phases with explicit exit criteria.
-4. Output & Verification: Deliver valid Kahn-DAG execution plan with zero dependency cycles and scoped blast radius.
+1. Native Host Integration: Extract tasks from actual requirements; run validatePlanDAG against explicit dependencies before authorization.
+2. Engine entry: `import { validatePlanDAG, detectCycles, estimateBlastRadius, calculateCriticalPath } from './engine.mjs'`
+3. Evidence boundary: The DAG engine checks the supplied graph; missing requirements or made-up dependencies remain unverified.

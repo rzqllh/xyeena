@@ -1,6 +1,6 @@
 ---
 name: veyra-orchestrate
-description: Multi-agent coordination, native collaboration, optional governor, sequential fallback.
+description: Use when routing a multi-domain task to relevant skills and coordinating authorized work.
 version: 1.0.0
 aliases:
   - orchestrate
@@ -20,11 +20,6 @@ Coordinate multi-step tasks across native host agents with transparent sequentia
 3. Immutable Trace Receipts: All multi-stage workflows must compile verifiable execution receipts.
 
 ## Operational Instructions
-1. Discovery & Activation: Activated when receiving high-level user goals, composite multi-domain requests, or multi-skill tasks.
-2. Engine Invocation:
-   - Programmatic: `import { routeTaskByIntent, resolveExecutionStrategy, compileOrchestrationReceipts } from './engine.mjs'`
-   - Command: `node -e "import('./skills/veyra-orchestrate/engine.mjs').then(m => console.log(m.routeTaskByIntent('audit UI')))"`
-3. Native Host Integration:
-   - Antigravity / Gemini CLI: Route user prompt to appropriate skill domain, resolve native execution strategy, and coordinate tool dispatch.
-   - Claude Code / Codex: Maintain single coherent voice without creating simulated multi-agent conversations.
-4. Output & Verification: Aggregate verified skill receipts into an integrated task completion report.
+1. Native Host Integration: Select skills from observed task needs, then record which engines or tools actually ran.
+2. Engine entry: `import { routeTaskByIntent, resolveExecutionStrategy, compileOrchestrationReceipts } from './engine.mjs'`
+3. Evidence boundary: A list of specialist labels is not execution evidence; never invent subagents.
