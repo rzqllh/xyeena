@@ -8,7 +8,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { appendFileSync, closeSync, existsSync, lstatSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, closeSync, existsSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -17,7 +17,7 @@ const RECEIPT_TIER = 'LOCAL_PROCESS_VERIFIED';
 const DEFAULT_MAX_AGE_SECONDS = 300;
 
 function sha(text) { return createHash('sha256').update(text).digest('hex'); }
-function workspace(options = {}) { return resolve(options.cwd || process.cwd()); }
+function workspace(options = {}) { const candidate = resolve(options.cwd || process.cwd()); return existsSync(candidate) ? realpathSync(candidate) : candidate; }
 function paths(options = {}) {
   const root = workspace(options);
   const stateDir = resolve(options.stateDir || join(root, '.veyra'));
