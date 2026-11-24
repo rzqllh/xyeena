@@ -4,11 +4,11 @@
 
 | Platform | Node versions | Evidence | Status |
 | --- | --- | --- | --- |
-| Ubuntu | 20, 22, 24 | GitHub Actions 45149890281 | CI_PASS |
-| macOS | 20, 22, 24 | GitHub Actions 45149890281 | CI_PASS |
-| Windows | 20, 22, 24 | GitHub Actions 45149890281 | CI_PASS |
+| Ubuntu | 20, 22, 24 | GitHub Actions 45299915880 | CI_PASS |
+| macOS | 20, 22, 24 | GitHub Actions 45299915880 | CI_PASS |
+| Windows | 20, 22, 24 | GitHub Actions 45299915880 | CI_PASS |
 
-72/72 Node tests passed on that commit.
+84/84 Node tests passed on that commit.
 
 | Agent host | Available evidence | Native E2E status |
 | --- | --- | --- |
@@ -18,6 +18,6 @@
 
 A real host PASS requires an agent prompt and recorded tool-use/tool-result events from the host itself. A version check, function import, synthetic receipt, or documentation assertion does not count.
 
-**Release:** REVIEW_READY / STABLE_RELEASE_BLOCKED. Previous agent A/B/C percentages were retracted; pinned source and legal provenance remain release-gated.
+**Release:** REVIEW_READY / STABLE_RELEASE_BLOCKED. Signed local process receipts and opt-in hook adapter have passed Node tests; no native agent hook or end-to-end skill activation has been observed. Historical A/B/C percentages remain retracted.
 
 See qualification/RELEASE-GATE-DECISION.md and qualification/LIVE-HOST-RUNBOOK.md.

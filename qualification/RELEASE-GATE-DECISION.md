@@ -1,16 +1,18 @@
-# Veyra v1.0 — Release Gate Decision (Independent Evidence Correction)
+# Veyra v1.0 — Release Gate Decision
 
-**Verdict: RELEASE_BLOCKED / REVIEW_READY.** Qualification records updated on veyra-review.
+**Verdict: REVIEW_READY / STABLE_RELEASE_BLOCKED**
 
-| Gate | Evidence | Verdict |
+| Gate | Evidence | Status |
 | --- | --- | --- |
-| Local Node integration | 8/8 direct engine checks reported | PASS_AS_INTEGRATION_ONLY |
-| Native Gemini/Codex/Claude E2E | Gemini OAuth deprecated upstream (`UNSUPPORTED_CLIENT`); Codex/Claude unavailable | BLOCKED_HOST_UNAVAILABLE |
-| Capability-matched A/B/C | Original baseline scores hardcoded, no actual agent comparator runs | RETRACTED |
-| Archive & Upstream integrity | 21/21 pinned Git commit objects verified in Git database (`git cat-file -t commit`) | PASS_OBJECT_PROVENANCE_VERIFIED (21/21) |
-| CI regression | GitHub Actions matrix passes across Node 20/22/24 on Ubuntu/macOS/Windows | PASS |
-| Distribution license | Resolved under Owner Locked Decisions (Proprietary free-to-use, SEE LICENSE IN LICENSE) | RESOLVED_BY_OWNER_LOCKED_DECISIONS |
-| Stable public release | Native agent E2E and comparative LLM benchmarks require host/auth availability | BLOCKED |
+| Node regression | 84/84 PASS, CI run 45299915880 | VERIFIED |
+| OS/Node matrix | Ubuntu/macOS/Windows × Node 20/22/24 (9/9) | VERIFIED |
+| Persistent command receipts | Cross-process HMAC journal, five-minute freshness, tamper rejection | LOCAL_PROCESS_VERIFIED |
+| Optional pre-tool hooks | Write/shell policy, path traversal and symlink tests | CODE_TESTED_NOT_HOST_ACTIVATED |
+| Native Gemini/Codex/Claude E2E | No accepted agent prompt plus tool-use/tool-result traces | NOT_RUN |
+| Fair A/B/C agent benchmark | Previous synthetic scores retracted | NOT_RUN |
+| Pinned upstream sources | 21/21 Git object presence reported by local Antigravity, content mapping not reproduced here | PARTIAL |
+| Distribution policy | Proprietary/free-to-use public npm selected; exact third-party obligations pending | OWNER_DECIDED_IP_REVIEW_OPEN |
+| Stable public release | Requires above unverified host and IP gates | BLOCKED |
 
-The prior label CONDITIONAL_CANDIDATE remains a historical project report, not approval to publish.
-No merge, tag, npm publish or repository migration is authorized by this document.
+Runtime threat model and opt-in hook templates: [docs/VEYRA-RUNTIME-CONTRACT.md](../docs/VEYRA-RUNTIME-CONTRACT.md). Existing Yoru installation is not silently updated.
+No merge, tag, npm publish or main-branch changes are authorized by this register.

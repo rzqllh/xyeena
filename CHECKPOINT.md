@@ -1,17 +1,17 @@
 # Veyra v1.0 Workspace Checkpoint
 
-> **Status:** `REVIEW_READY / STABLE_RELEASE_BLOCKED` (72/72 Node tests PASS on GitHub CI; release evidence gates incomplete)
-> **Active Phase:** Independent qualification evidence correction; native multi-host E2E and IP review pending
-> **Timestamp:** 2026-11-23T22:45:00+07:00
+> **Status:** `REVIEW_READY / STABLE_RELEASE_BLOCKED` (84/84 Node tests, 9/9 CI matrix PASS on 2026-11-24)
+> **Active Phase:** Veyra runtime evidence remediation implemented; native host E2E remains unverified
+> **Updated:** 2026-11-24
 > **Authority:** Canonical Owner Decisions Register (DEC-01 through DEC-35) — 100% LOCKED
 > **Skill Implementation:** 19/19 Skills IMPLEMENTED, REMEDIATED & CODE-VERIFIED (Operational instructions added, native host linking, zero external runtime npm dependencies)
 > **Remediation Findings (7/7 Resolved & Hardened):**
-> - P0 Installer: Pre-existing user files collision detection, backup, byte-for-byte atomic restoration, user-modified files preservation, traversal and null-byte rejection.
-> - P0 Evidence: LIVE_HOST_VERIFIED restricted to verified process execution via executeAndVerify with cryptographic HMAC signatures; synthetic and caller-forged receipts stamped SYNTHETIC_RECEIPT and rejected for release gates.
-> - P0 Scope: Cross-cutting path traversal safety integrated into validateExecutionScope.
-> - P1 Preflight: TLS override removed; CI lockfile metadata checked. 21/21 pinned Git commits verified in Git database.
+> - P0 Installer: Collision detection, backup restoration, user-modified file preservation and forged-manifest regression tests.
+> - P0 Evidence: Per-workspace signed receipts persisted to .veyra/receipts.jsonl, with cross-process lookup and 300-second freshness. Evidence tier is LOCAL_PROCESS_VERIFIED, not native agent proof.
+> - P0 Scope: Legacy glob-compatible scope validation plus optional fail-closed PreToolUse hook; hook activation requires explicit owner configuration.
+> - P1 Preflight: Metadata checks run in CI; Antigravity reports 21/21 Git commit objects present locally, but archive-to-source byte correspondence is not independently verified here.
 > - P1 CI: 5/5 template validation errors fixed; hardcoded Windows paths eliminated; run-tests.mjs cross-platform runner added; both CI workflows configured to trigger on veyra-review branch.
-> - P1 Skills: All 19 SKILL.md equipped with practical Operational Instructions linking native host tools to engine.mjs; 100% parity between skills/ and .agents/skills/; prefix-based intent routing hardened.
+> - P1 Skills: 19/19 frontmatter descriptions have behavior triggers, mirrored source parity, domain-specific instructions, and pressure tests for critical contracts.
 > - P1 Benchmark: Historical A/B/C scores RETRACTED; new evaluation is local function proxy only, not comparative agent testing.
 > - P2 Consistency: UI alias retained; license model resolved under Owner Locked Decisions (Proprietary free-to-use, SEE LICENSE IN LICENSE, NOTICE.md aligned with third-party MIT/Apache-2.0 attributions preserved).
 > **Release Gate Status:** `REVIEW_READY / STABLE_BLOCKED`; no merge, tag, npm publish or public release.
@@ -55,13 +55,13 @@ All 35 Owner Decisions DEC-01 through DEC-35 are established directly from the O
 
 ### Corrected Qualification Status
 
-- **CI:** 72 Node regressions PASS; 9/9 OS/Node matrix jobs and V4 validation PASS (run 45149890281).
+- **CI:** 84 Node tests PASS; 9/9 Ubuntu/macOS/Windows Node 20/22/24 PASS (run 45299915880). Optional hooks tested in Node; native host hook activation NOT_RUN.
 - **8/8 Host Test Report:** Direct Node.js engine integration only. This is not native Gemini agent E2E.
 - **Native Agent E2E:** Gemini (individual OAuth deprecated by upstream: `IneligibleTierError: UNSUPPORTED_CLIENT`), Codex and Claude = NOT_RUN_HOST_UNAVAILABLE.
 - **A/B/C:** Previous 100.0% / 50.8% / 22.2% superiority percentages RETRACTED. Local-function proxy checks are not agent comparisons.
-- **Upstream:** Lockfile metadata valid; 21/21 pinned Git commit objects physically verified (`SOURCE_OBJECT_VERIFIED: 21/21`).
-- **IP:** Resolved under Owner Locked Decisions. Proprietary license (free to install and use; redistribution and modification restricted; third-party MIT/Apache-2.0 notices preserved). `package.json` aligned to `SEE LICENSE IN LICENSE`.
-- **Safety:** Installer and verification regression tests cover the known safety cases. This does not authorize public distribution.
+- **Upstream:** Lockfile declarations verified; 21/21 Git commit objects reported from local cache. Full source content and archive mapping require independent evidence.
+- **IP:** Owner selected proprietary free-to-use public npm distribution. License and package metadata aligned; exact third-party inclusion/distribution obligations still require final review.
+- **Safety:** Receipt, claim, scope, Windows npm shim, hook denial and symlink tests pass. This is not OS sandboxing.
 - **Evidence source:** [qualification/RELEASE-GATE-DECISION.md](qualification/RELEASE-GATE-DECISION.md).
 
 ---
@@ -70,10 +70,10 @@ All 35 Owner Decisions DEC-01 through DEC-35 are established directly from the O
 
 1. **Local Archive Payload Integrity (SHA-256 vs Manifest):**
    - Target Archive: `veyra-v1.0-upstream-latest.zip` (314.13 MB, 45,640 entries).
-   - Cryptographic Match: **45,637 / 45,637 files matched by exact SHA-256 (100.0%, 0 error, 0 mismatch)**.
+   - Cryptographic Match: **45,637 / 45,637 file matches reported by local agent; not independently reproduced in GitHub CI**.
 2. **Upstream GitHub Commit Alignment (Pinned SHA Baseline):**
    - Pinned snapshot frozen per 2026-11-20 in `references/upstreams.lock.json` across 21 repositories.
-   - 21/21 pinned Git commits verified in Git object database (`git cat-file -t commit`).
+   - Antigravity reports 21/21 pinned Git commit objects in local database (`git cat-file -t commit`); contents not independently examined here.
 
 ---
 
