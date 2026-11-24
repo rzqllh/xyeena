@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -42,3 +42,19 @@ test('unsafe policy blocks, no guessed tool input or implicit shell permission',
   assert.equal(run(root,event('Write',{file_path:'src/a.ts'})).status,2);
   assert.equal(evaluateToolCall(event('Write',{}),{cwd:root}).allowed,false);
 }));
+
+test('native PreToolUse adapter rejects symlink escape even when the lexical path matches', () => {
+  if (process.platform === 'win32') return; // Windows symlink creation is privilege-dependent
+  withProject(root => {
+    const outside = mkdtempSync(join(tmpdir(), 'veyra-escape-'));
+    try {
+      mkdirSync(join(root,'.veyra'));
+      writeFileSync(join(root,'.veyra','scope.json'),JSON.stringify({
+        version:1,readOnly:false,allowedPatterns:['src/**'],allowShell:false
+      }));
+      symlinkSync(outside, join(root,'src'), 'dir');
+      const output = run(root,event('Edit',{file_path:'src/outside.ts'}));
+      assert.equal(output.status,2,output.stdout+output.stderr);
+    } finally { rmSync(outside,{recursive:true,force:true}); }
+  });
+});

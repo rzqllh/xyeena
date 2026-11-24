@@ -99,3 +99,13 @@ test('P1: installed skill discovery metadata and pressure cases are inspectable'
     assert.match(body, /## Pressure tests/);
   }
 });
+
+test('P1: Windows npm command shim is actually executable without arbitrary shell input', () => {
+  if (process.platform !== 'win32') return;
+  sandbox(root => {
+    const result = executeAndVerify('npm-version', ['npm', '--version'], { cwd: root, keyDir: join(root, 'keys') });
+    assert.equal(result.passed, true, result.outputSummary);
+    assert.equal(result.evidenceTier, 'LOCAL_PROCESS_VERIFIED');
+    assert.equal(validateCompletionClaims([result], ['npm-version'], { cwd: root, keyDir: join(root, 'keys') }).verified, true);
+  });
+});
