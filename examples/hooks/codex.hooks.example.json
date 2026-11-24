@@ -1,0 +1,16 @@
+{
+  "description": "Owner opt-in Veyra workspace policy",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|apply_patch|Bash|exec_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .agents/skills/veyra-core/hook.mjs"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -41,3 +41,8 @@ Enforce disciplined engineering judgment, eliminate generic AI filler, and lock 
 1. A fabricated evidence array must classify UNKNOWN.
 2. A live signed node -v receipt must not certify "the bug is fixed".
 3. An encoded traversal in targetFiles must fail the path check.
+
+## Optional owner-controlled write gate
+- For real pre-tool checks, use hook.mjs with an explicitly configured Gemini BeforeTool or Claude/Codex PreToolUse hook. See docs/VEYRA-RUNTIME-CONTRACT.md.
+- The hook reads .veyra/scope.json. Missing policy means read-only; writes outside approved patterns and shell commands are blocked by default.
+- This is not enabled by installation. It does not intercept external processes or guarantee filesystem confinement.

@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "BeforeTool": [
+      {
+        "matcher": "^(write_file|edit_file|replace|run_shell_command)$",
+        "hooks": [
+          {
+            "type": "command",
+            "name": "veyra-scope",
+            "command": "node .agents/skills/veyra-core/hook.mjs"
+          }
+        ]
+      }
+    ]
+  }
+}
